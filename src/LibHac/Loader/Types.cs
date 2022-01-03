@@ -27,26 +27,22 @@ public struct Meta
 
     public uint Magic;
     public int SignatureKeyGeneration;
-    private Array4<byte> _reserved08;
+    public Array4<byte> Reserved08;
     public byte Flags;
-    private byte _reserved0D;
+    public byte Reserved0D;
     public byte MainThreadPriority;
     public byte DefaultCpuId;
-    private Array4<byte> _reserved10;
+    public Array4<byte> Reserved10;
     public uint SystemResourceSize;
     public uint Version;
     public uint MainThreadStackSize;
-    private Array16<byte> _programName;
-    private Array16<byte> _productCode;
-    private Array32<byte> _reserved40;
-    private Array16<byte> _reserved60;
+    public Array16<byte> ProgramName;
+    public Array16<byte> ProductCode;
+    public Array48<byte> Reserved40;
     public int AciOffset;
     public int AciSize;
     public int AcidOffset;
     public int AcidSize;
-
-    public readonly ReadOnlySpan<byte> ProgramName => _programName.ItemsRo;
-    public readonly ReadOnlySpan<byte> ProductCode => _productCode.ItemsRo;
 }
 
 public struct AciHeader
@@ -54,24 +50,24 @@ public struct AciHeader
     public static readonly uint MagicValue = 0x30494341; // ACI0
 
     public uint Magic;
-    private Array12<byte> _reserved04;
+    public Array12<byte> Reserved04;
     public ProgramId ProgramId;
-    private Array8<byte> _reserved18;
+    public Array8<byte> Reserved18;
     public int FsAccessControlOffset;
     public int FsAccessControlSize;
     public int ServiceAccessControlOffset;
     public int ServiceAccessControlSize;
     public int KernelCapabilityOffset;
     public int KernelCapabilitySize;
-    private Array4<byte> _reserved38;
+    public Array8<byte> Reserved38;
 }
 
 public struct AcidHeaderData
 {
     public static readonly uint MagicValue = 0x44494341; // ACID
 
-    private Array256<byte> _signature;
-    private Array256<byte> _modulus;
+    public Array256<byte> Signature;
+    public Array256<byte> Modulus;
     public uint Magic;
     public int Size;
     public byte Version;
@@ -84,8 +80,5 @@ public struct AcidHeaderData
     public int ServiceAccessControlSize;
     public int KernelCapabilityOffset;
     public int KernelCapabilitySize;
-    private Array4<byte> _reserved238;
-
-    public readonly ReadOnlySpan<byte> Signature => _signature.ItemsRo;
-    public readonly ReadOnlySpan<byte> Modulus => _modulus.ItemsRo;
+    public Array4<byte> Reserved238;
 }

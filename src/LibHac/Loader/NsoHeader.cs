@@ -2,65 +2,63 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
+using LibHac.Common.FixedArrays;
 
 namespace LibHac.Loader;
 
-[StructLayout(LayoutKind.Explicit, Size = 0x100)]
 public struct NsoHeader
 {
-    public const int SegmentCount = 3;
+    public static readonly int SegmentCount = 3;
 
-    [FieldOffset(0x00)] public uint Magic;
-    [FieldOffset(0x04)] public uint Version;
-    [FieldOffset(0x08)] public uint Reserved08;
-    [FieldOffset(0x0C)] public Flag Flags;
+    public uint Magic;
+    public uint Version;
+    public uint Reserved08;
+    public Flag Flags;
 
-    [FieldOffset(0x10)] public uint TextFileOffset;
-    [FieldOffset(0x14)] public uint TextMemoryOffset;
-    [FieldOffset(0x18)] public uint TextSize;
+    public uint TextFileOffset;
+    public uint TextMemoryOffset;
+    public uint TextSize;
 
-    [FieldOffset(0x1C)] public uint ModuleNameOffset;
+    public uint ModuleNameOffset;
 
-    [FieldOffset(0x20)] public uint RoFileOffset;
-    [FieldOffset(0x24)] public uint RoMemoryOffset;
-    [FieldOffset(0x28)] public uint RoSize;
+    public uint RoFileOffset;
+    public uint RoMemoryOffset;
+    public uint RoSize;
 
-    [FieldOffset(0x2C)] public uint ModuleNameSize;
+    public uint ModuleNameSize;
 
-    [FieldOffset(0x30)] public uint DataFileOffset;
-    [FieldOffset(0x34)] public uint DataMemoryOffset;
-    [FieldOffset(0x38)] public uint DataSize;
+    public uint DataFileOffset;
+    public uint DataMemoryOffset;
+    public uint DataSize;
 
-    [FieldOffset(0x3C)] public uint BssSize;
+    public uint BssSize;
 
-    [FieldOffset(0x40)] public Buffer32 ModuleId;
+    public Array32<byte> ModuleId;
 
     // Size of the sections in the NSO file
-    [FieldOffset(0x60)] public uint TextFileSize;
-    [FieldOffset(0x64)] public uint RoFileSize;
-    [FieldOffset(0x68)] public uint DataFileSize;
+    public uint TextFileSize;
+    public uint RoFileSize;
+    public uint DataFileSize;
 
-    [FieldOffset(0x6C)] private byte _reserved6C;
+    public Array28<byte> Reserved6C;
 
-    [FieldOffset(0x88)] public uint ApiInfoOffset;
-    [FieldOffset(0x8C)] public uint ApiInfoSize;
-    [FieldOffset(0x90)] public uint DynStrOffset;
-    [FieldOffset(0x94)] public uint DynStrSize;
-    [FieldOffset(0x98)] public uint DynSymOffset;
-    [FieldOffset(0x9C)] public uint DynSymSize;
+    public uint ApiInfoOffset;
+    public uint ApiInfoSize;
+    public uint DynStrOffset;
+    public uint DynStrSize;
+    public uint DynSymOffset;
+    public uint DynSymSize;
 
-    [FieldOffset(0xA0)] public Buffer32 TextHash;
-    [FieldOffset(0xC0)] public Buffer32 RoHash;
-    [FieldOffset(0xE0)] public Buffer32 DataHash;
+    public Array32<byte> TextHash;
+    public Array32<byte> RoHash;
+    public Array32<byte> DataHash;
 
     public Span<SegmentHeader> Segments =>
         SpanHelpers.CreateSpan(ref Unsafe.As<uint, SegmentHeader>(ref TextFileOffset), SegmentCount);
 
     public Span<uint> CompressedSizes => SpanHelpers.CreateSpan(ref TextFileSize, SegmentCount);
 
-    public Span<Buffer32> SegmentHashes => SpanHelpers.CreateSpan(ref TextHash, SegmentCount);
-
-    public Span<byte> Reserved6C => SpanHelpers.CreateSpan(ref _reserved6C, 0x1C);
+    public Span<Array32<byte>> SegmentHashes => SpanHelpers.CreateSpan(ref TextHash, SegmentCount);
 
     [Flags]
     public enum Flag
@@ -73,11 +71,12 @@ public struct NsoHeader
         DataHash = 1 << 5
     }
 
-    [StructLayout(LayoutKind.Sequential, Size = 0x10)]
+    [StructLayout(LayoutKind.Sequential)]
     public struct SegmentHeader
     {
         public uint FileOffset;
         public uint MemoryOffset;
         public uint Size;
+        private int _unused;
     }
 }
