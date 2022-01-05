@@ -1,16 +1,35 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs.Impl;
+using LibHac.Fs.Shim;
 using LibHac.Os;
 using LibHac.Util;
-using static LibHac.Fs.StringTraits;
 using static LibHac.Fs.Impl.AccessLogStrings;
+using static LibHac.Fs.StringTraits;
 
 namespace LibHac.Fs.Fsa;
 
+/// <summary>
+/// Contains functions for managing mounted file systems.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public static class MountUtility
 {
+    /// <summary>
+    /// Gets the mount name and non-mounted path components from a path that has a mount name.
+    /// </summary>
+    /// <param name="mountName">If the method returns successfully, contains the mount name of the provided path;
+    /// otherwise the contents are undefined.</param>
+    /// <param name="subPath">If the method returns successfully, contains the provided path without the
+    /// mount name; otherwise the contents are undefined.</param>
+    /// <param name="path">The <see cref="Path"/> to process.</param>
+    /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+    /// <see cref="ResultFs.InvalidPathFormat"/>: <paramref name="path"/> does not contain a sub path after
+    /// the mount name that begins with <c>/</c> or <c>\</c>.<br/>
+    /// <see cref="ResultFs.InvalidMountName"/>: <paramref name="path"/> contains an invalid mount name
+    /// or does not have a mount name.</returns>
     private static Result GetMountNameAndSubPath(out MountName mountName, out U8Span subPath, U8Span path)
     {
         UnsafeHelpers.SkipParamInit(out mountName);
@@ -82,8 +101,7 @@ public static class MountUtility
                 return false;
         }
 
-        // Todo: VerifyUtf8String
-        return true;
+        return Utf8StringUtil.VerifyUtf8String(name);
     }
 
     public static bool IsUsedReservedMountName(this FileSystemClientImpl fs, U8Span name)
@@ -144,7 +162,12 @@ public static class MountUtility
 
         if (fileSystem.IsFileDataCacheAttachable())
         {
-            // Todo: Data cache purge
+            using var fileDataCacheAccessor = new GlobalFileDataCacheAccessorReadableScopedPointer();
+
+            if (fs.TryGetGlobalFileDataCacheAccessor(ref Unsafe.AsRef(in fileDataCacheAccessor)))
+            {
+                fileSystem.PurgeFileDataCache(fileDataCacheAccessor.Get());
+            }
         }
 
         fs.Unregister(mountName);
@@ -226,13 +249,23 @@ public static class MountUtility
     public static Result ConvertToFsCommonPath(this FileSystemClient fs, U8SpanMutable commonPathBuffer,
         U8Span path)
     {
+        Result rc;
+
         if (commonPathBuffer.IsNull())
-            return ResultFs.NullptrArgument.Log();
+        {
+            rc = ResultFs.NullptrArgument.Value;
+            fs.Impl.AbortIfNeeded(rc);
+            return rc;
+        }
 
         if (path.IsNull())
-            return ResultFs.NullptrArgument.Log();
+        {
+            rc = ResultFs.NullptrArgument.Value;
+            fs.Impl.AbortIfNeeded(rc);
+            return rc;
+        }
 
-        Result rc = GetMountNameAndSubPath(out MountName mountName, out U8Span subPath, path);
+        rc = GetMountNameAndSubPath(out MountName mountName, out U8Span subPath, path);
         fs.Impl.AbortIfNeeded(rc);
         if (rc.IsFailure()) return rc;
 
