@@ -22,7 +22,7 @@ public static class MountUtility
         if (WindowsPath.IsWindowsDrive(path) || WindowsPath.IsUncPath(path))
         {
             StringUtils.Copy(mountName.Name, CommonPaths.HostRootFileSystemMountName);
-            mountName.Name[PathTool.MountNameLengthMax] = StringTraits.NullTerminator;
+            mountName.Name[PathTool.MountNameLengthMax] = NullTerminator;
 
             subPath = path;
             return Result.Success;
@@ -30,7 +30,7 @@ public static class MountUtility
 
         for (int i = 0; i <= maxMountLen; i++)
         {
-            if (path[i] == StringTraits.DriveSeparator)
+            if (path[i] == DriveSeparator)
             {
                 mountLen = i;
                 break;
@@ -53,7 +53,7 @@ public static class MountUtility
             return ResultFs.InvalidPathFormat.Log();
 
         path.Value.Slice(0, mountLen).CopyTo(mountName.Name);
-        mountName.Name[mountLen] = StringTraits.NullTerminator;
+        mountName.Name[mountLen] = NullTerminator;
         subPath = subPathTemp;
 
         return Result.Success;

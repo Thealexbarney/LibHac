@@ -10,7 +10,7 @@ namespace LibHac.Fs;
 /// <summary>
 /// Contains functions for working with Windows paths.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public static class WindowsPath
 {
     private const int WindowsDriveLength = 2;
