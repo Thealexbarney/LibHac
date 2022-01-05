@@ -4,8 +4,8 @@ using System.Diagnostics;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Util;
-using static LibHac.Fs.StringTraits;
 using static InlineIL.IL.Emit;
+using static LibHac.Fs.StringTraits;
 
 // ReSharper disable once CheckNamespace
 namespace LibHac.Fs;
@@ -21,12 +21,12 @@ public struct PathFlags
     public void AllowBackslash() => _value |= 1 << 4;
     public void AllowAllCharacters() => _value |= 1 << 5;
 
-    public bool IsWindowsPathAllowed() => (_value & (1 << 0)) != 0;
-    public bool IsRelativePathAllowed() => (_value & (1 << 1)) != 0;
-    public bool IsEmptyPathAllowed() => (_value & (1 << 2)) != 0;
-    public bool IsMountNameAllowed() => (_value & (1 << 3)) != 0;
-    public bool IsBackslashAllowed() => (_value & (1 << 4)) != 0;
-    public bool AreAllCharactersAllowed() => (_value & (1 << 5)) != 0;
+    public readonly bool IsWindowsPathAllowed() => (_value & (1 << 0)) != 0;
+    public readonly bool IsRelativePathAllowed() => (_value & (1 << 1)) != 0;
+    public readonly bool IsEmptyPathAllowed() => (_value & (1 << 2)) != 0;
+    public readonly bool IsMountNameAllowed() => (_value & (1 << 3)) != 0;
+    public readonly bool IsBackslashAllowed() => (_value & (1 << 4)) != 0;
+    public readonly bool AreAllCharactersAllowed() => (_value & (1 << 5)) != 0;
 }
 
 /// <summary>
@@ -83,7 +83,7 @@ public static class PathExtensions
 /// ensure a write buffer is allocated and copy the input path to it. <see cref="SetShallowBuffer"/> will
 /// directly use the input buffer without copying. If this method is used, the caller must ensure the path
 /// is normalized before passing it to <see cref="SetShallowBuffer"/>.</para>
-/// <para>Based on FS 12.1.0 (nnSdk 12.3.1)</para></remarks>
+/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para></remarks>
 [DebuggerDisplay("{" + nameof(ToString) + "(),nq}")]
 [NonCopyableDisposable]
 public ref struct Path
@@ -225,9 +225,9 @@ public ref struct Path
     }
 
     /// <summary>
-    /// Returns <see langword="true"/> if 
+    /// Returns <see langword="true"/> if the <see cref="Path"/> has no buffer or has an empty string.
     /// </summary>
-    /// <returns></returns>
+    /// <returns><see langword="true"/> if the current path is empty; otherwise <see langword="false"/>.</returns>
     public readonly bool IsEmpty()
     {
         return _string.At(0) == 0;
@@ -953,6 +953,59 @@ public ref struct Path
             rc = AppendChild(in path2);
             if (rc.IsFailure()) return rc;
         }
+
+        return Result.Success;
+    }
+
+    /// <summary>
+    /// Combines a <see cref="Path"/> and a path string into a single path.
+    /// </summary>
+    /// <remarks>If <paramref name="path1"/> is not empty, this <see cref="Path"/>'s <c>IsNormalized</c> flag will
+    /// be set to the value of <paramref name="path1"/>'s flag.
+    /// Otherwise the flag will be set to <see langword="false"/>.</remarks>
+    /// <param name="path1">The first path to combine.</param>
+    /// <param name="path2">The second path to combine.</param>
+    /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+    /// <see cref="ResultFs.NotNormalized"/>: The <c>IsNormalized</c> flag of
+    /// <paramref name="path1"/> is not <see langword="true"/>.</returns>
+    public Result Combine(in Path path1, ReadOnlySpan<byte> path2)
+    {
+        int path1Length = path1.GetLength();
+        int path2Length = StringUtils.GetLength(path2);
+
+        Result rc = Preallocate(path1Length + SeparatorLength + path2Length + NullTerminatorLength);
+        if (rc.IsFailure()) return rc;
+
+        rc = Initialize(in path1);
+        if (rc.IsFailure()) return rc;
+
+        rc = AppendChild(path2);
+        if (rc.IsFailure()) return rc;
+
+        return Result.Success;
+    }
+
+    /// <summary>
+    /// Combines a path string and a <see cref="Path"/> into a single path.
+    /// </summary>
+    /// <remarks>This <see cref="Path"/>'s <c>IsNormalized</c> flag will
+    /// always be set to <see langword="false"/>.</remarks>
+    /// <param name="path1">The first path to combine.</param>
+    /// <param name="path2">The second path to combine.</param>
+    /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
+    public Result Combine(ReadOnlySpan<byte> path1, in Path path2)
+    {
+        int path1Length = StringUtils.GetLength(path1);
+        int path2Length = path2.GetLength();
+
+        Result rc = Preallocate(path1Length + SeparatorLength + path2Length + NullTerminatorLength);
+        if (rc.IsFailure()) return rc;
+
+        rc = Initialize(path1);
+        if (rc.IsFailure()) return rc;
+
+        rc = AppendChild(in path2);
+        if (rc.IsFailure()) return rc;
 
         return Result.Success;
     }
