@@ -19,12 +19,14 @@ public struct PathFlags
     public void AllowEmptyPath() => _value |= 1 << 2;
     public void AllowMountName() => _value |= 1 << 3;
     public void AllowBackslash() => _value |= 1 << 4;
+    public void AllowAllCharacters() => _value |= 1 << 5;
 
     public bool IsWindowsPathAllowed() => (_value & (1 << 0)) != 0;
     public bool IsRelativePathAllowed() => (_value & (1 << 1)) != 0;
     public bool IsEmptyPathAllowed() => (_value & (1 << 2)) != 0;
     public bool IsMountNameAllowed() => (_value & (1 << 3)) != 0;
     public bool IsBackslashAllowed() => (_value & (1 << 4)) != 0;
+    public bool AreAllCharactersAllowed() => (_value & (1 << 5)) != 0;
 }
 
 /// <summary>

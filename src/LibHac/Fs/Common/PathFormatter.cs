@@ -13,9 +13,19 @@ namespace LibHac.Fs;
 /// <summary>
 /// Contains functions for working with path formatting and normalization.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public static class PathFormatter
 {
+    private static ReadOnlySpan<byte> InvalidCharacter =>
+        new[] { (byte)':', (byte)'*', (byte)'?', (byte)'<', (byte)'>', (byte)'|' };
+
+    private static ReadOnlySpan<byte> InvalidCharacterForHostName =>
+        new[] { (byte)':', (byte)'*', (byte)'<', (byte)'>', (byte)'|', (byte)'$' };
+
+    private static ReadOnlySpan<byte> InvalidCharacterForMountName =>
+        new[] { (byte)'*', (byte)'?', (byte)'<', (byte)'>', (byte)'|' };
+
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Result CheckHostName(ReadOnlySpan<byte> name)
     {
@@ -24,8 +34,11 @@ public static class PathFormatter
 
         for (int i = 0; i < name.Length; i++)
         {
-            if (name[i] == ':' || name[i] == '$')
-                return ResultFs.InvalidPathFormat.Log();
+            foreach (byte c in InvalidCharacterForHostName)
+            {
+                if (name[i] == c)
+                    return ResultFs.InvalidCharacter.Log();
+            }
         }
 
         return Result.Success;
@@ -41,8 +54,11 @@ public static class PathFormatter
 
         for (int i = 0; i < name.Length; i++)
         {
-            if (name[i] == ':')
-                return ResultFs.InvalidPathFormat.Log();
+            foreach (byte c in InvalidCharacter)
+            {
+                if (name[i] == c)
+                    return ResultFs.InvalidCharacter.Log();
+            }
         }
 
         return Result.Success;
@@ -90,8 +106,11 @@ public static class PathFormatter
 
         for (int i = 0; i < mountLength; i++)
         {
-            if (path.At(i) is (byte)'*' or (byte)'?' or (byte)'<' or (byte)'>' or (byte)'|')
-                return ResultFs.InvalidCharacter.Log();
+            foreach (byte c in InvalidCharacterForMountName)
+            {
+                if (path.At(i) == c)
+                    return ResultFs.InvalidCharacter.Log();
+            }
         }
 
         if (!outMountNameBuffer.IsEmpty)
@@ -150,6 +169,12 @@ public static class PathFormatter
             int winPathLength;
             for (winPathLength = 2; currentPath.At(winPathLength) != NullTerminator; winPathLength++)
             {
+                foreach (byte c in InvalidCharacter)
+                {
+                    if (currentPath[winPathLength] == c)
+                        return ResultFs.InvalidCharacter.Log();
+                }
+
                 if (currentPath[winPathLength] == DirectorySeparator ||
                     currentPath[winPathLength] == AltDirectorySeparator)
                 {
@@ -478,8 +503,11 @@ public static class PathFormatter
             }
         }
 
-        if (PathNormalizer.IsParentDirectoryPathReplacementNeeded(buffer))
-            return ResultFs.DirectoryUnobtainable.Log();
+        if (flags.IsBackslashAllowed() && PathNormalizer.IsParentDirectoryPathReplacementNeeded(buffer))
+        {
+            isNormalized = false;
+            return Result.Success;
+        }
 
         rc = PathUtility.CheckInvalidBackslash(out bool isBackslashContained, buffer,
             flags.IsWindowsPathAllowed() || flags.IsBackslashAllowed());
@@ -491,7 +519,7 @@ public static class PathFormatter
             return Result.Success;
         }
 
-        rc = PathNormalizer.IsNormalized(out isNormalized, out int length, buffer);
+        rc = PathNormalizer.IsNormalized(out isNormalized, out int length, buffer, flags.AreAllCharactersAllowed());
         if (rc.IsFailure()) return rc;
 
         totalLength += length;
@@ -612,7 +640,8 @@ public static class PathFormatter
                 src = srcBufferSlashReplaced.AsSpan(srcOffset);
             }
 
-            rc = PathNormalizer.Normalize(outputBuffer.Slice(currentPos), out _, src, isWindowsPath, isDriveRelative);
+            rc = PathNormalizer.Normalize(outputBuffer.Slice(currentPos), out _, src, isWindowsPath, isDriveRelative,
+                flags.AreAllCharactersAllowed());
             if (rc.IsFailure()) return rc;
 
             return Result.Success;

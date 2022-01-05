@@ -9,51 +9,57 @@ namespace LibHac.Tests.Fs;
 
 public class PathNormalizerTests
 {
-    public static TheoryData<string, bool, bool, string, long, Result> TestData_Normalize => new()
+    public static TheoryData<string, bool, bool, bool, string, long, Result> TestData_Normalize => new()
     {
-        { @"/aa/bb/c/", false, true, @"/aa/bb/c", 8, Result.Success },
-        { @"aa/bb/c/", false, false, @"", 0, ResultFs.InvalidPathFormat.Value },
-        { @"aa/bb/c/", false, true, @"/aa/bb/c", 8, Result.Success },
-        { @"mount:a/b", false, true, @"/mount:a/b", 0, ResultFs.InvalidCharacter.Value },
-        { @"/aa/bb/../..", true, false, @"/", 1, Result.Success },
-        { @"/aa/bb/../../..", true, false, @"/", 1, Result.Success },
-        { @"/aa/bb/../../..", false, false, @"/aa/bb/", 0, ResultFs.DirectoryUnobtainable.Value },
-        { @"aa/bb/../../..", true, true, @"/", 1, Result.Success },
-        { @"aa/bb/../../..", false, true, @"/aa/bb/", 0, ResultFs.DirectoryUnobtainable.Value },
-        { @"", false, false, @"", 0, ResultFs.InvalidPathFormat.Value },
-        { @"/", false, false, @"/", 1, Result.Success },
-        { @"/.", false, false, @"/", 1, Result.Success },
-        { @"/./", false, false, @"/", 1, Result.Success },
-        { @"/..", false, false, @"/", 0, ResultFs.DirectoryUnobtainable.Value },
-        { @"//.", false, false, @"/", 1, Result.Success },
-        { @"/ ..", false, false, @"/ ..", 4, Result.Success },
-        { @"/.. /", false, false, @"/.. ", 4, Result.Success },
-        { @"/. /.", false, false, @"/. ", 3, Result.Success },
-        { @"/aa/bb/cc/dd/./.././../..", false, false, @"/aa", 3, Result.Success },
-        { @"/aa/bb/cc/dd/./.././../../..", false, false, @"/", 1, Result.Success },
-        { @"/./aa/./bb/./cc/./dd/.", false, false, @"/aa/bb/cc/dd", 12, Result.Success },
-        { @"/aa\bb/cc", false, false, @"/aa\bb/cc", 9, Result.Success },
-        { @"/aa\bb/cc", false, false, @"/aa\bb/cc", 9, Result.Success },
-        { @"/a|/bb/cc", false, false, @"/a|/bb/cc", 0, ResultFs.InvalidCharacter.Value },
-        { @"/>a/bb/cc", false, false, @"/>a/bb/cc", 0, ResultFs.InvalidCharacter.Value },
-        { @"/aa/.</cc", false, false, @"/aa/.</cc", 0, ResultFs.InvalidCharacter.Value },
-        { @"/aa/..</cc", false, false, @"/aa/..</cc", 0, ResultFs.InvalidCharacter.Value },
-        { @"\\aa/bb/cc", false, false, @"", 0, ResultFs.InvalidPathFormat.Value },
-        { @"\\aa\bb\cc", false, false, @"", 0, ResultFs.InvalidPathFormat.Value },
-        { @"/aa/bb/..\cc", false, false, @"/aa/cc", 6, Result.Success },
-        { @"/aa/bb\..\cc", false, false, @"/aa/cc", 6, Result.Success },
-        { @"/aa/bb\..", false, false, @"/aa", 3, Result.Success },
-        { @"/aa\bb/../cc", false, false, @"/cc", 3, Result.Success }
+        { @"/aa/bb/c/", false, true, false, @"/aa/bb/c", 8, Result.Success },
+        { @"aa/bb/c/", false, false, false, @"", 0, ResultFs.InvalidPathFormat.Value },
+        { @"aa/bb/c/", false, true, false, @"/aa/bb/c", 8, Result.Success },
+        { @"mount:a/b", false, true, false, @"/", 0, ResultFs.InvalidCharacter.Value },
+        { @"mo|unt:a/b", false, true, true, @"/mo|unt:a/b", 11, Result.Success },
+        { @"/aa/bb/../..", true, false, false, @"/", 1, Result.Success },
+        { @"/aa/bb/../../..", true, false, false, @"/", 1, Result.Success },
+        { @"/aa/bb/../../..", false, false, false, @"/aa/bb/", 0, ResultFs.DirectoryUnobtainable.Value },
+        { @"aa/bb/../../..", true, true, false, @"/", 1, Result.Success },
+        { @"aa/bb/../../..", false, true, false, @"/aa/bb/", 0, ResultFs.DirectoryUnobtainable.Value },
+        { @"mount:a/b", false, true, true, @"/mount:a/b", 10, Result.Success },
+        { @"/a|/bb/cc", false, false, true, @"/a|/bb/cc", 9, Result.Success },
+        { @"/>a/bb/cc", false, false, true, @"/>a/bb/cc", 9, Result.Success },
+        { @"/aa/.</cc", false, false, true, @"/aa/.</cc", 9, Result.Success },
+        { @"/aa/..</cc", false, false, true, @"/aa/..</cc", 10, Result.Success },
+        { @"", false, false, false, @"", 0, ResultFs.InvalidPathFormat.Value },
+        { @"/", false, false, false, @"/", 1, Result.Success },
+        { @"/.", false, false, false, @"/", 1, Result.Success },
+        { @"/./", false, false, false, @"/", 1, Result.Success },
+        { @"/..", false, false, false, @"/", 0, ResultFs.DirectoryUnobtainable.Value },
+        { @"//.", false, false, false, @"/", 1, Result.Success },
+        { @"/ ..", false, false, false, @"/ ..", 4, Result.Success },
+        { @"/.. /", false, false, false, @"/.. ", 4, Result.Success },
+        { @"/. /.", false, false, false, @"/. ", 3, Result.Success },
+        { @"/aa/bb/cc/dd/./.././../..", false, false, false, @"/aa", 3, Result.Success },
+        { @"/aa/bb/cc/dd/./.././../../..", false, false, false, @"/", 1, Result.Success },
+        { @"/./aa/./bb/./cc/./dd/.", false, false, false, @"/aa/bb/cc/dd", 12, Result.Success },
+        { @"/aa\bb/cc", false, false, false, @"/aa\bb/cc", 9, Result.Success },
+        { @"/aa\bb/cc", false, false, false, @"/aa\bb/cc", 9, Result.Success },
+        { @"/a|/bb/cc", false, false, false, @"/", 0, ResultFs.InvalidCharacter.Value },
+        { @"/>a/bb/cc", false, false, false, @"/", 0, ResultFs.InvalidCharacter.Value },
+        { @"/aa/.</cc", false, false, false, @"/aa/", 0, ResultFs.InvalidCharacter.Value },
+        { @"/aa/..</cc", false, false, false, @"/aa/", 0, ResultFs.InvalidCharacter.Value },
+        { @"\\aa/bb/cc", false, false, false, @"", 0, ResultFs.InvalidPathFormat.Value },
+        { @"\\aa\bb\cc", false, false, false, @"", 0, ResultFs.InvalidPathFormat.Value },
+        { @"/aa/bb/..\cc", false, false, false, @"/aa/cc", 6, Result.Success },
+        { @"/aa/bb\..\cc", false, false, false, @"/aa/cc", 6, Result.Success },
+        { @"/aa/bb\..", false, false, false, @"/aa", 3, Result.Success },
+        { @"/aa\bb/../cc", false, false, false, @"/cc", 3, Result.Success }
     };
 
     [Theory, MemberData(nameof(TestData_Normalize))]
-    public static void Normalize(string path, bool isWindowsPath, bool isDriveRelativePath, string expectedNormalized,
-        long expectedLength, Result expectedResult)
+    public static void Normalize(string path, bool isWindowsPath, bool isDriveRelativePath, bool allowAllCharacters,
+        string expectedNormalized, long expectedLength, Result expectedResult)
     {
         byte[] buffer = new byte[0x301];
 
         Result result = PathNormalizer.Normalize(buffer, out int normalizedLength, path.ToU8Span(), isWindowsPath,
-            isDriveRelativePath);
+            isDriveRelativePath, allowAllCharacters);
 
         Assert.Equal(expectedResult, result);
         Assert.Equal(expectedNormalized, StringUtils.Utf8ZToString(buffer));
@@ -93,47 +99,53 @@ public class PathNormalizerTests
         Assert.Equal(expectedLength, normalizedLength);
     }
 
-    public static TheoryData<string, bool, long, Result> TestData_IsNormalized => new()
+    public static TheoryData<string, bool, bool, long, Result> TestData_IsNormalized => new()
     {
-        { @"/aa/bb/c/", false, 9, Result.Success },
-        { @"aa/bb/c/", false, 0, ResultFs.InvalidPathFormat.Value },
-        { @"aa/bb/c/", false, 0, ResultFs.InvalidPathFormat.Value },
-        { @"mount:a/b", false, 0, ResultFs.InvalidPathFormat.Value },
-        { @"/aa/bb/../..", false, 0, Result.Success },
-        { @"/aa/bb/../../..", false, 0, Result.Success },
-        { @"/aa/bb/../../..", false, 0, Result.Success },
-        { @"aa/bb/../../..", false, 0, ResultFs.InvalidPathFormat.Value },
-        { @"aa/bb/../../..", false, 0, ResultFs.InvalidPathFormat.Value },
-        { @"", false, 0, ResultFs.InvalidPathFormat.Value },
-        { @"/", true, 1, Result.Success },
-        { @"/.", false, 2, Result.Success },
-        { @"/./", false, 0, Result.Success },
-        { @"/..", false, 3, Result.Success },
-        { @"//.", false, 0, Result.Success },
-        { @"/ ..", true, 4, Result.Success },
-        { @"/.. /", false, 5, Result.Success },
-        { @"/. /.", false, 5, Result.Success },
-        { @"/aa/bb/cc/dd/./.././../..", false, 0, Result.Success },
-        { @"/aa/bb/cc/dd/./.././../../..", false, 0, Result.Success },
-        { @"/./aa/./bb/./cc/./dd/.", false, 0, Result.Success },
-        { @"/aa\bb/cc", true, 9, Result.Success },
-        { @"/aa\bb/cc", true, 9, Result.Success },
-        { @"/a|/bb/cc", false, 0, ResultFs.InvalidCharacter.Value },
-        { @"/>a/bb/cc", false, 0, ResultFs.InvalidCharacter.Value },
-        { @"/aa/.</cc", false, 0, ResultFs.InvalidCharacter.Value },
-        { @"/aa/..</cc", false, 0, ResultFs.InvalidCharacter.Value },
-        { @"\\aa/bb/cc", false, 0, ResultFs.InvalidPathFormat.Value },
-        { @"\\aa\bb\cc", false, 0, ResultFs.InvalidPathFormat.Value },
-        { @"/aa/bb/..\cc", true, 12, Result.Success },
-        { @"/aa/bb\..\cc", true, 12, Result.Success },
-        { @"/aa/bb\..", true, 9, Result.Success },
-        { @"/aa\bb/../cc", false, 0, Result.Success }
+        { @"/aa/bb/c/", false, false, 9, Result.Success },
+        { @"aa/bb/c/", false, false, 0, ResultFs.InvalidPathFormat.Value },
+        { @"aa/bb/c/", false, false, 0, ResultFs.InvalidPathFormat.Value },
+        { @"mount:a/b", false, false, 0, ResultFs.InvalidPathFormat.Value },
+        { @"mo|unt:a/b", true, false, 0, ResultFs.InvalidPathFormat.Value },
+        { @"/aa/bb/../..", false, false, 0, Result.Success },
+        { @"/aa/bb/../../..", false, false, 0, Result.Success },
+        { @"/aa/bb/../../..", false, false, 0, Result.Success },
+        { @"aa/bb/../../..", false, false, 0, ResultFs.InvalidPathFormat.Value },
+        { @"aa/bb/../../..", false, false, 0, ResultFs.InvalidPathFormat.Value },
+        { @"mount:a/b", true, false, 0, ResultFs.InvalidPathFormat.Value },
+        { @"/a|/bb/cc", true, true, 9, Result.Success },
+        { @"/>a/bb/cc", true, true, 9, Result.Success },
+        { @"/aa/.</cc", true, true, 9, Result.Success },
+        { @"/aa/..</cc", true, true, 10, Result.Success },
+        { @"", false, false, 0, ResultFs.InvalidPathFormat.Value },
+        { @"/", false, true, 1, Result.Success },
+        { @"/.", false, false, 2, Result.Success },
+        { @"/./", false, false, 0, Result.Success },
+        { @"/..", false, false, 3, Result.Success },
+        { @"//.", false, false, 0, Result.Success },
+        { @"/ ..", false, true, 4, Result.Success },
+        { @"/.. /", false, false, 5, Result.Success },
+        { @"/. /.", false, false, 5, Result.Success },
+        { @"/aa/bb/cc/dd/./.././../..", false, false, 0, Result.Success },
+        { @"/aa/bb/cc/dd/./.././../../..", false, false, 0, Result.Success },
+        { @"/./aa/./bb/./cc/./dd/.", false, false, 0, Result.Success },
+        { @"/aa\bb/cc", false, true, 9, Result.Success },
+        { @"/aa\bb/cc", false, true, 9, Result.Success },
+        { @"/a|/bb/cc", false, false, 0, ResultFs.InvalidCharacter.Value },
+        { @"/>a/bb/cc", false, false, 0, ResultFs.InvalidCharacter.Value },
+        { @"/aa/.</cc", false, false, 0, ResultFs.InvalidCharacter.Value },
+        { @"/aa/..</cc", false, false, 0, ResultFs.InvalidCharacter.Value },
+        { @"\\aa/bb/cc", false, false, 0, ResultFs.InvalidPathFormat.Value },
+        { @"\\aa\bb\cc", false, false, 0, ResultFs.InvalidPathFormat.Value },
+        { @"/aa/bb/..\cc", false, true, 12, Result.Success },
+        { @"/aa/bb\..\cc", false, true, 12, Result.Success },
+        { @"/aa/bb\..", false, true, 9, Result.Success },
+        { @"/aa\bb/../cc", false, false, 0, Result.Success }
     };
 
     [Theory, MemberData(nameof(TestData_IsNormalized))]
-    public static void IsNormalized(string path, bool expectedIsNormalized, long expectedLength, Result expectedResult)
+    public static void IsNormalized(string path, bool allowAllCharacters, bool expectedIsNormalized, long expectedLength, Result expectedResult)
     {
-        Result result = PathNormalizer.IsNormalized(out bool isNormalized, out int length, path.ToU8Span());
+        Result result = PathNormalizer.IsNormalized(out bool isNormalized, out int length, path.ToU8Span(), allowAllCharacters);
 
         Assert.Equal(expectedResult, result);
         Assert.Equal(expectedLength, length);

@@ -54,17 +54,18 @@ public class PathFormatterTests
         { @"\\?\c:\", "", @"", ResultFs.InvalidCharacter.Value },
         { @"mount:\\host\share\aa\bb", "M", @"mount:", ResultFs.InvalidCharacter.Value },
         { @"mount:\\host/share\aa\bb", "M", @"mount:", ResultFs.InvalidCharacter.Value },
+        { @"c:\aa\..\..\..\bb", "W", @"c:/bb", Result.Success },
         { @"mount:/\\aa\..\bb", "MW", @"mount:", ResultFs.InvalidPathFormat.Value },
         { @"mount:/c:\aa\..\bb", "MW", @"mount:c:/bb", Result.Success },
         { @"mount:/aa/bb", "MW", @"mount:/aa/bb", Result.Success },
-        { @"/mount:/aa/bb", "MW", @"/mount:/aa/bb", ResultFs.InvalidCharacter.Value },
-        { @"/mount:/aa/bb", "W", @"/mount:/aa/bb", ResultFs.InvalidCharacter.Value },
+        { @"/mount:/aa/bb", "MW", @"/", ResultFs.InvalidCharacter.Value },
+        { @"/mount:/aa/bb", "W", @"/", ResultFs.InvalidCharacter.Value },
         { @"a:aa/../bb", "MW", @"a:aa/bb", Result.Success },
         { @"a:aa\..\bb", "MW", @"a:aa/bb", Result.Success },
-        { @"/a:aa\..\bb", "W", @"/bb", Result.Success },
+        { @"/a:aa\..\bb", "W", @"/", ResultFs.InvalidCharacter.Value },
         { @"\\?\c:\.\aa", "W", @"\\?\c:/aa", Result.Success },
         { @"\\.\c:\.\aa", "W", @"\\.\c:/aa", Result.Success },
-        { @"\\.\mount:\.\aa", "W", @"\\./mount:/aa", ResultFs.InvalidCharacter.Value },
+        { @"\\.\mount:\.\aa", "W", @"\\./", ResultFs.InvalidCharacter.Value },
         { @"\\./.\aa", "W", @"\\./aa", Result.Success },
         { @"\\/aa", "W", @"", ResultFs.InvalidPathFormat.Value },
         { @"\\\aa", "W", @"", ResultFs.InvalidPathFormat.Value },
@@ -73,13 +74,13 @@ public class PathFormatterTests
         { @"\\host\share\path", "W", @"\\host\share/path", Result.Success },
         { @"\\host\share\path\aa\bb\..\cc\.", "W", @"\\host\share/path/aa/cc", Result.Success },
         { @"\\host\", "W", @"", ResultFs.InvalidPathFormat.Value },
-        { @"\\ho$st\share\path", "W", @"", ResultFs.InvalidPathFormat.Value },
-        { @"\\host:\share\path", "W", @"", ResultFs.InvalidPathFormat.Value },
+        { @"\\ho$st\share\path", "W", @"", ResultFs.InvalidCharacter.Value },
+        { @"\\host:\share\path", "W", @"", ResultFs.InvalidCharacter.Value },
         { @"\\..\share\path", "W", @"", ResultFs.InvalidPathFormat.Value },
-        { @"\\host\s:hare\path", "W", @"", ResultFs.InvalidPathFormat.Value },
+        { @"\\host\s:hare\path", "W", @"", ResultFs.InvalidCharacter.Value },
         { @"\\host\.\path", "W", @"", ResultFs.InvalidPathFormat.Value },
         { @"\\host\..\path", "W", @"", ResultFs.InvalidPathFormat.Value },
-        { @"\\host\sha:re", "W", @"", ResultFs.InvalidPathFormat.Value },
+        { @"\\host\sha:re", "W", @"", ResultFs.InvalidCharacter.Value },
         { @".\\host\share", "RW", @"..\\host\share/", Result.Success }
     };
 
@@ -128,14 +129,46 @@ public class PathFormatterTests
         NormalizeImpl(path, pathFlags, 0x301, expectedNormalized, expectedResult);
     }
 
+    public static TheoryData<string, string, string, Result> TestData_Normalize_AllowAllChars => new()
+    {
+        { @"/aa/b:b/cc", "", @"/aa/", ResultFs.InvalidCharacter.Value },
+        { @"/aa/b*b/cc", "", @"/aa/", ResultFs.InvalidCharacter.Value },
+        { @"/aa/b?b/cc", "", @"/aa/", ResultFs.InvalidCharacter.Value },
+        { @"/aa/b<b/cc", "", @"/aa/", ResultFs.InvalidCharacter.Value },
+        { @"/aa/b>b/cc", "", @"/aa/", ResultFs.InvalidCharacter.Value },
+        { @"/aa/b|b/cc", "", @"/aa/", ResultFs.InvalidCharacter.Value },
+        { @"/aa/b:b/cc", "C", @"/aa/b:b/cc", Result.Success },
+        { @"/aa/b*b/cc", "C", @"/aa/b*b/cc", Result.Success },
+        { @"/aa/b?b/cc", "C", @"/aa/b?b/cc", Result.Success },
+        { @"/aa/b<b/cc", "C", @"/aa/b<b/cc", Result.Success },
+        { @"/aa/b>b/cc", "C", @"/aa/b>b/cc", Result.Success },
+        { @"/aa/b|b/cc", "C", @"/aa/b|b/cc", Result.Success },
+        { @"/aa/b'b/cc", "", @"/aa/b'b/cc", Result.Success },
+        { @"/aa/b""b/cc", "", @"/aa/b""b/cc", Result.Success },
+        { @"/aa/b(b/cc", "", @"/aa/b(b/cc", Result.Success },
+        { @"/aa/b)b/cc", "", @"/aa/b)b/cc", Result.Success },
+        { @"/aa/b'b/cc", "C", @"/aa/b'b/cc", Result.Success },
+        { @"/aa/b""b/cc", "C", @"/aa/b""b/cc", Result.Success },
+        { @"/aa/b(b/cc", "C", @"/aa/b(b/cc", Result.Success },
+        { @"/aa/b)b/cc", "C", @"/aa/b)b/cc", Result.Success },
+        { @"mount:/aa/b<b/cc", "MC", @"mount:/aa/b<b/cc", Result.Success },
+        { @"mo>unt:/aa/bb/cc", "MC", @"", ResultFs.InvalidCharacter.Value }
+    };
+
+    [Theory, MemberData(nameof(TestData_Normalize_AllowAllChars))]
+    public static void Normalize_AllowAllChars(string path, string pathFlags, string expectedNormalized, Result expectedResult)
+    {
+        NormalizeImpl(path, pathFlags, 0x301, expectedNormalized, expectedResult);
+    }
+
     public static TheoryData<string, string, string, Result> TestData_Normalize_All => new()
     {
         { @"mount:./aa/bb", "WRM", @"mount:./aa/bb", Result.Success },
         { @"mount:./aa/bb\cc/dd", "WRM", @"mount:./aa/bb/cc/dd", Result.Success },
         { @"mount:./aa/bb\cc/dd", "WRMB", @"mount:./aa/bb/cc/dd", Result.Success },
-        { @"mount:./.c:/aa/bb", "RM", @"mount:./.c:/aa/bb", ResultFs.InvalidCharacter.Value },
-        { @"mount:.c:/aa/bb", "WRM", @"mount:./.c:/aa/bb", ResultFs.InvalidCharacter.Value },
-        { @"mount:./cc:/aa/bb", "WRM", @"mount:./cc:/aa/bb", ResultFs.InvalidCharacter.Value },
+        { @"mount:./.c:/aa/bb", "RM", @"mount:./", ResultFs.InvalidCharacter.Value },
+        { @"mount:.c:/aa/bb", "WRM", @"mount:./", ResultFs.InvalidCharacter.Value },
+        { @"mount:./cc:/aa/bb", "WRM", @"mount:./", ResultFs.InvalidCharacter.Value },
         { @"mount:./\\host\share/aa/bb", "MW", @"mount:", ResultFs.InvalidPathFormat.Value },
         { @"mount:./\\host\share/aa/bb", "WRM", @"mount:.\\host\share/aa/bb", Result.Success },
         { @"mount:.\\host\share/aa/bb", "WRM", @"mount:..\\host\share/aa/bb", Result.Success },
@@ -147,7 +180,8 @@ public class PathFormatterTests
         { @"mount:/aa\bb", "BM", @"mount:/aa\bb", Result.Success },
         { @".//aa/bb", "RW", @"./aa/bb", Result.Success },
         { @"./aa/bb", "R", @"./aa/bb", Result.Success },
-        { @"./c:/aa/bb", "RW", @"./c:/aa/bb", ResultFs.InvalidCharacter.Value }
+        { @"./c:/aa/bb", "RW", @"./", ResultFs.InvalidCharacter.Value },
+        { @"mount:./aa/b:b\cc/dd", "WRMBC", @"mount:./aa/b:b/cc/dd", Result.Success }
     };
 
     [Theory, MemberData(nameof(TestData_Normalize_All))]
@@ -220,7 +254,6 @@ public class PathFormatterTests
     public static TheoryData<string, string, bool, int, Result> TestData_IsNormalized_WindowsPath => new()
     {
         { @"c:/aa/bb", "", false, 0, ResultFs.InvalidPathFormat.Value },
-        { @"c:/aa/bb", "", false, 0, ResultFs.InvalidPathFormat.Value },
         { @"c:\aa\bb", "", false, 0, ResultFs.InvalidPathFormat.Value },
         { @"\\host\share", "", false, 0, ResultFs.InvalidPathFormat.Value },
         { @"\\.\c:\", "", false, 0, ResultFs.InvalidPathFormat.Value },
@@ -228,6 +261,7 @@ public class PathFormatterTests
         { @"\\?\c:\", "", false, 0, ResultFs.InvalidPathFormat.Value },
         { @"mount:\\host\share\aa\bb", "M", false, 0, ResultFs.InvalidPathFormat.Value },
         { @"mount:\\host/share\aa\bb", "M", false, 0, ResultFs.InvalidPathFormat.Value },
+        { @"c:\aa\..\..\..\bb", "W", false, 0, Result.Success },
         { @"mount:/\\aa\..\bb", "MW", false, 0, Result.Success },
         { @"mount:/c:\aa\..\bb", "MW", false, 0, Result.Success },
         { @"mount:/aa/bb", "MW", true, 12, Result.Success },
@@ -235,7 +269,7 @@ public class PathFormatterTests
         { @"/mount:/aa/bb", "W", false, 0, ResultFs.InvalidCharacter.Value },
         { @"a:aa/../bb", "MW", false, 8, Result.Success },
         { @"a:aa\..\bb", "MW", false, 0, Result.Success },
-        { @"/a:aa\..\bb", "W", false, 0, ResultFs.DirectoryUnobtainable.Value },
+        { @"/a:aa\..\bb", "W", false, 0, Result.Success },
         { @"\\?\c:\.\aa", "W", false, 0, Result.Success },
         { @"\\.\c:\.\aa", "W", false, 0, Result.Success },
         { @"\\.\mount:\.\aa", "W", false, 0, Result.Success },
@@ -247,13 +281,13 @@ public class PathFormatterTests
         { @"\\host\share\path", "W", false, 0, Result.Success },
         { @"\\host\share\path\aa\bb\..\cc\.", "W", false, 0, Result.Success },
         { @"\\host\", "W", false, 0, ResultFs.InvalidPathFormat.Value },
-        { @"\\ho$st\share\path", "W", false, 0, ResultFs.InvalidPathFormat.Value },
-        { @"\\host:\share\path", "W", false, 0, ResultFs.InvalidPathFormat.Value },
+        { @"\\ho$st\share\path", "W", false, 0, ResultFs.InvalidCharacter.Value },
+        { @"\\host:\share\path", "W", false, 0, ResultFs.InvalidCharacter.Value },
         { @"\\..\share\path", "W", false, 0, ResultFs.InvalidPathFormat.Value },
-        { @"\\host\s:hare\path", "W", false, 0, ResultFs.InvalidPathFormat.Value },
+        { @"\\host\s:hare\path", "W", false, 0, ResultFs.InvalidCharacter.Value },
         { @"\\host\.\path", "W", false, 0, ResultFs.InvalidPathFormat.Value },
         { @"\\host\..\path", "W", false, 0, ResultFs.InvalidPathFormat.Value },
-        { @"\\host\sha:re", "W", false, 0, ResultFs.InvalidPathFormat.Value },
+        { @"\\host\sha:re", "W", false, 0, ResultFs.InvalidCharacter.Value },
         { @".\\host\share", "RW", false, 0, Result.Success }
     };
 
@@ -288,18 +322,51 @@ public class PathFormatterTests
     {
         { @"\aa\bb\..\cc", "", false, 0, ResultFs.InvalidPathFormat.Value },
         { @"\aa\bb\..\cc", "B", false, 0, ResultFs.InvalidPathFormat.Value },
-        { @"/aa\bb\..\cc", "", false, 0, ResultFs.DirectoryUnobtainable.Value },
-        { @"/aa\bb\..\cc", "B", false, 0, ResultFs.DirectoryUnobtainable.Value },
+        { @"/aa\bb\..\cc", "", false, 0, ResultFs.InvalidCharacter.Value },
+        { @"/aa\bb\..\cc", "B", false, 0, Result.Success },
         { @"/aa\bb\cc", "", false, 0, ResultFs.InvalidCharacter.Value },
         { @"/aa\bb\cc", "B", true, 9, Result.Success },
         { @"\\host\share\path\aa\bb\cc", "W", false, 0, Result.Success },
         { @"\\host\share\path\aa\bb\cc", "WB", false, 0, Result.Success },
-        { @"/aa/bb\../cc/..\dd\..\ee/..", "", false, 0, ResultFs.DirectoryUnobtainable.Value },
-        { @"/aa/bb\../cc/..\dd\..\ee/..", "B", false, 0, ResultFs.DirectoryUnobtainable.Value }
+        { @"/aa/bb\../cc/..\dd\..\ee/..", "", false, 0, ResultFs.InvalidCharacter.Value },
+        { @"/aa/bb\../cc/..\dd\..\ee/..", "B", false, 0, Result.Success }
     };
 
     [Theory, MemberData(nameof(TestData_IsNormalized_Backslash))]
     public static void IsNormalized_Backslash(string path, string pathFlags, bool expectedIsNormalized, long expectedLength,
+        Result expectedResult)
+    {
+        IsNormalizedImpl(path, pathFlags, expectedIsNormalized, expectedLength, expectedResult);
+    }
+
+    public static TheoryData<string, string, bool, int, Result> TestData_IsNormalized_AllowAllChars => new()
+    {
+        { @"/aa/b:b/cc", "", false, 0, ResultFs.InvalidCharacter.Value },
+        { @"/aa/b*b/cc", "", false, 0, ResultFs.InvalidCharacter.Value },
+        { @"/aa/b?b/cc", "", false, 0, ResultFs.InvalidCharacter.Value },
+        { @"/aa/b<b/cc", "", false, 0, ResultFs.InvalidCharacter.Value },
+        { @"/aa/b>b/cc", "", false, 0, ResultFs.InvalidCharacter.Value },
+        { @"/aa/b|b/cc", "", false, 0, ResultFs.InvalidCharacter.Value },
+        { @"/aa/b:b/cc", "C", true, 10, Result.Success },
+        { @"/aa/b*b/cc", "C", true, 10, Result.Success },
+        { @"/aa/b?b/cc", "C", true, 10, Result.Success },
+        { @"/aa/b<b/cc", "C", true, 10, Result.Success },
+        { @"/aa/b>b/cc", "C", true, 10, Result.Success },
+        { @"/aa/b|b/cc", "C", true, 10, Result.Success },
+        { @"/aa/b'b/cc", "", true, 10, Result.Success },
+        { @"/aa/b""b/cc", "", true, 10, Result.Success },
+        { @"/aa/b(b/cc", "", true, 10, Result.Success },
+        { @"/aa/b)b/cc", "", true, 10, Result.Success },
+        { @"/aa/b'b/cc", "C", true, 10, Result.Success },
+        { @"/aa/b""b/cc", "C", true, 10, Result.Success },
+        { @"/aa/b(b/cc", "C", true, 10, Result.Success },
+        { @"/aa/b)b/cc", "C", true, 10, Result.Success },
+        { @"mount:/aa/b<b/cc", "MC", true, 16, Result.Success },
+        { @"mo>unt:/aa/bb/cc", "MC", false, 0, ResultFs.InvalidCharacter.Value }
+    };
+
+    [Theory, MemberData(nameof(TestData_IsNormalized_AllowAllChars))]
+    public static void IsNormalized_AllowAllChars(string path, string pathFlags, bool expectedIsNormalized, long expectedLength,
         Result expectedResult)
     {
         IsNormalizedImpl(path, pathFlags, expectedIsNormalized, expectedLength, expectedResult);
@@ -324,7 +391,8 @@ public class PathFormatterTests
         { @"mount:/aa\bb", "BM", true, 12, Result.Success },
         { @".//aa/bb", "RW", false, 1, Result.Success },
         { @"./aa/bb", "R", true, 7, Result.Success },
-        { @"./c:/aa/bb", "RW", false, 0, ResultFs.InvalidCharacter.Value }
+        { @"./c:/aa/bb", "RW", false, 0, ResultFs.InvalidCharacter.Value },
+        { @"mount:./aa/b:b\cc/dd", "WRMBC", true, 20, Result.Success }
     };
 
     [Theory, MemberData(nameof(TestData_IsNormalized_All))]
@@ -386,6 +454,11 @@ public class PathFormatterTests
                 case 'W':
                     flags.AllowWindowsPath();
                     break;
+                case 'C':
+                    flags.AllowAllCharacters();
+                    break;
+                default:
+                    throw new NotSupportedException();
             }
         }
 
