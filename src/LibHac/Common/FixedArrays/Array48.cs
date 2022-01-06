@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS0169, IDE0051 // Remove unused private members
+﻿#pragma warning disable CS0169, CS0649, IDE0051 // Field is never used, Field is never assigned to, Remove unused private members
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
