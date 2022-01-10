@@ -312,6 +312,7 @@ partial class Build : NukeBuild
         .DependsOn(Test, Zip)
         .OnlyWhenStatic(() => File.Exists(CertFileName))
         .OnlyWhenStatic(() => EnvironmentInfo.IsWin)
+        .WhenSkipped(DependencyBehavior.Execute)
         .Executes(() =>
         {
             string pwd = ReadPassword();
