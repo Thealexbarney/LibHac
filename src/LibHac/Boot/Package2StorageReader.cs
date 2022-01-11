@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Common.FixedArrays;
 using LibHac.Common.Keys;
 using LibHac.Crypto;
 using LibHac.Fs;
@@ -41,7 +42,7 @@ public class Package2StorageReader : IDisposable
         Result rc = storage.Get.Read(0, SpanHelpers.AsByteSpan(ref _header));
         if (rc.IsFailure()) return rc;
 
-        _key = keySet.Package2Keys[_header.Meta.KeyGeneration];
+        _key = keySet.Package2Keys[_header.Meta.GetKeyGeneration()];
         DecryptHeader(_key, ref _header.Meta, ref _header.Meta);
 
         _storage.SetByCopy(in storage);
@@ -54,7 +55,7 @@ public class Package2StorageReader : IDisposable
     /// </summary>
     /// <param name="outPayloadStorage">If the method returns successfully, contains an <see cref="IStorage"/>
     /// of the specified payload.</param>
-    /// <param name="index">The index of the payload to get. Must me less than <see cref="Package2Header.PayloadCount"/></param>
+    /// <param name="index">The index of the payload to get. Must be less than <see cref="Package2Header.PayloadCount"/></param>
     /// <returns>The <see cref="Result"/> of the operation.</returns>
     public Result OpenPayload(ref UniqueRef<IStorage> outPayloadStorage, int index)
     {
@@ -72,7 +73,7 @@ public class Package2StorageReader : IDisposable
             return Result.Success;
         }
 
-        byte[] iv = _header.Meta.PayloadIvs[index].Bytes.ToArray();
+        byte[] iv = _header.Meta.PayloadIvs[index].ItemsRo.ToArray();
         outPayloadStorage.Reset(new CachedStorage(new Aes128CtrStorage(payloadSubStorage, _key.DataRo.ToArray(), iv, true), 0x4000, 1, true));
         return Result.Success;
     }
@@ -219,7 +220,7 @@ public class Package2StorageReader : IDisposable
         var storages = new List<IStorage>(4);
 
         // The signature and IV are unencrypted
-        int unencryptedHeaderSize = Package2Header.SignatureSize + Unsafe.SizeOf<Buffer16>();
+        int unencryptedHeaderSize = Package2Header.SignatureSize + Unsafe.SizeOf<Array16<byte>>();
         int encryptedHeaderSize = Unsafe.SizeOf<Package2Header>() - unencryptedHeaderSize;
 
         // Get signature and IV
@@ -230,7 +231,7 @@ public class Package2StorageReader : IDisposable
 
         // The counter starts counting at the beginning of the meta struct, but the first block in
         // the struct isn't encrypted. Increase the counter by one to skip that block.
-        byte[] iv = _header.Meta.HeaderIv.Bytes.ToArray();
+        byte[] iv = _header.Meta.HeaderIv.ItemsRo.ToArray();
         Utilities.IncrementByteArray(iv);
 
         storages.Add(new CachedStorage(new Aes128CtrStorage(encMetaStorage, _key.DataRo.ToArray(), iv, true), 0x100, 1, true));
@@ -254,12 +255,12 @@ public class Package2StorageReader : IDisposable
 
     private void DecryptHeader(ReadOnlySpan<byte> key, ref Package2Meta source, ref Package2Meta dest)
     {
-        Buffer16 iv = source.HeaderIv;
+        Array16<byte> iv = source.HeaderIv;
 
         Aes.DecryptCtr128(SpanHelpers.AsByteSpan(ref source), SpanHelpers.AsByteSpan(ref dest), key, iv);
 
         // Copy the IV to the output because the IV field will be garbage after "decrypting" it
-        Unsafe.As<Package2Meta, Buffer16>(ref dest) = iv;
+        dest.HeaderIv = iv;
     }
 
     private bool HasIniPayload()

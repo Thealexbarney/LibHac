@@ -222,9 +222,9 @@ internal class DeliveryCacheStorageManager
             AppendMountName(ref sb, applicationId);
 
             sb.Append(DirectoriesPath)
-                .Append(DirectorySeparator).Append(directoryName.Bytes)
+                .Append(DirectorySeparator).Append(directoryName.Value)
                 .Append(DirectorySeparator).Append(FilesDirectoryName)
-                .Append(DirectorySeparator).Append(fileName.Bytes);
+                .Append(DirectorySeparator).Append(fileName.Value);
         }
     }
 
@@ -237,7 +237,7 @@ internal class DeliveryCacheStorageManager
             AppendMountName(ref sb, applicationId);
 
             sb.Append(DirectoriesPath)
-                .Append(DirectorySeparator).Append(directoryName.Bytes)
+                .Append(DirectorySeparator).Append(directoryName.Value)
                 .Append(DirectorySeparator).Append(FilesMetaFileName);
         }
     }
@@ -262,7 +262,7 @@ internal class DeliveryCacheStorageManager
             AppendMountName(ref sb, applicationId);
 
             sb.Append(DirectoriesPath)
-                .Append(DirectorySeparator).Append(directoryName.Bytes);
+                .Append(DirectorySeparator).Append(directoryName.Value);
         }
     }
 

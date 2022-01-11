@@ -20,34 +20,41 @@ public class LocalStorage : IStorage
         Storage = new StreamStorage(Stream, false);
     }
 
-    protected override Result DoRead(long offset, Span<byte> destination)
-    {
-        return Storage.Read(offset, destination);
-    }
-
-    protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
-    {
-        return Storage.Write(offset, source);
-    }
-
-    protected override Result DoFlush()
-    {
-        return Storage.Flush();
-    }
-
-    protected override Result DoSetSize(long size)
-    {
-        return ResultFs.NotImplemented.Log();
-    }
-
-    protected override Result DoGetSize(out long size)
-    {
-        return Storage.GetSize(out size);
-    }
-
     public override void Dispose()
     {
         Storage?.Dispose();
         Stream?.Dispose();
+        base.Dispose();
+    }
+
+    public override Result Read(long offset, Span<byte> destination)
+    {
+        return Storage.Read(offset, destination);
+    }
+
+    public override Result Write(long offset, ReadOnlySpan<byte> source)
+    {
+        return Storage.Write(offset, source);
+    }
+
+    public override Result Flush()
+    {
+        return Storage.Flush();
+    }
+
+    public override Result SetSize(long size)
+    {
+        return ResultFs.NotImplemented.Log();
+    }
+
+    public override Result GetSize(out long size)
+    {
+        return Storage.GetSize(out size);
+    }
+
+    public override Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+        ReadOnlySpan<byte> inBuffer)
+    {
+        throw new NotImplementedException();
     }
 }

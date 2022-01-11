@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Buffers;
 using System.Buffers.Text;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using LibHac.Diag;
 using LibHac.Util;
 
 namespace LibHac.Common;
 
-[DebuggerDisplay("{ToString()}")]
 public ref struct U8StringBuilder
 {
     private const int NullTerminatorLength = 1;

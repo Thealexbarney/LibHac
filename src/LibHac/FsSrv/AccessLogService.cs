@@ -63,6 +63,7 @@ internal readonly struct AccessLogService
         return _serviceImpl.GetProgramInfo(out programInfo, _processId);
     }
 
+    /// <summary>"<c>FS_ACCESS: { multi_program_tag: true }\n</c>"</summary>
     private static ReadOnlySpan<byte> MultiProgramTag => // FS_ACCESS: { multi_program_tag: true }\n
         new[]
         {

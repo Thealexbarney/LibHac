@@ -3,11 +3,11 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
+using LibHac.Common.FixedArrays;
 using LibHac.Util;
 
 namespace LibHac.Crypto;
 
-[DebuggerDisplay("{ToString()}")]
 [StructLayout(LayoutKind.Explicit, Size = Size)]
 public struct AesKey
 {
@@ -35,7 +35,6 @@ public struct AesKey
 #endif
 }
 
-[DebuggerDisplay("{ToString()}")]
 [StructLayout(LayoutKind.Explicit, Size = Size)]
 public struct AesXtsKey
 {
@@ -63,7 +62,6 @@ public struct AesXtsKey
     public readonly override string ToString() => DataRo.ToHexString();
 }
 
-[DebuggerDisplay("{ToString()}")]
 [StructLayout(LayoutKind.Explicit, Size = Size)]
 public struct AesIv
 {
@@ -90,7 +88,6 @@ public struct AesIv
 #endif
 }
 
-[DebuggerDisplay("{ToString()}")]
 [StructLayout(LayoutKind.Explicit, Size = Size)]
 public struct AesCmac
 {
@@ -117,49 +114,21 @@ public struct AesCmac
 #endif
 }
 
-[StructLayout(LayoutKind.Sequential)]
 public struct RsaFullKey
 {
-    public Data100 PrivateExponent;
-    public Data80 Dp;
-    public Data80 Dq;
-    public Data3 PublicExponent;
-    public Data80 InverseQ;
-    public Data100 Modulus;
-    public Data80 P;
-    public Data80 Q;
+    // ReSharper disable once UnassignedField.Global
+    public Array256<byte> PrivateExponent;
+    public Array128<byte> Dp;
+    public Array128<byte> Dq;
+    public Array3<byte> PublicExponent;
+    public Array128<byte> InverseQ;
+    public Array256<byte> Modulus;
+    public Array128<byte> P;
+    public Array128<byte> Q;
 }
 
-[StructLayout(LayoutKind.Sequential)]
 public struct RsaKey
 {
-    public Data100 Modulus;
-    public Data3 PublicExponent;
-}
-
-[StructLayout(LayoutKind.Explicit, Size = 0x100)]
-public struct Data100
-{
-    [FieldOffset(0)] private byte _byte;
-
-    public Span<byte> Data => SpanHelpers.CreateSpan(ref _byte, 0x100);
-    public readonly ReadOnlySpan<byte> DataRo => SpanHelpers.CreateReadOnlySpan(in _byte, 0x100);
-}
-
-[StructLayout(LayoutKind.Explicit, Size = 0x80)]
-public struct Data80
-{
-    [FieldOffset(0)] private byte _byte;
-
-    public Span<byte> Data => SpanHelpers.CreateSpan(ref _byte, 0x80);
-    public readonly ReadOnlySpan<byte> DataRo => SpanHelpers.CreateReadOnlySpan(in _byte, 0x80);
-}
-
-[StructLayout(LayoutKind.Explicit, Size = 3)]
-public struct Data3
-{
-    [FieldOffset(0)] private byte _byte;
-
-    public Span<byte> Data => SpanHelpers.CreateSpan(ref _byte, 3);
-    public readonly ReadOnlySpan<byte> DataRo => SpanHelpers.CreateReadOnlySpan(in _byte, 3);
+    public Array256<byte> Modulus;
+    public Array3<byte> PublicExponent;
 }

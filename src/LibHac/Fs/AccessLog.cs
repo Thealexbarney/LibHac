@@ -2,10 +2,10 @@
 using System.Buffers;
 using System.Buffers.Text;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Unicode;
 using LibHac.Common;
+using LibHac.Common.FixedArrays;
 using LibHac.Diag;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
@@ -34,13 +34,13 @@ namespace LibHac.Fs
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Size = 0x20)]
     public struct ApplicationInfo
     {
         public Ncm.ApplicationId ApplicationId;
         public uint Version;
         public byte LaunchType;
         public bool IsMultiProgram;
+        public Array18<byte> Reserved;
     }
 
     [Flags]
@@ -730,23 +730,29 @@ namespace LibHac.Fs.Impl
 
     internal static class AccessLogStrings
     {
+        /// <summary>"<c>$fs</c>"</summary>
         public static ReadOnlySpan<byte> FsModuleName => // "$fs"
             new[] { (byte)'$', (byte)'f', (byte)'s' };
 
-        public static ReadOnlySpan<byte> LogLibHacVersion => // "0.13.0"
+        /// <summary>"<c>0.15.0</c>"</summary>
+        public static ReadOnlySpan<byte> LogLibHacVersion => // "0.15.0"
             new[]
             {
-                (byte)'0', (byte)'.', (byte)'1', (byte)'3', (byte)'.', (byte)'0'
+                (byte)'0', (byte)'.', (byte)'1', (byte)'5', (byte)'.', (byte)'0'
             };
 
+        /// <summary>"<c>"</c>"</summary>
         public static byte LogQuote => (byte)'"';
 
+        /// <summary>"<c>true</c>"</summary>
         public static ReadOnlySpan<byte> LogTrue => // "true"
             new[] { (byte)'t', (byte)'r', (byte)'u', (byte)'e' };
 
+        /// <summary>"<c>false</c>"</summary>
         public static ReadOnlySpan<byte> LogFalse => // "false"
             new[] { (byte)'f', (byte)'a', (byte)'l', (byte)'s', (byte)'e' };
 
+        /// <summary>"<c>, entry_buffer_count: </c>"</summary>
         public static ReadOnlySpan<byte> LogEntryBufferCount => // ", entry_buffer_count: "
             new[]
             {
@@ -755,6 +761,7 @@ namespace LibHac.Fs.Impl
                 (byte)'o', (byte)'u', (byte)'n', (byte)'t', (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>, entry_count: </c>"</summary>
         public static ReadOnlySpan<byte> LogEntryCount => // ", entry_count: "
             new[]
             {
@@ -762,6 +769,7 @@ namespace LibHac.Fs.Impl
                 (byte)'c', (byte)'o', (byte)'u', (byte)'n', (byte)'t', (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>, offset: </c>"</summary>
         public static ReadOnlySpan<byte> LogOffset => // ", offset: "
             new[]
             {
@@ -769,12 +777,14 @@ namespace LibHac.Fs.Impl
                 (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>, size: </c>"</summary>
         public static ReadOnlySpan<byte> LogSize => // ", size: "
             new[]
             {
                 (byte)',', (byte)' ', (byte)'s', (byte)'i', (byte)'z', (byte)'e', (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>, read_size: </c>"</summary>
         public static ReadOnlySpan<byte> LogReadSize => // ", read_size: "
             new[]
             {
@@ -782,6 +792,7 @@ namespace LibHac.Fs.Impl
                 (byte)'i', (byte)'z', (byte)'e', (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>, write_option: Flush</c>"</summary>
         public static ReadOnlySpan<byte> LogWriteOptionFlush => // ", write_option: Flush"
             new[]
             {
@@ -790,6 +801,7 @@ namespace LibHac.Fs.Impl
                 (byte)'F', (byte)'l', (byte)'u', (byte)'s', (byte)'h'
             };
 
+        /// <summary>"<c>, open_mode: 0x</c>"</summary>
         public static ReadOnlySpan<byte> LogOpenMode => // ", open_mode: 0x"
             new[]
             {
@@ -797,6 +809,7 @@ namespace LibHac.Fs.Impl
                 (byte)'o', (byte)'d', (byte)'e', (byte)':', (byte)' ', (byte)'0', (byte)'x'
             };
 
+        /// <summary>"<c>, path: "</c>"</summary>
         public static ReadOnlySpan<byte> LogPath => // ", path: ""
             new[]
             {
@@ -804,6 +817,7 @@ namespace LibHac.Fs.Impl
                 (byte)'"'
             };
 
+        /// <summary>"<c>", new_path: "</c>"</summary>
         public static ReadOnlySpan<byte> LogNewPath => // "", new_path: ""
             new[]
             {
@@ -811,6 +825,7 @@ namespace LibHac.Fs.Impl
                 (byte)'a', (byte)'t', (byte)'h', (byte)':', (byte)' ', (byte)'"'
             };
 
+        /// <summary>"<c>", entry_type: </c>"</summary>
         public static ReadOnlySpan<byte> LogEntryType => // "", entry_type: "
             new[]
             {
@@ -818,6 +833,7 @@ namespace LibHac.Fs.Impl
                 (byte)'_', (byte)'t', (byte)'y', (byte)'p', (byte)'e', (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>, name: "</c>"</summary>
         public static ReadOnlySpan<byte> LogName => // ", name: ""
             new[]
             {
@@ -825,6 +841,7 @@ namespace LibHac.Fs.Impl
                 (byte)'"'
             };
 
+        /// <summary>"<c>", commit_option: 0x</c>"</summary>
         public static ReadOnlySpan<byte> LogCommitOption => // "", commit_option: 0x"
             new[]
             {
@@ -833,6 +850,7 @@ namespace LibHac.Fs.Impl
                 (byte)':', (byte)' ', (byte)'0', (byte)'x'
             };
 
+        /// <summary>"<c>", is_mounted: "</c>"</summary>
         public static ReadOnlySpan<byte> LogIsMounted => // "", is_mounted: ""
             new[]
             {
@@ -840,6 +858,7 @@ namespace LibHac.Fs.Impl
                 (byte)'u', (byte)'n', (byte)'t', (byte)'e', (byte)'d', (byte)':', (byte)' ', (byte)'"'
             };
 
+        /// <summary>"<c>, applicationid: 0x</c>"</summary>
         public static ReadOnlySpan<byte> LogApplicationId => // ", applicationid: 0x"
             new[]
             {
@@ -848,6 +867,7 @@ namespace LibHac.Fs.Impl
                 (byte)' ', (byte)'0', (byte)'x'
             };
 
+        /// <summary>"<c>, programid: 0x</c>"</summary>
         public static ReadOnlySpan<byte> LogProgramId => // ", programid: 0x"
             new[]
             {
@@ -855,6 +875,7 @@ namespace LibHac.Fs.Impl
                 (byte)'m', (byte)'i', (byte)'d', (byte)':', (byte)' ', (byte)'0', (byte)'x'
             };
 
+        /// <summary>"<c>, dataid: 0x</c>"</summary>
         public static ReadOnlySpan<byte> LogDataId => // ", dataid: 0x"
             new[]
             {
@@ -862,6 +883,7 @@ namespace LibHac.Fs.Impl
                 (byte)':', (byte)' ', (byte)'0', (byte)'x'
             };
 
+        /// <summary>"<c>, bispartitionid: </c>"</summary>
         public static ReadOnlySpan<byte> LogBisPartitionId => // ", bispartitionid: "
             new[]
             {
@@ -870,6 +892,7 @@ namespace LibHac.Fs.Impl
                 (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>, content_type: </c>"</summary>
         public static ReadOnlySpan<byte> LogContentType => // ", content_type: "
             new[]
             {
@@ -877,6 +900,7 @@ namespace LibHac.Fs.Impl
                 (byte)'t', (byte)'_', (byte)'t', (byte)'y', (byte)'p', (byte)'e', (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>, contentstorageid: </c>"</summary>
         public static ReadOnlySpan<byte> LogContentStorageId => // ", contentstorageid: "
             new[]
             {
@@ -885,6 +909,7 @@ namespace LibHac.Fs.Impl
                 (byte)'i', (byte)'d', (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>, gamecard_handle: 0x</c>"</summary>
         public static ReadOnlySpan<byte> LogGameCardHandle => // ", gamecard_handle: 0x"
             new[]
             {
@@ -893,6 +918,7 @@ namespace LibHac.Fs.Impl
                 (byte)'e', (byte)':', (byte)' ', (byte)'0', (byte)'x'
             };
 
+        /// <summary>"<c>, gamecard_partition: </c>"</summary>
         public static ReadOnlySpan<byte> LogGameCardPartition => // ", gamecard_partition: "
             new[]
             {
@@ -901,6 +927,7 @@ namespace LibHac.Fs.Impl
                 (byte)'t', (byte)'i', (byte)'o', (byte)'n', (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>, mount_host_option: </c>"</summary>
         public static ReadOnlySpan<byte> LogMountHostOption => // ", mount_host_option: "
             new[]
             {
@@ -909,6 +936,7 @@ namespace LibHac.Fs.Impl
                 (byte)'i', (byte)'o', (byte)'n', (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>, root_path: "</c>"</summary>
         public static ReadOnlySpan<byte> LogRootPath => // ", root_path: ""
             new[]
             {
@@ -916,6 +944,7 @@ namespace LibHac.Fs.Impl
                 (byte)'a', (byte)'t', (byte)'h', (byte)':', (byte)' ', (byte)'"'
             };
 
+        /// <summary>"<c>, userid: 0x</c>"</summary>
         public static ReadOnlySpan<byte> LogUserId => // ", userid: 0x"
             new[]
             {
@@ -923,6 +952,7 @@ namespace LibHac.Fs.Impl
                 (byte)':', (byte)' ', (byte)'0', (byte)'x'
             };
 
+        /// <summary>"<c>, index: </c>"</summary>
         public static ReadOnlySpan<byte> LogIndex => // ", index: "
             new[]
             {
@@ -930,6 +960,7 @@ namespace LibHac.Fs.Impl
                 (byte)' '
             };
 
+        /// <summary>"<c>, save_data_owner_id: 0x</c>"</summary>
         public static ReadOnlySpan<byte> LogSaveDataOwnerId => // ", save_data_owner_id: 0x"
             new[]
             {
@@ -938,6 +969,7 @@ namespace LibHac.Fs.Impl
                 (byte)'r', (byte)'_', (byte)'i', (byte)'d', (byte)':', (byte)' ', (byte)'0', (byte)'x'
             };
 
+        /// <summary>"<c>, save_data_size: </c>"</summary>
         public static ReadOnlySpan<byte> LogSaveDataSize => // ", save_data_size: "
             new[]
             {
@@ -946,6 +978,7 @@ namespace LibHac.Fs.Impl
                 (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>, save_data_journal_size: </c>"</summary>
         public static ReadOnlySpan<byte> LogSaveDataJournalSize => // ", save_data_journal_size: "
             new[]
             {
@@ -955,6 +988,7 @@ namespace LibHac.Fs.Impl
                 (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>, save_data_flags: 0x</c>"</summary>
         public static ReadOnlySpan<byte> LogSaveDataFlags => // ", save_data_flags: 0x"
             new[]
             {
@@ -963,6 +997,7 @@ namespace LibHac.Fs.Impl
                 (byte)'s', (byte)':', (byte)' ', (byte)'0', (byte)'x'
             };
 
+        /// <summary>"<c>, savedataid: 0x</c>"</summary>
         public static ReadOnlySpan<byte> LogSaveDataId => // ", savedataid: 0x"
             new[]
             {
@@ -970,6 +1005,7 @@ namespace LibHac.Fs.Impl
                 (byte)'t', (byte)'a', (byte)'i', (byte)'d', (byte)':', (byte)' ', (byte)'0', (byte)'x'
             };
 
+        /// <summary>"<c>, savedataspaceid: </c>"</summary>
         public static ReadOnlySpan<byte> LogSaveDataSpaceId => // ", savedataspaceid: "
             new[]
             {
@@ -978,6 +1014,7 @@ namespace LibHac.Fs.Impl
                 (byte)'d', (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>, save_data_time_stamp: </c>"</summary>
         public static ReadOnlySpan<byte> LogSaveDataTimeStamp => // ", save_data_time_stamp: "
             new[]
             {
@@ -986,6 +1023,7 @@ namespace LibHac.Fs.Impl
                 (byte)'_', (byte)'s', (byte)'t', (byte)'a', (byte)'m', (byte)'p', (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>, save_data_commit_id: 0x</c>"</summary>
         public static ReadOnlySpan<byte> LogSaveDataCommitId => // ", save_data_commit_id: 0x"
             new[]
             {
@@ -995,6 +1033,7 @@ namespace LibHac.Fs.Impl
                 (byte)'x'
             };
 
+        /// <summary>"<c>, restore_flag: </c>"</summary>
         public static ReadOnlySpan<byte> LogRestoreFlag => // ", restore_flag: "
             new[]
             {
@@ -1002,6 +1041,7 @@ namespace LibHac.Fs.Impl
                 (byte)'e', (byte)'_', (byte)'f', (byte)'l', (byte)'a', (byte)'g', (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>sdk_version: </c>"</summary>
         public static ReadOnlySpan<byte> LogSdkVersion => // "sdk_version: "
             new[]
             {
@@ -1009,15 +1049,18 @@ namespace LibHac.Fs.Impl
                 (byte)'i', (byte)'o', (byte)'n', (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>, spec: </c>"</summary>
         public static ReadOnlySpan<byte> LogSpec => // ", spec: "
             new[]
             {
                 (byte)',', (byte)' ', (byte)'s', (byte)'p', (byte)'e', (byte)'c', (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>NX</c>"</summary>
         public static ReadOnlySpan<byte> LogNx => // "NX"
             new[] { (byte)'N', (byte)'X' };
 
+        /// <summary>"<c>, program_index: </c>"</summary>
         public static ReadOnlySpan<byte> LogProgramIndex => // ", program_index: "
             new[]
             {
@@ -1026,6 +1069,7 @@ namespace LibHac.Fs.Impl
                 (byte)' '
             };
 
+        /// <summary>"<c>, for_system: true</c>"</summary>
         public static ReadOnlySpan<byte> LogForSystem => // ", for_system: true"
             new[]
             {
@@ -1034,6 +1078,7 @@ namespace LibHac.Fs.Impl
                 (byte)'u', (byte)'e'
             };
 
+        /// <summary>"<c>"FS_ACCESS: { </c>"</summary>
         public static ReadOnlySpan<byte> LogLineStart => // "FS_ACCESS: { "
             new[]
             {
@@ -1041,21 +1086,25 @@ namespace LibHac.Fs.Impl
                 (byte)'S', (byte)':', (byte)' ', (byte)'{', (byte)' '
             };
 
+        /// <summary>"<c> }\n</c>"</summary>
         public static ReadOnlySpan<byte> LogLineEnd => // " }\n"
             new[] { (byte)' ', (byte)'}', (byte)'\n' };
 
+        /// <summary>"<c>start: </c>"</summary>
         public static ReadOnlySpan<byte> LogStart => // "start: "
             new[]
             {
                 (byte)'s', (byte)'t', (byte)'a', (byte)'r', (byte)'t', (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>, end: </c>"</summary>
         public static ReadOnlySpan<byte> LogEnd => // ", end: "
             new[]
             {
                 (byte)',', (byte)' ', (byte)'e', (byte)'n', (byte)'d', (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>, result: 0x</c>"</summary>
         public static ReadOnlySpan<byte> LogResult => // ", result: 0x"
             new[]
             {
@@ -1063,6 +1112,7 @@ namespace LibHac.Fs.Impl
                 (byte)':', (byte)' ', (byte)'0', (byte)'x'
             };
 
+        /// <summary>"<c>, handle: 0x</c>"</summary>
         public static ReadOnlySpan<byte> LogHandle => // ", handle: 0x"
             new[]
             {
@@ -1070,6 +1120,7 @@ namespace LibHac.Fs.Impl
                 (byte)':', (byte)' ', (byte)'0', (byte)'x'
             };
 
+        /// <summary>"<c>, priority: </c>"</summary>
         public static ReadOnlySpan<byte> LogPriority => // ", priority: "
             new[]
             {
@@ -1077,6 +1128,7 @@ namespace LibHac.Fs.Impl
                 (byte)'t', (byte)'y', (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>, function: "</c>"</summary>
         public static ReadOnlySpan<byte> LogFunction => // ", function: ""
             new[]
             {

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -7,7 +6,6 @@ using LibHac.Util;
 
 namespace LibHac.Common;
 
-[DebuggerDisplay("{ToString()}")]
 public readonly ref struct U8Span
 {
     private readonly ReadOnlySpan<byte> _buffer;
@@ -51,7 +49,7 @@ public readonly ref struct U8Span
 #if DEBUG
         return _buffer[i];
 #else
-            return Unsafe.Add(ref MemoryMarshal.GetReference(_buffer), i);
+        return Unsafe.Add(ref MemoryMarshal.GetReference(_buffer), i);
 #endif
     }
 

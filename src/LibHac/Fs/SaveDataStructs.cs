@@ -1,21 +1,21 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using LibHac.Common;
+using LibHac.Common.FixedArrays;
 using LibHac.FsSrv.Impl;
 using LibHac.Ncm;
 using LibHac.Util;
 
 namespace LibHac.Fs;
 
-[StructLayout(LayoutKind.Explicit, Size = 0x40)]
 public struct SaveDataAttribute : IEquatable<SaveDataAttribute>, IComparable<SaveDataAttribute>
 {
-    [FieldOffset(0x00)] public ProgramId ProgramId;
-    [FieldOffset(0x08)] public UserId UserId;
-    [FieldOffset(0x18)] public ulong StaticSaveDataId;
-    [FieldOffset(0x20)] public SaveDataType Type;
-    [FieldOffset(0x21)] public SaveDataRank Rank;
-    [FieldOffset(0x22)] public ushort Index;
+    public ProgramId ProgramId;
+    public UserId UserId;
+    public ulong StaticSaveDataId;
+    public SaveDataType Type;
+    public SaveDataRank Rank;
+    public ushort Index;
+    public Array24<byte> Reserved;
 
     public SaveDataAttribute(ProgramId programId, SaveDataType type, UserId userId, ulong saveDataId) : this(
         programId, type, userId, saveDataId, 0, SaveDataRank.Primary)
@@ -34,6 +34,7 @@ public struct SaveDataAttribute : IEquatable<SaveDataAttribute>, IComparable<Sav
         StaticSaveDataId = saveDataId;
         Index = index;
         Rank = rank;
+        Reserved = new Array24<byte>();
     }
 
     public static Result Make(out SaveDataAttribute attribute, ProgramId programId, SaveDataType type,
@@ -109,16 +110,16 @@ public struct SaveDataAttribute : IEquatable<SaveDataAttribute>, IComparable<Sav
     }
 }
 
-[StructLayout(LayoutKind.Explicit, Size = 0x40)]
 public struct SaveDataCreationInfo
 {
-    [FieldOffset(0x00)] public long Size;
-    [FieldOffset(0x08)] public long JournalSize;
-    [FieldOffset(0x10)] public long BlockSize;
-    [FieldOffset(0x18)] public ulong OwnerId;
-    [FieldOffset(0x20)] public SaveDataFlags Flags;
-    [FieldOffset(0x24)] public SaveDataSpaceId SpaceId;
-    [FieldOffset(0x25)] public bool Field25;
+    public long Size;
+    public long JournalSize;
+    public long BlockSize;
+    public ulong OwnerId;
+    public SaveDataFlags Flags;
+    public SaveDataSpaceId SpaceId;
+    public bool IsPseudoSaveData;
+    public Array26<byte> Reserved;
 
     public static Result Make(out SaveDataCreationInfo creationInfo, long size, long journalSize, ulong ownerId,
         SaveDataFlags flags, SaveDataSpaceId spaceId)
@@ -132,7 +133,7 @@ public struct SaveDataCreationInfo
         tempCreationInfo.OwnerId = ownerId;
         tempCreationInfo.Flags = flags;
         tempCreationInfo.SpaceId = spaceId;
-        tempCreationInfo.Field25 = false;
+        tempCreationInfo.IsPseudoSaveData = false;
 
         if (!SaveDataTypesValidity.IsValid(in tempCreationInfo))
             return ResultFs.InvalidArgument.Log();
@@ -142,17 +143,16 @@ public struct SaveDataCreationInfo
     }
 }
 
-[StructLayout(LayoutKind.Explicit, Size = 0x48)]
 public struct SaveDataFilter
 {
-    [FieldOffset(0x00)] public bool FilterByProgramId;
-    [FieldOffset(0x01)] public bool FilterBySaveDataType;
-    [FieldOffset(0x02)] public bool FilterByUserId;
-    [FieldOffset(0x03)] public bool FilterBySaveDataId;
-    [FieldOffset(0x04)] public bool FilterByIndex;
-    [FieldOffset(0x05)] public SaveDataRank Rank;
+    public bool FilterByProgramId;
+    public bool FilterBySaveDataType;
+    public bool FilterByUserId;
+    public bool FilterBySaveDataId;
+    public bool FilterByIndex;
+    public SaveDataRank Rank;
 
-    [FieldOffset(0x08)] public SaveDataAttribute Attribute;
+    public SaveDataAttribute Attribute;
 
     public void SetProgramId(ProgramId value)
     {
@@ -245,49 +245,46 @@ public struct SaveDataFilter
     }
 }
 
-[StructLayout(LayoutKind.Explicit, Size = HashLength)]
 public struct HashSalt
 {
-    private const int HashLength = 0x20;
+    private Array32<byte> _value;
 
-    [FieldOffset(0x00)] private byte _hashStart;
-
-    public Span<byte> Hash => SpanHelpers.CreateSpan(ref _hashStart, HashLength);
-    public ReadOnlySpan<byte> HashRo => SpanHelpers.CreateReadOnlySpan(in _hashStart, HashLength);
+    public Span<byte> Hash => _value.Items;
+    public readonly ReadOnlySpan<byte> HashRo => _value.ItemsRo;
 }
 
-[StructLayout(LayoutKind.Explicit, Size = 0x10)]
 public struct SaveDataMetaInfo
 {
-    [FieldOffset(0)] public int Size;
-    [FieldOffset(4)] public SaveDataMetaType Type;
+    public int Size;
+    public SaveDataMetaType Type;
+    public Array11<byte> Reserved;
 }
 
-[StructLayout(LayoutKind.Explicit, Size = 0x60)]
 public struct SaveDataInfo
 {
-    [FieldOffset(0x00)] public ulong SaveDataId;
-    [FieldOffset(0x08)] public SaveDataSpaceId SpaceId;
-    [FieldOffset(0x09)] public SaveDataType Type;
-    [FieldOffset(0x10)] public UserId UserId;
-    [FieldOffset(0x20)] public ulong StaticSaveDataId;
-    [FieldOffset(0x28)] public ProgramId ProgramId;
-    [FieldOffset(0x30)] public long Size;
-    [FieldOffset(0x38)] public ushort Index;
-    [FieldOffset(0x3A)] public SaveDataRank Rank;
-    [FieldOffset(0x3B)] public SaveDataState State;
+    public ulong SaveDataId;
+    public SaveDataSpaceId SpaceId;
+    public SaveDataType Type;
+    public UserId UserId;
+    public ulong StaticSaveDataId;
+    public ProgramId ProgramId;
+    public long Size;
+    public ushort Index;
+    public SaveDataRank Rank;
+    public SaveDataState State;
+    public Array36<byte> Reserved;
 }
 
-[StructLayout(LayoutKind.Explicit, Size = 0x200)]
 public struct SaveDataExtraData
 {
-    [FieldOffset(0x00)] public SaveDataAttribute Attribute;
-    [FieldOffset(0x40)] public ulong OwnerId;
-    [FieldOffset(0x48)] public long TimeStamp;
-    [FieldOffset(0x50)] public SaveDataFlags Flags;
-    [FieldOffset(0x58)] public long DataSize;
-    [FieldOffset(0x60)] public long JournalSize;
-    [FieldOffset(0x68)] public long CommitId;
+    public SaveDataAttribute Attribute;
+    public ulong OwnerId;
+    public long TimeStamp;
+    public SaveDataFlags Flags;
+    public long DataSize;
+    public long JournalSize;
+    public long CommitId;
+    public Array400<byte> Reserved;
 }
 
 public struct CommitOption
@@ -331,7 +328,7 @@ internal static class SaveDataTypesValidity
 
     public static bool IsValid(in SaveDataSpaceId spaceId)
     {
-        return (uint)spaceId <= (uint)SaveDataSpaceId.SdCache || spaceId == SaveDataSpaceId.ProperSystem ||
+        return (uint)spaceId <= (uint)SaveDataSpaceId.SdUser || spaceId == SaveDataSpaceId.ProperSystem ||
                spaceId == SaveDataSpaceId.SafeMode;
     }
 

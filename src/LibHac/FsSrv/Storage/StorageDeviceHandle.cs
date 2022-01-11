@@ -1,18 +1,19 @@
 ﻿using System;
-using System.Runtime.InteropServices;
+using LibHac.Common.FixedArrays;
 
 namespace LibHac.FsSrv.Storage;
 
-[StructLayout(LayoutKind.Sequential, Size = 0x10)]
 public readonly struct StorageDeviceHandle : IEquatable<StorageDeviceHandle>
 {
     public readonly uint Value;
     public readonly StorageDevicePortId PortId;
+    public readonly Array11<byte> Reserved;
 
     public StorageDeviceHandle(uint value, StorageDevicePortId portId)
     {
         Value = value;
         PortId = portId;
+        Reserved = default;
     }
 
     public override bool Equals(object obj) => obj is StorageDeviceHandle other && Equals(other);

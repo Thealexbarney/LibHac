@@ -75,7 +75,7 @@ internal class DeliveryCacheDirectoryService : IDeliveryCacheDirectoryService
                     break;
                 }
 
-                entryBuffer[i] = new DeliveryCacheDirectoryEntry(ref entry.Name, entry.Size, ref entry.Digest);
+                entryBuffer[i] = new DeliveryCacheDirectoryEntry(in entry.Name, entry.Size, in entry.Digest);
             }
 
             entriesRead = i;

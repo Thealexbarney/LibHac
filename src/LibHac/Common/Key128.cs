@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using LibHac.Util;
 
 namespace LibHac.Common;
 
-[DebuggerDisplay("{ToString()}")]
 [StructLayout(LayoutKind.Sequential, Size = 0x10)]
 public struct Key128 : IEquatable<Key128>
 {

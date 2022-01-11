@@ -86,7 +86,7 @@ public class EmulatedGameCardStorageCreator : IGameCardStorageCreator
             imageHash.CopyTo(ImageHash);
         }
 
-        protected override Result DoRead(long offset, Span<byte> destination)
+        public override Result Read(long offset, Span<byte> destination)
         {
             // In secure mode, if Handle is old and the card's device ID and
             // header hash are still the same, Handle is updated to the new handle
@@ -94,22 +94,22 @@ public class EmulatedGameCardStorageCreator : IGameCardStorageCreator
             return GameCard.Read(Handle, offset, destination);
         }
 
-        protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+        public override Result Write(long offset, ReadOnlySpan<byte> source)
         {
             return ResultFs.UnsupportedWriteForReadOnlyGameCardStorage.Log();
         }
 
-        protected override Result DoFlush()
+        public override Result Flush()
         {
             return Result.Success;
         }
 
-        protected override Result DoSetSize(long size)
+        public override Result SetSize(long size)
         {
             return ResultFs.UnsupportedSetSizeForReadOnlyGameCardStorage.Log();
         }
 
-        protected override Result DoGetSize(out long size)
+        public override Result GetSize(out long size)
         {
             UnsafeHelpers.SkipParamInit(out size);
 
@@ -118,6 +118,12 @@ public class EmulatedGameCardStorageCreator : IGameCardStorageCreator
 
             size = info.Size;
             return Result.Success;
+        }
+
+        public override Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+            ReadOnlySpan<byte> inBuffer)
+        {
+            throw new NotImplementedException();
         }
     }
 }

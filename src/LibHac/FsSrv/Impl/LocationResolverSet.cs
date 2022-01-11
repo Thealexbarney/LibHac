@@ -79,10 +79,10 @@ internal class LocationResolverSet : IDisposable
         var pathFlags = new PathFlags();
         pathFlags.AllowMountName();
 
-        if (Utility.IsHostFsMountName(lrPath.Str))
+        if (Utility.IsHostFsMountName(lrPath.Value))
             pathFlags.AllowWindowsPath();
 
-        Result rc = outPath.InitializeWithReplaceUnc(lrPath.Str);
+        Result rc = outPath.InitializeWithReplaceUnc(lrPath.Value);
         if (rc.IsFailure()) return rc;
 
         rc = outPath.Normalize(pathFlags);
@@ -170,7 +170,7 @@ internal class LocationResolverSet : IDisposable
         rc = resolver.ResolveApplicationHtmlDocumentPath(out Lr.Path path, applicationId);
         if (rc.IsFailure()) return rc;
 
-        isDirectory = PathUtility.IsDirectoryPath(path.Str);
+        isDirectory = PathUtility.IsDirectoryPath(path.Value);
 
         return SetUpFsPath(ref outPath, in path);
     }
@@ -185,7 +185,7 @@ internal class LocationResolverSet : IDisposable
         rc = resolver.ResolveProgramPath(out Lr.Path path, programId);
         if (rc.IsFailure()) return rc;
 
-        isDirectory = PathUtility.IsDirectoryPath(path.Str);
+        isDirectory = PathUtility.IsDirectoryPath(path.Value);
 
         return SetUpFsPath(ref outPath, in path);
     }
@@ -200,7 +200,7 @@ internal class LocationResolverSet : IDisposable
         rc = resolver.ResolveProgramPathForDebug(out Lr.Path path, programId);
         if (rc.IsFailure()) return rc;
 
-        isDirectory = PathUtility.IsDirectoryPath(path.Str);
+        isDirectory = PathUtility.IsDirectoryPath(path.Value);
 
         return SetUpFsPath(ref outPath, in path);
     }

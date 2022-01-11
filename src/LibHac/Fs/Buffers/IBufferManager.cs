@@ -1,6 +1,7 @@
 ﻿using System;
+
 using Buffer = LibHac.Mem.Buffer;
-using CacheHandle = System.Int64;
+using CacheHandle = System.UInt64;
 
 // ReSharper disable once CheckNamespace
 namespace LibHac.Fs;
@@ -27,6 +28,8 @@ public abstract class IBufferManager : IDisposable
     }
 
     public const int BufferLevelMin = 0;
+
+    public virtual void Dispose() { }
 
     public Buffer AllocateBuffer(int size, BufferAttribute attribute) =>
         DoAllocateBuffer(size, attribute);
@@ -118,12 +121,4 @@ public abstract class IBufferManager : IDisposable
     protected abstract int DoGetTotalAllocatableSizePeak();
     protected abstract int DoGetRetriedCount();
     protected abstract void DoClearPeak();
-
-    protected virtual void Dispose(bool disposing) { }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
 }

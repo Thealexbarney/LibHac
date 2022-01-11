@@ -49,7 +49,7 @@ public class RemapStorage : IStorage
         Segments = InitSegments(Header, MapEntries);
     }
 
-    protected override Result DoRead(long offset, Span<byte> destination)
+    public override Result Read(long offset, Span<byte> destination)
     {
         if (destination.Length == 0) return Result.Success;
 
@@ -79,7 +79,7 @@ public class RemapStorage : IStorage
         return Result.Success;
     }
 
-    protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+    public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
         if (source.Length == 0) return Result.Success;
 
@@ -111,21 +111,27 @@ public class RemapStorage : IStorage
         return Result.Success;
     }
 
-    protected override Result DoFlush()
+    public override Result Flush()
     {
         return BaseStorage.Flush();
     }
 
-    protected override Result DoSetSize(long size)
+    public override Result SetSize(long size)
     {
         return ResultFs.UnsupportedSetSizeForHierarchicalIntegrityVerificationStorage.Log();
     }
 
-    protected override Result DoGetSize(out long size)
+    public override Result GetSize(out long size)
     {
         // todo: Different result code
         size = -1;
         return Result.Success;
+    }
+
+    public override Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+        ReadOnlySpan<byte> inBuffer)
+    {
+        throw new NotImplementedException();
     }
 
     public override void Dispose()

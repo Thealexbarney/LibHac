@@ -1,10 +1,10 @@
-﻿using System;
+﻿#pragma warning disable CS0169, CS0649, IDE0051 // Field is never used, Field is never assigned to, Remove unused private members
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace LibHac.Common.FixedArrays;
 
-[StructLayout(LayoutKind.Sequential)]
 public struct Array64<T>
 {
     public const int Length = 64;

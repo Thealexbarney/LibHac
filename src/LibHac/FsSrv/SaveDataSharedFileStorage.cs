@@ -201,7 +201,7 @@ public class SaveDataSharedFileStorage : IStorage
         return Result.Success;
     }
 
-    protected override Result DoRead(long offset, Span<byte> destination)
+    public override Result Read(long offset, Span<byte> destination)
     {
         using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Get.GetLock();
 
@@ -211,7 +211,7 @@ public class SaveDataSharedFileStorage : IStorage
         return _baseStorage.Get.Read(offset, destination);
     }
 
-    protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+    public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
         using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Get.GetLock();
 
@@ -221,7 +221,7 @@ public class SaveDataSharedFileStorage : IStorage
         return _baseStorage.Get.Write(offset, source);
     }
 
-    protected override Result DoSetSize(long size)
+    public override Result SetSize(long size)
     {
         using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Get.GetLock();
 
@@ -231,7 +231,7 @@ public class SaveDataSharedFileStorage : IStorage
         return _baseStorage.Get.SetSize(size);
     }
 
-    protected override Result DoGetSize(out long size)
+    public override Result GetSize(out long size)
     {
         Unsafe.SkipInit(out size);
 
@@ -243,7 +243,7 @@ public class SaveDataSharedFileStorage : IStorage
         return _baseStorage.Get.GetSize(out size);
     }
 
-    protected override Result DoFlush()
+    public override Result Flush()
     {
         using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Get.GetLock();
 
@@ -253,7 +253,7 @@ public class SaveDataSharedFileStorage : IStorage
         return _baseStorage.Get.Flush();
     }
 
-    protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+    public override Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
         ReadOnlySpan<byte> inBuffer)
     {
         using UniqueLockRef<SdkMutexType> scopedLock = _baseStorage.Get.GetLock();

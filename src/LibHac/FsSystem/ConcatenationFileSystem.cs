@@ -4,9 +4,11 @@ using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Common.FixedArrays;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.Os;
 using LibHac.Util;
 using static LibHac.FsSystem.Utility;
 
@@ -16,23 +18,24 @@ namespace LibHac.FsSystem;
 /// An <see cref="IFileSystem"/> that stores large files as smaller, separate sub-files.
 /// </summary>
 /// <remarks>
-/// This filesystem is mainly used to allow storing large files on filesystems that have low
+/// <para>This filesystem is mainly used to allow storing large files on filesystems that have low
 /// limits on file size such as FAT filesystems. The underlying base filesystem must have
-/// support for the "Archive" file attribute found in FAT or NTFS filesystems.<br/>
-///<br/>
-/// A <see cref="ConcatenationFileSystem"/> may contain both standard files or Concatenation files.
+/// support for the "Archive" file attribute found in FAT or NTFS filesystems.
+/// </para> 
+/// <para>A <see cref="ConcatenationFileSystem"/> may contain both standard files or Concatenation files.
 /// If a directory has the archive attribute set, its contents will be concatenated and treated
-/// as a single file. These sub-files must follow the naming scheme "00", "01", "02", ...
-/// Each sub-file except the final one must have the size <see cref="_InternalFileSize"/> that was specified
+/// as a single file. These internal files must follow the naming scheme "00", "01", "02", ...
+/// Each internal file except the final one must have the internal file size that was specified
 /// at the creation of the <see cref="ConcatenationFileSystem"/>.
-/// <br/>Based on FS 12.1.0 (nnSdk 12.3.1)
+/// </para>
+/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para>
 /// </remarks>
 public class ConcatenationFileSystem : IFileSystem
 {
     private class ConcatenationFile : IFile
     {
         private OpenMode _mode;
-        private List<IFile> _files;
+        private List<IFile> _fileArray;
         private long _internalFileSize;
         private IFileSystem _baseFileSystem;
         private Path.Stored _path;
@@ -40,7 +43,7 @@ public class ConcatenationFileSystem : IFileSystem
         public ConcatenationFile(OpenMode mode, ref List<IFile> internalFiles, long internalFileSize, IFileSystem baseFileSystem)
         {
             _mode = mode;
-            _files = Shared.Move(ref internalFiles);
+            _fileArray = Shared.Move(ref internalFiles);
             _internalFileSize = internalFileSize;
             _baseFileSystem = baseFileSystem;
             _path = new Path.Stored();
@@ -50,19 +53,19 @@ public class ConcatenationFileSystem : IFileSystem
         {
             _path.Dispose();
 
-            foreach (IFile file in _files)
+            foreach (IFile file in _fileArray)
             {
                 file?.Dispose();
             }
 
-            _files.Clear();
+            _fileArray.Clear();
 
             base.Dispose();
         }
 
         public Result Initialize(in Path path)
         {
-            return _path.Initialize(in path);
+            return _path.Initialize(in path).Ret();
         }
 
         private int GetInternalFileIndex(long offset)
@@ -96,10 +99,11 @@ public class ConcatenationFileSystem : IFileSystem
             UnsafeHelpers.SkipParamInit(out bytesRead);
 
             long fileOffset = offset;
-            int bufferOffset = 0;
 
             Result rc = DryRead(out long remaining, offset, destination.Length, in option, _mode);
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
+
+            int bufferOffset = 0;
 
             while (remaining > 0)
             {
@@ -109,11 +113,11 @@ public class ConcatenationFileSystem : IFileSystem
 
                 int bytesToRead = (int)Math.Min(remaining, internalFileRemaining);
 
-                Assert.SdkAssert(fileIndex < _files.Count);
+                Assert.SdkAssert(fileIndex < _fileArray.Count);
 
-                rc = _files[fileIndex].Read(out long internalFileBytesRead, internalFileOffset,
+                rc = _fileArray[fileIndex].Read(out long internalFileBytesRead, internalFileOffset,
                     destination.Slice(bufferOffset, bytesToRead), in option);
-                if (rc.IsFailure()) return rc;
+                if (rc.IsFailure()) return rc.Miss();
 
                 remaining -= internalFileBytesRead;
                 bufferOffset += (int)internalFileBytesRead;
@@ -130,12 +134,12 @@ public class ConcatenationFileSystem : IFileSystem
         protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
         {
             Result rc = DryWrite(out bool needsAppend, offset, source.Length, in option, _mode);
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
 
             if (source.Length > 0 && needsAppend)
             {
                 rc = SetSize(offset + source.Length);
-                if (rc.IsFailure()) return rc;
+                if (rc.IsFailure()) return rc.Miss();
             }
 
             int remaining = source.Length;
@@ -153,11 +157,11 @@ public class ConcatenationFileSystem : IFileSystem
 
                 int bytesToWrite = (int)Math.Min(remaining, internalFileRemaining);
 
-                Assert.SdkAssert(fileIndex < _files.Count);
+                Assert.SdkAssert(fileIndex < _fileArray.Count);
 
-                rc = _files[fileIndex].Write(internalFileOffset, source.Slice(bufferOffset, bytesToWrite),
+                rc = _fileArray[fileIndex].Write(internalFileOffset, source.Slice(bufferOffset, bytesToWrite),
                     in internalFileOption);
-                if (rc.IsFailure()) return rc;
+                if (rc.IsFailure()) return rc.Miss();
 
                 remaining -= bytesToWrite;
                 bufferOffset += bytesToWrite;
@@ -167,7 +171,7 @@ public class ConcatenationFileSystem : IFileSystem
             if (option.HasFlushFlag())
             {
                 rc = Flush();
-                if (rc.IsFailure()) return rc;
+                if (rc.IsFailure()) return rc.Miss();
             }
 
             return Result.Success;
@@ -178,10 +182,12 @@ public class ConcatenationFileSystem : IFileSystem
             if (!_mode.HasFlag(OpenMode.Write))
                 return Result.Success;
 
-            foreach (IFile file in _files)
+            for (int index = 0; index < _fileArray.Count; index++)
             {
-                Result rc = file.Flush();
-                if (rc.IsFailure()) return rc;
+                Assert.SdkNotNull(_fileArray[index]);
+
+                Result rc = _fileArray[index].Flush();
+                if (rc.IsFailure()) return rc.Miss();
             }
 
             return Result.Success;
@@ -190,10 +196,10 @@ public class ConcatenationFileSystem : IFileSystem
         protected override Result DoSetSize(long size)
         {
             Result rc = DrySetSize(size, _mode);
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
 
             rc = GetSize(out long currentSize);
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
 
             if (currentSize == size) return Result.Success;
 
@@ -202,51 +208,53 @@ public class ConcatenationFileSystem : IFileSystem
 
             using var internalFilePath = new Path();
             rc = internalFilePath.Initialize(in _path);
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
 
             if (size > currentSize)
             {
-                rc = _files[currentTailIndex].SetSize(GetInternalFileSize(size, currentTailIndex));
-                if (rc.IsFailure()) return rc;
+                Assert.SdkAssert(_fileArray.Count > currentTailIndex);
 
-                for (int i = currentTailIndex + 1; i < newTailIndex; i++)
+                rc = _fileArray[currentTailIndex].SetSize(GetInternalFileSize(size, currentTailIndex));
+                if (rc.IsFailure()) return rc.Miss();
+
+                for (int i = currentTailIndex + 1; i <= newTailIndex; i++)
                 {
                     rc = AppendInternalFilePath(ref internalFilePath.Ref(), i);
-                    if (rc.IsFailure()) return rc;
+                    if (rc.IsFailure()) return rc.Miss();
 
                     rc = _baseFileSystem.CreateFile(in internalFilePath, GetInternalFileSize(size, i),
                         CreateFileOptions.None);
-                    if (rc.IsFailure()) return rc;
+                    if (rc.IsFailure()) return rc.Miss();
 
                     using var newInternalFile = new UniqueRef<IFile>();
                     rc = _baseFileSystem.OpenFile(ref newInternalFile.Ref(), in internalFilePath, _mode);
-                    if (rc.IsFailure()) return rc;
+                    if (rc.IsFailure()) return rc.Miss();
 
-                    _files.Add(newInternalFile.Release());
+                    _fileArray.Add(newInternalFile.Release());
 
                     rc = internalFilePath.RemoveChild();
-                    if (rc.IsFailure()) return rc;
+                    if (rc.IsFailure()) return rc.Miss();
                 }
             }
             else
             {
-                for (int i = currentTailIndex - 1; i > newTailIndex; i--)
+                for (int i = currentTailIndex; i > newTailIndex; i--)
                 {
-                    _files[i].Dispose();
-                    _files.RemoveAt(i);
+                    _fileArray[i].Dispose();
+                    _fileArray.RemoveAt(i);
 
                     rc = AppendInternalFilePath(ref internalFilePath.Ref(), i);
-                    if (rc.IsFailure()) return rc;
+                    if (rc.IsFailure()) return rc.Miss();
 
                     rc = _baseFileSystem.DeleteFile(in internalFilePath);
-                    if (rc.IsFailure()) return rc;
+                    if (rc.IsFailure()) return rc.Miss();
 
                     rc = internalFilePath.RemoveChild();
-                    if (rc.IsFailure()) return rc;
+                    if (rc.IsFailure()) return rc.Miss();
                 }
 
-                rc = _files[newTailIndex].SetSize(GetInternalFileSize(size, newTailIndex));
-                if (rc.IsFailure()) return rc;
+                rc = _fileArray[newTailIndex].SetSize(GetInternalFileSize(size, newTailIndex));
+                if (rc.IsFailure()) return rc.Miss();
             }
 
             return Result.Success;
@@ -258,10 +266,10 @@ public class ConcatenationFileSystem : IFileSystem
 
             long totalSize = 0;
 
-            foreach (IFile file in _files)
+            foreach (IFile file in _fileArray)
             {
                 Result rc = file.GetSize(out long internalFileSize);
-                if (rc.IsFailure()) return rc;
+                if (rc.IsFailure()) return rc.Miss();
 
                 totalSize += internalFileSize;
             }
@@ -273,44 +281,39 @@ public class ConcatenationFileSystem : IFileSystem
         protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
             ReadOnlySpan<byte> inBuffer)
         {
-            if (operationId == OperationId.InvalidateCache)
+            switch (operationId)
             {
-                if (!_mode.HasFlag(OpenMode.Read))
-                    return ResultFs.ReadUnpermitted.Log();
+                case OperationId.InvalidateCache:
+                {
+                    if (!_mode.HasFlag(OpenMode.Read))
+                        return ResultFs.ReadUnpermitted.Log();
 
-                var closure = new OperateRangeClosure();
-                closure.OutBuffer = outBuffer;
-                closure.InBuffer = inBuffer;
-                closure.OperationId = operationId;
+                    foreach (IFile file in _fileArray)
+                    {
+                        Result rc = file.OperateRange(operationId, 0, long.MaxValue);
+                        if (rc.IsFailure()) return rc.Miss();
+                    }
 
-                Result rc = DoOperateRangeImpl(offset, size, InvalidateCacheImpl, ref closure);
-                if (rc.IsFailure()) return rc;
-            }
-            else if (operationId == OperationId.QueryRange)
-            {
-                if (outBuffer.Length != Unsafe.SizeOf<QueryRangeInfo>())
-                    return ResultFs.InvalidSize.Log();
+                    return Result.Success;
+                }
+                case OperationId.QueryRange:
+                {
+                    if (outBuffer.Length != Unsafe.SizeOf<QueryRangeInfo>())
+                        return ResultFs.InvalidSize.Log();
 
-                var closure = new OperateRangeClosure();
-                closure.InBuffer = inBuffer;
-                closure.OperationId = operationId;
-                closure.InfoMerged.Clear();
+                    var closure = new OperateRangeClosure();
+                    closure.InBuffer = inBuffer;
+                    closure.OperationId = operationId;
+                    closure.InfoMerged.Clear();
 
-                Result rc = DoOperateRangeImpl(offset, size, QueryRangeImpl, ref closure);
-                if (rc.IsFailure()) return rc;
+                    Result rc = DoOperateRangeImpl(offset, size, QueryRangeImpl, ref closure);
+                    if (rc.IsFailure()) return rc.Miss();
 
-                SpanHelpers.AsByteSpan(ref closure.InfoMerged).CopyTo(outBuffer);
-            }
-            else
-            {
-                return ResultFs.UnsupportedOperateRangeForConcatenationFile.Log();
-            }
-
-            return Result.Success;
-
-            static Result InvalidateCacheImpl(IFile file, long offset, long size, ref OperateRangeClosure closure)
-            {
-                return file.OperateRange(closure.OutBuffer, closure.OperationId, offset, size, closure.InBuffer);
+                    SpanHelpers.AsByteSpan(ref closure.InfoMerged).CopyTo(outBuffer);
+                    return Result.Success;
+                }
+                default:
+                    return ResultFs.UnsupportedOperateRangeForConcatenationFile.Log();
             }
 
             static Result QueryRangeImpl(IFile file, long offset, long size, ref OperateRangeClosure closure)
@@ -319,7 +322,7 @@ public class ConcatenationFileSystem : IFileSystem
 
                 Result rc = file.OperateRange(SpanHelpers.AsByteSpan(ref infoEntry), closure.OperationId, offset, size,
                     closure.InBuffer);
-                if (rc.IsFailure()) return rc;
+                if (rc.IsFailure()) return rc.Miss();
 
                 closure.InfoMerged.Merge(in infoEntry);
                 return Result.Success;
@@ -333,7 +336,7 @@ public class ConcatenationFileSystem : IFileSystem
                 return ResultFs.OutOfRange.Log();
 
             Result rc = GetSize(out long currentSize);
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
 
             if (offset > currentSize)
                 return ResultFs.OutOfRange.Log();
@@ -350,10 +353,10 @@ public class ConcatenationFileSystem : IFileSystem
 
                 long sizeToOperate = Math.Min(remaining, internalFileRemaining);
 
-                Assert.SdkAssert(fileIndex < _files.Count);
+                Assert.SdkAssert(fileIndex < _fileArray.Count);
 
-                rc = func(_files[fileIndex], internalFileOffset, sizeToOperate, ref closure);
-                if (rc.IsFailure()) return rc;
+                rc = func(_fileArray[fileIndex], internalFileOffset, sizeToOperate, ref closure);
+                if (rc.IsFailure()) return rc.Miss();
 
                 remaining -= sizeToOperate;
                 currentOffset += sizeToOperate;
@@ -366,7 +369,6 @@ public class ConcatenationFileSystem : IFileSystem
 
         private ref struct OperateRangeClosure
         {
-            public Span<byte> OutBuffer;
             public ReadOnlySpan<byte> InBuffer;
             public OperationId OperationId;
             public QueryRangeInfo InfoMerged;
@@ -386,6 +388,7 @@ public class ConcatenationFileSystem : IFileSystem
         {
             _mode = mode;
             _baseDirectory = new UniqueRef<IDirectory>(ref baseDirectory);
+            _path = new Path.Stored();
             _baseFileSystem = baseFileSystem;
             _concatenationFileSystem = concatFileSystem;
         }
@@ -400,10 +403,7 @@ public class ConcatenationFileSystem : IFileSystem
 
         public Result Initialize(in Path path)
         {
-            Result rc = _path.Initialize(in path);
-            if (rc.IsFailure()) return rc;
-
-            return Result.Success;
+            return _path.Initialize(in path).Ret();
         }
 
         protected override Result DoRead(out long entriesRead, Span<DirectoryEntry> entryBuffer)
@@ -416,7 +416,7 @@ public class ConcatenationFileSystem : IFileSystem
             while (readCountTotal < entryBuffer.Length)
             {
                 Result rc = _baseDirectory.Get.Read(out long readCount, SpanHelpers.AsSpan(ref entry));
-                if (rc.IsFailure()) return rc;
+                if (rc.IsFailure()) return rc.Miss();
 
                 if (readCount == 0)
                     break;
@@ -432,13 +432,13 @@ public class ConcatenationFileSystem : IFileSystem
                     {
                         using var internalFilePath = new Path();
                         rc = internalFilePath.Initialize(in _path);
-                        if (rc.IsFailure()) return rc;
+                        if (rc.IsFailure()) return rc.Miss();
 
                         rc = internalFilePath.AppendChild(entry.Name);
-                        if (rc.IsFailure()) return rc;
+                        if (rc.IsFailure()) return rc.Miss();
 
                         rc = _concatenationFileSystem.GetFileSize(out entry.Size, in internalFilePath);
-                        if (rc.IsFailure()) return rc;
+                        if (rc.IsFailure()) return rc.Miss();
                     }
                 }
 
@@ -461,14 +461,14 @@ public class ConcatenationFileSystem : IFileSystem
 
             Result rc = _baseFileSystem.OpenDirectory(ref directory.Ref(), in path,
                 OpenDirectoryMode.All | OpenDirectoryMode.NoFileSize);
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
 
             long entryCountTotal = 0;
 
             while (true)
             {
                 directory.Get.Read(out long readCount, SpanHelpers.AsSpan(ref entry));
-                if (rc.IsFailure()) return rc;
+                if (rc.IsFailure()) return rc.Miss();
 
                 if (readCount == 0)
                     break;
@@ -492,15 +492,18 @@ public class ConcatenationFileSystem : IFileSystem
 
     public static readonly long DefaultInternalFileSize = 0xFFFF0000; // Hard-coded value used by FS
 
-    private IAttributeFileSystem _baseFileSystem;
-    private long _InternalFileSize;
+    private UniqueRef<IAttributeFileSystem> _baseFileSystem;
+    private long _internalFileSize;
+    private SdkMutexType _mutex;
 
     /// <summary>
     /// Initializes a new <see cref="ConcatenationFileSystem"/> with an internal file size of <see cref="DefaultInternalFileSize"/>.
     /// </summary>
     /// <param name="baseFileSystem">The base <see cref="IAttributeFileSystem"/> for the
     /// new <see cref="ConcatenationFileSystem"/>.</param>
-    public ConcatenationFileSystem(IAttributeFileSystem baseFileSystem) : this(baseFileSystem, DefaultInternalFileSize) { }
+    public ConcatenationFileSystem(ref UniqueRef<IAttributeFileSystem> baseFileSystem) : this(ref baseFileSystem,
+        DefaultInternalFileSize)
+    { }
 
     /// <summary>
     /// Initializes a new <see cref="ConcatenationFileSystem"/>.
@@ -508,41 +511,42 @@ public class ConcatenationFileSystem : IFileSystem
     /// <param name="baseFileSystem">The base <see cref="IAttributeFileSystem"/> for the
     /// new <see cref="ConcatenationFileSystem"/>.</param>
     /// <param name="internalFileSize">The size of each internal file. Once a file exceeds this size, a new internal file will be created</param>
-    public ConcatenationFileSystem(IAttributeFileSystem baseFileSystem, long internalFileSize)
+    public ConcatenationFileSystem(ref UniqueRef<IAttributeFileSystem> baseFileSystem, long internalFileSize)
     {
-        _baseFileSystem = baseFileSystem;
-        _InternalFileSize = internalFileSize;
+        _baseFileSystem = new UniqueRef<IAttributeFileSystem>(ref baseFileSystem);
+        _internalFileSize = internalFileSize;
+        _mutex = new SdkMutexType();
     }
 
     public override void Dispose()
     {
-        _baseFileSystem?.Dispose();
-        _baseFileSystem = null;
+        _baseFileSystem.Destroy();
 
         base.Dispose();
     }
 
     private static ReadOnlySpan<byte> RootPath => new[] { (byte)'/' };
 
+    /// <summary>
+    /// Appends the two-digit-padded <paramref name="index"/> to the given <see cref="Path"/>.
+    /// </summary>
+    /// <param name="path">The <see cref="Path"/> to be modified.</param>
+    /// <param name="index">The index to append to the <see cref="Path"/>.</param>
+    /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
     private static Result AppendInternalFilePath(ref Path path, int index)
     {
-        // Use an int as the buffer instead of a stackalloc byte[3] to workaround CS8350.
-        // Path.AppendChild will not save the span passed to it so this should be safe.
-        int bufferInt = 0;
-        Utf8Formatter.TryFormat(index, SpanHelpers.AsByteSpan(ref bufferInt), out _, new StandardFormat('d', 2));
+        var buffer = new Array3<byte>();
+        Utf8Formatter.TryFormat(index, buffer.Items, out _, new StandardFormat('d', 2));
 
-        return path.AppendChild(SpanHelpers.AsByteSpan(ref bufferInt));
+        return path.AppendChild(buffer.ItemsRo).Ret();
     }
 
     private static Result GenerateInternalFilePath(ref Path outPath, int index, in Path basePath)
     {
         Result rc = outPath.Initialize(in basePath);
-        if (rc.IsFailure()) return rc;
+        if (rc.IsFailure()) return rc.Miss();
 
-        rc = AppendInternalFilePath(ref outPath, index);
-        if (rc.IsFailure()) return rc;
-
-        return Result.Success;
+        return AppendInternalFilePath(ref outPath, index).Ret();
     }
 
     private static Result GenerateParentPath(ref Path outParentPath, in Path path)
@@ -551,12 +555,9 @@ public class ConcatenationFileSystem : IFileSystem
             return ResultFs.PathNotFound.Log();
 
         Result rc = outParentPath.Initialize(in path);
-        if (rc.IsFailure()) return rc;
+        if (rc.IsFailure()) return rc.Miss();
 
-        rc = outParentPath.RemoveChild();
-        if (rc.IsFailure()) return rc;
-
-        return Result.Success;
+        return outParentPath.RemoveChild().Ret();
     }
 
     private static bool IsConcatenationFileAttribute(NxFileAttributes attribute)
@@ -566,7 +567,7 @@ public class ConcatenationFileSystem : IFileSystem
 
     private bool IsConcatenationFile(in Path path)
     {
-        Result rc = _baseFileSystem.GetFileAttributes(out NxFileAttributes attribute, in path);
+        Result rc = _baseFileSystem.Get.GetFileAttributes(out NxFileAttributes attribute, in path);
         if (rc.IsFailure())
             return false;
 
@@ -579,101 +580,119 @@ public class ConcatenationFileSystem : IFileSystem
 
         using var internalFilePath = new Path();
         Result rc = internalFilePath.Initialize(in path);
-        if (rc.IsFailure()) return rc;
+        if (rc.IsFailure()) return rc.Miss();
 
         for (int i = 0; ; i++)
         {
             rc = AppendInternalFilePath(ref internalFilePath.Ref(), i);
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
 
-            rc = _baseFileSystem.GetEntryType(out _, in internalFilePath);
+            rc = _baseFileSystem.Get.GetEntryType(out _, in internalFilePath);
             if (rc.IsFailure())
             {
                 // We've passed the last internal file of the concatenation file
                 // once the next internal file doesn't exist.
                 if (ResultFs.PathNotFound.Includes(rc))
                 {
+                    rc.Catch();
                     count = i;
+                    rc.Handle();
+
                     return Result.Success;
                 }
 
-                return rc;
+                return rc.Miss();
             }
 
             rc = internalFilePath.RemoveChild();
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
         }
     }
 
     protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         if (IsConcatenationFile(in path))
         {
             entryType = DirectoryEntryType.File;
             return Result.Success;
         }
 
-        return _baseFileSystem.GetEntryType(out entryType, path);
+        return _baseFileSystem.Get.GetEntryType(out entryType, path).Ret();
     }
 
     protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
     {
-        return _baseFileSystem.GetFreeSpaceSize(out freeSpace, path);
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
+        return _baseFileSystem.Get.GetFreeSpaceSize(out freeSpace, path).Ret();
     }
 
     protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
     {
-        return _baseFileSystem.GetTotalSpaceSize(out totalSpace, path);
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
+        return _baseFileSystem.Get.GetTotalSpaceSize(out totalSpace, path).Ret();
     }
 
     protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
     {
-        return _baseFileSystem.GetFileTimeStampRaw(out timeStamp, path);
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
+        return _baseFileSystem.Get.GetFileTimeStampRaw(out timeStamp, path).Ret();
     }
 
     protected override Result DoFlush()
     {
-        return _baseFileSystem.Flush();
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
+        return _baseFileSystem.Get.Flush().Ret();
     }
 
     protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         if (!IsConcatenationFile(in path))
         {
-            return _baseFileSystem.OpenFile(ref outFile, in path, mode);
+            return _baseFileSystem.Get.OpenFile(ref outFile, in path, mode).Ret();
         }
 
         Result rc = GetInternalFileCount(out int fileCount, in path);
-        if (rc.IsFailure()) return rc;
+        if (rc.IsFailure()) return rc.Miss();
+
+        if (fileCount <= 0)
+            return ResultFs.ConcatenationFsInvalidInternalFileCount.Log();
 
         var internalFiles = new List<IFile>(fileCount);
 
         using var filePath = new Path();
         filePath.Initialize(in path);
-        if (rc.IsFailure()) return rc;
+        if (rc.IsFailure()) return rc.Miss();
 
         try
         {
             for (int i = 0; i < fileCount; i++)
             {
                 rc = AppendInternalFilePath(ref filePath.Ref(), i);
-                if (rc.IsFailure()) return rc;
+                if (rc.IsFailure()) return rc.Miss();
 
                 using var internalFile = new UniqueRef<IFile>();
-                rc = _baseFileSystem.OpenFile(ref internalFile.Ref(), in filePath, mode);
-                if (rc.IsFailure()) return rc;
+                rc = _baseFileSystem.Get.OpenFile(ref internalFile.Ref(), in filePath, mode);
+                if (rc.IsFailure()) return rc.Miss();
 
                 internalFiles.Add(internalFile.Release());
 
                 rc = filePath.RemoveChild();
-                if (rc.IsFailure()) return rc;
+                if (rc.IsFailure()) return rc.Miss();
             }
 
             using var concatFile = new UniqueRef<ConcatenationFile>(
-                new ConcatenationFile(mode, ref internalFiles, _InternalFileSize, _baseFileSystem));
+                new ConcatenationFile(mode, ref internalFiles, _internalFileSize, _baseFileSystem.Get));
 
             rc = concatFile.Get.Initialize(in path);
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
 
             outFile.Set(ref concatFile.Ref());
             return Result.Success;
@@ -693,19 +712,21 @@ public class ConcatenationFileSystem : IFileSystem
     protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
         OpenDirectoryMode mode)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         if (IsConcatenationFile(path))
         {
             return ResultFs.PathNotFound.Log();
         }
 
         using var baseDirectory = new UniqueRef<IDirectory>();
-        Result rc = _baseFileSystem.OpenDirectory(ref baseDirectory.Ref(), path, OpenDirectoryMode.All);
-        if (rc.IsFailure()) return rc;
+        Result rc = _baseFileSystem.Get.OpenDirectory(ref baseDirectory.Ref(), path, OpenDirectoryMode.All);
+        if (rc.IsFailure()) return rc.Miss();
 
         using var concatDirectory = new UniqueRef<ConcatenationDirectory>(
-            new ConcatenationDirectory(mode, ref baseDirectory.Ref(), this, _baseFileSystem));
+            new ConcatenationDirectory(mode, ref baseDirectory.Ref(), this, _baseFileSystem.Get));
         rc = concatDirectory.Get.Initialize(in path);
-        if (rc.IsFailure()) return rc;
+        if (rc.IsFailure()) return rc.Miss();
 
         outDirectory.Set(ref concatDirectory.Ref());
         return Result.Success;
@@ -713,17 +734,19 @@ public class ConcatenationFileSystem : IFileSystem
 
     protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         CreateFileOptions newOption = option & ~CreateFileOptions.CreateConcatenationFile;
 
         // Create a normal file if the concatenation file flag isn't set
         if (!option.HasFlag(CreateFileOptions.CreateConcatenationFile))
         {
-            return _baseFileSystem.CreateFile(path, size, newOption);
+            return _baseFileSystem.Get.CreateFile(path, size, newOption).Ret();
         }
 
         using var parentPath = new Path();
         Result rc = GenerateParentPath(ref parentPath.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        if (rc.IsFailure()) return rc.Miss();
 
         if (IsConcatenationFile(in parentPath))
         {
@@ -731,18 +754,18 @@ public class ConcatenationFileSystem : IFileSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        rc = _baseFileSystem.CreateDirectory(in path, NxFileAttributes.Archive);
-        if (rc.IsFailure()) return rc;
+        rc = _baseFileSystem.Get.CreateDirectory(in path, NxFileAttributes.Archive);
+        if (rc.IsFailure()) return rc.Miss();
 
         // Handle the empty file case by manually creating a single empty internal file
         if (size == 0)
         {
             using var emptyFilePath = new Path();
             rc = GenerateInternalFilePath(ref emptyFilePath.Ref(), 0, in path);
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
 
-            rc = _baseFileSystem.CreateFile(in emptyFilePath, 0, newOption);
-            if (rc.IsFailure()) return rc;
+            rc = _baseFileSystem.Get.CreateFile(in emptyFilePath, 0, newOption);
+            if (rc.IsFailure()) return rc.Miss();
 
             return Result.Success;
         }
@@ -750,38 +773,42 @@ public class ConcatenationFileSystem : IFileSystem
         long remaining = size;
         using var filePath = new Path();
         filePath.Initialize(in path);
-        if (rc.IsFailure()) return rc;
+        if (rc.IsFailure()) return rc.Miss();
 
         for (int i = 0; remaining > 0; i++)
         {
             rc = AppendInternalFilePath(ref filePath.Ref(), i);
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
 
-            long fileSize = Math.Min(remaining, _InternalFileSize);
-            Result createInternalFileResult = _baseFileSystem.CreateFile(in filePath, fileSize, newOption);
+            long fileSize = Math.Min(remaining, _internalFileSize);
+            Result createInternalFileResult = _baseFileSystem.Get.CreateFile(in filePath, fileSize, newOption);
 
             // If something goes wrong when creating an internal file, delete all the
             // internal files we've created so far and delete the directory.
             // This will allow results like insufficient space results to be returned properly.
             if (createInternalFileResult.IsFailure())
             {
+                createInternalFileResult.Catch();
+
                 for (int index = i - 1; index >= 0; index--)
                 {
                     rc = GenerateInternalFilePath(ref filePath.Ref(), index, in path);
-                    if (rc.IsFailure()) return rc;
-
-                    rc = _baseFileSystem.DeleteFile(in filePath);
-
                     if (rc.IsFailure())
+                    {
+                        createInternalFileResult.Handle();
+                        return rc.Miss();
+                    }
+
+                    if (_baseFileSystem.Get.DeleteFile(in filePath).IsFailure())
                         break;
                 }
 
-                _baseFileSystem.DeleteDirectoryRecursively(in path).IgnoreResult();
-                return createInternalFileResult;
+                _baseFileSystem.Get.DeleteDirectoryRecursively(in path).IgnoreResult();
+                return createInternalFileResult.Rethrow();
             }
 
             rc = filePath.RemoveChild();
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
 
             remaining -= fileSize;
         }
@@ -791,59 +818,62 @@ public class ConcatenationFileSystem : IFileSystem
 
     protected override Result DoDeleteFile(in Path path)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         if (!IsConcatenationFile(in path))
         {
-            return _baseFileSystem.DeleteFile(in path);
+            return _baseFileSystem.Get.DeleteFile(in path).Ret();
         }
 
         Result rc = GetInternalFileCount(out int count, path);
-        if (rc.IsFailure()) return rc;
+        if (rc.IsFailure()) return rc.Miss();
 
         using var filePath = new Path();
         rc = filePath.Initialize(in path);
-        if (rc.IsFailure()) return rc;
+        if (rc.IsFailure()) return rc.Miss();
 
         for (int i = count - 1; i >= 0; i--)
         {
             rc = AppendInternalFilePath(ref filePath.Ref(), i);
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
 
-            rc = _baseFileSystem.DeleteFile(in filePath);
-            if (rc.IsFailure()) return rc;
+            rc = _baseFileSystem.Get.DeleteFile(in filePath);
+            if (rc.IsFailure()) return rc.Miss();
 
             rc = filePath.RemoveChild();
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
         }
 
-        rc = _baseFileSystem.DeleteDirectoryRecursively(in path);
-        if (rc.IsFailure()) return rc;
+        rc = _baseFileSystem.Get.DeleteDirectoryRecursively(in path);
+        if (rc.IsFailure()) return rc.Miss();
 
         return Result.Success;
     }
 
     protected override Result DoCreateDirectory(in Path path)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         // Check if the parent path is a concatenation file because we can't create a directory inside one.
         using var parentPath = new Path();
         Result rc = GenerateParentPath(ref parentPath.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        if (rc.IsFailure()) return rc.Miss();
 
         if (IsConcatenationFile(in parentPath))
             return ResultFs.PathNotFound.Log();
 
-        rc = _baseFileSystem.CreateDirectory(in path);
-        if (rc.IsFailure()) return rc;
-
-        return Result.Success;
+        return _baseFileSystem.Get.CreateDirectory(in path).Ret();
     }
 
     protected override Result DoDeleteDirectory(in Path path)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         // Make sure the directory isn't a concatenation file.
         if (IsConcatenationFile(path))
             return ResultFs.PathNotFound.Log();
 
-        return _baseFileSystem.DeleteDirectory(path);
+        return _baseFileSystem.Get.DeleteDirectory(path).Ret();
     }
 
     private Result CleanDirectoryRecursivelyImpl(in Path path)
@@ -852,93 +882,106 @@ public class ConcatenationFileSystem : IFileSystem
             Result.Success;
 
         static Result OnExitDir(in Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure) =>
-            closure.SourceFileSystem.DeleteDirectory(in path);
+            closure.SourceFileSystem.DeleteDirectory(in path).Ret();
 
         static Result OnFile(in Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure) =>
-            closure.SourceFileSystem.DeleteFile(in path);
+            closure.SourceFileSystem.DeleteFile(in path).Ret();
 
         var closure = new FsIterationTaskClosure();
         closure.SourceFileSystem = this;
 
         var directoryEntry = new DirectoryEntry();
         return CleanupDirectoryRecursively(this, in path, ref directoryEntry, OnEnterDir, OnExitDir, OnFile,
-            ref closure);
+            ref closure).Ret();
     }
 
     protected override Result DoDeleteDirectoryRecursively(in Path path)
     {
-        if (IsConcatenationFile(in path))
+        bool isConcatenationFile;
+        using (new ScopedLock<SdkMutexType>(ref _mutex))
+        {
+            isConcatenationFile = IsConcatenationFile(in path);
+        }
+
+        if (isConcatenationFile)
             return ResultFs.PathNotFound.Log();
 
         Result rc = CleanDirectoryRecursivelyImpl(in path);
-        if (rc.IsFailure()) return rc;
+        if (rc.IsFailure()) return rc.Miss();
 
-        rc = _baseFileSystem.DeleteDirectory(in path);
-        if (rc.IsFailure()) return rc;
-
-        return Result.Success;
+        return _baseFileSystem.Get.DeleteDirectory(in path).Ret();
     }
 
     protected override Result DoCleanDirectoryRecursively(in Path path)
     {
-        if (IsConcatenationFile(in path))
+        bool isConcatenationFile;
+        using (new ScopedLock<SdkMutexType>(ref _mutex))
+        {
+            isConcatenationFile = IsConcatenationFile(in path);
+        }
+
+        if (isConcatenationFile)
             return ResultFs.PathNotFound.Log();
 
-        Result rc = CleanDirectoryRecursivelyImpl(in path);
-        if (rc.IsFailure()) return rc;
-
-        return Result.Success;
+        return CleanDirectoryRecursivelyImpl(in path).Ret();
     }
 
     protected override Result DoRenameFile(in Path currentPath, in Path newPath)
     {
-        if (IsConcatenationFile(in currentPath))
-        {
-            return _baseFileSystem.RenameDirectory(in currentPath, in newPath);
-        }
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
 
-        return _baseFileSystem.RenameFile(in currentPath, in newPath);
+        if (IsConcatenationFile(in currentPath))
+            return _baseFileSystem.Get.RenameDirectory(in currentPath, in newPath).Ret();
+
+        return _baseFileSystem.Get.RenameFile(in currentPath, in newPath).Ret();
     }
 
     protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         if (IsConcatenationFile(in currentPath))
             return ResultFs.PathNotFound.Log();
 
-        return _baseFileSystem.RenameDirectory(in currentPath, in newPath);
+        return _baseFileSystem.Get.RenameDirectory(in currentPath, in newPath).Ret();
     }
 
     public Result GetFileSize(out long size, in Path path)
     {
         UnsafeHelpers.SkipParamInit(out size);
 
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         using var internalFilePath = new Path();
         Result rc = internalFilePath.Initialize(in path);
-        if (rc.IsFailure()) return rc;
+        if (rc.IsFailure()) return rc.Miss();
 
         long sizeTotal = 0;
 
         for (int i = 0; ; i++)
         {
             rc = AppendInternalFilePath(ref internalFilePath.Ref(), i);
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
 
-            rc = _baseFileSystem.GetFileSize(out long internalFileSize, in internalFilePath);
+            rc = _baseFileSystem.Get.GetFileSize(out long internalFileSize, in internalFilePath);
             if (rc.IsFailure())
             {
                 // We've passed the last internal file of the concatenation file
                 // once the next internal file doesn't exist.
                 if (ResultFs.PathNotFound.Includes(rc))
                 {
+                    rc.Catch();
                     size = sizeTotal;
+                    rc.Handle();
+
                     return Result.Success;
                 }
 
-                return rc;
+                return rc.Miss();
             }
 
             rc = internalFilePath.RemoveChild();
-            if (rc.IsFailure()) return rc;
+            if (rc.IsFailure()) return rc.Miss();
 
             sizeTotal += internalFileSize;
         }
@@ -947,19 +990,25 @@ public class ConcatenationFileSystem : IFileSystem
     protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
         in Path path)
     {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
         if (queryId != QueryId.SetConcatenationFileAttribute)
             return ResultFs.UnsupportedQueryEntryForConcatenationFileSystem.Log();
 
-        return _baseFileSystem.SetFileAttributes(in path, NxFileAttributes.Archive);
+        return _baseFileSystem.Get.SetFileAttributes(in path, NxFileAttributes.Archive).Ret();
     }
 
     protected override Result DoCommit()
     {
-        return _baseFileSystem.Commit();
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
+        return _baseFileSystem.Get.Commit().Ret();
     }
 
     protected override Result DoCommitProvisionally(long counter)
     {
-        return _baseFileSystem.CommitProvisionally(counter);
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
+        return _baseFileSystem.Get.CommitProvisionally(counter).Ret();
     }
 }

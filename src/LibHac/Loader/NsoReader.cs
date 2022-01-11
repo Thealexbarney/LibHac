@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Common.FixedArrays;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Util;
@@ -56,7 +57,7 @@ public class NsoReader
             Header.SegmentHashes[(int)segment], isCompressed, checkHash, buffer);
     }
 
-    private Result ReadSegmentImpl(ref NsoHeader.SegmentHeader segment, uint fileSize, Buffer32 fileHash,
+    private Result ReadSegmentImpl(ref NsoHeader.SegmentHeader segment, uint fileSize, Array32<byte> fileHash,
         bool isCompressed, bool checkHash, Span<byte> buffer)
     {
         // Select read size based on compression.
@@ -90,10 +91,10 @@ public class NsoReader
         // Check hash if necessary.
         if (checkHash)
         {
-            var hash = new Buffer32();
-            Crypto.Sha256.GenerateSha256Hash(buffer.Slice(0, (int)segment.Size), hash.Bytes);
+            var hash = new Array32<byte>();
+            Crypto.Sha256.GenerateSha256Hash(buffer.Slice(0, (int)segment.Size), hash.Items);
 
-            if (hash.Bytes.SequenceCompareTo(fileHash.Bytes) != 0)
+            if (hash.ItemsRo.SequenceCompareTo(fileHash) != 0)
                 return ResultLoader.InvalidNso.Log();
         }
 

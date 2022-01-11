@@ -153,7 +153,7 @@ public class SubStorage : IStorage
         _isResizable = isResizable;
     }
 
-    protected override Result DoRead(long offset, Span<byte> destination)
+    public override Result Read(long offset, Span<byte> destination)
     {
         if (!IsValid()) return ResultFs.NotInitialized.Log();
         if (destination.Length == 0) return Result.Success;
@@ -164,7 +164,7 @@ public class SubStorage : IStorage
         return BaseStorage.Read(_offset + offset, destination);
     }
 
-    protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+    public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
         if (!IsValid()) return ResultFs.NotInitialized.Log();
         if (source.Length == 0) return Result.Success;
@@ -175,14 +175,14 @@ public class SubStorage : IStorage
         return BaseStorage.Write(_offset + offset, source);
     }
 
-    protected override Result DoFlush()
+    public override Result Flush()
     {
         if (!IsValid()) return ResultFs.NotInitialized.Log();
 
         return BaseStorage.Flush();
     }
 
-    protected override Result DoSetSize(long size)
+    public override Result SetSize(long size)
     {
         if (!IsValid()) return ResultFs.NotInitialized.Log();
         if (!_isResizable) return ResultFs.UnsupportedSetSizeForNotResizableSubStorage.Log();
@@ -205,7 +205,7 @@ public class SubStorage : IStorage
         return Result.Success;
     }
 
-    protected override Result DoGetSize(out long size)
+    public override Result GetSize(out long size)
     {
         UnsafeHelpers.SkipParamInit(out size);
 
@@ -215,7 +215,7 @@ public class SubStorage : IStorage
         return Result.Success;
     }
 
-    protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
+    public override Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
     {
         if (!IsValid()) return ResultFs.NotInitialized.Log();
 

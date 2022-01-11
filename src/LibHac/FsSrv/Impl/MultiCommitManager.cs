@@ -55,7 +55,7 @@ internal class MultiCommitManager : IMultiCommitManager
     private const int CurrentCommitContextVersion = 0x10000;
     private const long CommitContextFileSize = 0x200;
 
-    // /commitinfo
+    /// <summary>"<c>/commitinfo</c>"</summary>
     private static ReadOnlySpan<byte> CommitContextFileName =>
         new[] { (byte)'/', (byte)'c', (byte)'o', (byte)'m', (byte)'m', (byte)'i', (byte)'t', (byte)'i', (byte)'n', (byte)'f', (byte)'o' };
 
@@ -498,13 +498,12 @@ internal class MultiCommitManager : IMultiCommitManager
         return Recover(multiCommitInterface, fileSystem.Get, saveService);
     }
 
-    [StructLayout(LayoutKind.Explicit, Size = 0x18)]
     private struct Context
     {
-        [FieldOffset(0x00)] public int Version;
-        [FieldOffset(0x04)] public CommitState State;
-        [FieldOffset(0x08)] public int FileSystemCount;
-        [FieldOffset(0x10)] public long Counter;
+        public int Version;
+        public CommitState State;
+        public int FileSystemCount;
+        public long Counter;
     }
 
     private enum CommitState

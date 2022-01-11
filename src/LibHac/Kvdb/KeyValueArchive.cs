@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Diag;
 
 namespace LibHac.Kvdb;
 
-[StructLayout(LayoutKind.Sequential, Size = 0xC)]
 public struct KeyValueArchiveHeader
 {
-    public const uint ExpectedMagic = 0x564B4D49; // IMKV
+    public static readonly uint ExpectedMagic = 0x564B4D49; // IMKV
 
     public uint Magic;
     public int Reserved;
@@ -25,10 +23,9 @@ public struct KeyValueArchiveHeader
     }
 }
 
-[StructLayout(LayoutKind.Sequential, Size = 0xC)]
 internal struct KeyValueArchiveEntryHeader
 {
-    public const uint ExpectedMagic = 0x4E454D49; // IMEN
+    public static readonly uint ExpectedMagic = 0x4E454D49; // IMEN
 
     public uint Magic;
     public int KeySize;

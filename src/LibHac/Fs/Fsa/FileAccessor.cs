@@ -2,6 +2,7 @@
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs.Fsa;
+using LibHac.Fs.Shim;
 using LibHac.Os;
 using static LibHac.Fs.Impl.AccessLogStrings;
 
@@ -15,6 +16,10 @@ internal enum WriteState
     Failed,
 }
 
+/// <summary>
+/// Provides access to a mount <see cref="IFile"/> and handles caching it.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 internal class FileAccessor : IDisposable
 {
     private const string NeedFlushMessage = "Error: nn::fs::CloseFile() failed because the file was not flushed.\n";
@@ -24,8 +29,7 @@ internal class FileAccessor : IDisposable
     private WriteState _writeState;
     private Result _lastResult;
     private OpenMode _openMode;
-    private FilePathHash _filePathHash;
-    // ReSharper disable once NotAccessedField.Local
+    private Box<FilePathHash> _filePathHash;
     private int _pathHashIndex;
 
     internal HorizonClient Hos { get; }
@@ -59,7 +63,7 @@ internal class FileAccessor : IDisposable
     public WriteState GetWriteState() => _writeState;
     public FileSystemAccessor GetParent() => _parentFileSystem;
 
-    public void SetFilePathHash(FilePathHash filePathHash, int index)
+    public void SetFilePathHash(Box<FilePathHash> filePathHash, int index)
     {
         _filePathHash = filePathHash;
         _pathHashIndex = index;
@@ -73,16 +77,16 @@ internal class FileAccessor : IDisposable
         return result;
     }
 
-    public Result ReadWithoutCacheAccessLog(out long bytesRead, long offset, Span<byte> destination,
-        in ReadOption option)
-    {
-        return _file.Get.Read(out bytesRead, offset, destination, in option);
-    }
-
     private Result ReadWithCacheAccessLog(out long bytesRead, long offset, Span<byte> destination,
         in ReadOption option, bool usePathCache, bool useDataCache)
     {
         throw new NotImplementedException();
+    }
+
+    public Result ReadWithoutCacheAccessLog(out long bytesRead, long offset, Span<byte> destination,
+        in ReadOption option)
+    {
+        return _file.Get.Read(out bytesRead, offset, destination, in option);
     }
 
     public Result Read(out long bytesRead, long offset, Span<byte> destination, in ReadOption option)
@@ -113,42 +117,36 @@ internal class FileAccessor : IDisposable
             return _lastResult;
         }
 
-        // ReSharper disable ConditionIsAlwaysTrueOrFalse
-        bool usePathCache = _parentFileSystem is not null && _filePathHash.Data != 0;
+        bool usePathCache = _parentFileSystem is not null && _filePathHash is not null;
+        bool useDataCache = Hos.Fs.Impl.IsGlobalFileDataCacheEnabled() && _parentFileSystem is not null &&
+                            _parentFileSystem.IsFileDataCacheAttachable();
 
-        // Todo: Call IsGlobalFileDataCacheEnabled
-#pragma warning disable 162
-        bool useDataCache = false && _parentFileSystem is not null && _parentFileSystem.IsFileDataCacheAttachable();
-#pragma warning restore 162
         if (usePathCache || useDataCache)
         {
             return ReadWithCacheAccessLog(out bytesRead, offset, destination, in option, usePathCache,
                 useDataCache);
         }
+
+        if (Hos.Fs.Impl.IsEnabledAccessLog() && Hos.Fs.Impl.IsEnabledHandleAccessLog(handle))
+        {
+            Tick start = Hos.Os.GetSystemTick();
+            rc = ReadWithoutCacheAccessLog(out bytesRead, offset, destination, in option);
+            Tick end = Hos.Os.GetSystemTick();
+
+            var sb = new U8StringBuilder(logBuffer, true);
+            sb.Append(LogOffset).AppendFormat(offset)
+                .Append(LogSize).AppendFormat(destination.Length)
+                .Append(LogReadSize).AppendFormat(AccessLogImpl.DereferenceOutValue(in bytesRead, rc));
+
+            Hos.Fs.Impl.OutputAccessLog(rc, start, end, handle, new U8Span(logBuffer),
+                nameof(UserFile.ReadFile));
+        }
         else
         {
-            if (Hos.Fs.Impl.IsEnabledAccessLog() && Hos.Fs.Impl.IsEnabledHandleAccessLog(handle))
-            {
-                Tick start = Hos.Os.GetSystemTick();
-                rc = ReadWithoutCacheAccessLog(out bytesRead, offset, destination, in option);
-                Tick end = Hos.Os.GetSystemTick();
-
-                var sb = new U8StringBuilder(logBuffer, true);
-                sb.Append(LogOffset).AppendFormat(offset)
-                    .Append(LogSize).AppendFormat(destination.Length)
-                    .Append(LogReadSize).AppendFormat(AccessLogImpl.DereferenceOutValue(in bytesRead, rc));
-
-                Hos.Fs.Impl.OutputAccessLog(rc, start, end, handle, new U8Span(logBuffer),
-                    nameof(UserFile.ReadFile));
-            }
-            else
-            {
-                rc = ReadWithoutCacheAccessLog(out bytesRead, offset, destination, in option);
-            }
-
-            return rc;
+            rc = ReadWithoutCacheAccessLog(out bytesRead, offset, destination, in option);
         }
-        // ReSharper restore ConditionIsAlwaysTrueOrFalse
+
+        return rc;
     }
 
     public Result Write(long offset, ReadOnlySpan<byte> source, in WriteOption option)
@@ -159,9 +157,11 @@ internal class FileAccessor : IDisposable
         using ScopedSetter<WriteState> setter =
             ScopedSetter<WriteState>.MakeScopedSetter(ref _writeState, WriteState.Failed);
 
-        if (_filePathHash.Data != 0)
+        if (_filePathHash is not null)
         {
-            throw new NotImplementedException();
+            Result rc = UpdateLastResult(Hos.Fs.Impl.WriteViaPathBasedFileDataCache(_file.Get, (int)GetOpenMode(),
+                _parentFileSystem, in _filePathHash.Value, _pathHashIndex, offset, source, in option));
+            if (rc.IsFailure()) return rc.Miss();
         }
         else
         {
@@ -193,19 +193,27 @@ internal class FileAccessor : IDisposable
         if (_lastResult.IsFailure())
             return _lastResult;
 
-        WriteState oldWriteState = _writeState;
+        WriteState originalWriteState = _writeState;
         using ScopedSetter<WriteState> setter =
             ScopedSetter<WriteState>.MakeScopedSetter(ref _writeState, WriteState.Failed);
 
-        Result rc = UpdateLastResult(_file.Get.SetSize(size));
-        if (rc.IsFailure()) return rc;
-
-        if (_filePathHash.Data != 0)
+        if (_filePathHash is not null)
         {
-            throw new NotImplementedException();
+            using UniqueLock lk = Hos.Fs.Impl.LockPathBasedFileDataCacheEntries();
+
+            Result rc = UpdateLastResult(_file.Get.SetSize(size));
+            if (rc.IsFailure()) return rc.Miss();
+
+            Hos.Fs.Impl.InvalidatePathBasedFileDataCacheEntry(_parentFileSystem, in _filePathHash.Value, _pathHashIndex);
+            if (rc.IsFailure()) return rc.Miss();
+        }
+        else
+        {
+            Result rc = UpdateLastResult(_file.Get.SetSize(size));
+            if (rc.IsFailure()) return rc;
         }
 
-        setter.Set(oldWriteState);
+        setter.Set(originalWriteState);
         return Result.Success;
     }
 

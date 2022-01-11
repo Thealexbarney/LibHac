@@ -26,12 +26,12 @@ public class AesCbcStorage : SectorStorage
         baseStorage.GetSize(out _size).ThrowIfFailure();
     }
 
-    protected override Result DoRead(long offset, Span<byte> destination)
+    public override Result Read(long offset, Span<byte> destination)
     {
         if (!CheckAccessRange(offset, destination.Length, _size))
             return ResultFs.OutOfRange.Log();
 
-        Result rc = base.DoRead(offset, destination);
+        Result rc = base.Read(offset, destination);
         if (rc.IsFailure()) return rc;
 
         rc = GetDecryptor(out ICipher cipher, offset);
@@ -42,17 +42,17 @@ public class AesCbcStorage : SectorStorage
         return Result.Success;
     }
 
-    protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+    public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
         return ResultFs.UnsupportedOperation.Log();
     }
 
-    protected override Result DoFlush()
+    public override Result Flush()
     {
         return Result.Success;
     }
 
-    protected override Result DoSetSize(long size)
+    public override Result SetSize(long size)
     {
         return ResultFs.UnsupportedOperation.Log();
     }

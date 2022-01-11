@@ -1,10 +1,10 @@
-﻿using System.Runtime.InteropServices;
+﻿using LibHac.Common.FixedArrays;
 
 namespace LibHac.Bcat.Impl.Service.Core;
 
-[StructLayout(LayoutKind.Explicit, Size = 0x40)]
 internal struct DeliveryCacheDirectoryMetaEntry
 {
-    [FieldOffset(0x00)] public DirectoryName Name;
-    [FieldOffset(0x20)] public Digest Digest;
+    public DirectoryName Name;
+    public Digest Digest;
+    public Array16<byte> Reserved;
 }

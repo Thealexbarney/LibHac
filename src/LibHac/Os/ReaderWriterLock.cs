@@ -98,7 +98,7 @@ public static class ReaderWriterLockApi
     }
 }
 
-public class ReaderWriterLock : ISharedMutex
+public class ReaderWriterLock : ISharedMutex, IDisposable
 {
     public const int ReaderWriterLockCountMax = (1 << 15) - 1;
     public const int ReadWriteLockWaiterCountMax = (1 << 8) - 1;
@@ -110,6 +110,11 @@ public class ReaderWriterLock : ISharedMutex
     {
         _os = os;
         _os.InitializeReaderWriterLock(ref _rwLock);
+    }
+
+    public void Dispose()
+    {
+        _os.FinalizeReaderWriterLock(ref _rwLock);
     }
 
     public void AcquireReadLock()

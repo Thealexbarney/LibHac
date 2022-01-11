@@ -1,12 +1,12 @@
-﻿using System.Runtime.InteropServices;
+﻿using LibHac.Common.FixedArrays;
 
 namespace LibHac.Bcat.Impl.Service.Core;
 
-[StructLayout(LayoutKind.Explicit, Size = 0x80)]
 internal struct DeliveryCacheFileMetaEntry
 {
-    [FieldOffset(0x00)] public FileName Name;
-    [FieldOffset(0x20)] public long Id;
-    [FieldOffset(0x28)] public long Size;
-    [FieldOffset(0x30)] public Digest Digest;
+    public FileName Name;
+    public long Id;
+    public long Size;
+    public Digest Digest;
+    public Array64<byte> Reserved;
 }

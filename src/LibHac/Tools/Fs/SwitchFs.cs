@@ -42,9 +42,9 @@ public class SwitchFs : IDisposable
         CreateApplications();
     }
 
-    public static SwitchFs OpenSdCard(KeySet keySet, IAttributeFileSystem fileSystem)
+    public static SwitchFs OpenSdCard(KeySet keySet, ref UniqueRef<IAttributeFileSystem> fileSystem)
     {
-        var concatFs = new ConcatenationFileSystem(fileSystem);
+        var concatFs = new ConcatenationFileSystem(ref fileSystem);
 
         using var contentDirPath = new LibHac.Fs.Path();
         PathFunctions.SetUpFixedPath(ref contentDirPath.Ref(), "/Nintendo/Contents".ToU8String()).ThrowIfFailure();
@@ -56,7 +56,7 @@ public class SwitchFs : IDisposable
         contentDirFs.Initialize(in contentDirPath).ThrowIfFailure();
 
         AesXtsFileSystem encSaveFs = null;
-        if (fileSystem.DirectoryExists("/Nintendo/save"))
+        if (concatFs.DirectoryExists("/Nintendo/save"))
         {
             var saveDirFs = new SubdirectoryFileSystem(concatFs);
             saveDirFs.Initialize(in saveDirPath).ThrowIfFailure();
@@ -69,9 +69,9 @@ public class SwitchFs : IDisposable
         return new SwitchFs(keySet, encContentFs, encSaveFs);
     }
 
-    public static SwitchFs OpenNandPartition(KeySet keySet, IAttributeFileSystem fileSystem)
+    public static SwitchFs OpenNandPartition(KeySet keySet, ref UniqueRef<IAttributeFileSystem> fileSystem)
     {
-        var concatFs = new ConcatenationFileSystem(fileSystem);
+        var concatFs = new ConcatenationFileSystem(ref fileSystem);
         SubdirectoryFileSystem saveDirFs = null;
         SubdirectoryFileSystem contentDirFs;
 
@@ -229,7 +229,7 @@ public class SwitchFs : IDisposable
                 control.Get.Read(out _, 0, title.Control.ByteSpan).ThrowIfFailure();
             }
 
-            foreach (ref ApplicationControlTitle desc in title.Control.Value.Titles)
+            foreach (ref readonly ApplicationControlProperty.ApplicationTitle desc in title.Control.Value.Title.ItemsRo)
             {
                 if (!desc.Name.IsEmpty())
                 {

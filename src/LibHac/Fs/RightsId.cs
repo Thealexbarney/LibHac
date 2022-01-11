@@ -1,62 +1,56 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using LibHac.Common;
+using System.Runtime.Intrinsics;
+using LibHac.Common.FixedArrays;
+using LibHac.Diag;
 using LibHac.Util;
 
 namespace LibHac.Fs;
 
 [DebuggerDisplay("{DebugDisplay(),nq}")]
-[StructLayout(LayoutKind.Sequential, Size = 0x10)]
-public struct RightsId : IEquatable<RightsId>, IComparable<RightsId>, IComparable
+public struct RightsId : IEquatable<RightsId>
 {
-    public readonly Id128 Id;
+    public Array16<byte> Value;
 
-    public RightsId(ulong high, ulong low)
+    public RightsId(ReadOnlySpan<byte> value)
     {
-        Id = new Id128(high, low);
+        Assert.Equal(0x10, value.Length);
+
+        Unsafe.SkipInit(out Value);
+
+        Span<ulong> longsThis = MemoryMarshal.Cast<byte, ulong>(Value.Items);
+        ReadOnlySpan<ulong> longsValue = MemoryMarshal.Cast<byte, ulong>(value);
+
+        longsThis[1] = longsValue[1];
+        longsThis[0] = longsValue[0];
     }
 
-    public RightsId(ReadOnlySpan<byte> uid)
-    {
-        Id = new Id128(uid);
-    }
+    public readonly override string ToString() => Value.ItemsRo.ToHexString();
 
-    public override string ToString() => Id.ToString();
-
-    public string DebugDisplay()
+    public readonly string DebugDisplay()
     {
-        ReadOnlySpan<byte> highBytes = AsBytes().Slice(0, 8);
-        ReadOnlySpan<byte> lowBytes = AsBytes().Slice(8, 8);
+        ReadOnlySpan<byte> highBytes = Value.ItemsRo.Slice(0, 8);
+        ReadOnlySpan<byte> lowBytes = Value.ItemsRo.Slice(8, 8);
 
         return $"{highBytes.ToHexString()} {lowBytes.ToHexString()}";
     }
 
-    public bool Equals(RightsId other) => Id == other.Id;
-    public override bool Equals(object obj) => obj is RightsId other && Equals(other);
-
-    public override int GetHashCode() => Id.GetHashCode();
-
-    public int CompareTo(RightsId other) => Id.CompareTo(other.Id);
-
-    public int CompareTo(object obj)
+    public readonly bool Equals(RightsId other)
     {
-        if (obj is null) return 1;
-        return obj is RightsId other ? CompareTo(other) : throw new ArgumentException($"Object must be of type {nameof(RightsId)}");
+        return Unsafe.As<Array16<byte>, Vector128<byte>>(ref Unsafe.AsRef(in Value))
+            .Equals(Unsafe.As<Array16<byte>, Vector128<byte>>(ref other.Value));
     }
 
-    public void ToBytes(Span<byte> output) => Id.ToBytes(output);
+    public readonly override bool Equals(object obj) => obj is RightsId other && Equals(other);
 
-    public ReadOnlySpan<byte> AsBytes()
+    public readonly override int GetHashCode()
     {
-        return SpanHelpers.AsByteSpan(ref this);
+        ReadOnlySpan<ulong> longSpan = MemoryMarshal.Cast<byte, ulong>(Value.ItemsRo);
+        return HashCode.Combine(longSpan[0], longSpan[1]);
     }
 
     public static bool operator ==(RightsId left, RightsId right) => left.Equals(right);
     public static bool operator !=(RightsId left, RightsId right) => !left.Equals(right);
-
-    public static bool operator <(RightsId left, RightsId right) => left.CompareTo(right) < 0;
-    public static bool operator >(RightsId left, RightsId right) => left.CompareTo(right) > 0;
-    public static bool operator <=(RightsId left, RightsId right) => left.CompareTo(right) <= 0;
-    public static bool operator >=(RightsId left, RightsId right) => left.CompareTo(right) >= 0;
 }

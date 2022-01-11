@@ -33,7 +33,7 @@ public class CachedStorage : IStorage
     public CachedStorage(SectorStorage baseStorage, int cacheSize, bool leaveOpen)
         : this(baseStorage, baseStorage.SectorSize, cacheSize, leaveOpen) { }
 
-    protected override Result DoRead(long offset, Span<byte> destination)
+    public override Result Read(long offset, Span<byte> destination)
     {
         long remaining = destination.Length;
         long inOffset = offset;
@@ -63,7 +63,7 @@ public class CachedStorage : IStorage
         return Result.Success;
     }
 
-    protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+    public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
         long remaining = source.Length;
         long inOffset = offset;
@@ -95,7 +95,7 @@ public class CachedStorage : IStorage
         return Result.Success;
     }
 
-    protected override Result DoFlush()
+    public override Result Flush()
     {
         lock (Blocks)
         {
@@ -108,13 +108,13 @@ public class CachedStorage : IStorage
         return BaseStorage.Flush();
     }
 
-    protected override Result DoGetSize(out long size)
+    public override Result GetSize(out long size)
     {
         size = Length;
         return Result.Success;
     }
 
-    protected override Result DoSetSize(long size)
+    public override Result SetSize(long size)
     {
         Result rc = BaseStorage.SetSize(size);
         if (rc.IsFailure()) return rc;
@@ -125,6 +125,12 @@ public class CachedStorage : IStorage
         Length = newSize;
 
         return Result.Success;
+    }
+
+    public override Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+        ReadOnlySpan<byte> inBuffer)
+    {
+        throw new NotImplementedException();
     }
 
     public override void Dispose()

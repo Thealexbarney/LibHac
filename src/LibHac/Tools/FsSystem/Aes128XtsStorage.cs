@@ -42,14 +42,14 @@ public class Aes128XtsStorage : SectorStorage
         _key2 = key2.ToArray();
     }
 
-    protected override Result DoRead(long offset, Span<byte> destination)
+    public override Result Read(long offset, Span<byte> destination)
     {
         int size = destination.Length;
         long sectorIndex = offset / SectorSize;
 
         if (_readTransform == null) _readTransform = new Aes128XtsTransform(_key1, _key2, _decryptRead);
 
-        Result rc = base.DoRead(offset, _tempBuffer.AsSpan(0, size));
+        Result rc = base.Read(offset, _tempBuffer.AsSpan(0, size));
         if (rc.IsFailure()) return rc;
 
         _readTransform.TransformBlock(_tempBuffer, 0, size, (ulong)sectorIndex);
@@ -58,7 +58,7 @@ public class Aes128XtsStorage : SectorStorage
         return Result.Success;
     }
 
-    protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+    public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
         int size = source.Length;
         long sectorIndex = offset / SectorSize;
@@ -68,10 +68,10 @@ public class Aes128XtsStorage : SectorStorage
         source.CopyTo(_tempBuffer);
         _writeTransform.TransformBlock(_tempBuffer, 0, size, (ulong)sectorIndex);
 
-        return base.DoWrite(offset, _tempBuffer.AsSpan(0, size));
+        return base.Write(offset, _tempBuffer.AsSpan(0, size));
     }
 
-    protected override Result DoFlush()
+    public override Result Flush()
     {
         return BaseStorage.Flush();
     }

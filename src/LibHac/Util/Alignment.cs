@@ -47,6 +47,7 @@ public static class Alignment
     public static long AlignUpPow2(long value, uint alignment) => (long)AlignUpPow2((ulong)value, alignment);
     public static int AlignDownPow2(int value, uint alignment) => (int)AlignDownPow2((ulong)value, alignment);
     public static long AlignDownPow2(long value, uint alignment) => (long)AlignDownPow2((ulong)value, alignment);
+    public static long AlignDownPow2(long value, long alignment) => (long)AlignDownPow2((ulong)value, (uint)alignment);
     public static bool IsAlignedPow2(int value, uint alignment) => IsAlignedPow2((ulong)value, alignment);
     public static bool IsAlignedPow2(long value, uint alignment) => IsAlignedPow2((ulong)value, alignment);
 

@@ -20,7 +20,7 @@ namespace LibHac.FsSrv.Impl;
 /// <summary>
 /// Wraps an <see cref="IFile"/> to allow interfacing with it via the <see cref="IFileSf"/> interface over IPC.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public class FileInterfaceAdapter : IFileSf
 {
     private SharedRef<FileSystemInterfaceAdapter> _parentFs;
@@ -49,15 +49,18 @@ public class FileInterfaceAdapter : IFileSf
         if (offset < 0)
             return ResultFs.InvalidOffset.Log();
 
-        if (destination.Size < 0 || destination.Size < (int)size)
+        if (destination.Size < 0)
+            return ResultFs.InvalidSize.Log();
+
+        if (destination.Size < (int)size)
             return ResultFs.InvalidSize.Log();
 
         Result rc = Result.Success;
-        long tmpBytesRead = 0;
+        long readSize = 0;
 
         for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
         {
-            rc = _baseFile.Get.Read(out tmpBytesRead, offset, destination.Buffer.Slice(0, (int)size), option);
+            rc = _baseFile.Get.Read(out readSize, offset, destination.Buffer.Slice(0, (int)size), option);
 
             // Retry on ResultDataCorrupted
             if (!ResultFs.DataCorrupted.Includes(rc))
@@ -66,7 +69,7 @@ public class FileInterfaceAdapter : IFileSf
 
         if (rc.IsFailure()) return rc;
 
-        bytesRead = tmpBytesRead;
+        bytesRead = readSize;
         return Result.Success;
     }
 
@@ -75,7 +78,10 @@ public class FileInterfaceAdapter : IFileSf
         if (offset < 0)
             return ResultFs.InvalidOffset.Log();
 
-        if (source.Size < 0 || source.Size < (int)size)
+        if (source.Size < 0)
+            return ResultFs.InvalidSize.Log();
+
+        if (source.Size < (int)size)
             return ResultFs.InvalidSize.Log();
 
         using var scopedPriorityChanger =
@@ -175,7 +181,7 @@ public class FileInterfaceAdapter : IFileSf
 /// <summary>
 /// Wraps an <see cref="IDirectory"/> to allow interfacing with it via the <see cref="IDirectorySf"/> interface over IPC.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public class DirectoryInterfaceAdapter : IDirectorySf
 {
     private SharedRef<FileSystemInterfaceAdapter> _parentFs;
@@ -235,13 +241,11 @@ public class DirectoryInterfaceAdapter : IDirectorySf
 /// Wraps an <see cref="IFileSystem"/> to allow interfacing with it via the <see cref="IFileSystemSf"/> interface over IPC.
 /// All incoming paths are normalized before they are passed to the base <see cref="IFileSystem"/>.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public class FileSystemInterfaceAdapter : IFileSystemSf
 {
     private SharedRef<IFileSystem> _baseFileSystem;
     private PathFlags _pathFlags;
-
-    // This field is always false in FS 12.0.0. Not sure what it's actually used for.
     private bool _allowAllOperations;
 
     // In FS, FileSystemInterfaceAdapter is derived from ISharedObject, so that's used for ref-counting when

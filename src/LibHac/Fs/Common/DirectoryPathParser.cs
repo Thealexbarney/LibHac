@@ -3,8 +3,13 @@ using LibHac.Common;
 using LibHac.Diag;
 using static LibHac.Fs.StringTraits;
 
-namespace LibHac.Fs.Common;
+// ReSharper disable once CheckNamespace
+namespace LibHac.Fs;
 
+/// <summary>
+/// Iterates through each directory in a path beginning with the root directory.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 [NonCopyableDisposable]
 public ref struct DirectoryPathParser
 {
@@ -15,11 +20,26 @@ public ref struct DirectoryPathParser
     // Todo: Make private so we can use the GetCurrentPath method once lifetime tracking is better
     public Path CurrentPath;
 
+    public DirectoryPathParser()
+    {
+        _buffer = Span<byte>.Empty;
+        _replacedChar = 0;
+        _position = 0;
+        CurrentPath = new Path();
+    }
+
     public void Dispose()
     {
         CurrentPath.Dispose();
     }
 
+    /// <summary>
+    /// Initializes this <see cref="DirectoryPathParser"/> with a new <see cref="Path"/>. The <see cref="Path"/>
+    /// should not be a fixed path that was just initialized with <see cref="PathFunctions.SetUpFixedPath"/>
+    /// because we need it to have an allocated write buffer.
+    /// </summary>
+    /// <param name="path">The <see cref="Path"/> to iterate. Must have an allocated write buffer.</param>
+    /// <returns>The <see cref="Result"/> of the operation.</returns>
     public Result Initialize(ref Path path)
     {
         Span<byte> pathBuffer = path.GetWriteBufferLength() != 0 ? path.GetWriteBuffer() : Span<byte>.Empty;

@@ -87,7 +87,7 @@ public static class SystemSaveData
             {
                 using var mountNameGenerator = new UniqueRef<ICommonMountNameGenerator>();
                 return fs.Register(mountName, fileSystemAdapterRaw, ref fileSystemAdapter.Ref(),
-                    ref mountNameGenerator.Ref(), false, false);
+                    ref mountNameGenerator.Ref(), false, null, false);
             }
             else
             {

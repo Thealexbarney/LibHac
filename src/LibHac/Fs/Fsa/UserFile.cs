@@ -7,6 +7,10 @@ using static LibHac.Fs.Impl.AccessLogStrings;
 
 namespace LibHac.Fs.Fsa;
 
+/// <summary>
+/// Contains functions for interacting with opened files.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 [SkipLocalsInit]
 public static class UserFile
 {
@@ -215,12 +219,75 @@ public static class UserFile
         return rc;
     }
 
-    public static Result InvalidateCache(this FileSystemClient fs, FileHandle handle, long offset, long size)
+    public static Result InvalidateCache(this FileSystemClient fs, FileHandle handle)
     {
-        Result rc = Get(handle).OperateRange(Span<byte>.Empty, OperationId.InvalidateCache, offset, size,
+        Result rc = Get(handle).OperateRange(Span<byte>.Empty, OperationId.InvalidateCache, 0, long.MaxValue,
             ReadOnlySpan<byte>.Empty);
 
         fs.Impl.AbortIfNeeded(rc);
         return rc;
+    }
+
+    public static Result QueryUnpreparedRange(this FileSystemClient fs, out Range unpreparedRange, FileHandle handle)
+    {
+        UnsafeHelpers.SkipParamInit(out unpreparedRange);
+        Unsafe.SkipInit(out UnpreparedRangeInfo info);
+
+        Result rc = Get(handle).OperateRange(SpanHelpers.AsByteSpan(ref info), OperationId.QueryUnpreparedRange, 0, 0,
+            ReadOnlySpan<byte>.Empty);
+
+        fs.Impl.AbortIfNeeded(rc);
+        if (rc.IsFailure()) return rc.Miss();
+
+        unpreparedRange = info.Range;
+        return Result.Success;
+    }
+
+    public static Result QueryUnpreparedRangeDetail(this FileSystemClient fs,
+        out UnpreparedRangeInfo unpreparedRangeInfo, FileHandle handle)
+    {
+        UnsafeHelpers.SkipParamInit(out unpreparedRangeInfo);
+        Unsafe.SkipInit(out UnpreparedRangeInfo info);
+
+        Result rc = Get(handle).OperateRange(SpanHelpers.AsByteSpan(ref info), OperationId.QueryUnpreparedRange, 0, 0,
+            ReadOnlySpan<byte>.Empty);
+
+        fs.Impl.AbortIfNeeded(rc);
+        if (rc.IsFailure()) return rc.Miss();
+
+        unpreparedRangeInfo = info;
+        return Result.Success;
+    }
+
+    public static Result QueryLazyLoadCompletionRate(this FileSystemClient fs, out int completionRate,
+        FileHandle handle, int guideIndex)
+    {
+        UnsafeHelpers.SkipParamInit(out completionRate);
+
+        Unsafe.SkipInit(out UnpreparedRangeInfo info);
+        var args = new LazyLoadArguments { GuideIndex = guideIndex };
+
+        Result rc = Get(handle).OperateRange(SpanHelpers.AsByteSpan(ref info), OperationId.QueryLazyLoadCompletionRate,
+            0, 0, SpanHelpers.AsReadOnlyByteSpan(in args));
+
+        fs.Impl.AbortIfNeeded(rc);
+        if (rc.IsFailure()) return rc.Miss();
+
+        completionRate = info.CompletionRate;
+        return Result.Success;
+    }
+
+    public static Result ReadyLazyLoadFileForciblyForDebug(this FileSystemClient fs, FileHandle handle, long offset,
+        long size)
+    {
+        Unsafe.SkipInit(out UnpreparedRangeInfo info);
+
+        Result rc = Get(handle).OperateRange(SpanHelpers.AsByteSpan(ref info), OperationId.ReadyLazyLoadFile,
+            offset, size, ReadOnlySpan<byte>.Empty);
+
+        fs.Impl.AbortIfNeeded(rc);
+        if (rc.IsFailure()) return rc.Miss();
+
+        return Result.Success;
     }
 }

@@ -1,12 +1,16 @@
-﻿using System.Runtime.InteropServices;
+﻿namespace LibHac.Arp;
 
-namespace LibHac.Arp;
-
-[StructLayout(LayoutKind.Explicit, Size = 0x10)]
 public struct ApplicationLaunchProperty
 {
-    [FieldOffset(0x0)] public ApplicationId ApplicationId;
-    [FieldOffset(0x8)] public uint Version;
-    [FieldOffset(0xC)] public Ncm.StorageId BaseStorageId;
-    [FieldOffset(0xD)] public Ncm.StorageId UpdateStorageId;
+    public ApplicationId ApplicationId;
+    public uint Version;
+    public Ncm.StorageId StorageId;
+    public Ncm.StorageId PatchStorageId;
+    public ApplicationKind ApplicationKind;
+}
+
+public enum ApplicationKind : byte
+{
+    Application = 0,
+    MicroApplication = 1
 }

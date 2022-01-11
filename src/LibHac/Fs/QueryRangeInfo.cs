@@ -1,13 +1,13 @@
 ﻿using System;
-using System.Runtime.InteropServices;
+using LibHac.Common.FixedArrays;
 
 namespace LibHac.Fs;
 
-[StructLayout(LayoutKind.Sequential, Size = 0x40)]
 public struct QueryRangeInfo
 {
     public int AesCtrKeyType;
     public int SpeedEmulationType;
+    public Array56<byte> Reserved;
 
     public void Clear()
     {

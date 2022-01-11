@@ -118,7 +118,7 @@ public class IntegrityVerificationStorage : SectorStorage
         return Result.Success;
     }
 
-    protected override Result DoRead(long offset, Span<byte> destination)
+    public override Result Read(long offset, Span<byte> destination)
     {
         return ReadImpl(offset, destination, IntegrityCheckLevel);
     }
@@ -129,7 +129,7 @@ public class IntegrityVerificationStorage : SectorStorage
         return ReadImpl(offset, destination, integrityCheckLevel);
     }
 
-    protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+    public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
         long blockIndex = offset / SectorSize;
         long hashPos = blockIndex * DigestSize;
@@ -189,12 +189,12 @@ public class IntegrityVerificationStorage : SectorStorage
         }
     }
 
-    protected override Result DoFlush()
+    public override Result Flush()
     {
         Result rc = HashStorage.Flush();
         if (rc.IsFailure()) return rc;
 
-        return base.DoFlush();
+        return base.Flush();
     }
 
     public void FsTrim()

@@ -132,6 +132,11 @@ public readonly struct Result : IEquatable<Result>
         return this;
     }
 
+    public Result Ret()
+    {
+        return this;
+    }
+
     public bool TryGetResultName(out string name)
     {
         IResultNameResolver resolver = NameResolver;

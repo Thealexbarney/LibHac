@@ -37,17 +37,17 @@ public static class KeysCodeGen
         sb.AppendLine("internal static partial class DefaultKeySet");
         sb.AppendLineAndIncrease("{");
 
-        BuildArray(sb, "RootKeysDev", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._rootKeysDev));
-        BuildArray(sb, "RootKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._rootKeysProd));
-        BuildArray(sb, "KeySeeds", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._keySeeds));
-        BuildArray(sb, "StoredKeysDev", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._storedKeysDev));
-        BuildArray(sb, "StoredKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._storedKeysProd));
-        BuildArray(sb, "DerivedKeysDev", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._derivedKeysDev));
-        BuildArray(sb, "DerivedKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._derivedKeysProd));
-        BuildArray(sb, "DeviceKeys", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._deviceKeys));
-        BuildArray(sb, "RsaSigningKeysDev", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._rsaSigningKeysDev));
-        BuildArray(sb, "RsaSigningKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._rsaSigningKeysProd));
-        BuildArray(sb, "RsaKeys", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct._rsaKeys));
+        BuildArray(sb, "RootKeysDev", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.RootKeysDev));
+        BuildArray(sb, "RootKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.RootKeysProd));
+        BuildArray(sb, "KeySeeds", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.KeySeeds));
+        BuildArray(sb, "StoredKeysDev", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.StoredKeysDev));
+        BuildArray(sb, "StoredKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.StoredKeysProd));
+        BuildArray(sb, "DerivedKeysDev", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.DerivedKeysDev));
+        BuildArray(sb, "DerivedKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.DerivedKeysProd));
+        BuildArray(sb, "DeviceKeys", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.DeviceKeys));
+        BuildArray(sb, "RsaSigningKeysDev", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.RsaSigningKeysDev));
+        BuildArray(sb, "RsaSigningKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.RsaSigningKeysProd));
+        BuildArray(sb, "RsaKeys", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.RsaKeys));
 
         sb.DecreaseAndAppendLine("}");
 
@@ -99,46 +99,46 @@ public static class KeysCodeGen
         RSAParameters betaNca0Params =
             Rsa.RecoverParameters(BetaNca0Modulus, StandardPublicExponent, BetaNca0Exponent);
 
-        betaNca0Params.D.AsSpan().CopyTo(keySet.BetaNca0KeyAreaKey.PrivateExponent.Data);
-        betaNca0Params.DP.AsSpan().CopyTo(keySet.BetaNca0KeyAreaKey.Dp.Data);
-        betaNca0Params.DQ.AsSpan().CopyTo(keySet.BetaNca0KeyAreaKey.Dq.Data);
-        betaNca0Params.Exponent.AsSpan().CopyTo(keySet.BetaNca0KeyAreaKey.PublicExponent.Data);
-        betaNca0Params.InverseQ.AsSpan().CopyTo(keySet.BetaNca0KeyAreaKey.InverseQ.Data);
-        betaNca0Params.Modulus.AsSpan().CopyTo(keySet.BetaNca0KeyAreaKey.Modulus.Data);
-        betaNca0Params.P.AsSpan().CopyTo(keySet.BetaNca0KeyAreaKey.P.Data);
-        betaNca0Params.Q.AsSpan().CopyTo(keySet.BetaNca0KeyAreaKey.Q.Data);
+        betaNca0Params.D.AsSpan().CopyTo(keySet.BetaNca0KeyAreaKey.PrivateExponent.Items);
+        betaNca0Params.DP.AsSpan().CopyTo(keySet.BetaNca0KeyAreaKey.Dp.Items);
+        betaNca0Params.DQ.AsSpan().CopyTo(keySet.BetaNca0KeyAreaKey.Dq.Items);
+        betaNca0Params.Exponent.AsSpan().CopyTo(keySet.BetaNca0KeyAreaKey.PublicExponent.Items);
+        betaNca0Params.InverseQ.AsSpan().CopyTo(keySet.BetaNca0KeyAreaKey.InverseQ.Items);
+        betaNca0Params.Modulus.AsSpan().CopyTo(keySet.BetaNca0KeyAreaKey.Modulus.Items);
+        betaNca0Params.P.AsSpan().CopyTo(keySet.BetaNca0KeyAreaKey.P.Items);
+        betaNca0Params.Q.AsSpan().CopyTo(keySet.BetaNca0KeyAreaKey.Q.Items);
 
         // First populate the prod RSA keys
         keySet.SetMode(KeySet.Mode.Prod);
 
-        StandardPublicExponent.CopyTo(keySet.NcaHeaderSigningKeys[0].PublicExponent.Data);
-        StandardPublicExponent.CopyTo(keySet.NcaHeaderSigningKeys[1].PublicExponent.Data);
-        NcaHdrFixedKeyModulus0Prod.CopyTo(keySet.NcaHeaderSigningKeys[0].Modulus.Data);
-        NcaHdrFixedKeyModulus1Prod.CopyTo(keySet.NcaHeaderSigningKeys[1].Modulus.Data);
+        StandardPublicExponent.CopyTo(keySet.NcaHeaderSigningKeys[0].PublicExponent.Items);
+        StandardPublicExponent.CopyTo(keySet.NcaHeaderSigningKeys[1].PublicExponent.Items);
+        NcaHdrFixedKeyModulus0Prod.CopyTo(keySet.NcaHeaderSigningKeys[0].Modulus.Items);
+        NcaHdrFixedKeyModulus1Prod.CopyTo(keySet.NcaHeaderSigningKeys[1].Modulus.Items);
 
-        StandardPublicExponent.CopyTo(keySet.AcidSigningKeys[0].PublicExponent.Data);
-        StandardPublicExponent.CopyTo(keySet.AcidSigningKeys[1].PublicExponent.Data);
-        AcidFixedKeyModulus0Prod.CopyTo(keySet.AcidSigningKeys[0].Modulus.Data);
-        AcidFixedKeyModulus1Prod.CopyTo(keySet.AcidSigningKeys[1].Modulus.Data);
+        StandardPublicExponent.CopyTo(keySet.AcidSigningKeys[0].PublicExponent.Items);
+        StandardPublicExponent.CopyTo(keySet.AcidSigningKeys[1].PublicExponent.Items);
+        AcidFixedKeyModulus0Prod.CopyTo(keySet.AcidSigningKeys[0].Modulus.Items);
+        AcidFixedKeyModulus1Prod.CopyTo(keySet.AcidSigningKeys[1].Modulus.Items);
 
-        StandardPublicExponent.CopyTo(keySet.Package2SigningKey.PublicExponent.Data);
-        Package2FixedKeyModulusProd.CopyTo(keySet.Package2SigningKey.Modulus.Data);
+        StandardPublicExponent.CopyTo(keySet.Package2SigningKey.PublicExponent.Items);
+        Package2FixedKeyModulusProd.CopyTo(keySet.Package2SigningKey.Modulus.Items);
 
         // Populate the dev RSA keys
         keySet.SetMode(KeySet.Mode.Dev);
 
-        StandardPublicExponent.CopyTo(keySet.NcaHeaderSigningKeys[0].PublicExponent.Data);
-        StandardPublicExponent.CopyTo(keySet.NcaHeaderSigningKeys[1].PublicExponent.Data);
-        NcaHdrFixedKeyModulus0Dev.CopyTo(keySet.NcaHeaderSigningKeys[0].Modulus.Data);
-        NcaHdrFixedKeyModulus1Dev.CopyTo(keySet.NcaHeaderSigningKeys[1].Modulus.Data);
+        StandardPublicExponent.CopyTo(keySet.NcaHeaderSigningKeys[0].PublicExponent.Items);
+        StandardPublicExponent.CopyTo(keySet.NcaHeaderSigningKeys[1].PublicExponent.Items);
+        NcaHdrFixedKeyModulus0Dev.CopyTo(keySet.NcaHeaderSigningKeys[0].Modulus.Items);
+        NcaHdrFixedKeyModulus1Dev.CopyTo(keySet.NcaHeaderSigningKeys[1].Modulus.Items);
 
-        StandardPublicExponent.CopyTo(keySet.AcidSigningKeys[0].PublicExponent.Data);
-        StandardPublicExponent.CopyTo(keySet.AcidSigningKeys[1].PublicExponent.Data);
-        AcidFixedKeyModulus0Dev.CopyTo(keySet.AcidSigningKeys[0].Modulus.Data);
-        AcidFixedKeyModulus1Dev.CopyTo(keySet.AcidSigningKeys[1].Modulus.Data);
+        StandardPublicExponent.CopyTo(keySet.AcidSigningKeys[0].PublicExponent.Items);
+        StandardPublicExponent.CopyTo(keySet.AcidSigningKeys[1].PublicExponent.Items);
+        AcidFixedKeyModulus0Dev.CopyTo(keySet.AcidSigningKeys[0].Modulus.Items);
+        AcidFixedKeyModulus1Dev.CopyTo(keySet.AcidSigningKeys[1].Modulus.Items);
 
-        StandardPublicExponent.CopyTo(keySet.Package2SigningKey.PublicExponent.Data);
-        Package2FixedKeyModulusDev.CopyTo(keySet.Package2SigningKey.Modulus.Data);
+        StandardPublicExponent.CopyTo(keySet.Package2SigningKey.PublicExponent.Items);
+        Package2FixedKeyModulusDev.CopyTo(keySet.Package2SigningKey.Modulus.Items);
 
         return keySet;
     }

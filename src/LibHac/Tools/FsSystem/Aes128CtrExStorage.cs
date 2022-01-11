@@ -37,7 +37,7 @@ public class Aes128CtrExStorage : Aes128CtrStorage
         rc.ThrowIfFailure();
     }
 
-    protected override Result DoRead(long offset, Span<byte> destination)
+    public override Result Read(long offset, Span<byte> destination)
     {
         if (destination.Length == 0)
             return Result.Success;
@@ -83,7 +83,7 @@ public class Aes128CtrExStorage : Aes128CtrStorage
             {
                 UpdateCounterSubsection((uint)currentEntry.Generation);
 
-                rc = base.DoRead(inPos, destination.Slice(outPos, bytesToRead));
+                rc = base.Read(inPos, destination.Slice(outPos, bytesToRead));
                 if (rc.IsFailure()) return rc;
             }
 
@@ -95,12 +95,12 @@ public class Aes128CtrExStorage : Aes128CtrStorage
         return Result.Success;
     }
 
-    protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+    public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
         return ResultFs.UnsupportedWriteForAesCtrCounterExtendedStorage.Log();
     }
 
-    protected override Result DoFlush()
+    public override Result Flush()
     {
         return Result.Success;
     }

@@ -86,7 +86,7 @@ public class NcaFileSystemServiceImpl
         UnsafeHelpers.SkipParamInit(out verificationData);
 
         if (!Unsafe.IsNullRef(ref verificationData))
-            verificationData.IsValid = false;
+            verificationData.HasData = false;
 
         // Get a reference to the path that will be advanced as each part of the path is parsed
         var currentPath = new U8Span(path.GetString());
@@ -474,7 +474,7 @@ public class NcaFileSystemServiceImpl
             return ResultFs.PathNotFound.Log();
         }
 
-        if (StringUtils.GetLength(path, FsPath.MaxLength) == 0)
+        if (StringUtils.GetLength(path, PathTool.EntryNameLengthMax) == 0)
         {
             shouldContinue = false;
         }
@@ -691,9 +691,9 @@ public class NcaFileSystemServiceImpl
     private Result SetExternalKeyForRightsId(Nca nca)
     {
         var rightsId = new RightsId(nca.Header.RightsId);
-        var zero = new RightsId(0, 0);
+        var zero = new RightsId();
 
-        if (Crypto.CryptoUtil.IsSameBytes(rightsId.AsBytes(), zero.AsBytes(), Unsafe.SizeOf<RightsId>()))
+        if (Crypto.CryptoUtil.IsSameBytes(rightsId.Value, zero.Value, Unsafe.SizeOf<RightsId>()))
             return Result.Success;
 
         // ReSharper disable once UnusedVariable

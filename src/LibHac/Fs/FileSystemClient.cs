@@ -35,6 +35,7 @@ internal struct FileSystemClientGlobals : IDisposable
     public FsContextHandlerGlobals FsContextHandler;
     public ResultHandlingUtilityGlobals ResultHandlingUtility;
     public DirectorySaveDataFileSystemGlobals DirectorySaveDataFileSystem;
+    public FileDataCacheShim.Globals FileDataCache;
 
     public void Initialize(FileSystemClient fsClient, HorizonClient horizonClient)
     {

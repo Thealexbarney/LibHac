@@ -291,7 +291,6 @@ public partial class BucketTree : IDisposable
         public OffsetCache()
         {
             Mutex = new SdkMutexType();
-            Mutex.Initialize();
             IsInitialized = false;
             Offsets.StartOffset = -1;
             Offsets.EndOffset = -1;

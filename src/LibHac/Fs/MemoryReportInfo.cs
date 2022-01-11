@@ -1,8 +1,7 @@
-﻿using System.Runtime.InteropServices;
+﻿using LibHac.Common.FixedArrays;
 
 namespace LibHac.Fs;
 
-[StructLayout(LayoutKind.Sequential, Size = 0x80)]
 public struct MemoryReportInfo
 {
     public long PooledBufferFreeSizePeak;
@@ -12,8 +11,10 @@ public struct MemoryReportInfo
     public long BufferManagerRetriedCount;
     public long ExpHeapFreeSizePeak;
     public long BufferPoolFreeSizePeak;
-    public long PatrolAllocateSuccessCount;
-    public long PatrolAllocateFailureCount;
+    public long PatrolReadAllocateBufferSuccessCount;
+    public long PatrolReadAllocateBufferFailureCount;
     public long BufferManagerTotalAllocatableSizePeak;
     public long BufferPoolAllocateSizeMax;
+    public long PooledBufferFailedIdealAllocationCountOnAsyncAccess;
+    public Array32<byte> Reserved;
 }

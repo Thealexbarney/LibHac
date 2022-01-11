@@ -76,7 +76,7 @@ internal class DeliveryCacheStorageService : IDeliveryCacheStorageService
                     break;
                 }
 
-                StringUtils.Copy(nameBuffer[i].Bytes, entry.Name.Bytes);
+                StringUtils.Copy(nameBuffer[i].Value.Items, entry.Name.Value);
             }
 
             namesRead = i;

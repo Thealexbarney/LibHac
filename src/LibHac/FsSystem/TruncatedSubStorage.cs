@@ -16,7 +16,7 @@ public class TruncatedSubStorage : SubStorage
     public TruncatedSubStorage() { }
     public TruncatedSubStorage(SubStorage other) : base(other) { }
 
-    protected override Result DoRead(long offset, Span<byte> destination)
+    public override Result Read(long offset, Span<byte> destination)
     {
         if (destination.Length == 0)
             return Result.Success;
@@ -27,10 +27,10 @@ public class TruncatedSubStorage : SubStorage
         long availableSize = baseStorageSize - offset;
         long sizeToRead = Math.Min(destination.Length, availableSize);
 
-        return base.DoRead(offset, destination.Slice(0, (int)sizeToRead));
+        return base.Read(offset, destination.Slice(0, (int)sizeToRead));
     }
 
-    protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+    public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
         if (source.Length == 0)
             return Result.Success;
@@ -41,6 +41,6 @@ public class TruncatedSubStorage : SubStorage
         long availableSize = baseStorageSize - offset;
         long sizeToWrite = Math.Min(source.Length, availableSize);
 
-        return base.DoWrite(offset, source.Slice(0, (int)sizeToWrite));
+        return base.Write(offset, source.Slice(0, (int)sizeToWrite));
     }
 }

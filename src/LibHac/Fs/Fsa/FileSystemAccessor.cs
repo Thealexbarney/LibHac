@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs.Fsa;
+using LibHac.Fs.Shim;
 using LibHac.Os;
 using LibHac.Util;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
@@ -10,6 +11,13 @@ using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 // ReSharper disable once CheckNamespace
 namespace LibHac.Fs.Impl;
 
+/// <summary>
+/// Provides access to a mounted <see cref="IFileSystem"/> and contains metadata and objects related to it.
+/// This data includes the mount name, open files and directories, whether the access log is enabled for this file
+/// system, whether caching is being used, how to get a save file system's <see cref="SaveDataAttribute"/> and
+/// the target used to include a save file system in a multi-commit operation.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 internal class FileSystemAccessor : IDisposable
 {
     private const string EmptyMountNameMessage = "Error: Mount failed because the mount name was empty.\n";
@@ -31,7 +39,7 @@ internal class FileSystemAccessor : IDisposable
     private bool _isPathCacheAttached;
     private IMultiCommitTarget _multiCommitTarget;
     private PathFlags _pathFlags;
-    private Optional<Ncm.DataId> _dataId;
+    private IStorage _storageForPurgeFileDataCache;
 
     internal HorizonClient Hos { get; }
 
@@ -44,7 +52,7 @@ internal class FileSystemAccessor : IDisposable
         _fileSystem = new UniqueRef<IFileSystem>(ref fileSystem);
         _openFiles = new LinkedList<FileAccessor>();
         _openDirectories = new LinkedList<DirectoryAccessor>();
-        _openListLock.Initialize();
+        _openListLock = new SdkMutexType();
         _mountNameGenerator = new UniqueRef<ICommonMountNameGenerator>(ref mountNameGenerator);
         _saveDataAttributeGetter = new UniqueRef<ISaveDataAttributeGetter>(ref saveAttributeGetter);
         _multiCommitTarget = multiCommitTarget;
@@ -90,7 +98,8 @@ internal class FileSystemAccessor : IDisposable
 
             if (_isPathCacheAttached)
             {
-                throw new NotImplementedException();
+                using UniqueLock lk = Hos.Fs.Impl.LockPathBasedFileDataCacheEntries();
+                Hos.Fs.Impl.InvalidatePathBasedFileDataCacheEntries(this);
             }
         }
 
@@ -113,7 +122,16 @@ internal class FileSystemAccessor : IDisposable
     }
 
     public void SetAccessLog(bool isEnabled) => _isAccessLogEnabled = isEnabled;
-    public void SetFileDataCacheAttachable(bool isAttachable) => _isDataCacheAttachable = isAttachable;
+
+    public void SetFileDataCacheAttachable(bool isAttachable, IStorage storageForPurgeFileDataCache)
+    {
+        if (isAttachable)
+            Assert.SdkAssert(storageForPurgeFileDataCache is not null);
+
+        _isDataCacheAttachable = isAttachable;
+        _storageForPurgeFileDataCache = storageForPurgeFileDataCache;
+    }
+
     public void SetPathBasedFileDataCacheAttachable(bool isAttachable) => _isPathCacheAttachable = isAttachable;
 
     public bool IsEnabledAccessLog() => _isAccessLogEnabled;
@@ -126,10 +144,7 @@ internal class FileSystemAccessor : IDisposable
             _isPathCacheAttached = true;
     }
 
-    public Optional<Ncm.DataId> GetDataId() => _dataId;
-    public void SetDataId(Optional<Ncm.DataId> dataId) => _dataId = dataId;
-
-    public Result SetUpPath(ref Path path, U8Span pathBuffer)
+    private Result SetUpPath(ref Path path, U8Span pathBuffer)
     {
         Result rc = PathFormatter.IsNormalized(out bool isNormalized, out _, pathBuffer, _pathFlags);
 
@@ -168,7 +183,12 @@ internal class FileSystemAccessor : IDisposable
 
         if (_isPathCacheAttached)
         {
-            throw new NotImplementedException();
+            using UniqueLock lk = Hos.Fs.Impl.LockPathBasedFileDataCacheEntries();
+
+            rc = _fileSystem.Get.CreateFile(in pathNormalized, size, option);
+            if (rc.IsFailure()) return rc.Miss();
+
+            Hos.Fs.Impl.InvalidatePathBasedFileDataCacheEntry(this, in pathNormalized);
         }
         else
         {
@@ -251,7 +271,12 @@ internal class FileSystemAccessor : IDisposable
 
         if (_isPathCacheAttached)
         {
-            throw new NotImplementedException();
+            using UniqueLock lk = Hos.Fs.Impl.LockPathBasedFileDataCacheEntries();
+
+            rc = _fileSystem.Get.RenameFile(in currentPathNormalized, in newPathNormalized);
+            if (rc.IsFailure()) return rc.Miss();
+
+            Hos.Fs.Impl.InvalidatePathBasedFileDataCacheEntry(this, in newPathNormalized);
         }
         else
         {
@@ -274,7 +299,12 @@ internal class FileSystemAccessor : IDisposable
 
         if (_isPathCacheAttached)
         {
-            throw new NotImplementedException();
+            using UniqueLock lk = Hos.Fs.Impl.LockPathBasedFileDataCacheEntries();
+
+            rc = _fileSystem.Get.RenameDirectory(in currentPathNormalized, in newPathNormalized);
+            if (rc.IsFailure()) return rc.Miss();
+
+            Hos.Fs.Impl.InvalidatePathBasedFileDataCacheEntries(this);
         }
         else
         {
@@ -347,11 +377,17 @@ internal class FileSystemAccessor : IDisposable
         {
             if (mode.HasFlag(OpenMode.AllowAppend))
             {
-                throw new NotImplementedException();
+                using UniqueLock lk = Hos.Fs.Impl.LockPathBasedFileDataCacheEntries();
+                Hos.Fs.Impl.InvalidatePathBasedFileDataCacheEntry(this, in pathNormalized);
             }
             else
             {
-                throw new NotImplementedException();
+                var hash = new Box<FilePathHash>();
+
+                if (Hos.Fs.Impl.FindPathBasedFileDataCacheEntry(out hash.Value, out int hashIndex, this, in pathNormalized))
+                {
+                    accessor.SetFilePathHash(hash, hashIndex);
+                }
             }
         }
 
@@ -432,6 +468,13 @@ internal class FileSystemAccessor : IDisposable
         return Result.Success;
     }
 
+    public void PurgeFileDataCache(FileDataCacheAccessor accessor)
+    {
+        Assert.SdkAssert(_storageForPurgeFileDataCache is not null);
+
+        accessor.Purge(_storageForPurgeFileDataCache);
+    }
+
     public U8Span GetName()
     {
         return new U8Span(_mountName.Name);
@@ -470,11 +513,6 @@ internal class FileSystemAccessor : IDisposable
         }
     }
 
-    public void PurgeFileDataCache(FileDataCacheAccessor cacheAccessor)
-    {
-        cacheAccessor.Purge(_fileSystem.Get);
-    }
-
     internal void NotifyCloseFile(FileAccessor file)
     {
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _openListLock);
@@ -487,8 +525,10 @@ internal class FileSystemAccessor : IDisposable
         Remove(_openDirectories, directory);
     }
 
+    /// <summary>"<c>$fs</c>"</summary>
     private static ReadOnlySpan<byte> LogFsModuleName => new[] { (byte)'$', (byte)'f', (byte)'s' }; // "$fs"
 
+    /// <summary>"<c>------ FS ERROR INFORMATION ------\n</c>"</summary>
     private static ReadOnlySpan<byte> LogFsErrorInfo => // "------ FS ERROR INFORMATION ------\n"
         new[]
         {
@@ -499,6 +539,7 @@ internal class FileSystemAccessor : IDisposable
             (byte)'-', (byte)'-', (byte)'\\', (byte)'n'
         };
 
+    /// <summary>"<c>Error: File not closed</c>"</summary>
     private static ReadOnlySpan<byte> LogFileNotClosed => // "Error: File not closed"
         new[]
         {
@@ -507,6 +548,7 @@ internal class FileSystemAccessor : IDisposable
             (byte)'c', (byte)'l', (byte)'o', (byte)'s', (byte)'e', (byte)'d'
         };
 
+    /// <summary>"<c>Error: Directory not closed</c>"</summary>
     private static ReadOnlySpan<byte> LogDirectoryNotClosed => // "Error: Directory not closed"
         new[]
         {
@@ -516,6 +558,7 @@ internal class FileSystemAccessor : IDisposable
             (byte)'s', (byte)'e', (byte)'d'
         };
 
+    /// <summary>"<c> (mount_name: "</c>"</summary>
     private static ReadOnlySpan<byte> LogMountName => // " (mount_name: ""
         new[]
         {
@@ -523,6 +566,7 @@ internal class FileSystemAccessor : IDisposable
             (byte)'n', (byte)'a', (byte)'m', (byte)'e', (byte)':', (byte)' ', (byte)'"'
         };
 
+    /// <summary>"<c>", count: </c>"</summary>
     private static ReadOnlySpan<byte> LogCount => // "", count: "
         new[]
         {
@@ -530,10 +574,13 @@ internal class FileSystemAccessor : IDisposable
             (byte)':', (byte)' '
         };
 
+    /// <summary>"<c>)\n</c>"</summary>
     public static ReadOnlySpan<byte> LogLineEnd => new[] { (byte)')', (byte)'\\', (byte)'n' }; // ")\n"
 
+    /// <summary>"<c> | </c>"</summary>
     public static ReadOnlySpan<byte> LogOrOperator => new[] { (byte)' ', (byte)'|', (byte)' ' };  // " | "
 
+    /// <summary>"<c>OpenMode_Read</c>"</summary>
     private static ReadOnlySpan<byte> LogOpenModeRead => // "OpenMode_Read"
         new[]
         {
@@ -541,6 +588,7 @@ internal class FileSystemAccessor : IDisposable
             (byte)'_', (byte)'R', (byte)'e', (byte)'a', (byte)'d'
         };
 
+    /// <summary>"<c>OpenMode_Write</c>"</summary>
     private static ReadOnlySpan<byte> LogOpenModeWrite => // "OpenMode_Write"
         new[]
         {
@@ -548,6 +596,7 @@ internal class FileSystemAccessor : IDisposable
             (byte)'_', (byte)'W', (byte)'r', (byte)'i', (byte)'t', (byte)'e'
         };
 
+    /// <summary>"<c>OpenMode_AllowAppend</c>"</summary>
     private static ReadOnlySpan<byte> LogOpenModeAppend => // "OpenMode_AllowAppend"
         new[]
         {
@@ -556,6 +605,7 @@ internal class FileSystemAccessor : IDisposable
             (byte)'p', (byte)'e', (byte)'n', (byte)'d'
         };
 
+    /// <summary>"<c>     handle: 0x</c>"</summary>
     private static ReadOnlySpan<byte> LogHandle => // "     handle: 0x"
         new[]
         {
@@ -563,6 +613,7 @@ internal class FileSystemAccessor : IDisposable
             (byte)'d', (byte)'l', (byte)'e', (byte)':', (byte)' ', (byte)'0', (byte)'x'
         };
 
+    /// <summary>"<c>, open_mode: </c>"</summary>
     private static ReadOnlySpan<byte> LogOpenMode => // ", open_mode: "
         new[]
         {
@@ -570,6 +621,7 @@ internal class FileSystemAccessor : IDisposable
             (byte)'o', (byte)'d', (byte)'e', (byte)':', (byte)' '
         };
 
+    /// <summary>"<c>, size:</c>"</summary>
     private static ReadOnlySpan<byte> LogSize => // ", size: "
         new[]
         {

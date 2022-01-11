@@ -36,10 +36,10 @@ public class SaveDataManagement
         var applicationId = new Ncm.ApplicationId(1);
         FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-        Assert.Success(fs.CreateCacheStorage(applicationId, SaveDataSpaceId.SdCache, applicationId.Value, 0, 0, SaveDataFlags.None));
+        Assert.Success(fs.CreateCacheStorage(applicationId, SaveDataSpaceId.SdUser, applicationId.Value, 0, 0, SaveDataFlags.None));
 
         using var iterator = new UniqueRef<SaveDataIterator>();
-        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.SdCache);
+        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.SdUser);
 
         var info = new SaveDataInfo[2];
         iterator.Get.ReadSaveDataInfo(out long entriesRead, info);
@@ -54,7 +54,7 @@ public class SaveDataManagement
         var applicationId = new Ncm.ApplicationId(1);
         FileSystemClient fs = FileSystemServerFactory.CreateClient(false);
 
-        Assert.Result(ResultFs.PortSdCardNoDevice, fs.CreateCacheStorage(applicationId, SaveDataSpaceId.SdCache, applicationId.Value, 0, 0, SaveDataFlags.None));
+        Assert.Result(ResultFs.PortSdCardNoDevice, fs.CreateCacheStorage(applicationId, SaveDataSpaceId.SdUser, applicationId.Value, 0, 0, SaveDataFlags.None));
     }
 
     [Fact]

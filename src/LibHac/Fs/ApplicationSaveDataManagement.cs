@@ -3,7 +3,6 @@ using System.Diagnostics.CodeAnalysis;
 using LibHac.Account;
 using LibHac.Common;
 using LibHac.Fs.Shim;
-using LibHac.Ncm;
 using LibHac.Ns;
 using LibHac.Util;
 
@@ -18,7 +17,7 @@ public static class ApplicationSaveDataManagement
         long requiredSizeSum = 0;
 
         // Create local variable for use in closures
-        ProgramId saveDataOwnerId = nacp.SaveDataOwnerId;
+        ulong saveDataOwnerId = nacp.SaveDataOwnerId;
 
         // Ensure the user account save exists
         if (uid != Uid.Zero && nacp.UserAccountSaveDataSize > 0)
@@ -31,7 +30,7 @@ public static class ApplicationSaveDataManagement
             Result CreateAccountSaveFunc()
             {
                 UserId userId = ConvertAccountUidToFsUserId(uidLocal);
-                return fs.CreateSaveData(applicationId, userId, saveDataOwnerId.Value, accountSaveDataSize,
+                return fs.CreateSaveData(applicationId, userId, saveDataOwnerId, accountSaveDataSize,
                     accountSaveJournalSize, SaveDataFlags.None);
             }
 
@@ -53,8 +52,8 @@ public static class ApplicationSaveDataManagement
             long deviceSaveDataSize = nacp.DeviceSaveDataSize;
             long deviceSaveJournalSize = nacp.DeviceSaveDataJournalSize;
 
-            Result CreateDeviceSaveFunc() => fs.CreateDeviceSaveData(applicationId, saveDataOwnerId.Value,
-                deviceSaveDataSize, deviceSaveJournalSize, 0);
+            Result CreateDeviceSaveFunc() => fs.CreateDeviceSaveData(applicationId, saveDataOwnerId, deviceSaveDataSize,
+                deviceSaveJournalSize, 0);
 
             var filter = new SaveDataFilter();
             filter.SetProgramId(applicationId);
@@ -108,7 +107,7 @@ public static class ApplicationSaveDataManagement
             }
             else
             {
-                Result createRc = fs.CreateTemporaryStorage(applicationId, nacp.SaveDataOwnerId.Value,
+                Result createRc = fs.CreateTemporaryStorage(applicationId, nacp.SaveDataOwnerId,
                     nacp.TemporaryStorageSize, 0);
 
                 if (createRc.IsFailure())
@@ -253,7 +252,7 @@ public static class ApplicationSaveDataManagement
         }
         else if (targetMedia == CacheStorageTargetMedia.SdCard)
         {
-            rc = TryCreateCacheStorage(fs, out requiredSizeLocal, SaveDataSpaceId.SdCache, applicationId,
+            rc = TryCreateCacheStorage(fs, out requiredSizeLocal, SaveDataSpaceId.SdUser, applicationId,
                 saveDataOwnerId, index, dataSize, journalSize, allowExisting);
             if (rc.IsFailure()) return rc;
         }
@@ -265,7 +264,7 @@ public static class ApplicationSaveDataManagement
             {
                 target = CacheStorageTargetMedia.SdCard;
 
-                Result CreateFuncSdCard() => fs.CreateCacheStorage(applicationId, SaveDataSpaceId.SdCache,
+                Result CreateFuncSdCard() => fs.CreateCacheStorage(applicationId, SaveDataSpaceId.SdUser,
                     saveDataOwnerId, index, dataSize, journalSize, SaveDataFlags.None);
 
                 rc = CreateSaveData(fs, CreateFuncSdCard, ref requiredSizeLocal, 0x4000, dataSize, journalSize);
@@ -311,7 +310,7 @@ public static class ApplicationSaveDataManagement
     public static Result EnsureApplicationCacheStorage(this FileSystemClient fs, out long requiredSize,
         Ncm.ApplicationId applicationId, ref ApplicationControlProperty nacp)
     {
-        return EnsureApplicationCacheStorageImpl(fs, out requiredSize, out _, applicationId, nacp.SaveDataOwnerId.Value,
+        return EnsureApplicationCacheStorageImpl(fs, out requiredSize, out _, applicationId, nacp.SaveDataOwnerId,
             0, nacp.CacheStorageSize, nacp.CacheStorageJournalSize, true);
     }
 
@@ -324,7 +323,7 @@ public static class ApplicationSaveDataManagement
             return Result.Success;
 
         return EnsureApplicationCacheStorageImpl(fs, out requiredSize, out target, applicationId,
-            nacp.SaveDataOwnerId.Value, 0, nacp.CacheStorageSize, nacp.CacheStorageJournalSize, true);
+            nacp.SaveDataOwnerId, 0, nacp.CacheStorageSize, nacp.CacheStorageJournalSize, true);
 
     }
 
@@ -334,14 +333,14 @@ public static class ApplicationSaveDataManagement
     {
         UnsafeHelpers.SkipParamInit(out requiredSize, out target);
 
-        if (index > nacp.CacheStorageMaxIndex)
+        if (index > nacp.CacheStorageIndexMax)
             return ResultFs.CacheStorageIndexTooLarge.Log();
 
-        if (dataSize + journalSize > nacp.CacheStorageMaxSizeAndMaxJournalSize)
+        if (dataSize + journalSize > nacp.CacheStorageDataAndJournalSizeMax)
             return ResultFs.CacheStorageSizeTooLarge.Log();
 
         Result rc = fs.EnsureApplicationCacheStorage(out requiredSize, out target, applicationId,
-            nacp.SaveDataOwnerId.Value, index, dataSize, journalSize, false);
+            nacp.SaveDataOwnerId, index, dataSize, journalSize, false);
 
         fs.Impl.AbortIfNeeded(rc);
         return rc;
@@ -420,7 +419,7 @@ public static class ApplicationSaveDataManagement
 
         if (fs.IsSdCardAccessible())
         {
-            Result rc = fs.FindSaveDataWithFilter(out _, SaveDataSpaceId.SdCache, in filter);
+            Result rc = fs.FindSaveDataWithFilter(out _, SaveDataSpaceId.SdUser, in filter);
             if (rc.IsFailure() && !ResultFs.TargetNotFound.Includes(rc)) return rc;
 
             if (rc.IsSuccess())

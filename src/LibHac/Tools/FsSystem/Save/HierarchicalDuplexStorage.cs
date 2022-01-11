@@ -34,30 +34,36 @@ public class HierarchicalDuplexStorage : IStorage
         Length = dataSize;
     }
 
-    protected override Result DoRead(long offset, Span<byte> destination)
+    public override Result Read(long offset, Span<byte> destination)
     {
         return DataLayer.Read(offset, destination);
     }
 
-    protected override Result DoWrite(long offset, ReadOnlySpan<byte> source)
+    public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
         return DataLayer.Write(offset, source);
     }
 
-    protected override Result DoFlush()
+    public override Result Flush()
     {
         return DataLayer.Flush();
     }
 
-    protected override Result DoSetSize(long size)
+    public override Result SetSize(long size)
     {
         return ResultFs.NotImplemented.Log();
     }
 
-    protected override Result DoGetSize(out long size)
+    public override Result GetSize(out long size)
     {
         size = Length;
         return Result.Success;
+    }
+
+    public override Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+        ReadOnlySpan<byte> inBuffer)
+    {
+        throw new NotImplementedException();
     }
 
     public void FsTrim()

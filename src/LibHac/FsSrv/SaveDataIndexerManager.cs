@@ -85,7 +85,7 @@ internal class SaveDataIndexerManager : ISaveDataIndexerManager
                     indexer = _bisIndexer.Indexer;
                     break;
                 case SaveDataSpaceId.SdSystem:
-                case SaveDataSpaceId.SdCache:
+                case SaveDataSpaceId.SdUser:
                     // ReSharper doesn't realize that UniqueLock locks the indexer's lock object
                     // ReSharper disable InconsistentlySynchronizedField
                     indexerLock = new UniqueLock(_sdCardIndexer.Locker);
@@ -176,7 +176,7 @@ internal class SaveDataIndexerManager : ISaveDataIndexerManager
         // Note: Nintendo doesn't lock when doing this operation
         lock (_sdCardIndexer.Locker)
         {
-            if (spaceId != SaveDataSpaceId.SdCache && spaceId != SaveDataSpaceId.SdSystem)
+            if (spaceId != SaveDataSpaceId.SdUser && spaceId != SaveDataSpaceId.SdSystem)
             {
                 Abort.UnexpectedDefault();
             }

@@ -2,55 +2,56 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
+using LibHac.Common.FixedArrays;
 
 namespace LibHac.Kernel;
 
-[StructLayout(LayoutKind.Explicit, Size = 0x100)]
+[StructLayout(LayoutKind.Sequential)]
 public struct KipHeader
 {
-    public const uint Kip1Magic = 0x3150494B; // KIP1
-    public const int NameSize = 12;
-    public const int SegmentCount = 6;
+    public static readonly uint Kip1Magic = 0x3150494B; // KIP1
+    public static readonly int SegmentCount = 6;
 
-    [FieldOffset(0x00)] public uint Magic;
+    public uint Magic;
 
-    [FieldOffset(0x04)] private byte _name;
+    public Array12<byte> Name;
 
-    [FieldOffset(0x10)] public ulong ProgramId;
-    [FieldOffset(0x18)] public int Version;
+    public ulong ProgramId;
+    public int Version;
 
-    [FieldOffset(0x1C)] public byte Priority;
-    [FieldOffset(0x1D)] public byte IdealCoreId;
-    [FieldOffset(0x1F)] public Flag Flags;
+    public byte Priority;
+    public byte IdealCoreId;
+    private byte _reserved1E;
+    public Flag Flags;
 
-    [FieldOffset(0x20)] public int TextMemoryOffset;
-    [FieldOffset(0x24)] public int TextSize;
-    [FieldOffset(0x28)] public int TextFileSize;
+    public int TextMemoryOffset;
+    public int TextSize;
+    public int TextFileSize;
 
-    [FieldOffset(0x2C)] public int AffinityMask;
+    public int AffinityMask;
 
-    [FieldOffset(0x30)] public int RoMemoryOffset;
-    [FieldOffset(0x34)] public int RoSize;
-    [FieldOffset(0x38)] public int RoFileSize;
+    public int RoMemoryOffset;
+    public int RoSize;
+    public int RoFileSize;
 
-    [FieldOffset(0x3C)] public int StackSize;
+    public int StackSize;
 
-    [FieldOffset(0x40)] public int DataMemoryOffset;
-    [FieldOffset(0x44)] public int DataSize;
-    [FieldOffset(0x48)] public int DataFileSize;
+    public int DataMemoryOffset;
+    public int DataSize;
+    public int DataFileSize;
+    private byte _reserved4C;
 
-    [FieldOffset(0x50)] public int BssMemoryOffset;
-    [FieldOffset(0x54)] public int BssSize;
-    [FieldOffset(0x58)] public int BssFileSize;
+    public int BssMemoryOffset;
+    public int BssSize;
+    public int BssFileSize;
+    private byte _reserved5C;
 
-    [FieldOffset(0x80)] private uint _capabilities;
+    private Array2<SegmentHeader> _unusedSegmentHeaders;
 
-    public Span<byte> Name => SpanHelpers.CreateSpan(ref _name, NameSize);
+    public Array32<uint> Capabilities;
 
     public Span<SegmentHeader> Segments =>
         SpanHelpers.CreateSpan(ref Unsafe.As<int, SegmentHeader>(ref TextMemoryOffset), SegmentCount);
-
-    public Span<uint> Capabilities => SpanHelpers.CreateSpan(ref _capabilities, 0x80 / sizeof(uint));
 
     public bool IsValid => Magic == Kip1Magic;
 
@@ -65,11 +66,12 @@ public struct KipHeader
         UseSecureMemory = 1 << 5
     }
 
-    [StructLayout(LayoutKind.Sequential, Size = 0x10)]
+    [StructLayout(LayoutKind.Sequential)]
     public struct SegmentHeader
     {
         public int MemoryOffset;
         public int Size;
         public int FileSize;
+        private int _unused;
     }
 }

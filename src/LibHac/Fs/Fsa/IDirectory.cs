@@ -6,8 +6,11 @@ namespace LibHac.Fs.Fsa;
 /// <summary>
 /// Provides an interface for enumerating the child entries of a directory.
 /// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public abstract class IDirectory : IDisposable
 {
+    public virtual void Dispose() { }
+
     /// <summary>
     /// Retrieves the next entries that this directory contains. Does not search subdirectories.
     /// </summary>
@@ -43,6 +46,4 @@ public abstract class IDirectory : IDisposable
 
     protected abstract Result DoRead(out long entriesRead, Span<DirectoryEntry> entryBuffer);
     protected abstract Result DoGetEntryCount(out long entryCount);
-
-    public virtual void Dispose() { }
 }

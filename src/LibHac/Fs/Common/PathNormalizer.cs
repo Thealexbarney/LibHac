@@ -10,7 +10,7 @@ namespace LibHac.Fs;
 /// <summary>
 /// Contains functions for doing with basic path normalization.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public static class PathNormalizer
 {
     private enum PathState
@@ -26,13 +26,19 @@ public static class PathNormalizer
     public static Result Normalize(Span<byte> outputBuffer, out int length, ReadOnlySpan<byte> path, bool isWindowsPath,
         bool isDriveRelativePath)
     {
+        return Normalize(outputBuffer, out length, path, isWindowsPath, isDriveRelativePath, false);
+    }
+
+    public static Result Normalize(Span<byte> outputBuffer, out int length, ReadOnlySpan<byte> path, bool isWindowsPath,
+        bool isDriveRelativePath, bool allowAllCharacters)
+    {
         UnsafeHelpers.SkipParamInit(out length);
 
         ReadOnlySpan<byte> currentPath = path;
         int totalLength = 0;
         int i = 0;
 
-        if (!IsSeparator(path.At(0)))
+        if (path.At(0) != DirectorySeparator)
         {
             if (!isDriveRelativePath)
                 return ResultFs.InvalidPathFormat.Log();
@@ -43,6 +49,7 @@ public static class PathNormalizer
         var convertedPath = new RentedArray<byte>();
         try
         {
+            Result rc;
             // Check if parent directory path replacement is needed.
             if (IsParentDirectoryPathReplacementNeeded(currentPath))
             {
@@ -58,20 +65,22 @@ public static class PathNormalizer
 
             bool skipNextSeparator = false;
 
-            while (!IsNul(currentPath.At(i)))
+            while (currentPath.At(i) != NullTerminator)
             {
-                if (IsSeparator(currentPath[i]))
+                if (currentPath[i] == DirectorySeparator)
                 {
                     do
                     {
                         i++;
-                    } while (IsSeparator(currentPath.At(i)));
+                    } while (currentPath.At(i) == DirectorySeparator);
 
-                    if (IsNul(currentPath.At(i)))
+                    if (currentPath.At(i) == NullTerminator)
                         break;
 
                     if (!skipNextSeparator)
                     {
+                        // Note: Nintendo returns TooLongPath in some cases where the output buffer is actually long
+                        // enough to hold the normalized path. e.g. "/aa/bb/." with an output buffer length of 7
                         if (totalLength + 1 == outputBuffer.Length)
                         {
                             outputBuffer[totalLength] = NullTerminator;
@@ -87,8 +96,14 @@ public static class PathNormalizer
                 }
 
                 int dirLen = 0;
-                while (!IsSeparator(currentPath.At(i + dirLen)) && !IsNul(currentPath.At(i + dirLen)))
+                while (currentPath.At(i + dirLen) != DirectorySeparator && currentPath.At(i + dirLen) != NullTerminator)
                 {
+                    if (!allowAllCharacters)
+                    {
+                        rc = CheckInvalidCharacter(currentPath[i + dirLen]);
+                        if (rc.IsFailure()) return rc.Miss();
+                    }
+
                     dirLen++;
                 }
 
@@ -163,12 +178,14 @@ public static class PathNormalizer
             }
 
             // Note: This bug is in the original code. They probably meant to put "totalLength + 1"
-            if (totalLength - 1 > outputBuffer.Length)
+            // The buffer needs to be able to contain the total length of the normalized string plus
+            // one for the null terminator
+            if (outputBuffer.Length < totalLength - 1)
                 return ResultFs.TooLongPath.Log();
 
             outputBuffer[totalLength] = NullTerminator;
 
-            Result rc = IsNormalized(out bool isNormalized, out _, outputBuffer);
+            rc = IsNormalized(out bool isNormalized, out _, outputBuffer, allowAllCharacters);
             if (rc.IsFailure()) return rc;
 
             Assert.SdkAssert(isNormalized);
@@ -201,6 +218,12 @@ public static class PathNormalizer
     /// <see cref="ResultFs.InvalidPathFormat"/>: The path is not in a valid format.</returns>
     public static Result IsNormalized(out bool isNormalized, out int length, ReadOnlySpan<byte> path)
     {
+        return IsNormalized(out isNormalized, out length, path, false);
+    }
+
+    public static Result IsNormalized(out bool isNormalized, out int length, ReadOnlySpan<byte> path,
+        bool allowAllCharacters)
+    {
         UnsafeHelpers.SkipParamInit(out isNormalized, out length);
 
         var state = PathState.Initial;
@@ -213,7 +236,7 @@ public static class PathNormalizer
 
             pathLength++;
 
-            if (state != PathState.Initial)
+            if (!allowAllCharacters && state != PathState.Initial)
             {
                 Result rc = CheckInvalidCharacter(c);
                 if (rc.IsFailure()) return rc;
@@ -291,7 +314,6 @@ public static class PathNormalizer
         length = pathLength;
         return Result.Success;
     }
-
 
     /// <summary>
     /// Checks if a path begins with / or \ and contains any of these patterns:

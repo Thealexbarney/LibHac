@@ -7,6 +7,11 @@ public class SdkMutex : ILockable
 {
     private SdkMutexType _mutex;
 
+    public SdkMutex()
+    {
+        _mutex.Initialize();
+    }
+
     public void Initialize()
     {
         _mutex.Initialize();
@@ -36,6 +41,11 @@ public class SdkMutex : ILockable
 public struct SdkMutexType : ILockable
 {
     private InternalCriticalSection _cs;
+
+    public SdkMutexType()
+    {
+        _cs = new InternalCriticalSection();
+    }
 
     public void Initialize()
     {
@@ -95,6 +105,12 @@ public struct SdkRecursiveMutexType : ILockable
 {
     private InternalCriticalSection _cs;
     private int _recursiveCount;
+
+    public SdkRecursiveMutexType()
+    {
+        _cs = new InternalCriticalSection();
+        _recursiveCount = 0;
+    }
 
     public void Initialize()
     {

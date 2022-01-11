@@ -1,15 +1,13 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 using LibHac.Common;
+using LibHac.Common.FixedArrays;
 
 namespace LibHac.Fs;
 
-[StructLayout(LayoutKind.Sequential, Size = 16)]
-[DebuggerDisplay("{ToString()}")]
 internal struct MountName
 {
-    public Span<byte> Name => SpanHelpers.AsByteSpan(ref this);
+    private Array16<byte> _nameArray;
+    public Span<byte> Name => _nameArray.Items;
 
     public override string ToString() => new U8Span(Name).ToString();
 }

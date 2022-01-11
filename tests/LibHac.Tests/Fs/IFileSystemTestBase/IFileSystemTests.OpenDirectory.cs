@@ -19,4 +19,15 @@ public abstract partial class IFileSystemTests
 
         Assert.Result(ResultFs.PathNotFound, rc);
     }
+
+    [Fact]
+    public void OpenDirectory_PathDoesNotExist_ReturnsPathNotFound()
+    {
+        IFileSystem fs = CreateFileSystem();
+
+        using var directory = new UniqueRef<IDirectory>();
+        Result rc = fs.OpenDirectory(ref directory.Ref(), "/dir", OpenDirectoryMode.All);
+
+        Assert.Result(ResultFs.PathNotFound, rc);
+    }
 }

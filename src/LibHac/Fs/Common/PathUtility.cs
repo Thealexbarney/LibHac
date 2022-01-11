@@ -1,6 +1,7 @@
 ﻿using System;
 using LibHac.Common;
 using LibHac.Diag;
+using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Util;
 using static LibHac.Fs.StringTraits;
@@ -11,7 +12,7 @@ namespace LibHac.Fs;
 /// <summary>
 /// Contains various utility functions for working with paths.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public static class PathUtility
 {
     public static void Replace(Span<byte> buffer, byte currentChar, byte newChar)
@@ -46,16 +47,6 @@ public static class PathUtility
                (path.Length < 3 || path[2] == NullTerminator || path[2] == DirectorySeparator);
     }
 
-    public static bool IsSeparator(byte c)
-    {
-        return c == DirectorySeparator;
-    }
-
-    public static bool IsNul(byte c)
-    {
-        return c == NullTerminator;
-    }
-
     public static Result ConvertToFspPath(out FspPath fspPath, ReadOnlySpan<byte> path)
     {
         UnsafeHelpers.SkipParamInit(out fspPath);
@@ -65,7 +56,7 @@ public static class PathUtility
         if (length >= PathTool.EntryNameLengthMax + 1)
             return ResultFs.TooLongPath.Log();
 
-        Result rc = PathFormatter.SkipMountName(out ReadOnlySpan<byte> pathWithoutMountName, out _,
+        Result rc = PathFormatter.SkipMountName(out ReadOnlySpan<byte> pathWithoutMountName, out int skipLength,
             new U8Span(path));
         if (rc.IsFailure()) return rc;
 
@@ -73,10 +64,16 @@ public static class PathUtility
         {
             Replace(SpanHelpers.AsByteSpan(ref fspPath).Slice(0, 0x300), AltDirectorySeparator, DirectorySeparator);
         }
-        else if (fspPath.Str[0] == DirectorySeparator && fspPath.Str[1] == DirectorySeparator)
+        else
         {
-            SpanHelpers.AsByteSpan(ref fspPath)[0] = AltDirectorySeparator;
-            SpanHelpers.AsByteSpan(ref fspPath)[1] = AltDirectorySeparator;
+            bool isHostOrNoMountName = skipLength == 0 || StringUtils.Compare(path, CommonMountNames.HostRootFileSystemMountName,
+                CommonMountNames.HostRootFileSystemMountName.Length) == 0;
+
+            if (isHostOrNoMountName && WindowsPath.IsUncPath(path.Slice(skipLength), true, false))
+            {
+                SpanHelpers.AsByteSpan(ref fspPath)[skipLength] = AltDirectorySeparator;
+                SpanHelpers.AsByteSpan(ref fspPath)[skipLength + 1] = AltDirectorySeparator;
+            }
         }
 
         return Result.Success;
