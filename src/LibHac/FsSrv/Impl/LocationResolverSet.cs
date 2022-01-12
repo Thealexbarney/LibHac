@@ -39,7 +39,7 @@ internal struct LocationResolverSetGlobals
 /// <summary>
 /// Manages resolving the location of NCAs via the <c>lr</c> service.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 internal class LocationResolverSet : IDisposable
 {
     private Array5<Optional<LocationResolver>> _resolvers;
@@ -52,7 +52,7 @@ internal class LocationResolverSet : IDisposable
 
     public LocationResolverSet(FileSystemServer fsServer)
     {
-        _mutex.Initialize();
+        _mutex = new SdkMutexType();
         _fsServer = fsServer;
     }
 
@@ -129,6 +129,8 @@ internal class LocationResolverSet : IDisposable
 
     private Result GetAddOnContentLocationResolver(out AddOnContentLocationResolver resolver)
     {
+        UnsafeHelpers.SkipParamInit(out resolver);
+
         _fsServer.InitializeLocationResolverSet();
 
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
@@ -136,13 +138,9 @@ internal class LocationResolverSet : IDisposable
         if (!_aocResolver.HasValue)
         {
             Result rc = Hos.Lr.OpenAddOnContentLocationResolver(out AddOnContentLocationResolver lr);
-            if (rc.IsFailure())
-            {
-                UnsafeHelpers.SkipParamInit(out resolver);
-                return rc;
-            }
+            if (rc.IsFailure()) return rc.Miss();
 
-            _aocResolver = lr;
+            _aocResolver.Set(in lr);
         }
 
         resolver = _aocResolver.Value;
@@ -283,11 +281,11 @@ internal class LocationResolverSet : IDisposable
 
         return id switch
         {
-            StorageId.Host => 2,
-            StorageId.GameCard => 4,
             StorageId.BuiltInSystem => 0,
             StorageId.BuiltInUser => 1,
+            StorageId.Host => 2,
             StorageId.SdCard => 3,
+            StorageId.GameCard => 4,
             _ => -1
         };
     }
