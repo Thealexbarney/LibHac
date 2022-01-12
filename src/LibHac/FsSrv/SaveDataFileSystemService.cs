@@ -517,7 +517,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         // Only the FS process may delete the save indexer's save data.
         if (saveDataId == SaveData.SaveIndexerId)
         {
-            if (!IsCurrentProcess(_processId))
+            if (!_serviceImpl.FsServer.IsCurrentProcess(_processId))
                 return ResultFs.PermissionDenied.Log();
 
             actualSpaceId = spaceId;
@@ -2155,13 +2155,6 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     private Result GetProgramInfo(out ProgramInfo programInfo)
     {
         return _serviceImpl.GetProgramInfo(out programInfo, _processId);
-    }
-
-    private bool IsCurrentProcess(ulong processId)
-    {
-        ulong currentId = Hos.Os.GetCurrentProcessId().Value;
-
-        return processId == currentId;
     }
 
     private SaveDataSpaceId ConvertToRealSpaceId(SaveDataSpaceId spaceId)

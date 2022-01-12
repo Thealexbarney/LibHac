@@ -50,7 +50,7 @@ public class ProgramRegistryImpl : IProgramRegistry
     public Result RegisterProgram(ulong processId, ProgramId programId, StorageId storageId,
         InBuffer accessControlData, InBuffer accessControlDescriptor)
     {
-        if (!ProgramInfo.IsInitialProgram(_processId))
+        if (!_fsServer.IsInitialProgram(_processId))
             return ResultFs.PermissionDenied.Log();
 
         return Globals.ServiceImpl.RegisterProgramInfo(processId, programId, storageId, accessControlData.Buffer,
@@ -63,7 +63,7 @@ public class ProgramRegistryImpl : IProgramRegistry
     /// <inheritdoc cref="ProgramRegistryManager.UnregisterProgram" />
     public Result UnregisterProgram(ulong processId)
     {
-        if (!ProgramInfo.IsInitialProgram(_processId))
+        if (!_fsServer.IsInitialProgram(_processId))
             return ResultFs.PermissionDenied.Log();
 
         return Globals.ServiceImpl.UnregisterProgramInfo(processId);

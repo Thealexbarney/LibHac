@@ -12,8 +12,6 @@ namespace LibHac;
 
 public class Horizon
 {
-    private const int InitialProcessCountMax = 0x50;
-
     internal ITickGenerator TickGenerator { get; }
     internal ServiceManager ServiceManager { get; }
     private HorizonClient LoaderClient { get; }
@@ -23,7 +21,7 @@ public class Horizon
 
     public Horizon(HorizonConfiguration config)
     {
-        _currentProcessId = InitialProcessCountMax;
+        _currentProcessId = OsState.InitialProcessCountMax + 1;
 
         TickGenerator = config.TickGenerator ?? new DefaultTickGenerator();
         ServiceManager = new ServiceManager();
@@ -35,7 +33,7 @@ public class Horizon
     {
         ulong processId = Interlocked.Increment(ref _currentInitialProcessId);
 
-        Abort.DoAbortUnless(processId <= InitialProcessCountMax, "Created too many privileged clients.");
+        Abort.DoAbortUnless(processId <= OsState.InitialProcessCountMax, "Created too many privileged clients.");
 
         // Todo: Register process with FS
 

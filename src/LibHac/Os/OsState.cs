@@ -5,6 +5,9 @@ namespace LibHac.Os;
 
 public class OsState : IDisposable
 {
+    internal const int InitialProcessCountMin = 1;
+    internal const int InitialProcessCountMax = 0x50;
+
     public OsStateImpl Impl => new OsStateImpl(this);
     internal HorizonClient Hos { get; }
     internal OsResourceManager ResourceManager { get; }

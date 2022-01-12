@@ -29,6 +29,7 @@ internal struct FileSystemServerGlobals
     public ProgramRegistryImplGlobals ProgramRegistryImpl;
     public DeviceEventSimulatorGlobals DeviceEventSimulator;
     public AccessControlGlobals AccessControl;
+    public ProgramInfoGlobals ProgramInfo;
     public StorageDeviceManagerFactoryGlobals StorageDeviceManagerFactory;
     public SaveDataSharedFileStorageGlobals SaveDataSharedFileStorage;
     public MultiCommitManagerGlobals MultiCommitManager;
