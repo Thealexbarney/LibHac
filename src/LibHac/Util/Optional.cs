@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
+using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Diag;
 
@@ -35,6 +36,12 @@ public struct Optional<T>
     }
 
     public static implicit operator Optional<T>(in T value) => new Optional<T>(in value);
+
+    public void Set(T value)
+    {
+        _value = value;
+        _hasValue = true;
+    }
 
     public void Set(in T value)
     {
