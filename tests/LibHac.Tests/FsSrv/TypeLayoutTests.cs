@@ -43,6 +43,12 @@ public class TypeLayoutTests
     }
 
     [Fact]
+    public static void Accessibility_Layout()
+    {
+        Assert.Equal(1, Unsafe.SizeOf<Accessibility>());
+    }
+
+    [Fact]
     public static void FspPath_Layout()
     {
         var s = new FspPath();

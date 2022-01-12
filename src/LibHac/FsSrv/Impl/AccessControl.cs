@@ -25,17 +25,17 @@ internal struct AccessControlGlobals
 /// <summary>
 /// Controls access to FS resources for a single process.
 /// </summary>
-/// <remarks>Each process has it's own FS permissions. Every time a process tries to access various FS resources
-/// or perform certain actions, this class determines if the process has the permissions to do so.
-/// <br/>Based on FS 10.0.0 (nnSdk 10.4.0)</remarks>
+/// <remarks><para>Each process has its own FS permissions. Every time a process tries to access various FS resources
+/// or perform certain actions, this class determines if the process has the permissions to do so.</para>
+/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para></remarks>
 public class AccessControl
 {
-    private FileSystemServer FsServer { get; }
-    private ref AccessControlGlobals Globals => ref FsServer.Globals.AccessControl;
+    private Optional<AccessControlBits> _accessBits;
+    private LinkedList<ContentOwnerInfo> _contentOwners;
+    private LinkedList<SaveDataOwnerInfo> _saveDataOwners;
 
-    private Optional<AccessControlBits> AccessBits { get; }
-    private LinkedList<ContentOwnerInfo> ContentOwners { get; } = new LinkedList<ContentOwnerInfo>();
-    private LinkedList<SaveDataOwnerInfo> SaveDataOwners { get; } = new LinkedList<SaveDataOwnerInfo>();
+    private FileSystemServer _fsServer;
+    private ref AccessControlGlobals Globals => ref _fsServer.Globals.AccessControl;
 
     public AccessControl(FileSystemServer fsServer, ReadOnlySpan<byte> accessControlData,
         ReadOnlySpan<byte> accessControlDescriptor) : this(fsServer, accessControlData, accessControlDescriptor,
@@ -45,12 +45,15 @@ public class AccessControl
     public AccessControl(FileSystemServer fsServer, ReadOnlySpan<byte> accessControlData,
         ReadOnlySpan<byte> accessControlDescriptor, ulong accessFlagMask)
     {
-        FsServer = fsServer;
+        _fsServer = fsServer;
+
+        _contentOwners = new LinkedList<ContentOwnerInfo>();
+        _saveDataOwners = new LinkedList<SaveDataOwnerInfo>();
 
         // No permissions are given if any of the access control buffers are empty
         if (accessControlData.IsEmpty || accessControlDescriptor.IsEmpty)
         {
-            AccessBits = new AccessControlBits(0);
+            _accessBits = new AccessControlBits(0);
             return;
         }
 
@@ -59,25 +62,25 @@ public class AccessControl
         Abort.DoAbortUnless(accessControlDescriptor.Length >= Unsafe.SizeOf<AccessControlDescriptor>());
 
         // Cast the input buffers to their respective struct types
-        ref readonly AccessControlDescriptor descriptor =
-            ref SpanHelpers.AsReadOnlyStruct<AccessControlDescriptor>(accessControlDescriptor);
-
         ref readonly AccessControlDataHeader data =
             ref SpanHelpers.AsReadOnlyStruct<AccessControlDataHeader>(accessControlData);
+
+        ref readonly AccessControlDescriptor descriptor =
+            ref SpanHelpers.AsReadOnlyStruct<AccessControlDescriptor>(accessControlDescriptor);
 
         // Verify that the versions match and are valid
         if (data.Version == 0 || data.Version != descriptor.Version)
         {
-            AccessBits = new AccessControlBits(0);
+            _accessBits = new AccessControlBits(0);
             return;
         }
 
-        AccessBits = new AccessControlBits(descriptor.AccessFlags & accessFlagMask & data.AccessFlags);
+        _accessBits = new AccessControlBits(descriptor.AccessFlags & accessFlagMask & data.AccessFlags);
 
         // Verify the buffers are long enough to hold the content owner info
         Abort.DoAbortUnless(accessControlData.Length >= data.ContentOwnerInfoOffset + data.ContentOwnerInfoSize);
-        Abort.DoAbortUnless(accessControlDescriptor.Length >= Unsafe.SizeOf<AccessControlDescriptor>() +
-            descriptor.ContentOwnerIdCount * sizeof(ulong));
+        Abort.DoAbortUnless(accessControlDescriptor.Length >=
+                            Unsafe.SizeOf<AccessControlDescriptor>() + descriptor.ContentOwnerIdCount * sizeof(ulong));
 
         // Read and validate the content owner IDs in the access control data
         if (data.ContentOwnerInfoSize > 0)
@@ -116,7 +119,7 @@ public class AccessControl
 
                 if (isIdAllowed)
                 {
-                    ContentOwners.AddFirst(new ContentOwnerInfo(id));
+                    _contentOwners.AddFirst(new ContentOwnerInfo(id));
                 }
             }
         }
@@ -138,11 +141,12 @@ public class AccessControl
                 accessControlDescriptor.Slice(allowedIdsOffset, descriptor.SaveDataOwnerIdCount * sizeof(ulong)));
 
             // Get the lists of savedata owner accessibilities and IDs
-            ReadOnlySpan<byte> accessibilities =
-                accessControlData.Slice(data.SaveDataOwnerInfoOffset + sizeof(int), infoCount);
+            ReadOnlySpan<Accessibility> accessibilities =
+                MemoryMarshal.Cast<byte, Accessibility>(
+                    accessControlData.Slice(data.SaveDataOwnerInfoOffset + sizeof(int), infoCount));
 
             // The ID list must be 4-byte aligned
-            int idsOffset = Alignment.AlignUp(data.SaveDataOwnerInfoOffset + sizeof(int) + infoCount, 4);
+            int idsOffset = Alignment.AlignUpPow2(data.SaveDataOwnerInfoOffset + sizeof(int) + infoCount, 4);
             ReadOnlySpan<ulong> ids = MemoryMarshal.Cast<byte, ulong>(
                 accessControlData.Slice(idsOffset, infoCount * sizeof(ulong)));
 
@@ -152,7 +156,7 @@ public class AccessControl
 
             for (int i = 0; i < ids.Length; i++)
             {
-                var accessibility = new Accessibility(accessibilities[i]);
+                Accessibility accessibility = accessibilities[i];
                 ulong id = ids[i];
 
                 bool isIdAllowed;
@@ -171,7 +175,7 @@ public class AccessControl
 
                 if (isIdAllowed)
                 {
-                    SaveDataOwners.AddFirst(new SaveDataOwnerInfo(id, accessibility));
+                    _saveDataOwners.AddFirst(new SaveDataOwnerInfo(id, accessibility));
                 }
             }
         }
@@ -184,7 +188,7 @@ public class AccessControl
 
     public bool HasContentOwnerId(ulong ownerId)
     {
-        foreach (ContentOwnerInfo info in ContentOwners)
+        foreach (ContentOwnerInfo info in _contentOwners)
         {
             if (info.Id == ownerId)
                 return true;
@@ -195,7 +199,7 @@ public class AccessControl
 
     public Accessibility GetAccessibilitySaveDataOwnedBy(ulong ownerId)
     {
-        foreach (SaveDataOwnerInfo info in SaveDataOwners)
+        foreach (SaveDataOwnerInfo info in _saveDataOwners)
         {
             if (info.Id == ownerId)
                 return info.Accessibility;
@@ -209,19 +213,15 @@ public class AccessControl
         // If there's no output buffer, return the number of owned IDs
         if (outIds.Length == 0)
         {
-            outCount = SaveDataOwners.Count;
+            outCount = _saveDataOwners.Count;
             return;
         }
 
         int preCount = 0;
         int outIndex = 0;
 
-        foreach (SaveDataOwnerInfo info in SaveDataOwners)
+        foreach (SaveDataOwnerInfo info in _saveDataOwners)
         {
-            // Stop reading if the buffer's full
-            if (outIndex == outIds.Length)
-                break;
-
             // Skip IDs until we get to startIndex
             if (preCount < startIndex)
             {
@@ -229,6 +229,10 @@ public class AccessControl
             }
             else
             {
+                // Stop reading if the buffer's full
+                if (outIndex == outIds.Length)
+                    break;
+
                 // Write the ID to the buffer
                 outIds[outIndex] = new Ncm.ApplicationId(info.Id);
                 outIndex++;
@@ -238,10 +242,117 @@ public class AccessControl
         outCount = outIndex;
     }
 
+    public Accessibility GetAccessibilityFor(AccessibilityType type)
+    {
+        AccessControlBits accessBits = _accessBits.Value;
+
+        switch (type)
+        {
+            case AccessibilityType.MountLogo:
+                return new Accessibility(accessBits.CanMountLogoRead(), false);
+            case AccessibilityType.MountContentMeta:
+                return new Accessibility(accessBits.CanMountContentMetaRead(), false);
+            case AccessibilityType.MountContentControl:
+                return new Accessibility(accessBits.CanMountContentControlRead(), false);
+            case AccessibilityType.MountContentManual:
+                return new Accessibility(accessBits.CanMountContentManualRead(), false);
+            case AccessibilityType.MountContentData:
+                return new Accessibility(accessBits.CanMountContentDataRead(), false);
+            case AccessibilityType.MountApplicationPackage:
+                return new Accessibility(accessBits.CanMountApplicationPackageRead(), false);
+            case AccessibilityType.MountSaveDataStorage:
+                return new Accessibility(accessBits.CanMountSaveDataStorageRead(), accessBits.CanMountSaveDataStorageWrite());
+            case AccessibilityType.MountContentStorage:
+                return new Accessibility(accessBits.CanMountContentStorageRead(), accessBits.CanMountContentStorageWrite());
+            case AccessibilityType.MountImageAndVideoStorage:
+                return new Accessibility(accessBits.CanMountImageAndVideoStorageRead(), accessBits.CanMountImageAndVideoStorageWrite());
+            case AccessibilityType.MountCloudBackupWorkStorage:
+                return new Accessibility(accessBits.CanMountCloudBackupWorkStorageRead(), accessBits.CanMountCloudBackupWorkStorageWrite());
+            case AccessibilityType.MountCustomStorage:
+                return new Accessibility(accessBits.CanMountCustomStorage0Read(), accessBits.CanMountCustomStorage0Write());
+            case AccessibilityType.MountBisCalibrationFile:
+                return new Accessibility(accessBits.CanMountBisCalibrationFileRead(), accessBits.CanMountBisCalibrationFileWrite());
+            case AccessibilityType.MountBisSafeMode:
+                return new Accessibility(accessBits.CanMountBisSafeModeRead(), accessBits.CanMountBisSafeModeWrite());
+            case AccessibilityType.MountBisUser:
+                return new Accessibility(accessBits.CanMountBisUserRead(), accessBits.CanMountBisUserWrite());
+            case AccessibilityType.MountBisSystem:
+                return new Accessibility(accessBits.CanMountBisSystemRead(), accessBits.CanMountBisSystemWrite());
+            case AccessibilityType.MountBisSystemProperEncryption:
+                return new Accessibility(accessBits.CanMountBisSystemProperEncryptionRead(), accessBits.CanMountBisSystemProperEncryptionWrite());
+            case AccessibilityType.MountBisSystemProperPartition:
+                return new Accessibility(accessBits.CanMountBisSystemProperPartitionRead(), accessBits.CanMountBisSystemProperPartitionWrite());
+            case AccessibilityType.MountSdCard:
+                return new Accessibility(accessBits.CanMountSdCardRead(), accessBits.CanMountSdCardWrite());
+            case AccessibilityType.MountGameCard:
+                return new Accessibility(accessBits.CanMountGameCardRead(), false);
+            case AccessibilityType.MountDeviceSaveData:
+                return new Accessibility(accessBits.CanMountDeviceSaveDataRead(), accessBits.CanMountDeviceSaveDataWrite());
+            case AccessibilityType.MountSystemSaveData:
+                return new Accessibility(accessBits.CanMountSystemSaveDataRead(), accessBits.CanMountSystemSaveDataWrite());
+            case AccessibilityType.MountOthersSaveData:
+                return new Accessibility(accessBits.CanMountOthersSaveDataRead(), accessBits.CanMountOthersSaveDataWrite());
+            case AccessibilityType.MountOthersSystemSaveData:
+                return new Accessibility(accessBits.CanMountOthersSystemSaveDataRead(), accessBits.CanMountOthersSystemSaveDataWrite());
+            case AccessibilityType.OpenBisPartitionBootPartition1Root:
+                return new Accessibility(accessBits.CanOpenBisPartitionBootPartition1RootRead(), accessBits.CanOpenBisPartitionBootPartition1RootWrite());
+            case AccessibilityType.OpenBisPartitionBootPartition2Root:
+                return new Accessibility(accessBits.CanOpenBisPartitionBootPartition2RootRead(), accessBits.CanOpenBisPartitionBootPartition2RootWrite());
+            case AccessibilityType.OpenBisPartitionUserDataRoot:
+                return new Accessibility(accessBits.CanOpenBisPartitionUserDataRootRead(), accessBits.CanOpenBisPartitionUserDataRootWrite());
+            case AccessibilityType.OpenBisPartitionBootConfigAndPackage2Part1:
+                return new Accessibility(accessBits.CanOpenBisPartitionBootConfigAndPackage2Part1Read(), accessBits.CanOpenBisPartitionBootConfigAndPackage2Part1Write());
+            case AccessibilityType.OpenBisPartitionBootConfigAndPackage2Part2:
+                return new Accessibility(accessBits.CanOpenBisPartitionBootConfigAndPackage2Part2Read(), accessBits.CanOpenBisPartitionBootConfigAndPackage2Part2Write());
+            case AccessibilityType.OpenBisPartitionBootConfigAndPackage2Part3:
+                return new Accessibility(accessBits.CanOpenBisPartitionBootConfigAndPackage2Part3Read(), accessBits.CanOpenBisPartitionBootConfigAndPackage2Part3Write());
+            case AccessibilityType.OpenBisPartitionBootConfigAndPackage2Part4:
+                return new Accessibility(accessBits.CanOpenBisPartitionBootConfigAndPackage2Part4Read(), accessBits.CanOpenBisPartitionBootConfigAndPackage2Part4Write());
+            case AccessibilityType.OpenBisPartitionBootConfigAndPackage2Part5:
+                return new Accessibility(accessBits.CanOpenBisPartitionBootConfigAndPackage2Part5Read(), accessBits.CanOpenBisPartitionBootConfigAndPackage2Part5Write());
+            case AccessibilityType.OpenBisPartitionBootConfigAndPackage2Part6:
+                return new Accessibility(accessBits.CanOpenBisPartitionBootConfigAndPackage2Part6Read(), accessBits.CanOpenBisPartitionBootConfigAndPackage2Part6Write());
+            case AccessibilityType.OpenBisPartitionCalibrationBinary:
+                return new Accessibility(accessBits.CanOpenBisPartitionCalibrationBinaryRead(), accessBits.CanOpenBisPartitionCalibrationBinaryWrite());
+            case AccessibilityType.OpenBisPartitionCalibrationFile:
+                return new Accessibility(accessBits.CanOpenBisPartitionCalibrationFileRead(), accessBits.CanOpenBisPartitionCalibrationFileWrite());
+            case AccessibilityType.OpenBisPartitionSafeMode:
+                return new Accessibility(accessBits.CanOpenBisPartitionSafeModeRead(), accessBits.CanOpenBisPartitionSafeModeWrite());
+            case AccessibilityType.OpenBisPartitionUser:
+                return new Accessibility(accessBits.CanOpenBisPartitionUserRead(), accessBits.CanOpenBisPartitionUserWrite());
+            case AccessibilityType.OpenBisPartitionSystem:
+                return new Accessibility(accessBits.CanOpenBisPartitionSystemRead(), accessBits.CanOpenBisPartitionSystemWrite());
+            case AccessibilityType.OpenBisPartitionSystemProperEncryption:
+                return new Accessibility(accessBits.CanOpenBisPartitionSystemProperEncryptionRead(), accessBits.CanOpenBisPartitionSystemProperEncryptionWrite());
+            case AccessibilityType.OpenBisPartitionSystemProperPartition:
+                return new Accessibility(accessBits.CanOpenBisPartitionSystemProperPartitionRead(), accessBits.CanOpenBisPartitionSystemProperPartitionWrite());
+            case AccessibilityType.OpenSdCardStorage:
+                return new Accessibility(accessBits.CanOpenSdCardStorageRead(), accessBits.CanOpenSdCardStorageWrite());
+            case AccessibilityType.OpenGameCardStorage:
+                return new Accessibility(accessBits.CanOpenGameCardStorageRead(), accessBits.CanOpenGameCardStorageWrite());
+            case AccessibilityType.MountSystemDataPrivate:
+                return new Accessibility(accessBits.CanMountSystemDataPrivateRead(), false);
+            case AccessibilityType.MountHost:
+                return new Accessibility(accessBits.CanMountHostRead(), accessBits.CanMountHostWrite());
+            case AccessibilityType.MountRegisteredUpdatePartition:
+                return new Accessibility(accessBits.CanMountRegisteredUpdatePartitionRead() && Globals.DebugFlag, false);
+            case AccessibilityType.MountSaveDataInternalStorage:
+                return new Accessibility(accessBits.CanOpenSaveDataInternalStorageRead(), accessBits.CanOpenSaveDataInternalStorageWrite());
+            case AccessibilityType.MountTemporaryDirectory:
+                return new Accessibility(accessBits.CanMountTemporaryDirectoryRead(), accessBits.CanMountTemporaryDirectoryWrite());
+            case AccessibilityType.MountAllBaseFileSystem:
+                return new Accessibility(accessBits.CanMountAllBaseFileSystemRead(), accessBits.CanMountAllBaseFileSystemWrite());
+            case AccessibilityType.NotMount:
+                return new Accessibility(false, false);
+            default:
+                Abort.UnexpectedDefault();
+                return default;
+        }
+    }
+
     public bool CanCall(OperationType operation)
     {
-        // ReSharper disable once PossibleInvalidOperationException
-        AccessControlBits accessBits = AccessBits.Value;
+        AccessControlBits accessBits = _accessBits.Value;
 
         switch (operation)
         {
@@ -371,6 +482,8 @@ public class AccessControl
                 return accessBits.CanChallengeCardExistence();
             case OperationType.CreateOwnSaveData:
                 return accessBits.CanCreateOwnSaveData();
+            case OperationType.DeleteOwnSaveData:
+                return accessBits.CanDeleteOwnSaveData();
             case OperationType.ReadOwnSaveDataFileSystemExtraData:
                 return accessBits.CanReadOwnSaveDataFileSystemExtraData();
             case OperationType.ExtendOwnSaveData:
@@ -379,115 +492,12 @@ public class AccessControl
                 return accessBits.CanOpenOwnSaveDataTransferProhibiter();
             case OperationType.FindOwnSaveDataWithFilter:
                 return accessBits.CanFindOwnSaveDataWithFilter();
-            default:
-                Abort.UnexpectedDefault();
-                return default;
-        }
-    }
-
-    public Accessibility GetAccessibilityFor(AccessibilityType type)
-    {
-        // ReSharper disable once PossibleInvalidOperationException
-        AccessControlBits accessBits = AccessBits.Value;
-
-        switch (type)
-        {
-            case AccessibilityType.MountLogo:
-                return new Accessibility(accessBits.CanMountLogoRead(), false);
-            case AccessibilityType.MountContentMeta:
-                return new Accessibility(accessBits.CanMountContentMetaRead(), false);
-            case AccessibilityType.MountContentControl:
-                return new Accessibility(accessBits.CanMountContentControlRead(), false);
-            case AccessibilityType.MountContentManual:
-                return new Accessibility(accessBits.CanMountContentManualRead(), false);
-            case AccessibilityType.MountContentData:
-                return new Accessibility(accessBits.CanMountContentDataRead(), false);
-            case AccessibilityType.MountApplicationPackage:
-                return new Accessibility(accessBits.CanMountApplicationPackageRead(), false);
-            case AccessibilityType.MountSaveDataStorage:
-                return new Accessibility(accessBits.CanMountSaveDataStorageRead(), accessBits.CanMountSaveDataStorageWrite());
-            case AccessibilityType.MountContentStorage:
-                return new Accessibility(accessBits.CanMountContentStorageRead(), accessBits.CanMountContentStorageWrite());
-            case AccessibilityType.MountImageAndVideoStorage:
-                return new Accessibility(accessBits.CanMountImageAndVideoStorageRead(), accessBits.CanMountImageAndVideoStorageWrite());
-            case AccessibilityType.MountCloudBackupWorkStorage:
-                return new Accessibility(accessBits.CanMountCloudBackupWorkStorageRead(), accessBits.CanMountCloudBackupWorkStorageWrite());
-            case AccessibilityType.MountCustomStorage:
-                return new Accessibility(accessBits.CanMountCustomStorage0Read(), accessBits.CanMountCustomStorage0Write());
-            case AccessibilityType.MountBisCalibrationFile:
-                return new Accessibility(accessBits.CanMountBisCalibrationFileRead(), accessBits.CanMountBisCalibrationFileWrite());
-            case AccessibilityType.MountBisSafeMode:
-                return new Accessibility(accessBits.CanMountBisSafeModeRead(), accessBits.CanMountBisSafeModeWrite());
-            case AccessibilityType.MountBisUser:
-                return new Accessibility(accessBits.CanMountBisUserRead(), accessBits.CanMountBisUserWrite());
-            case AccessibilityType.MountBisSystem:
-                return new Accessibility(accessBits.CanMountBisSystemRead(), accessBits.CanMountBisSystemWrite());
-            case AccessibilityType.MountBisSystemProperEncryption:
-                return new Accessibility(accessBits.CanMountBisSystemProperEncryptionRead(), accessBits.CanMountBisSystemProperEncryptionWrite());
-            case AccessibilityType.MountBisSystemProperPartition:
-                return new Accessibility(accessBits.CanMountBisSystemProperPartitionRead(), accessBits.CanMountBisSystemProperPartitionWrite());
-            case AccessibilityType.MountSdCard:
-                return new Accessibility(accessBits.CanMountSdCardRead(), accessBits.CanMountSdCardWrite());
-            case AccessibilityType.MountGameCard:
-                return new Accessibility(accessBits.CanMountGameCardRead(), false);
-            case AccessibilityType.MountDeviceSaveData:
-                return new Accessibility(accessBits.CanMountDeviceSaveDataRead(), accessBits.CanMountDeviceSaveDataWrite());
-            case AccessibilityType.MountSystemSaveData:
-                return new Accessibility(accessBits.CanMountSystemSaveDataRead(), accessBits.CanMountSystemSaveDataWrite());
-            case AccessibilityType.MountOthersSaveData:
-                return new Accessibility(accessBits.CanMountOthersSaveDataRead(), accessBits.CanMountOthersSaveDataWrite());
-            case AccessibilityType.MountOthersSystemSaveData:
-                return new Accessibility(accessBits.CanMountOthersSystemSaveDataRead(), accessBits.CanMountOthersSystemSaveDataWrite());
-            case AccessibilityType.OpenBisPartitionBootPartition1Root:
-                return new Accessibility(accessBits.CanOpenBisPartitionBootPartition1RootRead(), accessBits.CanOpenBisPartitionBootPartition1RootWrite());
-            case AccessibilityType.OpenBisPartitionBootPartition2Root:
-                return new Accessibility(accessBits.CanOpenBisPartitionBootPartition2RootRead(), accessBits.CanOpenBisPartitionBootPartition2RootWrite());
-            case AccessibilityType.OpenBisPartitionUserDataRoot:
-                return new Accessibility(accessBits.CanOpenBisPartitionUserDataRootRead(), accessBits.CanOpenBisPartitionUserDataRootWrite());
-            case AccessibilityType.OpenBisPartitionBootConfigAndPackage2Part1:
-                return new Accessibility(accessBits.CanOpenBisPartitionBootConfigAndPackage2Part1Read(), accessBits.CanOpenBisPartitionBootConfigAndPackage2Part1Write());
-            case AccessibilityType.OpenBisPartitionBootConfigAndPackage2Part2:
-                return new Accessibility(accessBits.CanOpenBisPartitionBootConfigAndPackage2Part2Read(), accessBits.CanOpenBisPartitionBootConfigAndPackage2Part2Write());
-            case AccessibilityType.OpenBisPartitionBootConfigAndPackage2Part3:
-                return new Accessibility(accessBits.CanOpenBisPartitionBootConfigAndPackage2Part3Read(), accessBits.CanOpenBisPartitionBootConfigAndPackage2Part3Write());
-            case AccessibilityType.OpenBisPartitionBootConfigAndPackage2Part4:
-                return new Accessibility(accessBits.CanOpenBisPartitionBootConfigAndPackage2Part4Read(), accessBits.CanOpenBisPartitionBootConfigAndPackage2Part4Write());
-            case AccessibilityType.OpenBisPartitionBootConfigAndPackage2Part5:
-                return new Accessibility(accessBits.CanOpenBisPartitionBootConfigAndPackage2Part5Read(), accessBits.CanOpenBisPartitionBootConfigAndPackage2Part5Write());
-            case AccessibilityType.OpenBisPartitionBootConfigAndPackage2Part6:
-                return new Accessibility(accessBits.CanOpenBisPartitionBootConfigAndPackage2Part6Read(), accessBits.CanOpenBisPartitionBootConfigAndPackage2Part6Write());
-            case AccessibilityType.OpenBisPartitionCalibrationBinary:
-                return new Accessibility(accessBits.CanOpenBisPartitionCalibrationBinaryRead(), accessBits.CanOpenBisPartitionCalibrationFileWrite());
-            case AccessibilityType.OpenBisPartitionCalibrationFile:
-                return new Accessibility(accessBits.CanOpenBisPartitionCalibrationFileRead(), accessBits.CanOpenBisPartitionCalibrationBinaryWrite());
-            case AccessibilityType.OpenBisPartitionSafeMode:
-                return new Accessibility(accessBits.CanOpenBisPartitionSafeModeRead(), accessBits.CanOpenBisPartitionSafeModeWrite());
-            case AccessibilityType.OpenBisPartitionUser:
-                return new Accessibility(accessBits.CanOpenBisPartitionUserRead(), accessBits.CanOpenBisPartitionUserWrite());
-            case AccessibilityType.OpenBisPartitionSystem:
-                return new Accessibility(accessBits.CanOpenBisPartitionSystemRead(), accessBits.CanOpenBisPartitionSystemWrite());
-            case AccessibilityType.OpenBisPartitionSystemProperEncryption:
-                return new Accessibility(accessBits.CanOpenBisPartitionSystemProperEncryptionRead(), accessBits.CanOpenBisPartitionSystemProperEncryptionWrite());
-            case AccessibilityType.OpenBisPartitionSystemProperPartition:
-                return new Accessibility(accessBits.CanOpenBisPartitionSystemProperPartitionRead(), accessBits.CanOpenBisPartitionSystemProperPartitionWrite());
-            case AccessibilityType.OpenSdCardStorage:
-                return new Accessibility(accessBits.CanOpenSdCardStorageRead(), accessBits.CanOpenSdCardStorageWrite());
-            case AccessibilityType.OpenGameCardStorage:
-                return new Accessibility(accessBits.CanOpenGameCardStorageRead(), accessBits.CanOpenGameCardStorageWrite());
-            case AccessibilityType.MountSystemDataPrivate:
-                return new Accessibility(accessBits.CanMountSystemDataPrivateRead(), false);
-            case AccessibilityType.MountHost:
-                return new Accessibility(accessBits.CanMountHostRead(), accessBits.CanMountHostWrite());
-            case AccessibilityType.MountRegisteredUpdatePartition:
-                return new Accessibility(accessBits.CanMountRegisteredUpdatePartitionRead() && Globals.DebugFlag, false);
-            case AccessibilityType.MountSaveDataInternalStorage:
-                return new Accessibility(accessBits.CanOpenSaveDataInternalStorageRead(), accessBits.CanOpenSaveDataInternalStorageWrite());
-            case AccessibilityType.MountTemporaryDirectory:
-                return new Accessibility(accessBits.CanMountTemporaryDirectoryRead(), accessBits.CanMountTemporaryDirectoryWrite());
-            case AccessibilityType.MountAllBaseFileSystem:
-                return new Accessibility(accessBits.CanMountAllBaseFileSystemRead(), accessBits.CanMountAllBaseFileSystemWrite());
-            case AccessibilityType.NotMount:
-                return new Accessibility(false, false);
+            case OperationType.OpenSaveDataTransferManagerForRepair:
+                return accessBits.CanOpenSaveDataTransferManagerForRepair();
+            case OperationType.SetDebugConfiguration:
+                return accessBits.CanSetDebugConfiguration();
+            case OperationType.OpenDataStorageByPath:
+                return accessBits.CanOpenDataStorageByPath();
             default:
                 Abort.UnexpectedDefault();
                 return default;
@@ -527,11 +537,6 @@ public readonly struct Accessibility
         int readValue = canRead ? 1 : 0;
         int writeValue = canWrite ? 1 : 0;
         _value = (byte)(writeValue << 1 | readValue);
-    }
-
-    public Accessibility(byte value)
-    {
-        _value = value;
     }
 
     public bool CanRead => (_value & 1) == 1;
@@ -609,6 +614,7 @@ public readonly struct AccessControlBits
     public bool CanCreateSaveDataWithHashSalt() => Has(Bits.None);
     public bool CanCreateSystemSaveData() => Has(Bits.SaveDataBackUp | Bits.SystemSaveData);
     public bool CanDebugSaveData() => Has(Bits.Debug | Bits.SaveDataForDebug);
+    public bool CanDeleteOwnSaveData() => Has(Bits.CreateOwnSaveData);
     public bool CanDeleteSaveData() => Has(Bits.SaveDataManagement | Bits.SaveDataBackUp);
     public bool CanDeleteSystemSaveData() => Has(Bits.SystemSaveDataManagement | Bits.SaveDataBackUp | Bits.SystemSaveData);
     public bool CanEraseMmc() => Has(Bits.BisAllRaw);
@@ -711,6 +717,7 @@ public readonly struct AccessControlBits
     public bool CanOpenBisPartitionUserRead() => Has(Bits.BisAllRaw);
     public bool CanOpenBisPartitionUserWrite() => Has(Bits.BisAllRaw);
     public bool CanOpenBisWiper() => Has(Bits.ContentManager);
+    public bool CanOpenDataStorageByPath() => Has(Bits.None);
     public bool CanOpenGameCardDetectionEventNotifier() => Has(Bits.DeviceDetection | Bits.GameCardRaw | Bits.GameCard);
     public bool CanOpenGameCardStorageRead() => Has(Bits.GameCardRaw);
     public bool CanOpenGameCardStorageWrite() => Has(Bits.GameCardRaw);
@@ -723,6 +730,7 @@ public readonly struct AccessControlBits
     public bool CanOpenSaveDataMetaFile() => Has(Bits.SaveDataMeta);
     public bool CanOpenSaveDataMover() => Has(Bits.MoveCacheStorage);
     public bool CanOpenSaveDataTransferManager() => Has(Bits.SaveDataTransfer);
+    public bool CanOpenSaveDataTransferManagerForRepair() => Has(Bits.SaveDataBackUp);
     public bool CanOpenSaveDataTransferManagerForSaveDataRepair() => Has(Bits.SaveDataTransferVersion2);
     public bool CanOpenSaveDataTransferManagerForSaveDataRepairTool() => Has(Bits.None);
     public bool CanOpenSaveDataTransferManagerVersion2() => Has(Bits.SaveDataTransferVersion2);
@@ -740,6 +748,7 @@ public readonly struct AccessControlBits
     public bool CanRegisterUpdatePartition() => Has(Bits.RegisterUpdatePartition);
     public bool CanResolveAccessFailure() => Has(Bits.AccessFailureResolution);
     public bool CanSetCurrentPosixTime() => Has(Bits.SetTime);
+    public bool CanSetDebugConfiguration() => Has(Bits.None);
     public bool CanSetEncryptionSeed() => Has(Bits.ContentManager);
     public bool CanSetGlobalAccessLogMode() => Has(Bits.SettingsControl);
     public bool CanSetSdCardAccessibility() => Has(Bits.SdCard);
@@ -858,7 +867,10 @@ public enum OperationType
     ReadOwnSaveDataFileSystemExtraData,
     ExtendOwnSaveData,
     OpenOwnSaveDataTransferProhibiter,
-    FindOwnSaveDataWithFilter
+    FindOwnSaveDataWithFilter,
+    OpenSaveDataTransferManagerForRepair,
+    SetDebugConfiguration,
+    OpenDataStorageByPath
 }
 
 public enum AccessibilityType
