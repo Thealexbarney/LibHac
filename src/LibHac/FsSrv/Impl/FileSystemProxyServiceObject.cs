@@ -66,7 +66,8 @@ public static class FileSystemProxyServiceObject
         public void Dispose() { }
 
         public Result RegisterProgram(ulong processId, ProgramId programId, StorageId storageId,
-            InBuffer accessControlData, InBuffer accessControlDescriptor)
+            InBuffer accessControlData, long accessControlDataSize, InBuffer accessControlDescriptor,
+            long accessControlDescriptorSize)
         {
             return ResultFs.PortAcceptableCountLimited.Log();
         }

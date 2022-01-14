@@ -20,7 +20,7 @@ public static class ProgramRegistry
         if (rc.IsFailure()) return rc.Miss();
 
         rc = programRegistry.Get.RegisterProgram(processId, programId, storageId, new InBuffer(accessControlData),
-            new InBuffer(accessControlDescriptor));
+            accessControlData.Length, new InBuffer(accessControlDescriptor), accessControlDescriptor.Length);
 
         fs.Impl.AbortIfNeeded(rc);
         if (rc.IsFailure()) return rc.Miss();

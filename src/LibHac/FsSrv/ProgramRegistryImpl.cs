@@ -1,19 +1,11 @@
-﻿using LibHac.Fs;
+﻿using LibHac.Diag;
+using LibHac.Fs;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
 using LibHac.Sf;
 
 namespace LibHac.FsSrv;
-
-public static class ProgramRegistryImplGlobalMethods
-{
-    public static void InitializeProgramRegistryImpl(this FileSystemServer fsSrv,
-        ProgramRegistryServiceImpl serviceImpl)
-    {
-        fsSrv.Globals.ProgramRegistryImpl.ServiceImpl = serviceImpl;
-    }
-}
 
 internal struct ProgramRegistryImplGlobals
 {
@@ -27,11 +19,13 @@ internal struct ProgramRegistryImplGlobals
 /// is stored in a <see cref="ProgramInfo"/> and includes the process' process ID, program ID,
 /// storage location and file system permissions. This allows FS to resolve the program ID and
 /// verify the permissions of any process calling it. 
-/// <br/>Based on FS 10.0.0 (nnSdk 10.4.0)</remarks>
+/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para></remarks>
 public class ProgramRegistryImpl : IProgramRegistry
 {
-    private FileSystemServer _fsServer;
     private ulong _processId;
+
+    // LibHac addition
+    private FileSystemServer _fsServer;
 
     private ref ProgramRegistryImplGlobals Globals => ref _fsServer.Globals.ProgramRegistryImpl;
 
@@ -47,11 +41,19 @@ public class ProgramRegistryImpl : IProgramRegistry
     /// <see cref="ResultFs.InvalidArgument"/>: The process ID is already registered.<br/>
     /// <see cref="ResultFs.PermissionDenied"/>: Insufficient permissions.</returns>
     /// <inheritdoc cref="ProgramRegistryManager.RegisterProgram"/>
-    public Result RegisterProgram(ulong processId, ProgramId programId, StorageId storageId,
-        InBuffer accessControlData, InBuffer accessControlDescriptor)
+    public Result RegisterProgram(ulong processId, ProgramId programId, StorageId storageId, InBuffer accessControlData,
+        long accessControlDataSize, InBuffer accessControlDescriptor, long accessControlDescriptorSize)
     {
+        Assert.SdkRequiresNotNull(Globals.ServiceImpl);
+
         if (!_fsServer.IsInitialProgram(_processId))
             return ResultFs.PermissionDenied.Log();
+
+        if (accessControlDataSize > accessControlData.Size)
+            return ResultFs.InvalidSize.Log();
+
+        if (accessControlDescriptorSize > accessControlDescriptor.Size)
+            return ResultFs.InvalidSize.Log();
 
         return Globals.ServiceImpl.RegisterProgramInfo(processId, programId, storageId, accessControlData.Buffer,
             accessControlDescriptor.Buffer);
@@ -63,6 +65,8 @@ public class ProgramRegistryImpl : IProgramRegistry
     /// <inheritdoc cref="ProgramRegistryManager.UnregisterProgram" />
     public Result UnregisterProgram(ulong processId)
     {
+        Assert.SdkRequiresNotNull(Globals.ServiceImpl);
+
         if (!_fsServer.IsInitialProgram(_processId))
             return ResultFs.PermissionDenied.Log();
 
@@ -72,12 +76,16 @@ public class ProgramRegistryImpl : IProgramRegistry
     /// <inheritdoc cref="ProgramRegistryManager.GetProgramInfo"/>
     public Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
     {
+        Assert.SdkRequiresNotNull(Globals.ServiceImpl);
+
         return Globals.ServiceImpl.GetProgramInfo(out programInfo, processId);
     }
 
     /// <inheritdoc cref="ProgramRegistryManager.GetProgramInfoByProgramId"/>
     public Result GetProgramInfoByProgramId(out ProgramInfo programInfo, ulong programId)
     {
+        Assert.SdkRequiresNotNull(Globals.ServiceImpl);
+
         return Globals.ServiceImpl.GetProgramInfoByProgramId(out programInfo, programId);
     }
 
@@ -90,5 +98,23 @@ public class ProgramRegistryImpl : IProgramRegistry
     {
         _processId = processId;
         return Result.Success;
+    }
+
+    /// <summary>
+    /// Sets the <see cref="ProgramRegistryServiceImpl"/> used by the provided <see cref="FileSystemServer"/>.
+    /// This function must be called before calling functions on a <see cref="ProgramRegistryImpl"/>.
+    /// This function must not be called more than once.
+    /// </summary>
+    /// <param name="fsServer">The <see cref="FileSystemServer"/> to initialize.</param>
+    /// <param name="serviceImpl">The <see cref="ProgramRegistryServiceImpl"/>
+    /// that <paramref name="fsServer"/> will use.</param>
+    public static void Initialize(FileSystemServer fsServer, ProgramRegistryServiceImpl serviceImpl)
+    {
+        ref ProgramRegistryImplGlobals globals = ref fsServer.Globals.ProgramRegistryImpl;
+
+        Assert.SdkRequiresNotNull(serviceImpl);
+        Assert.SdkRequiresNull(globals.ServiceImpl);
+
+        globals.ServiceImpl = serviceImpl;
     }
 }

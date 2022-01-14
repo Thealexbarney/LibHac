@@ -82,7 +82,7 @@ public static class FileSystemServerInitializer
 
         var programRegistryService = new ProgramRegistryServiceImpl(in programRegistryConfig);
 
-        server.InitializeProgramRegistryImpl(programRegistryService);
+        ProgramRegistryImpl.Initialize(server, programRegistryService);
 
         var baseStorageConfig = new BaseStorageServiceImpl.Configuration();
         baseStorageConfig.BisStorageCreator = config.FsCreators.BuiltInStorageCreator;

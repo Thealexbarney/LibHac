@@ -138,7 +138,7 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
 
     private ProgramIndexRegistryService GetProgramIndexRegistryService()
     {
-        return new ProgramIndexRegistryService(Globals.ProgramRegistryServiceImpl, _currentProcess);
+        return new ProgramIndexRegistryService(_fsServer, Globals.ProgramRegistryServiceImpl, _currentProcess);
     }
 
     private AccessLogService GetAccessLogService()
