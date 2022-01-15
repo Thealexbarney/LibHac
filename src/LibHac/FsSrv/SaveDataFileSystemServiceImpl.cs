@@ -803,7 +803,7 @@ public class SaveDataFileSystemServiceImpl
         Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), out bool _, SaveDataSpaceId.User);
         if (rc.IsFailure()) return rc.Miss();
 
-        count = accessor.Get.Indexer.GetIndexCount();
+        count = accessor.Get.GetInterface().GetIndexCount();
         return Result.Success;
     }
 

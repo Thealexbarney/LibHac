@@ -484,7 +484,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
             if (rc.IsFailure()) return rc;
 
-            rc = accessor.Get.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
+            rc = accessor.Get.GetInterface().GetValue(out SaveDataIndexerValue value, saveDataId);
             if (rc.IsFailure()) return rc;
 
             if (value.SpaceId != ConvertToRealSpaceId(spaceId))
@@ -534,14 +534,14 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             }
             else
             {
-                rc = accessor.Get.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
+                rc = accessor.Get.GetInterface().GetValue(out SaveDataIndexerValue value, saveDataId);
                 if (rc.IsFailure()) return rc;
 
                 actualSpaceId = value.SpaceId;
             }
 
             // Check if the caller has permission to delete this save.
-            rc = accessor.Get.Indexer.GetKey(out SaveDataAttribute key, saveDataId);
+            rc = accessor.Get.GetInterface().GetKey(out SaveDataAttribute key, saveDataId);
             if (rc.IsFailure()) return rc;
 
             Result GetExtraData(out SaveDataExtraData data) =>
@@ -552,10 +552,10 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             if (rc.IsFailure()) return rc;
 
             // Pre-delete checks successful. Put the save in the Processing state until deletion is finished.
-            rc = accessor.Get.Indexer.SetState(saveDataId, SaveDataState.Processing);
+            rc = accessor.Get.GetInterface().SetState(saveDataId, SaveDataState.Processing);
             if (rc.IsFailure()) return rc;
 
-            rc = accessor.Get.Indexer.Commit();
+            rc = accessor.Get.GetInterface().Commit();
             if (rc.IsFailure()) return rc;
         }
 
@@ -567,10 +567,10 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         // The indexer doesn't track itself, so skip if deleting its save data.
         if (saveDataId != SaveData.SaveIndexerId)
         {
-            rc = accessor.Get.Indexer.Delete(saveDataId);
+            rc = accessor.Get.GetInterface().Delete(saveDataId);
             if (rc.IsFailure()) return rc;
 
-            rc = accessor.Get.Indexer.Commit();
+            rc = accessor.Get.GetInterface().Commit();
             if (rc.IsFailure()) return rc;
         }
 
@@ -725,7 +725,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
                     // If a static save data ID is specified that ID is always used
                     saveDataId = attribute.StaticSaveDataId;
 
-                    rc = accessor.Get.Indexer.PutStaticSaveDataIdIndex(in indexerKey);
+                    rc = accessor.Get.GetInterface().PutStaticSaveDataIdIndex(in indexerKey);
                 }
                 else
                 {
@@ -734,14 +734,14 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
                     // end up in a situation where it can't create a required system save.
                     if (!SaveDataProperties.CanUseIndexerReservedArea(attribute.Type))
                     {
-                        if (accessor.Get.Indexer.IsRemainedReservedOnly())
+                        if (accessor.Get.GetInterface().IsRemainedReservedOnly())
                         {
                             return ResultKvdb.OutOfKeyResource.Log();
                         }
                     }
 
                     // If a static save data ID is no specified we're assigned a new save ID
-                    rc = accessor.Get.Indexer.Publish(out saveDataId, in indexerKey);
+                    rc = accessor.Get.GetInterface().Publish(out saveDataId, in indexerKey);
                 }
 
                 if (rc.IsFailure())
@@ -757,19 +757,19 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
                 creating = true;
 
                 // Set the state, space ID and size on the new save indexer entry.
-                rc = accessor.Get.Indexer.SetState(saveDataId, SaveDataState.Processing);
+                rc = accessor.Get.GetInterface().SetState(saveDataId, SaveDataState.Processing);
                 if (rc.IsFailure()) return rc;
 
-                rc = accessor.Get.Indexer.SetSpaceId(saveDataId, ConvertToRealSpaceId(creationInfo.SpaceId));
+                rc = accessor.Get.GetInterface().SetSpaceId(saveDataId, ConvertToRealSpaceId(creationInfo.SpaceId));
                 if (rc.IsFailure()) return rc;
 
                 rc = QuerySaveDataTotalSize(out long saveDataSize, creationInfo.Size, creationInfo.JournalSize);
                 if (rc.IsFailure()) return rc;
 
-                rc = accessor.Get.Indexer.SetSize(saveDataId, saveDataSize);
+                rc = accessor.Get.GetInterface().SetSize(saveDataId, saveDataSize);
                 if (rc.IsFailure()) return rc;
 
-                rc = accessor.Get.Indexer.Commit();
+                rc = accessor.Get.GetInterface().Commit();
                 if (rc.IsFailure()) return rc;
             }
 
@@ -826,10 +826,10 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             if (attribute.StaticSaveDataId != SaveData.SaveIndexerId)
             {
                 // Mark the save data as being successfully created
-                rc = accessor.Get.Indexer.SetState(saveDataId, SaveDataState.Normal);
+                rc = accessor.Get.GetInterface().SetState(saveDataId, SaveDataState.Normal);
                 if (rc.IsFailure()) return rc;
 
-                rc = accessor.Get.Indexer.Commit();
+                rc = accessor.Get.GetInterface().Commit();
                 if (rc.IsFailure()) return rc;
             }
 
@@ -845,12 +845,12 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
                 if (accessorInitialized && saveDataId != SaveData.SaveIndexerId)
                 {
-                    rc = accessor.Get.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
+                    rc = accessor.Get.GetInterface().GetValue(out SaveDataIndexerValue value, saveDataId);
 
                     if (rc.IsSuccess() && value.SpaceId == creationInfo.SpaceId)
                     {
-                        accessor.Get.Indexer.Delete(saveDataId).IgnoreResult();
-                        accessor.Get.Indexer.Commit().IgnoreResult();
+                        accessor.Get.GetInterface().Delete(saveDataId).IgnoreResult();
+                        accessor.Get.GetInterface().Commit().IgnoreResult();
                     }
                 }
             }
@@ -867,7 +867,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
         if (rc.IsFailure()) return rc;
 
-        rc = accessor.Get.Indexer.Get(out SaveDataIndexerValue value, in attribute);
+        rc = accessor.Get.GetInterface().Get(out SaveDataIndexerValue value, in attribute);
         if (rc.IsFailure()) return rc;
 
         SaveDataIndexer.GenerateSaveDataInfo(out info, in attribute, in value);
@@ -1007,7 +1007,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
             if (rc.IsFailure()) return rc;
 
-            rc = accessor.Get.Indexer.Get(out SaveDataIndexerValue indexerValue, in attribute);
+            rc = accessor.Get.GetInterface().Get(out SaveDataIndexerValue indexerValue, in attribute);
             if (rc.IsFailure()) return rc;
 
             if (indexerValue.SpaceId != ConvertToRealSpaceId(spaceId))
@@ -1062,7 +1062,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
                 if (rc.IsFailure()) return rc;
 
                 // Check the space ID of the save data
-                rc = accessor.Get.Indexer.Get(out SaveDataIndexerValue value, in key);
+                rc = accessor.Get.GetInterface().Get(out SaveDataIndexerValue value, in key);
                 if (rc.IsFailure()) return rc;
 
                 if (value.SpaceId != ConvertToRealSpaceId(spaceId))
@@ -1070,8 +1070,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             }
 
             // Remove the indexer entry. Nintendo ignores these results
-            accessor.Get.Indexer.Delete(tempSaveDataId).IgnoreResult();
-            accessor.Get.Indexer.Commit().IgnoreResult();
+            accessor.Get.GetInterface().Delete(tempSaveDataId).IgnoreResult();
+            accessor.Get.GetInterface().Commit().IgnoreResult();
 
             return Result.Success;
         }
@@ -1275,7 +1275,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
         if (rc.IsFailure()) return rc;
 
-        rc = accessor.Get.Indexer.GetKey(out SaveDataAttribute key, saveDataId);
+        rc = accessor.Get.GetInterface().GetKey(out SaveDataAttribute key, saveDataId);
         if (rc.IsFailure()) return rc;
 
         using Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
@@ -1311,12 +1311,12 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
                 if (rc.IsFailure()) return rc;
             }
 
-            rc = accessor.Get.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
+            rc = accessor.Get.GetInterface().GetValue(out SaveDataIndexerValue value, saveDataId);
             if (rc.IsFailure()) return rc;
 
             resolvedSpaceId = value.SpaceId;
 
-            rc = accessor.Get.Indexer.GetKey(out key, saveDataId);
+            rc = accessor.Get.GetInterface().GetKey(out key, saveDataId);
             if (rc.IsFailure()) return rc;
         }
         else
@@ -1326,12 +1326,12 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
             if (rc.IsFailure()) return rc;
 
-            rc = accessor.Get.Indexer.GetValue(out SaveDataIndexerValue value, saveDataId);
+            rc = accessor.Get.GetInterface().GetValue(out SaveDataIndexerValue value, saveDataId);
             if (rc.IsFailure()) return rc;
 
             resolvedSpaceId = value.SpaceId;
 
-            rc = accessor.Get.Indexer.GetKey(out key, saveDataId);
+            rc = accessor.Get.GetInterface().GetKey(out key, saveDataId);
             if (rc.IsFailure()) return rc;
         }
 
@@ -1462,7 +1462,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
         if (rc.IsFailure()) return rc;
 
-        rc = accessor.Get.Indexer.GetKey(out SaveDataAttribute key, saveDataId);
+        rc = accessor.Get.GetInterface().GetKey(out SaveDataAttribute key, saveDataId);
         if (rc.IsFailure()) return rc;
 
         Result ReadExtraData(out SaveDataExtraData data) => _serviceImpl.ReadSaveDataFileSystemExtraData(out data,
@@ -1554,7 +1554,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
             if (rc.IsFailure()) return rc;
 
-            rc = accessor.Get.Indexer.OpenSaveDataInfoReader(ref reader.Ref());
+            rc = accessor.Get.GetInterface().OpenSaveDataInfoReader(ref reader.Ref());
             if (rc.IsFailure()) return rc;
         }
 
@@ -1583,7 +1583,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
             using var reader = new SharedRef<SaveDataInfoReaderImpl>();
 
-            rc = accessor.Get.Indexer.OpenSaveDataInfoReader(ref reader.Ref());
+            rc = accessor.Get.GetInterface().OpenSaveDataInfoReader(ref reader.Ref());
             if (rc.IsFailure()) return rc;
 
             var filter = new SaveDataInfoFilter(ConvertToRealSpaceId(spaceId), programId: default,
@@ -1620,7 +1620,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
             using var reader = new SharedRef<SaveDataInfoReaderImpl>();
 
-            rc = accessor.Get.Indexer.OpenSaveDataInfoReader(ref reader.Ref());
+            rc = accessor.Get.GetInterface().OpenSaveDataInfoReader(ref reader.Ref());
             if (rc.IsFailure()) return rc;
 
             var infoFilter = new SaveDataInfoFilter(ConvertToRealSpaceId(spaceId), in filter);
@@ -1644,7 +1644,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
         if (rc.IsFailure()) return rc;
 
-        rc = accessor.Get.Indexer.OpenSaveDataInfoReader(ref reader.Ref());
+        rc = accessor.Get.GetInterface().OpenSaveDataInfoReader(ref reader.Ref());
         if (rc.IsFailure()) return rc;
 
         using var filterReader =
@@ -1762,7 +1762,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
             if (rc.IsFailure()) return rc;
 
-            rc = accessor.Get.Indexer.OpenSaveDataInfoReader(ref reader.Ref());
+            rc = accessor.Get.GetInterface().OpenSaveDataInfoReader(ref reader.Ref());
             if (rc.IsFailure()) return rc;
 
             ProgramId resolvedProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId);

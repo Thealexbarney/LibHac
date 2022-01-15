@@ -1,10 +1,65 @@
-﻿using System;
+﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Os;
 using LibHac.Sf;
+using LibHac.Util;
 
 namespace LibHac.FsSrv;
+
+/// <summary>
+/// Iterates through all the save data indexed in a <see cref="SaveDataIndexerLite"/>.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+internal class SaveDataIndexerLiteInfoReader : SaveDataInfoReaderImpl
+{
+    private bool _finishedIterating;
+    private SaveDataInfo _info;
+
+    public SaveDataIndexerLiteInfoReader()
+    {
+        _finishedIterating = true;
+        _info = default;
+    }
+
+    public void Dispose() { }
+
+    public SaveDataIndexerLiteInfoReader(in SaveDataAttribute key, in SaveDataIndexerValue value)
+    {
+        _finishedIterating = false;
+        _info = default;
+
+        // Don't set the State, Index, or Rank of the returned SaveDataInfo
+        _info.SaveDataId = value.SaveDataId;
+        _info.SpaceId = value.SpaceId;
+        _info.Size = value.Size;
+        _info.StaticSaveDataId = key.StaticSaveDataId;
+        _info.ProgramId = key.ProgramId;
+        _info.Type = key.Type;
+        _info.UserId = key.UserId;
+    }
+
+    public Result Read(out long readCount, OutBuffer saveDataInfoBuffer)
+    {
+        UnsafeHelpers.SkipParamInit(out readCount);
+
+        if (_finishedIterating || saveDataInfoBuffer.Size == 0)
+        {
+            readCount = 0;
+            return Result.Success;
+        }
+
+        if (saveDataInfoBuffer.Size < Unsafe.SizeOf<SaveDataInfo>())
+            return ResultFs.InvalidSize.Log();
+
+        Unsafe.As<byte, SaveDataInfo>(ref MemoryMarshal.GetReference(saveDataInfoBuffer.Buffer)) = _info;
+        readCount = 1;
+        _finishedIterating = true;
+
+        return Result.Success;
+    }
+}
 
 /// <summary>
 /// Indexes metadata for temporary save data, holding a key-value pair of types
@@ -13,87 +68,89 @@ namespace LibHac.FsSrv;
 /// <remarks>
 /// Only one temporary save data may exist at a time. When a new
 /// save data is added to the index, the existing key-value pair is replaced.
-/// <br/>Based on FS 10.0.0 (nnSdk 10.4.0)
+/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para>
 /// </remarks>
 public class SaveDataIndexerLite : ISaveDataIndexer
 {
-    private object Locker { get; } = new object();
-    private ulong CurrentSaveDataId { get; set; } = 0x4000000000000000;
-
-    // Todo: Use Optional<T>
-    private bool IsKeyValueSet { get; set; }
-
-    private SaveDataAttribute _key;
+    private SdkMutex _mutex;
+    private ulong _nextSaveDataId;
+    private Optional<SaveDataAttribute> _key;
     private SaveDataIndexerValue _value;
+
+    public SaveDataIndexerLite()
+    {
+        _mutex = new SdkMutex();
+        _nextSaveDataId = 0x4000000000000000;
+    }
+
+    public void Dispose() { }
 
     public Result Commit()
     {
+        using ScopedLock<SdkMutex> scopedLock = ScopedLock.Lock(ref _mutex);
+
         return Result.Success;
     }
 
     public Result Rollback()
     {
+        using ScopedLock<SdkMutex> scopedLock = ScopedLock.Lock(ref _mutex);
+
         return Result.Success;
     }
 
     public Result Reset()
     {
-        lock (Locker)
-        {
-            IsKeyValueSet = false;
-            return Result.Success;
-        }
+        using ScopedLock<SdkMutex> scopedLock = ScopedLock.Lock(ref _mutex);
+
+        _key.Clear();
+        return Result.Success;
     }
 
     public Result Publish(out ulong saveDataId, in SaveDataAttribute key)
     {
         UnsafeHelpers.SkipParamInit(out saveDataId);
 
-        lock (Locker)
-        {
-            if (IsKeyValueSet && _key == key)
-                return ResultFs.AlreadyExists.Log();
+        using ScopedLock<SdkMutex> scopedLock = ScopedLock.Lock(ref _mutex);
 
-            _key = key;
-            IsKeyValueSet = true;
+        if (_key.HasValue && key == _key.ValueRo)
+            return ResultFs.AlreadyExists.Log();
 
-            _value = new SaveDataIndexerValue { SaveDataId = CurrentSaveDataId };
-            saveDataId = CurrentSaveDataId;
-            CurrentSaveDataId++;
+        _key.Set(in key);
 
-            return Result.Success;
-        }
+        saveDataId = _nextSaveDataId;
+        _value = new SaveDataIndexerValue { SaveDataId = _nextSaveDataId };
+        _nextSaveDataId++;
+
+        return Result.Success;
     }
 
     public Result Get(out SaveDataIndexerValue value, in SaveDataAttribute key)
     {
         UnsafeHelpers.SkipParamInit(out value);
 
-        lock (Locker)
-        {
-            if (IsKeyValueSet && _key == key)
-            {
-                value = _value;
-                return Result.Success;
-            }
+        using ScopedLock<SdkMutex> scopedLock = ScopedLock.Lock(ref _mutex);
 
-            return ResultFs.TargetNotFound.Log();
+        if (_key.HasValue && key == _key.ValueRo)
+        {
+            value = _value;
+            return Result.Success;
         }
+
+        return ResultFs.TargetNotFound.Log();
     }
 
     public Result PutStaticSaveDataIdIndex(in SaveDataAttribute key)
     {
-        lock (Locker)
-        {
-            if (IsKeyValueSet && _key == key)
-                return ResultFs.AlreadyExists.Log();
+        using ScopedLock<SdkMutex> scopedLock = ScopedLock.Lock(ref _mutex);
 
-            _key = key;
-            IsKeyValueSet = true;
+        if (_key.HasValue && key == _key.ValueRo)
+            return ResultFs.AlreadyExists.Log();
 
-            _value = new SaveDataIndexerValue();
-            return Result.Success;
-        }
+        _key.Set(in key);
+        _value = default;
+
+        return Result.Success;
     }
 
     public bool IsRemainedReservedOnly()
@@ -103,106 +160,99 @@ public class SaveDataIndexerLite : ISaveDataIndexer
 
     public Result Delete(ulong saveDataId)
     {
-        lock (Locker)
-        {
-            if (IsKeyValueSet && _value.SaveDataId == saveDataId)
-            {
-                IsKeyValueSet = false;
-                return Result.Success;
-            }
+        using ScopedLock<SdkMutex> scopedLock = ScopedLock.Lock(ref _mutex);
 
-            return ResultFs.TargetNotFound.Log();
+        if (_key.HasValue && saveDataId == _value.SaveDataId)
+        {
+            _key.Clear();
+            return Result.Success;
         }
+
+        return ResultFs.TargetNotFound.Log();
     }
 
     public Result SetSpaceId(ulong saveDataId, SaveDataSpaceId spaceId)
     {
-        lock (Locker)
-        {
-            if (IsKeyValueSet && _value.SaveDataId == saveDataId)
-            {
-                _value.SpaceId = spaceId;
-                return Result.Success;
-            }
+        using ScopedLock<SdkMutex> scopedLock = ScopedLock.Lock(ref _mutex);
 
-            return ResultFs.TargetNotFound.Log();
+        if (_key.HasValue && saveDataId == _value.SaveDataId)
+        {
+            _value.SpaceId = spaceId;
+            return Result.Success;
         }
+
+        return ResultFs.TargetNotFound.Log();
     }
 
     public Result SetSize(ulong saveDataId, long size)
     {
-        // Nintendo doesn't lock in this function for some reason
-        lock (Locker)
-        {
-            if (IsKeyValueSet && _value.SaveDataId == saveDataId)
-            {
-                _value.Size = size;
-                return Result.Success;
-            }
+        // Note: Nintendo doesn't lock in this function for some reason
+        using ScopedLock<SdkMutex> scopedLock = ScopedLock.Lock(ref _mutex);
 
-            return ResultFs.TargetNotFound.Log();
+        if (_key.HasValue && saveDataId == _value.SaveDataId)
+        {
+            _value.Size = size;
+            return Result.Success;
         }
+
+        return ResultFs.TargetNotFound.Log();
     }
 
     public Result SetState(ulong saveDataId, SaveDataState state)
     {
-        // Nintendo doesn't lock in this function for some reason
-        lock (Locker)
-        {
-            if (IsKeyValueSet && _value.SaveDataId == saveDataId)
-            {
-                _value.State = state;
-                return Result.Success;
-            }
+        // Note: Nintendo doesn't lock in this function for some reason
+        using ScopedLock<SdkMutex> scopedLock = ScopedLock.Lock(ref _mutex);
 
-            return ResultFs.TargetNotFound.Log();
+        if (_key.HasValue && saveDataId == _value.SaveDataId)
+        {
+            _value.State = state;
+            return Result.Success;
         }
+
+        return ResultFs.TargetNotFound.Log();
     }
 
     public Result GetKey(out SaveDataAttribute key, ulong saveDataId)
     {
         UnsafeHelpers.SkipParamInit(out key);
 
-        lock (Locker)
-        {
-            if (IsKeyValueSet && _value.SaveDataId == saveDataId)
-            {
-                key = _key;
-                return Result.Success;
-            }
+        using ScopedLock<SdkMutex> scopedLock = ScopedLock.Lock(ref _mutex);
 
-            return ResultFs.TargetNotFound.Log();
+        if (_key.HasValue && saveDataId == _value.SaveDataId)
+        {
+            key = _key.ValueRo;
+            return Result.Success;
         }
+
+        return ResultFs.TargetNotFound.Log();
     }
 
     public Result GetValue(out SaveDataIndexerValue value, ulong saveDataId)
     {
         UnsafeHelpers.SkipParamInit(out value);
 
-        lock (Locker)
-        {
-            if (IsKeyValueSet && _value.SaveDataId == saveDataId)
-            {
-                value = _value;
-                return Result.Success;
-            }
+        using ScopedLock<SdkMutex> scopedLock = ScopedLock.Lock(ref _mutex);
 
-            return ResultFs.TargetNotFound.Log();
+        if (_key.HasValue && saveDataId == _value.SaveDataId)
+        {
+            value = _value;
+            return Result.Success;
         }
+
+        return ResultFs.TargetNotFound.Log();
     }
 
     public Result SetValue(in SaveDataAttribute key, in SaveDataIndexerValue value)
     {
-        lock (Locker)
-        {
-            if (IsKeyValueSet && _key == key)
-            {
-                _value = value;
-                return Result.Success;
-            }
+        using ScopedLock<SdkMutex> scopedLock = ScopedLock.Lock(ref _mutex);
 
-            return ResultFs.TargetNotFound.Log();
+        if (_key.HasValue && _key.ValueRo == key)
+        {
+            _value = value;
+            return Result.Success;
         }
+
+        return ResultFs.TargetNotFound.Log();
     }
 
     public int GetIndexCount()
@@ -212,58 +262,17 @@ public class SaveDataIndexerLite : ISaveDataIndexer
 
     public Result OpenSaveDataInfoReader(ref SharedRef<SaveDataInfoReaderImpl> outInfoReader)
     {
-        SaveDataIndexerLiteInfoReader reader;
+        using ScopedLock<SdkMutex> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        if (IsKeyValueSet)
+        if (_key.HasValue)
         {
-            reader = new SaveDataIndexerLiteInfoReader(in _key, in _value);
+            outInfoReader.Reset(new SaveDataIndexerLiteInfoReader(in _key.Value, in _value));
         }
         else
         {
-            reader = new SaveDataIndexerLiteInfoReader();
+            outInfoReader.Reset(new SaveDataIndexerLiteInfoReader());
         }
-
-        outInfoReader.Reset(reader);
 
         return Result.Success;
     }
-
-    private class SaveDataIndexerLiteInfoReader : SaveDataInfoReaderImpl
-    {
-        private bool _finishedIterating;
-        private SaveDataInfo _info;
-
-        public SaveDataIndexerLiteInfoReader()
-        {
-            _finishedIterating = true;
-        }
-
-        public SaveDataIndexerLiteInfoReader(in SaveDataAttribute key, in SaveDataIndexerValue value)
-        {
-            SaveDataIndexer.GenerateSaveDataInfo(out _info, in key, in value);
-        }
-
-        public Result Read(out long readCount, OutBuffer saveDataInfoBuffer)
-        {
-            Span<SaveDataInfo> outInfo = MemoryMarshal.Cast<byte, SaveDataInfo>(saveDataInfoBuffer.Buffer);
-
-            // Note: Nintendo doesn't check if the buffer is large enough here
-            if (_finishedIterating || outInfo.IsEmpty)
-            {
-                readCount = 0;
-            }
-            else
-            {
-                outInfo[0] = _info;
-                readCount = 1;
-                _finishedIterating = true;
-            }
-
-            return Result.Success;
-        }
-
-        public void Dispose() { }
-    }
-
-    public void Dispose() { }
 }

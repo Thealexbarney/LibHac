@@ -304,7 +304,7 @@ internal class MultiCommitManager : IMultiCommitManager
             rc = saveService.OpenSaveDataIndexerAccessor(ref accessor.Ref(), out _, SaveDataSpaceId.User);
             if (rc.IsFailure()) return rc;
 
-            rc = accessor.Get.Indexer.OpenSaveDataInfoReader(ref reader.Ref());
+            rc = accessor.Get.GetInterface().OpenSaveDataInfoReader(ref reader.Ref());
             if (rc.IsFailure()) return rc;
 
             // Iterate through all the saves to find any provisionally committed save data
@@ -385,7 +385,7 @@ internal class MultiCommitManager : IMultiCommitManager
                 rc = saveService.OpenSaveDataIndexerAccessor(ref accessor.Ref(), out _, SaveDataSpaceId.User);
                 if (rc.IsFailure()) return rc;
 
-                rc = accessor.Get.Indexer.OpenSaveDataInfoReader(ref reader.Ref());
+                rc = accessor.Get.GetInterface().OpenSaveDataInfoReader(ref reader.Ref());
                 if (rc.IsFailure()) return rc;
 
                 // Iterate through all the saves to find any provisionally committed save data

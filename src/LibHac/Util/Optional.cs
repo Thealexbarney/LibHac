@@ -1,4 +1,4 @@
-﻿using System;
+﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Diag;
@@ -52,6 +52,11 @@ public struct Optional<T>
     public void Clear()
     {
         _hasValue = false;
-        _value = default;
+
+        // Clear types with references so the GC doesn't think we still need any contained objects
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+        {
+            _value = default;
+        }
     }
 }

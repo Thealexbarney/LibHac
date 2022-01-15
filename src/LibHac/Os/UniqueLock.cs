@@ -156,6 +156,16 @@ public struct UniqueLock<TMutex> : IDisposable where TMutex : class, ILockable
         other = default;
     }
 
+    public void Reset(TMutex mutex)
+    {
+        if (_ownsLock)
+            _mutex.Unlock();
+
+        _mutex = mutex;
+        mutex.Lock();
+        _ownsLock = true;
+    }
+
     public void Lock()
     {
         if (_mutex is null)

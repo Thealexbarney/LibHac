@@ -3,6 +3,7 @@ using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.FsSrv.Storage;
+using LibHac.Os;
 using LibHac.Util;
 
 namespace LibHac.FsSrv;
@@ -11,35 +12,106 @@ namespace LibHac.FsSrv;
 /// Initializes and holds <see cref="ISaveDataIndexer"/>s for each save data space.
 /// Creates accessors for individual SaveDataIndexers.
 /// </summary>
-/// <remarks>Based on FS 10.0.0 (nnSdk 10.4.0)</remarks>
-internal class SaveDataIndexerManager : ISaveDataIndexerManager
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+internal class SaveDataIndexerManager : ISaveDataIndexerManager, IDisposable
 {
-    private FileSystemClient FsClient { get; }
-    private MemoryResource MemoryResource { get; }
-    private ulong SaveDataId { get; }
-
-    private IndexerHolder _bisIndexer = new IndexerHolder(new object());
-    private IndexerHolder _tempIndexer = new IndexerHolder(new object());
-
-    private IndexerHolder _sdCardIndexer = new IndexerHolder(new object());
+    private MemoryResource _memoryResource;
+    private readonly ulong _indexerSaveDataId;
+    private SdkMutex _bisIndexerMutex;
+    private Optional<SaveDataIndexer> _bisIndexer;
+    private SdkMutex _tempIndexerMutex;
+    private SaveDataIndexerLite _tempIndexer;
+    private SdkMutex _sdIndexerMutex;
+    private Optional<SaveDataIndexer> _sdIndexer;
     private StorageDeviceHandle _sdCardHandle;
-    private IDeviceHandleManager _sdCardHandleManager;
+    private IDeviceHandleManager _sdHandleManager;
+    private SdkMutex _properBisIndexerMutex;
+    private Optional<SaveDataIndexer> _properBisIndexer;
+    private SdkMutex _safeIndexerMutex;
+    private Optional<SaveDataIndexer> _safeIndexer;
+    private readonly bool _isBisUserRedirectionEnabled;
 
-    private IndexerHolder _safeIndexer = new IndexerHolder(new object());
-    private IndexerHolder _properSystemIndexer = new IndexerHolder(new object());
-
-    private bool IsBisUserRedirectionEnabled { get; }
+    // LibHac addition
+    private FileSystemClient _fsClient;
 
     public SaveDataIndexerManager(FileSystemClient fsClient, ulong saveDataId, MemoryResource memoryResource,
         IDeviceHandleManager sdCardHandleManager, bool isBisUserRedirectionEnabled)
     {
-        FsClient = fsClient;
-        SaveDataId = saveDataId;
-        MemoryResource = memoryResource;
-        _sdCardHandleManager = sdCardHandleManager;
-        IsBisUserRedirectionEnabled = isBisUserRedirectionEnabled;
+        _memoryResource = memoryResource;
+        _indexerSaveDataId = saveDataId;
 
-        _tempIndexer.Indexer = new SaveDataIndexerLite();
+        _bisIndexerMutex = new SdkMutex();
+        _tempIndexerMutex = new SdkMutex();
+        _tempIndexer = new SaveDataIndexerLite();
+        _sdIndexerMutex = new SdkMutex();
+        _sdHandleManager = sdCardHandleManager;
+        _properBisIndexerMutex = new SdkMutex();
+        _safeIndexerMutex = new SdkMutex();
+
+        _isBisUserRedirectionEnabled = isBisUserRedirectionEnabled;
+
+        _fsClient = fsClient;
+    }
+
+    public void Dispose()
+    {
+        InvalidateIndexerImpl(ref _bisIndexer);
+        _tempIndexer.Dispose();
+        InvalidateIndexerImpl(ref _sdIndexer);
+        InvalidateIndexerImpl(ref _properBisIndexer);
+        InvalidateIndexerImpl(ref _safeIndexer);
+    }
+
+    public void InvalidateAllIndexers()
+    {
+        InvalidateIndexerImpl(ref _bisIndexer);
+        InvalidateIndexerImpl(ref _sdIndexer);
+        InvalidateIndexerImpl(ref _properBisIndexer);
+        InvalidateIndexerImpl(ref _safeIndexer);
+    }
+
+    public void InvalidateIndexer(SaveDataSpaceId spaceId)
+    {
+        switch (spaceId)
+        {
+            case SaveDataSpaceId.SdSystem:
+            case SaveDataSpaceId.SdUser:
+            {
+                // Note: Nintendo doesn't lock when doing this operation
+                using ScopedLock<SdkMutex> scopedLock = ScopedLock.Lock(ref _sdIndexerMutex);
+                InvalidateIndexerImpl(ref _sdIndexer);
+                break;
+            }
+
+            default:
+                Abort.UnexpectedDefault();
+                break;
+        }
+    }
+
+    // Todo: Figure out how to add generic disposal to Optional<T>
+    private static void InvalidateIndexerImpl(ref Optional<SaveDataIndexer> indexer)
+    {
+        if (indexer.HasValue)
+            indexer.Value.Dispose();
+
+        indexer.Clear();
+    }
+
+    public void ResetIndexer(SaveDataSpaceId spaceId)
+    {
+        switch (spaceId)
+        {
+            case SaveDataSpaceId.Temporary:
+                // ReSharper disable once RedundantAssignment
+                Result rc = _tempIndexer.Reset();
+                Assert.SdkAssert(rc.IsSuccess());
+                break;
+
+            default:
+                Abort.UnexpectedDefault();
+                break;
+        }
     }
 
     /// <summary>
@@ -59,172 +131,131 @@ internal class SaveDataIndexerManager : ISaveDataIndexerManager
     {
         UnsafeHelpers.SkipParamInit(out neededInit);
 
-        if (IsBisUserRedirectionEnabled && spaceId == SaveDataSpaceId.User)
+        if (_isBisUserRedirectionEnabled && spaceId == SaveDataSpaceId.User)
         {
             spaceId = SaveDataSpaceId.ProperSystem;
         }
 
-        UniqueLock indexerLock = default;
-        try
+        ISaveDataIndexer indexer;
+        using var indexerLock = new UniqueLock<SdkMutex>();
+        bool wasIndexerInitialized = false;
+
+        switch (spaceId)
         {
-            ISaveDataIndexer indexer;
-            switch (spaceId)
+            case SaveDataSpaceId.System:
+            case SaveDataSpaceId.User:
             {
-                case SaveDataSpaceId.System:
-                case SaveDataSpaceId.User:
-                    indexerLock = new UniqueLock(_bisIndexer.Locker);
+                indexerLock.Reset(_bisIndexerMutex);
 
-                    if (!_bisIndexer.IsInitialized)
-                    {
-                        _bisIndexer.Indexer = new SaveDataIndexer(FsClient, new U8Span(SystemIndexerMountName),
-                            SaveDataSpaceId.System, SaveDataId, MemoryResource);
+                if (!_bisIndexer.HasValue)
+                {
+                    _bisIndexer.Set(new SaveDataIndexer(_fsClient, new U8Span(BisIndexerMountName),
+                        SaveDataSpaceId.System, _indexerSaveDataId, _memoryResource));
+                    wasIndexerInitialized = true;
+                }
 
-                        neededInit = true;
-                    }
-
-                    indexer = _bisIndexer.Indexer;
-                    break;
-                case SaveDataSpaceId.SdSystem:
-                case SaveDataSpaceId.SdUser:
-                    // ReSharper doesn't realize that UniqueLock locks the indexer's lock object
-                    // ReSharper disable InconsistentlySynchronizedField
-                    indexerLock = new UniqueLock(_sdCardIndexer.Locker);
-
-                    // We need to reinitialize the indexer if the SD card has changed
-                    if (!_sdCardHandleManager.IsValid(in _sdCardHandle) && _sdCardIndexer.IsInitialized)
-                    {
-                        _sdCardIndexer.Indexer.Dispose();
-                        _sdCardIndexer.Indexer = null;
-                    }
-
-                    if (!_sdCardIndexer.IsInitialized)
-                    {
-                        _sdCardIndexer.Indexer = new SaveDataIndexer(FsClient, new U8Span(SdCardIndexerMountName),
-                            SaveDataSpaceId.SdSystem, SaveDataId, MemoryResource);
-
-                        _sdCardHandleManager.GetHandle(out _sdCardHandle).IgnoreResult();
-
-                        neededInit = true;
-                    }
-
-                    indexer = _sdCardIndexer.Indexer;
-                    // ReSharper restore InconsistentlySynchronizedField
-
-                    break;
-                case SaveDataSpaceId.Temporary:
-                    indexerLock = new UniqueLock(_tempIndexer.Locker);
-
-                    indexer = _tempIndexer.Indexer;
-                    break;
-                case SaveDataSpaceId.ProperSystem:
-                    indexerLock = new UniqueLock(_properSystemIndexer.Locker);
-
-                    if (!_properSystemIndexer.IsInitialized)
-                    {
-                        _properSystemIndexer.Indexer = new SaveDataIndexer(FsClient,
-                            new U8Span(ProperSystemIndexerMountName),
-                            SaveDataSpaceId.ProperSystem, SaveDataId, MemoryResource);
-
-                        neededInit = true;
-                    }
-
-                    indexer = _properSystemIndexer.Indexer;
-                    break;
-                case SaveDataSpaceId.SafeMode:
-                    indexerLock = new UniqueLock(_safeIndexer.Locker);
-
-                    if (!_safeIndexer.IsInitialized)
-                    {
-                        _safeIndexer.Indexer = new SaveDataIndexer(FsClient, new U8Span(SafeModeIndexerMountName),
-                            SaveDataSpaceId.SafeMode, SaveDataId, MemoryResource);
-
-                        neededInit = true;
-                    }
-
-                    indexer = _safeIndexer.Indexer;
-                    break;
-
-                default:
-                    outAccessor = default;
+                indexer = _bisIndexer.Value;
+                break;
+            }
+            case SaveDataSpaceId.Temporary:
+            {
+                indexerLock.Reset(_tempIndexerMutex);
+                indexer = _tempIndexer;
+                break;
+            }
+            case SaveDataSpaceId.SdSystem:
+            case SaveDataSpaceId.SdUser:
+            {
+                if (_sdHandleManager is null)
                     return ResultFs.InvalidArgument.Log();
+
+                indexerLock.Reset(_sdIndexerMutex);
+
+                // We need to reinitialize the indexer if the SD card has changed
+                if (!_sdHandleManager.IsValid(in _sdCardHandle) && _sdIndexer.HasValue)
+                {
+                    _sdIndexer.Value.Dispose();
+                    _sdIndexer.Clear();
+                }
+
+                if (!_sdIndexer.HasValue)
+                {
+                    _sdIndexer.Set(new SaveDataIndexer(_fsClient, new U8Span(SdCardIndexerMountName),
+                        SaveDataSpaceId.SdSystem, _indexerSaveDataId, _memoryResource));
+
+                    _sdHandleManager.GetHandle(out _sdCardHandle).IgnoreResult();
+                    wasIndexerInitialized = true;
+                }
+
+                indexer = _sdIndexer.Value;
+                break;
             }
-
-
-            outAccessor.Reset(new SaveDataIndexerAccessor(indexer, ref indexerLock));
-            return Result.Success;
-        }
-        finally
-        {
-            indexerLock.Dispose();
-        }
-    }
-
-    public void ResetIndexer(SaveDataSpaceId spaceId)
-    {
-        if (spaceId != SaveDataSpaceId.Temporary)
-        {
-            Abort.UnexpectedDefault();
-        }
-
-        // ReSharper disable once RedundantAssignment
-        Result rc = _tempIndexer.Indexer.Reset();
-        Assert.SdkAssert(rc.IsSuccess());
-    }
-
-    public void InvalidateIndexer(SaveDataSpaceId spaceId)
-    {
-        // Note: Nintendo doesn't lock when doing this operation
-        lock (_sdCardIndexer.Locker)
-        {
-            if (spaceId != SaveDataSpaceId.SdUser && spaceId != SaveDataSpaceId.SdSystem)
+            case SaveDataSpaceId.ProperSystem:
             {
-                Abort.UnexpectedDefault();
-            }
+                indexerLock.Reset(_properBisIndexerMutex);
 
-            if (_sdCardIndexer.IsInitialized)
+                if (!_properBisIndexer.HasValue)
+                {
+                    _properBisIndexer.Set(new SaveDataIndexer(_fsClient, new U8Span(ProperBisIndexerMountName),
+                        SaveDataSpaceId.ProperSystem, _indexerSaveDataId, _memoryResource));
+
+                    wasIndexerInitialized = true;
+                }
+
+                indexer = _properBisIndexer.Value;
+                break;
+            }
+            case SaveDataSpaceId.SafeMode:
             {
-                _sdCardIndexer.Indexer.Dispose();
-                _sdCardIndexer.Indexer = null;
+                indexerLock.Reset(_safeIndexerMutex);
+
+                if (!_safeIndexer.HasValue)
+                {
+                    _safeIndexer.Set(new SaveDataIndexer(_fsClient, new U8Span(SafeModeIndexerMountName),
+                        SaveDataSpaceId.SafeMode, _indexerSaveDataId, _memoryResource));
+
+                    wasIndexerInitialized = true;
+                }
+
+                indexer = _safeIndexer.Value;
+                break;
             }
-        }
-    }
 
-    private struct IndexerHolder
-    {
-        public object Locker { get; }
-        public ISaveDataIndexer Indexer { get; set; }
-
-        public IndexerHolder(object locker)
-        {
-            Locker = locker;
-            Indexer = null;
+            default:
+                return ResultFs.InvalidArgument.Log();
         }
 
-        public bool IsInitialized => Indexer != null;
+        outAccessor.Reset(new SaveDataIndexerAccessor(indexer, ref indexerLock.Ref()));
+        neededInit = wasIndexerInitialized;
+        return Result.Success;
     }
 
-    private static ReadOnlySpan<byte> SystemIndexerMountName => // saveDataIxrDb
+    /// <summary>"<c>saveDataIxrDb</c>"</summary>
+    private static ReadOnlySpan<byte> BisIndexerMountName =>
         new[]
         {
             (byte) 's', (byte) 'a', (byte) 'v', (byte) 'e', (byte) 'D', (byte) 'a', (byte) 't', (byte) 'a',
             (byte) 'I', (byte) 'x', (byte) 'r', (byte) 'D', (byte) 'b'
         };
 
-    private static ReadOnlySpan<byte> SdCardIndexerMountName => // saveDataIxrDbSd
+    /// <summary>"<c>saveDataIxrDbSd</c>"</summary>
+    private static ReadOnlySpan<byte> SdCardIndexerMountName =>
         new[]
         {
             (byte) 's', (byte) 'a', (byte) 'v', (byte) 'e', (byte) 'D', (byte) 'a', (byte) 't', (byte) 'a',
             (byte) 'I', (byte) 'x', (byte) 'r', (byte) 'D', (byte) 'b', (byte) 'S', (byte) 'd'
         };
 
-    private static ReadOnlySpan<byte> ProperSystemIndexerMountName => // saveDataIxrDbPr
+    /// <summary>"<c>saveDataIxrDbPr</c>"</summary>
+    private static ReadOnlySpan<byte> ProperBisIndexerMountName =>
         new[]
         {
             (byte) 's', (byte) 'a', (byte) 'v', (byte) 'e', (byte) 'D', (byte) 'a', (byte) 't', (byte) 'a',
             (byte) 'I', (byte) 'x', (byte) 'r', (byte) 'D', (byte) 'b', (byte) 'P', (byte) 'r'
         };
 
-    private static ReadOnlySpan<byte> SafeModeIndexerMountName => // saveDataIxrDbSf
+    /// <summary>"<c>saveDataIxrDbSf</c>"</summary>
+    private static ReadOnlySpan<byte> SafeModeIndexerMountName =>
         new[]
         {
             (byte) 's', (byte) 'a', (byte) 'v', (byte) 'e', (byte) 'D', (byte) 'a', (byte) 't', (byte) 'a',
@@ -236,20 +267,25 @@ internal class SaveDataIndexerManager : ISaveDataIndexerManager
 /// Gives exclusive access to an <see cref="ISaveDataIndexer"/>.
 /// Releases the lock to the <see cref="ISaveDataIndexer"/> upon disposal.
 /// </summary>
-/// <remarks>Based on FS 10.0.0 (nnSdk 10.4.0)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public class SaveDataIndexerAccessor : IDisposable
 {
-    public ISaveDataIndexer Indexer { get; }
-    private UniqueLock _locker;
+    private readonly ISaveDataIndexer _indexer;
+    private UniqueLock<SdkMutex> _lock;
 
-    public SaveDataIndexerAccessor(ISaveDataIndexer indexer, ref UniqueLock locker)
+    public SaveDataIndexerAccessor(ISaveDataIndexer indexer, ref UniqueLock<SdkMutex> indexerLock)
     {
-        Indexer = indexer;
-        _locker = new UniqueLock(ref locker);
+        _indexer = indexer;
+        _lock = new UniqueLock<SdkMutex>(ref indexerLock);
     }
 
     public void Dispose()
     {
-        _locker.Dispose();
+        _lock.Dispose();
+    }
+
+    public ISaveDataIndexer GetInterface()
+    {
+        return _indexer;
     }
 }
