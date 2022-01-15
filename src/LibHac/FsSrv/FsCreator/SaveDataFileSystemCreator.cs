@@ -1,6 +1,7 @@
 ﻿using System;
-using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Common.FixedArrays;
 using LibHac.Common.Keys;
 using LibHac.Diag;
 using LibHac.Fs;
@@ -44,15 +45,12 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
         bool isJournalingSupported, bool isMultiCommitSupported, bool openReadOnly, bool openShared,
         ISaveDataCommitTimeStampGetter timeStampGetter)
     {
-        // Hack around error CS8350.
-        Span<byte> buffer = stackalloc byte[0x12];
-        ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-        Span<byte> saveImageNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, 0x12);
+        Unsafe.SkipInit(out Array18<byte> saveImageNameBuffer);
 
         Assert.SdkRequiresNotNull(cacheManager);
 
         using var saveImageName = new Path();
-        Result rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
+        Result rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer.Items, saveDataId);
         if (rc.IsFailure()) return rc;
 
         rc = baseFileSystem.Get.GetEntryType(out DirectoryEntryType type, in saveImageName);

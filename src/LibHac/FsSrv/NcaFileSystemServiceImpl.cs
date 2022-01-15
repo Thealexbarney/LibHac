@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Buffers.Text;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using LibHac.Common;
+using LibHac.Common.FixedArrays;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSrv.FsCreator;
@@ -217,8 +217,6 @@ public class NcaFileSystemServiceImpl
     public Result OpenContentStorageFileSystem(ref SharedRef<IFileSystem> outFileSystem,
         ContentStorageId contentStorageId)
     {
-        const int pathBufferLength = 0x40;
-
         using var fileSystem = new SharedRef<IFileSystem>();
         Result rc;
 
@@ -241,21 +239,18 @@ public class NcaFileSystemServiceImpl
                 return ResultFs.InvalidArgument.Log();
         }
 
-        // Hack around error CS8350.
-        Span<byte> buffer = stackalloc byte[pathBufferLength];
-        ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-        Span<byte> contentStoragePathBuffer = MemoryMarshal.CreateSpan(ref bufferRef, pathBufferLength);
+        Unsafe.SkipInit(out Array64<byte> contentStoragePathBuffer);
 
         // Build the appropriate path for the content storage ID
         if (contentStorageId == ContentStorageId.SdCard)
         {
-            var sb = new U8StringBuilder(contentStoragePathBuffer);
+            var sb = new U8StringBuilder(contentStoragePathBuffer.Items);
             sb.Append(StringTraits.DirectorySeparator).Append(SdCardNintendoRootDirectoryName);
             sb.Append(StringTraits.DirectorySeparator).Append(ContentStorageDirectoryName);
         }
         else
         {
-            var sb = new U8StringBuilder(contentStoragePathBuffer);
+            var sb = new U8StringBuilder(contentStoragePathBuffer.Items);
             sb.Append(StringTraits.DirectorySeparator).Append(ContentStorageDirectoryName);
         }
 

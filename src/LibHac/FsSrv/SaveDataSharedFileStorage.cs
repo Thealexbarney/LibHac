@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using LibHac.Common;
+using LibHac.Common.FixedArrays;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
@@ -334,14 +334,10 @@ public class SaveDataFileStorageHolder
         ref SharedRef<IFileSystem> baseFileSystem, SaveDataSpaceId spaceId, ulong saveDataId, OpenMode mode,
         Optional<SaveDataOpenTypeSetFileStorage.OpenType> type)
     {
-        // Hack around error CS8350.
-        const int bufferLength = 0x12;
-        Span<byte> buffer = stackalloc byte[bufferLength];
-        ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-        Span<byte> saveImageNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
+        Unsafe.SkipInit(out Array18<byte> saveImageNameBuffer);
 
         using var saveImageName = new Path();
-        Result rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
+        Result rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer.Items, saveDataId);
         if (rc.IsFailure()) return rc;
 
         // If an open type isn't specified, open the save without the shared file storage layer

@@ -1,6 +1,7 @@
 ﻿using System;
-using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Common.FixedArrays;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Shim;
@@ -29,11 +30,7 @@ public class FileSystemProxyCoreImpl
 
     public Result OpenCustomStorageFileSystem(ref SharedRef<IFileSystem> outFileSystem, CustomStorageId storageId)
     {
-        // Hack around error CS8350.
-        const int pathBufferLength = 0x40;
-        Span<byte> buffer = stackalloc byte[pathBufferLength];
-        ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-        Span<byte> pathBuffer = MemoryMarshal.CreateSpan(ref bufferRef, pathBufferLength);
+        Unsafe.SkipInit(out Array64<byte> pathBuffer);
 
         using var fileSystem = new SharedRef<IFileSystem>();
 
@@ -43,7 +40,7 @@ public class FileSystemProxyCoreImpl
             if (rc.IsFailure()) return rc;
 
             using var path = new Path();
-            rc = PathFunctions.SetUpFixedPathSingleEntry(ref path.Ref(), pathBuffer,
+            rc = PathFunctions.SetUpFixedPathSingleEntry(ref path.Ref(), pathBuffer.Items,
                 CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.System));
             if (rc.IsFailure()) return rc;
 
@@ -57,7 +54,7 @@ public class FileSystemProxyCoreImpl
             if (rc.IsFailure()) return rc;
 
             using var path = new Path();
-            rc = PathFunctions.SetUpFixedPathDoubleEntry(ref path.Ref(), pathBuffer,
+            rc = PathFunctions.SetUpFixedPathDoubleEntry(ref path.Ref(), pathBuffer.Items,
                 CommonPaths.SdCardNintendoRootDirectoryName,
                 CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.System));
             if (rc.IsFailure()) return rc;

@@ -1,6 +1,7 @@
 ﻿using System;
-using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Common.FixedArrays;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
@@ -91,14 +92,10 @@ public class SaveDataFileSystemServiceImpl
         if (rc.IsFailure()) return rc.Miss();
 
         // Get the path of the save data
-        // Hack around error CS8350.
-        const int bufferLength = 0x12;
-        Span<byte> buffer = stackalloc byte[bufferLength];
-        ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-        Span<byte> saveImageNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
+        Unsafe.SkipInit(out Array18<byte> saveImageNameBuffer);
 
         using var saveImageName = new Path();
-        rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
+        rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer.Items, saveDataId);
         if (rc.IsFailure()) return rc.Miss();
 
         rc = fileSystem.Get.GetEntryType(out _, in saveImageName);
@@ -195,15 +192,11 @@ public class SaveDataFileSystemServiceImpl
     public Result OpenSaveDataMetaDirectoryFileSystem(ref SharedRef<IFileSystem> outFileSystem,
         SaveDataSpaceId spaceId, ulong saveDataId)
     {
-        // Hack around error CS8350.
-        const int bufferLength = 0x1B;
-        Span<byte> buffer = stackalloc byte[bufferLength];
-        ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-        Span<byte> saveDataMetaIdDirectoryNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
+        Unsafe.SkipInit(out Array27<byte> saveDataMetaIdDirectoryNameBuffer);
 
         using var saveDataMetaIdDirectoryName = new Path();
         Result rc = PathFunctions.SetUpFixedPathSaveMetaDir(ref saveDataMetaIdDirectoryName.Ref(),
-            saveDataMetaIdDirectoryNameBuffer, saveDataId);
+            saveDataMetaIdDirectoryNameBuffer.Items, saveDataId);
         if (rc.IsFailure()) return rc.Miss();
 
         return OpenSaveDataDirectoryFileSystemImpl(ref outFileSystem, spaceId, in saveDataMetaIdDirectoryName);
@@ -230,14 +223,10 @@ public class SaveDataFileSystemServiceImpl
         Result rc = OpenSaveDataMetaDirectoryFileSystem(ref fileSystem.Ref(), spaceId, saveDataId);
         if (rc.IsFailure()) return rc.Miss();
 
-        // Hack around error CS8350.
-        const int bufferLength = 0xF;
-        Span<byte> buffer = stackalloc byte[bufferLength];
-        ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-        Span<byte> saveDataMetaNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
+        Unsafe.SkipInit(out Array15<byte> saveDataMetaNameBuffer);
 
         using var saveDataMetaName = new Path();
-        rc = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName.Ref(), saveDataMetaNameBuffer,
+        rc = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName.Ref(), saveDataMetaNameBuffer.Items,
             (uint)metaType);
         if (rc.IsFailure()) return rc.Miss();
 
@@ -254,14 +243,10 @@ public class SaveDataFileSystemServiceImpl
         Result rc = OpenSaveDataMetaDirectoryFileSystem(ref fileSystem.Ref(), spaceId, saveDataId);
         if (rc.IsFailure()) return rc.Miss();
 
-        // Hack around error CS8350.
-        const int bufferLength = 0xF;
-        Span<byte> buffer = stackalloc byte[bufferLength];
-        ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-        Span<byte> saveDataMetaNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
+        Unsafe.SkipInit(out Array15<byte> saveDataMetaNameBuffer);
 
         using var saveDataMetaName = new Path();
-        rc = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName.Ref(), saveDataMetaNameBuffer,
+        rc = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName.Ref(), saveDataMetaNameBuffer.Items,
             (uint)metaType);
         if (rc.IsFailure()) return rc.Miss();
 
@@ -280,11 +265,7 @@ public class SaveDataFileSystemServiceImpl
                     (byte)'a'
             };
 
-        // Hack around error CS8350.
-        const int bufferLength = 0x12;
-        Span<byte> buffer = stackalloc byte[bufferLength];
-        ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-        Span<byte> saveDataIdDirectoryNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
+        Unsafe.SkipInit(out Array18<byte> saveDataIdDirectoryNameBuffer);
 
         using var fileSystem = new SharedRef<IFileSystem>();
 
@@ -296,7 +277,7 @@ public class SaveDataFileSystemServiceImpl
         if (rc.IsFailure()) return rc.Miss();
 
         using var saveDataIdDirectoryName = new Path();
-        PathFunctions.SetUpFixedPathSaveId(ref saveDataIdDirectoryName.Ref(), saveDataIdDirectoryNameBuffer,
+        PathFunctions.SetUpFixedPathSaveId(ref saveDataIdDirectoryName.Ref(), saveDataIdDirectoryNameBuffer.Items,
             saveDataId);
         if (rc.IsFailure()) return rc.Miss();
 
@@ -322,14 +303,10 @@ public class SaveDataFileSystemServiceImpl
         Result rc = OpenSaveDataMetaDirectoryFileSystem(ref fileSystem.Ref(), spaceId, saveDataId);
         if (rc.IsFailure()) return rc.Miss();
 
-        // Hack around error CS8350.
-        const int bufferLength = 0xF;
-        Span<byte> buffer = stackalloc byte[bufferLength];
-        ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-        Span<byte> saveDataMetaNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
+        Unsafe.SkipInit(out Array15<byte> saveDataMetaNameBuffer);
 
         using var saveDataMetaName = new Path();
-        rc = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName.Ref(), saveDataMetaNameBuffer,
+        rc = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName.Ref(), saveDataMetaNameBuffer.Items,
             (uint)metaType);
         if (rc.IsFailure()) return rc.Miss();
 
@@ -345,11 +322,7 @@ public class SaveDataFileSystemServiceImpl
     {
         // Use directory save data for now
 
-        // Hack around error CS8350.
-        const int bufferLength = 0x12;
-        Span<byte> buffer = stackalloc byte[bufferLength];
-        ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-        Span<byte> saveImageNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
+        Unsafe.SkipInit(out Array18<byte> saveImageNameBuffer);
 
         using var fileSystem = new SharedRef<IFileSystem>();
 
@@ -358,7 +331,7 @@ public class SaveDataFileSystemServiceImpl
         if (rc.IsFailure()) return rc.Miss();
 
         using var saveImageName = new Path();
-        rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
+        rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer.Items, saveDataId);
         if (rc.IsFailure()) return rc.Miss();
 
         if (_config.IsPseudoSaveData())
@@ -414,11 +387,7 @@ public class SaveDataFileSystemServiceImpl
     public Result DeleteSaveDataFileSystem(SaveDataSpaceId spaceId, ulong saveDataId, bool wipeSaveFile,
         in Path saveDataRootPath)
     {
-        // Hack around error CS8350.
-        const int bufferLength = 0x12;
-        Span<byte> buffer = stackalloc byte[bufferLength];
-        ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-        Span<byte> saveImageNameBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
+        Unsafe.SkipInit(out Array18<byte> saveImageNameBuffer);
 
         using var fileSystem = new SharedRef<IFileSystem>();
 
@@ -429,7 +398,7 @@ public class SaveDataFileSystemServiceImpl
         if (rc.IsFailure()) return rc.Miss();
 
         using var saveImageName = new Path();
-        rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
+        rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer.Items, saveDataId);
         if (rc.IsFailure()) return rc.Miss();
 
         // Check if the save data is a file or a directory
@@ -664,14 +633,10 @@ public class SaveDataFileSystemServiceImpl
                 rc = _config.BaseFsService.OpenSdCardProxyFileSystem(ref baseFileSystem.Ref(), true);
                 if (rc.IsFailure()) return rc.Miss();
 
-                // Hack around error CS8350.
-                const int bufferLength = 0x40;
-                Span<byte> buffer = stackalloc byte[bufferLength];
-                ref byte bufferRef = ref MemoryMarshal.GetReference(buffer);
-                Span<byte> pathParentBuffer = MemoryMarshal.CreateSpan(ref bufferRef, bufferLength);
+                Unsafe.SkipInit(out Array64<byte> pathParentBuffer);
 
                 using var pathParent = new Path();
-                rc = PathFunctions.SetUpFixedPathSingleEntry(ref pathParent.Ref(), pathParentBuffer,
+                rc = PathFunctions.SetUpFixedPathSingleEntry(ref pathParent.Ref(), pathParentBuffer.Items,
                     CommonPaths.SdCardNintendoRootDirectoryName);
                 if (rc.IsFailure()) return rc.Miss();
 
