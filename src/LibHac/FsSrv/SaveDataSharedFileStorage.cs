@@ -14,7 +14,7 @@ namespace LibHac.FsSrv;
 /// <summary>
 /// Contains global functions for SaveDataSharedFileStorage.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1).</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public static class SaveDataSharedFileStorageGlobalMethods
 {
     public static Result OpenSaveDataStorage(this FileSystemServer fsSrv,
@@ -45,7 +45,7 @@ internal struct SaveDataSharedFileStorageGlobals
 /// This class keeps track of which types of save data file systems have been opened from the save data file.
 /// Only one of each file system type can be opened at the same time.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1).</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public class SaveDataOpenTypeSetFileStorage : FileStorageBasedFileSystem
 {
     public enum OpenType
@@ -71,7 +71,7 @@ public class SaveDataOpenTypeSetFileStorage : FileStorageBasedFileSystem
         _fsServer = fsServer;
         _spaceId = spaceId;
         _saveDataId = saveDataId;
-        _mutex.Initialize();
+        _mutex = new SdkMutexType();
     }
 
     public Result Initialize(ref SharedRef<IFileSystem> baseFileSystem, in Path path, OpenMode mode, OpenType type)
@@ -161,7 +161,7 @@ public class SaveDataOpenTypeSetFileStorage : FileStorageBasedFileSystem
 /// Once an internal file system is opened, it will be considered valid until the save data image is
 /// written to via the normal file system, at which point any accesses via the internal file system will
 /// return <see cref="ResultFs.SaveDataPorterInvalidated"/>
-/// <para>Based on FS 12.1.0 (nnSdk 12.3.1).</para>
+/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para>
 /// </remarks>
 public class SaveDataSharedFileStorage : IStorage
 {
@@ -268,7 +268,7 @@ public class SaveDataSharedFileStorage : IStorage
 /// <summary>
 /// Holds references to any open shared save data image files.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1).</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public class SaveDataFileStorageHolder
 {
     [NonCopyable]
