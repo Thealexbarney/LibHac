@@ -2166,7 +2166,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
     private bool IsStaticSaveDataIdValueRange(ulong id)
     {
-        return (long)id < 0;
+        return unchecked((long)id) < 0;
     }
 
     private void ModifySaveDataExtraData(ref SaveDataExtraData currentExtraData, in SaveDataExtraData extraData,

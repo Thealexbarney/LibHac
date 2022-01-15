@@ -64,21 +64,27 @@ internal static class HexConverter
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ToBytesBuffer(byte value, Span<byte> buffer, int startingIndex = 0, Casing casing = Casing.Upper)
     {
-        uint difference = ((value & 0xF0U) << 4) + (value & 0x0FU) - 0x8989U;
-        uint packedResult = ((((uint)(-(int)difference) & 0x7070U) >> 4) + difference + 0xB9B9U) | (uint)casing;
+        unchecked
+        {
+            uint difference = ((value & 0xF0U) << 4) + (value & 0x0FU) - 0x8989U;
+            uint packedResult = ((((uint)(-(int)difference) & 0x7070U) >> 4) + difference + 0xB9B9U) | (uint)casing;
 
-        buffer[startingIndex + 1] = (byte)packedResult;
-        buffer[startingIndex] = (byte)(packedResult >> 8);
+            buffer[startingIndex + 1] = (byte)packedResult;
+            buffer[startingIndex] = (byte)(packedResult >> 8);
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ToCharsBuffer(byte value, Span<char> buffer, int startingIndex = 0, Casing casing = Casing.Upper)
     {
-        uint difference = ((value & 0xF0U) << 4) + (value & 0x0FU) - 0x8989U;
-        uint packedResult = ((((uint)(-(int)difference) & 0x7070U) >> 4) + difference + 0xB9B9U) | (uint)casing;
+        unchecked
+        {
+            uint difference = ((value & 0xF0U) << 4) + (value & 0x0FU) - 0x8989U;
+            uint packedResult = ((((uint)(-(int)difference) & 0x7070U) >> 4) + difference + 0xB9B9U) | (uint)casing;
 
-        buffer[startingIndex + 1] = (char)(packedResult & 0xFF);
-        buffer[startingIndex] = (char)(packedResult >> 8);
+            buffer[startingIndex + 1] = (char)(packedResult & 0xFF);
+            buffer[startingIndex] = (char)(packedResult >> 8);
+        }
     }
 
     public static void EncodeToUtf16(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing = Casing.Upper)
@@ -182,13 +188,16 @@ internal static class HexConverter
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int FromLowerChar(int c)
     {
-        if ((uint)(c - '0') <= '9' - '0')
-            return c - '0';
+        unchecked
+        {
+            if ((uint)(c - '0') <= '9' - '0')
+                return c - '0';
 
-        if ((uint)(c - 'a') <= 'f' - 'a')
-            return c - 'a' + 10;
+            if ((uint)(c - 'a') <= 'f' - 'a')
+                return c - 'a' + 10;
 
-        return 0xFF;
+            return 0xFF;
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -200,13 +209,13 @@ internal static class HexConverter
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsHexUpperChar(int c)
     {
-        return (uint)(c - '0') <= 9 || (uint)(c - 'A') <= ('F' - 'A');
+        return unchecked((uint)(c - '0') <= 9 || (uint)(c - 'A') <= ('F' - 'A'));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsHexLowerChar(int c)
     {
-        return (uint)(c - '0') <= 9 || (uint)(c - 'a') <= ('f' - 'a');
+        return unchecked((uint)(c - '0') <= 9 || (uint)(c - 'a') <= ('f' - 'a'));
     }
 
     /// <summary>Map from an ASCII char to its hex value, e.g. arr['b'] == 11. 0xFF means it's not a hex digit.</summary>

@@ -147,7 +147,7 @@ public ref struct U8StringBuilder
         // Remove possible sign extension if needed
         if (mask == 'x' || mask == 'X')
         {
-            value &= (long)mask;
+            value &= unchecked((long)mask);
         }
 
         int bytesWritten;

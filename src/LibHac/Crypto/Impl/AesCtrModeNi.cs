@@ -31,8 +31,8 @@ public struct AesCtrModeNi
         ref Vector128<byte> inBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(input));
         ref Vector128<byte> outBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(output));
 
-        Vector128<byte> byteSwapMask = Vector128.Create((ulong)0x706050403020100, 0x8090A0B0C0D0E0F).AsByte();
-        var inc = Vector128.Create((ulong)0, 1);
+        Vector128<byte> byteSwapMask = Vector128.Create(0x706050403020100ul, 0x8090A0B0C0D0E0Ful).AsByte();
+        var inc = Vector128.Create(0ul, 1ul);
 
         Vector128<byte> iv = Iv;
         Vector128<ulong> bSwappedIv = Ssse3.Shuffle(iv, byteSwapMask).AsUInt64();

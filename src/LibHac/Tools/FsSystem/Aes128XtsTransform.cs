@@ -174,7 +174,7 @@ public class Aes128XtsTransform
 
         for (int i = 2; i < bufL.Length; i += 2)
         {
-            ulong tt = (ulong)((long)a >> 63) & 0x87;
+            ulong tt = unchecked((ulong)((long)a >> 63) & 0x87);
 
             a = (a << 1) | (b >> 63);
             b = (b << 1) ^ tt;
@@ -193,7 +193,7 @@ public class Aes128XtsTransform
     {
         for (int i = 0xF; i >= 0; i--)
         {
-            value[i] = (byte)sector;
+            value[i] = unchecked((byte)sector);
             sector >>= 8;
         }
     }

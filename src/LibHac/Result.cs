@@ -289,7 +289,9 @@ public readonly struct Result : IEquatable<Result>
         /// The <see cref="Result"/> representing the start of this result range.
         /// If returning a <see cref="Result"/> from a function, use <see cref="Log"/> instead.
         /// </summary>
-        public Result Value => new Result((BaseType)_value);
+        // The conversion to int won't remove the part of the value containing the description end, but that doesn't
+        // matter because the constructor for Result will take care of that.
+        public Result Value => new Result(unchecked((BaseType)_value));
 
         /// <summary>
         /// Checks if the range of this <see cref="Result.Base"/> includes the provided <see cref="Result"/>.
@@ -307,7 +309,7 @@ public readonly struct Result : IEquatable<Result>
             }
 
             return result.Module == Module &&
-                   result.Description - DescriptionRangeStart <= DescriptionRangeEnd - DescriptionRangeStart;
+                   unchecked(result.Description - DescriptionRangeStart <= DescriptionRangeEnd - DescriptionRangeStart);
         }
 
         /// <summary>
@@ -356,7 +358,7 @@ public readonly struct Result : IEquatable<Result>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static BaseType GetBitsValueLong(ulong value, int bitsOffset, int bitsCount)
         {
-            return (BaseType)(value >> bitsOffset) & ~(~default(BaseType) << bitsCount);
+            return unchecked((BaseType)(value >> bitsOffset)) & ~(~default(BaseType) << bitsCount);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -391,7 +393,7 @@ public readonly struct Result : IEquatable<Result>
             public BaseType DescriptionRangeStart => GetBitsValueLong(_value, DescriptionBitsOffset, DescriptionBitsCount);
             public BaseType DescriptionRangeEnd => GetBitsValueLong(_value, DescriptionEndBitsOffset, DescriptionBitsCount);
 
-            private Result Value => new Result((BaseType)_value);
+            private Result Value => new Result(unchecked((BaseType)_value));
 
             /// <summary>
             /// Checks if the range of this <see cref="Result.Base"/> includes the provided <see cref="Result"/>.
@@ -409,7 +411,7 @@ public readonly struct Result : IEquatable<Result>
                 }
 
                 return result.Module == Module &&
-                       result.Description - DescriptionRangeStart <= DescriptionRangeEnd - DescriptionRangeStart;
+                       unchecked(result.Description - DescriptionRangeStart <= DescriptionRangeEnd - DescriptionRangeStart);
             }
         }
     }

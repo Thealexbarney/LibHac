@@ -566,7 +566,7 @@ public static class ExternalKeyReader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsValidNameChar(char c)
     {
-        return (c | 0x20u) - 'a' <= 'z' - 'a' || (uint)(c - '0') <= 9 || c == '_';
+        return unchecked((c | 0x20u) - 'a' <= 'z' - 'a' || (uint)(c - '0') <= 9 || c == '_');
     }
 
     private static bool TryGetKeyInfo(out SpecificKeyInfo info, List<KeyInfo> keyList, ReadOnlySpan<char> keyName)

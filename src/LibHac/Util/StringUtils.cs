@@ -159,7 +159,7 @@ public static class StringUtils
 
     private static byte ToLowerAsciiInvariant(byte c)
     {
-        if ((uint)(c - 'A') <= 'Z' - 'A')
+        if (unchecked((uint)(c - 'A') <= 'Z' - 'A'))
         {
             c = (byte)(c | 0x20);
         }
@@ -240,12 +240,12 @@ public static class StringUtils
 
     public static bool IsAlpha(byte c)
     {
-        return (c | 0x20u) - (byte)'a' <= 'z' - 'a';
+        return unchecked((c | 0x20u) - (byte)'a' <= 'z' - 'a');
     }
 
     public static bool IsDigit(byte c)
     {
-        return (uint)(c - (byte)'0') <= 9;
+        return unchecked((uint)(c - (byte)'0') <= 9);
     }
 
     public static bool IsHexDigit(byte c)

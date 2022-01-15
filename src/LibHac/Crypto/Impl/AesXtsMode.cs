@@ -155,12 +155,15 @@ public struct AesXtsMode
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void Gf128Mul(ref Buffer16 buffer)
     {
-        Span<ulong> b = buffer.AsSpan<ulong>();
+        unchecked
+        {
+            Span<ulong> b = buffer.AsSpan<ulong>();
 
-        ulong tt = (ulong)((long)b[1] >> 63) & 0x87;
+            ulong tt = (ulong)((long)b[1] >> 63) & 0x87;
 
-        b[1] = (b[1] << 1) | (b[0] >> 63);
-        b[0] = (b[0] << 1) ^ tt;
+            b[1] = (b[1] << 1) | (b[0] >> 63);
+            b[0] = (b[0] << 1) ^ tt;
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
