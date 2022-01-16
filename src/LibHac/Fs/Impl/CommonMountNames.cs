@@ -7,25 +7,32 @@ public static class CommonMountNames
     public const char ReservedMountNamePrefixCharacter = '@';
 
     // Filesystem names.
+    /// <summary>"<c>@Host</c>"</summary>
     public static ReadOnlySpan<byte> HostRootFileSystemMountName => // "@Host"
-        new[] { (byte)'@', (byte)'H', (byte)'o', (byte)'s', (byte)'t' };
+            new[] { (byte)'@', (byte)'H', (byte)'o', (byte)'s', (byte)'t' };
 
+    /// <summary>"<c>@Sdcard</c>"</summary>
     public static ReadOnlySpan<byte> SdCardFileSystemMountName => // "@Sdcard"
         new[] { (byte)'@', (byte)'S', (byte)'d', (byte)'c', (byte)'a', (byte)'r', (byte)'d' };
 
+    /// <summary>"<c>@Gc</c>"</summary>
     public static ReadOnlySpan<byte> GameCardFileSystemMountName => // "@Gc"
         new[] { (byte)'@', (byte)'G', (byte)'c' };
 
+    /// <summary>"<c>U</c>"</summary>
     public static ReadOnlySpan<byte> GameCardFileSystemMountNameUpdateSuffix => // "U"
         new[] { (byte)'U' };
 
+    /// <summary>"<c>N</c>"</summary>
     public static ReadOnlySpan<byte> GameCardFileSystemMountNameNormalSuffix => // "N"
         new[] { (byte)'N' };
 
+    /// <summary>"<c>S</c>"</summary>
     public static ReadOnlySpan<byte> GameCardFileSystemMountNameSecureSuffix => // "S"
         new[] { (byte)'S' };
 
     // Built-in storage names.
+    /// <summary>"<c>@CalibFile</c>"</summary>
     public static ReadOnlySpan<byte> BisCalibrationFilePartitionMountName => // "@CalibFile"
         new[]
         {
@@ -33,16 +40,20 @@ public static class CommonMountNames
             (byte)'l', (byte)'e'
         };
 
+    /// <summary>"<c>@Safe</c>"</summary>
     public static ReadOnlySpan<byte> BisSafeModePartitionMountName => // "@Safe"
         new[] { (byte)'@', (byte)'S', (byte)'a', (byte)'f', (byte)'e' };
 
+    /// <summary>"<c>@User</c>"</summary>
     public static ReadOnlySpan<byte> BisUserPartitionMountName => // "@User"
         new[] { (byte)'@', (byte)'U', (byte)'s', (byte)'e', (byte)'r' };
 
+    /// <summary>"<c>@System</c>"</summary>
     public static ReadOnlySpan<byte> BisSystemPartitionMountName => // "@System"
         new[] { (byte)'@', (byte)'S', (byte)'y', (byte)'s', (byte)'t', (byte)'e', (byte)'m' };
 
     //Content storage names.
+    /// <summary>"<c>@SystemContent</c>"</summary>
     public static ReadOnlySpan<byte> ContentStorageSystemMountName => // "@SystemContent"
         new[]
         {
@@ -50,6 +61,7 @@ public static class CommonMountNames
             (byte)'o', (byte)'n', (byte)'t', (byte)'e', (byte)'n', (byte)'t'
         };
 
+    /// <summary>"<c>@UserContent</c>"</summary>
     public static ReadOnlySpan<byte> ContentStorageUserMountName => // "@UserContent"
         new[]
         {
@@ -57,6 +69,7 @@ public static class CommonMountNames
             (byte)'t', (byte)'e', (byte)'n', (byte)'t'
         };
 
+    /// <summary>"<c>@SdCardContent</c>"</summary>
     public static ReadOnlySpan<byte> ContentStorageSdCardMountName => // "@SdCardContent"
         new[]
         {
@@ -65,6 +78,7 @@ public static class CommonMountNames
         };
 
     // Registered update partition
+    /// <summary>"<c>@RegUpdate</c>"</summary>
     public static ReadOnlySpan<byte> RegisteredUpdatePartitionMountName => // "@RegUpdate"
         new[]
         {
@@ -72,6 +86,7 @@ public static class CommonMountNames
             (byte)'t', (byte)'e'
         };
 
+    /// <summary>"<c>@Nintendo</c>"</summary>
     public static ReadOnlySpan<byte> SdCardNintendoRootDirectoryName => // "Nintendo"
         new[]
         {

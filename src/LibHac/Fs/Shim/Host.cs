@@ -19,12 +19,13 @@ namespace LibHac.Fs.Shim;
 /// <summary>
 /// Contains functions for mounting file systems from a host computer.
 /// </summary>
-/// <remarks>Based on nnSdk 11.4.0</remarks>
+/// <remarks>Based on nnSdk 13.4.0</remarks>
 [SkipLocalsInit]
 public static class Host
 {
-    private static ReadOnlySpan<byte> HostRootFileSystemPath => // "@Host:/"
-        new[] { (byte)'@', (byte)'H', (byte)'o', (byte)'s', (byte)'t', (byte)':', (byte)'/' };
+    /// <summary>"<c>@Host:/</c>"</summary>
+    private static ReadOnlySpan<byte> HostRootFileSystemPath =>
+            new[] { (byte)'@', (byte)'H', (byte)'o', (byte)'s', (byte)'t', (byte)':', (byte)'/' };
 
     private const int HostRootFileSystemPathLength = 7;
 
@@ -122,12 +123,6 @@ public static class Host
     private static Result OpenHostFileSystem(FileSystemClient fs, ref UniqueRef<IFileSystem> outFileSystem,
         U8Span mountName, U8Span path, MountHostOption option)
     {
-        if (mountName.IsNull())
-            return ResultFs.NullptrArgument.Log();
-
-        if (path.IsNull())
-            return ResultFs.NullptrArgument.Log();
-
         if (WindowsPath.IsWindowsDrive(mountName))
             return ResultFs.InvalidMountName.Log();
 
@@ -166,9 +161,6 @@ public static class Host
     {
         Result rc = fs.Impl.CheckMountName(mountName);
         if (rc.IsFailure()) return rc;
-
-        if (path.IsNull())
-            return ResultFs.NullptrArgument.Log();
 
         outMountNameGenerator.Reset(new HostCommonMountNameGenerator(path));
 

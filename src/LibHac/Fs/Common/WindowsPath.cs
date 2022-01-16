@@ -159,9 +159,9 @@ public static class WindowsPath
         return DosDevicePathPrefixLength;
     }
 
-    public static bool IsWindowsPath(ReadOnlySpan<byte> path, bool checkForwardSlash)
+    public static bool IsWindowsPath(ReadOnlySpan<byte> path, bool allowForwardSlashForUnc)
     {
-        return IsWindowsDrive(path) || IsDosDevicePath(path) || IsUncPath(path, checkForwardSlash, true);
+        return IsWindowsDrive(path) || IsDosDevicePath(path) || IsUncPath(path, allowForwardSlashForUnc, true);
     }
 
     public static int GetWindowsSkipLength(ReadOnlySpan<byte> path)
