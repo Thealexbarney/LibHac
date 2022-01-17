@@ -4,6 +4,10 @@ using LibHac.Os;
 
 namespace LibHac.Fs.Shim;
 
+/// <summary>
+/// Contains functions for use by the Loader service.
+/// </summary>
+/// <remarks>Based on nnSdk 13.4.0</remarks>
 public static class LoaderApi
 {
     public static Result IsArchivedProgram(this FileSystemClient fs, out bool isArchived, ProcessId processId)
@@ -13,6 +17,8 @@ public static class LoaderApi
 
         Result rc = fileSystemProxy.Get.IsArchivedProgram(out isArchived, processId.Value);
         fs.Impl.AbortIfNeeded(rc);
-        return rc;
+        if (rc.IsFailure()) return rc.Miss();
+
+        return Result.Success;
     }
 }

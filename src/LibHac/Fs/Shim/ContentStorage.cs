@@ -16,7 +16,7 @@ namespace LibHac.Fs.Shim;
 /// <summary>
 /// Contains functions for mounting the directories where content is stored.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 [SkipLocalsInit]
 public static class ContentStorage
 {
@@ -109,6 +109,8 @@ public static class ContentStorage
                 if (!ResultFs.SystemPartitionNotReady.Includes(rc))
                     return rc;
 
+                // Note: Nintendo has an off-by-one error where they check if
+                // "i == maxRetries" instead of "i == maxRetries - 1"
                 if (i == maxRetries - 1)
                     return rc;
 

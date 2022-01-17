@@ -13,7 +13,7 @@ namespace LibHac.Fs.Shim;
 /// <summary>
 /// Contains functions for mounting custom storage file systems.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 [SkipLocalsInit]
 public static class CustomStorage
 {
@@ -60,7 +60,8 @@ public static class CustomStorage
         }
     }
 
-    private static ReadOnlySpan<byte> CustomStorageDirectoryName => // "CustomStorage0"
+    /// <summary>"<c>CustomStorage0</c>"</summary>
+    private static ReadOnlySpan<byte> CustomStorageDirectoryName =>
         new[]
         {
             (byte)'C', (byte)'u', (byte)'s', (byte)'t', (byte)'o', (byte)'m', (byte)'S', (byte)'t',

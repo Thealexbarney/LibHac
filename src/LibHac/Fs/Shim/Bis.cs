@@ -19,7 +19,7 @@ namespace LibHac.Fs.Shim;
 /// Contains functions for mounting built-in-storage partition file systems
 /// and opening the raw partitions as <see cref="IStorage"/>s.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 [SkipLocalsInit]
 public static class Bis
 {
@@ -122,7 +122,7 @@ public static class Bis
 
     public static Result MountBis(this FileSystemClient fs, U8Span mountName, BisPartitionId partitionId)
     {
-        return MountBis(fs.Impl, mountName, partitionId, default);
+        return MountBis(fs.Impl, mountName, partitionId, U8Span.Empty);
     }
 
     public static Result MountBis(this FileSystemClient fs, BisPartitionId partitionId, U8Span rootPath)
@@ -167,17 +167,21 @@ public static class Bis
     public static Result OpenBisPartition(this FileSystemClient fs, ref UniqueRef<IStorage> outPartitionStorage,
         BisPartitionId partitionId)
     {
-        using var storage = new SharedRef<IStorageSf>();
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
+        using var storage = new SharedRef<IStorageSf>();
 
         Result rc = fileSystemProxy.Get.OpenBisStorage(ref storage.Ref(), partitionId);
         fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc;
+        if (rc.IsFailure()) return rc.Miss();
 
         using var storageAdapter = new UniqueRef<IStorage>(new StorageServiceObjectAdapter(ref storage.Ref()));
 
         if (!storageAdapter.HasValue)
-            return ResultFs.AllocationMemoryFailedInBisC.Log();
+        {
+            rc = ResultFs.AllocationMemoryFailedInBisC.Value;
+            fs.Impl.AbortIfNeeded(rc);
+            if (rc.IsFailure()) return rc.Log();
+        }
 
         outPartitionStorage.Set(ref storageAdapter.Ref());
         return Result.Success;

@@ -31,7 +31,7 @@ public class AccessControlTests
             StorageId.BuiltInUser, SpanHelpers.AsReadOnlyByteSpan(in dataHeader),
             SpanHelpers.AsReadOnlyByteSpan(in descriptor)));
 
-        Result rc = client.Fs.MountContent("test".ToU8Span(), "@System:/fake.nca".ToU8Span(), ContentType.Control);
+        Result rc = client.Fs.MountContent("test".ToU8Span(), "@System:/fake.nca".ToU8Span(), ContentType.Meta);
         Assert.Result(ResultFs.PermissionDenied, rc);
     }
 
@@ -57,7 +57,7 @@ public class AccessControlTests
             SpanHelpers.AsReadOnlyByteSpan(in descriptor)));
 
         // We should get UnexpectedInNcaFileSystemServiceImplA because mounting NCAs from @System isn't allowed
-        Result rc = client.Fs.MountContent("test".ToU8Span(), "@System:/fake.nca".ToU8Span(), ContentType.Control);
+        Result rc = client.Fs.MountContent("test".ToU8Span(), "@System:/fake.nca".ToU8Span(), ContentType.Meta);
         Assert.Result(ResultFs.UnexpectedInNcaFileSystemServiceImplA, rc);
     }
 }

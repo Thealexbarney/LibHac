@@ -16,7 +16,7 @@ namespace LibHac.Fs.Shim;
 /// <summary>
 /// Contains functions for mounting content file systems.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 [SkipLocalsInit]
 public static class Content
 {
@@ -42,16 +42,13 @@ public static class Content
 
         FileSystemProxyType fsType = ConvertToFileSystemProxyType(contentType);
 
-        if (path.IsNull())
-            return ResultFs.NullptrArgument.Log();
-
-        rc = PathUtility.ConvertToFspPath(out FspPath fsPath, path);
+        rc = PathUtility.ConvertToFspPath(out FspPath sfPath, path);
         if (rc.IsFailure()) return rc;
 
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var fileSystem = new SharedRef<IFileSystemSf>();
 
-        rc = fileSystemProxy.Get.OpenFileSystemWithId(ref fileSystem.Ref(), in fsPath, id, fsType);
+        rc = fileSystemProxy.Get.OpenFileSystemWithId(ref fileSystem.Ref(), in sfPath, id, fsType);
         if (rc.IsFailure()) return rc;
 
         using var fileSystemAdapter =
@@ -66,8 +63,7 @@ public static class Content
         return Result.Success;
     }
 
-    public static Result MountContent(this FileSystemClient fs, U8Span mountName, U8Span path,
-        ContentType contentType)
+    public static Result MountContent(this FileSystemClient fs, U8Span mountName, U8Span path, ContentType contentType)
     {
         Result rc;
         Span<byte> logBuffer = stackalloc byte[0x300];
@@ -95,12 +91,12 @@ public static class Content
         fs.Impl.AbortIfNeeded(rc);
         if (rc.IsFailure()) return rc;
 
-        const ulong programId = 0;
+        ProgramId programId = default;
 
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = MountContentImpl(fs, mountName, path, programId, contentType);
+            rc = MountContentImpl(fs, mountName, path, programId.Value, contentType);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var idString = new IdString();
@@ -108,14 +104,14 @@ public static class Content
 
             sb.Append(LogName).Append(mountName).Append(LogQuote)
                 .Append(LogPath).Append(path).Append(LogQuote)
-                .Append(LogProgramId).AppendFormat(programId, 'X')
+                .Append(LogProgramId).AppendFormat(programId.Value, 'X')
                 .Append(LogContentType).Append(idString.ToString(contentType));
 
             fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
         }
         else
         {
-            rc = MountContentImpl(fs, mountName, path, programId, contentType);
+            rc = MountContentImpl(fs, mountName, path, programId.Value, contentType);
         }
 
         fs.Impl.AbortIfNeeded(rc);
@@ -128,7 +124,7 @@ public static class Content
 
         static Result PreMount(ContentType contentType)
         {
-            if (contentType == ContentType.Meta)
+            if (contentType != ContentType.Meta)
                 return ResultFs.InvalidArgument.Log();
 
             return Result.Success;

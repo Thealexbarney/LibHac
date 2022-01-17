@@ -10,7 +10,7 @@ namespace LibHac.Fs.Impl;
 /// An adapter for using an <see cref="IStorageSf"/> service object as an <see cref="IStorage"/>. Used
 /// when receiving a Horizon IPC storage object so it can be used as an <see cref="IStorage"/> locally.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 internal class StorageServiceObjectAdapter : IStorage
 {
     private SharedRef<IStorageSf> _baseStorage;
@@ -18,6 +18,12 @@ internal class StorageServiceObjectAdapter : IStorage
     public StorageServiceObjectAdapter(ref SharedRef<IStorageSf> baseStorage)
     {
         _baseStorage = SharedRef<IStorageSf>.CreateMove(ref baseStorage);
+    }
+
+    public override void Dispose()
+    {
+        _baseStorage.Destroy();
+        base.Dispose();
     }
 
     public override Result Read(long offset, Span<byte> destination)
@@ -50,8 +56,6 @@ internal class StorageServiceObjectAdapter : IStorage
     {
         switch (operationId)
         {
-            case OperationId.InvalidateCache:
-                return _baseStorage.Get.OperateRange(out _, (int)OperationId.InvalidateCache, offset, size);
             case OperationId.QueryRange:
                 if (outBuffer.Length != Unsafe.SizeOf<QueryRangeInfo>())
                     return ResultFs.InvalidSize.Log();
@@ -59,14 +63,12 @@ internal class StorageServiceObjectAdapter : IStorage
                 ref QueryRangeInfo info = ref SpanHelpers.AsStruct<QueryRangeInfo>(outBuffer);
 
                 return _baseStorage.Get.OperateRange(out info, (int)OperationId.QueryRange, offset, size);
+
+            case OperationId.InvalidateCache:
+                return _baseStorage.Get.OperateRange(out _, (int)OperationId.InvalidateCache, offset, size);
+
             default:
                 return ResultFs.UnsupportedOperateRangeForStorageServiceObjectAdapter.Log();
         }
-    }
-
-    public override void Dispose()
-    {
-        _baseStorage.Destroy();
-        base.Dispose();
     }
 }

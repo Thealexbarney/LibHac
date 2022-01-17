@@ -15,7 +15,7 @@ namespace LibHac.Fs.Shim;
 /// <summary>
 /// Contains functions for mounting code file systems.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 [SkipLocalsInit]
 public static class Code
 {
@@ -59,20 +59,19 @@ public static class Code
             Result rc = fs.Impl.CheckMountName(mountName);
             if (rc.IsFailure()) return rc;
 
-            if (path.IsNull())
-                return ResultFs.NullptrArgument.Log();
-
-            rc = PathUtility.ConvertToFspPath(out FspPath fsPath, path);
+            rc = PathUtility.ConvertToFspPath(out FspPath sfPath, path);
             if (rc.IsFailure()) return rc;
 
             using SharedRef<IFileSystemProxyForLoader> fileSystemProxy =
                 fs.Impl.GetFileSystemProxyForLoaderServiceObject();
 
-            // SetCurrentProcess
+            // Todo: IPC code should automatically set process ID
+            rc = fileSystemProxy.Get.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value);
+            if (rc.IsFailure()) return rc.Miss();
 
             using var fileSystem = new SharedRef<IFileSystemSf>();
 
-            rc = fileSystemProxy.Get.OpenCodeFileSystem(ref fileSystem.Ref(), out verificationData, in fsPath,
+            rc = fileSystemProxy.Get.OpenCodeFileSystem(ref fileSystem.Ref(), out verificationData, in sfPath,
                 programId);
             if (rc.IsFailure()) return rc;
 

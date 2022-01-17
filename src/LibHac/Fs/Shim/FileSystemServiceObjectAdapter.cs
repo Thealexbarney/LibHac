@@ -21,7 +21,7 @@ namespace LibHac.Fs.Impl;
 /// An adapter for using an <see cref="IFileSf"/> service object as an <see cref="IFile"/>. Used
 /// when receiving a Horizon IPC file object so it can be used as an <see cref="IFile"/> locally.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 internal class FileServiceObjectAdapter : IFile
 {
     private SharedRef<IFileSf> _baseFile;
@@ -67,8 +67,6 @@ internal class FileServiceObjectAdapter : IFile
     {
         switch (operationId)
         {
-            case OperationId.InvalidateCache:
-                return _baseFile.Get.OperateRange(out _, (int)OperationId.InvalidateCache, offset, size);
             case OperationId.QueryRange:
                 if (outBuffer.Length != Unsafe.SizeOf<QueryRangeInfo>())
                     return ResultFs.InvalidSize.Log();
@@ -76,6 +74,8 @@ internal class FileServiceObjectAdapter : IFile
                 ref QueryRangeInfo info = ref SpanHelpers.AsStruct<QueryRangeInfo>(outBuffer);
 
                 return _baseFile.Get.OperateRange(out info, (int)OperationId.QueryRange, offset, size);
+            case OperationId.InvalidateCache:
+                return _baseFile.Get.OperateRange(out _, (int)OperationId.InvalidateCache, offset, size);
             default:
                 return _baseFile.Get.OperateRangeWithBuffer(new OutBuffer(outBuffer), new InBuffer(inBuffer),
                     (int)operationId, offset, size);
@@ -87,7 +87,7 @@ internal class FileServiceObjectAdapter : IFile
 /// An adapter for using an <see cref="IDirectorySf"/> service object as an <see cref="IDirectory"/>. Used
 /// when receiving a Horizon IPC directory object so it can be used as an <see cref="IDirectory"/> locally.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 internal class DirectoryServiceObjectAdapter : IDirectory
 {
     private SharedRef<IDirectorySf> _baseDirectory;
@@ -119,7 +119,7 @@ internal class DirectoryServiceObjectAdapter : IDirectory
 /// An adapter for using an <see cref="IFileSystemSf"/> service object as an <see cref="IFileSystem"/>. Used
 /// when receiving a Horizon IPC file system object so it can be used as an <see cref="IFileSystem"/> locally.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 internal class FileSystemServiceObjectAdapter : IFileSystem, IMultiCommitTarget
 {
     private SharedRef<IFileSystemSf> _baseFs;
