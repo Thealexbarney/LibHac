@@ -10,6 +10,10 @@ using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.FsSrv.Sf;
 
+/// <summary>
+/// The interface most programs use to interact with the FS service.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public interface IFileSystemProxy : IDisposable
 {
     Result SetCurrentProcess(ulong processId);
@@ -74,6 +78,7 @@ public interface IFileSystemProxy : IDisposable
     Result OpenDataStorageByDataId(ref SharedRef<IStorageSf> outStorage, DataId dataId, StorageId storageId);
     Result OpenPatchDataStorageByCurrentProcess(ref SharedRef<IStorageSf> outStorage);
     Result OpenDataFileSystemWithProgramIndex(ref SharedRef<IFileSystemSf> outFileSystem, byte programIndex);
+    Result OpenDataStorageByPath(ref SharedRef<IFileSystemSf> outFileSystem, in FspPath path, FileSystemProxyType fsType);
     Result OpenDataStorageWithProgramIndex(ref SharedRef<IStorageSf> outStorage, byte programIndex);
     Result OpenDeviceOperator(ref SharedRef<IDeviceOperator> outDeviceOperator);
     Result OpenSdCardDetectionEventNotifier(ref SharedRef<IEventNotifier> outEventNotifier);

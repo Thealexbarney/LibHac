@@ -178,6 +178,12 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         throw new NotImplementedException();
     }
 
+    public Result OpenDataStorageByPath(ref SharedRef<IFileSystemSf> outFileSystem, in FspPath path,
+        FileSystemProxyType fsType)
+    {
+        throw new NotImplementedException();
+    }
+
     private Result TryAcquireAddOnContentOpenCountSemaphore(ref UniqueRef<IUniqueLock> outSemaphoreLock)
     {
         throw new NotImplementedException();

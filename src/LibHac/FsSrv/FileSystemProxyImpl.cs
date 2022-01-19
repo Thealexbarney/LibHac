@@ -55,9 +55,9 @@ internal struct FileSystemProxyImplGlobals
 }
 
 /// <summary>
-/// Dispatches calls to the main file system service interface.
+/// Dispatches calls to the various file system service objects.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
 {
     private FileSystemProxyCoreImpl _fsProxyCore;
@@ -249,6 +249,15 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
         if (rc.IsFailure()) return rc;
 
         return ncaFsService.OpenDataStorageByDataId(ref outStorage, dataId, storageId);
+    }
+
+    public Result OpenDataStorageByPath(ref SharedRef<IFileSystemSf> outFileSystem, in FspPath path,
+        FileSystemProxyType fsType)
+    {
+        Result rc = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
+        if (rc.IsFailure()) return rc;
+
+        return ncaFsService.OpenDataStorageByPath(ref outFileSystem, in path, fsType);
     }
 
     public Result OpenPatchDataStorageByCurrentProcess(ref SharedRef<IStorageSf> outStorage)
