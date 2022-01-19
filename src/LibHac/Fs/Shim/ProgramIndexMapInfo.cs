@@ -1,11 +1,15 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.FsSrv.Sf;
 using LibHac.Sf;
 
 namespace LibHac.Fs.Shim;
 
+/// <summary>
+/// Contains functions for registering multi-program application
+/// information of the currently running application with FS.
+/// </summary>
+/// <remarks>Based on nnSdk 13.4.0</remarks>
 public static class ProgramIndexMapInfoShim
 {
     /// <summary>
@@ -23,10 +27,10 @@ public static class ProgramIndexMapInfoShim
 
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-        var mapInfoBuffer = new InBuffer(MemoryMarshal.Cast<ProgramIndexMapInfo, byte>(mapInfo));
-
-        Result rc = fileSystemProxy.Get.RegisterProgramIndexMapInfo(mapInfoBuffer, mapInfo.Length);
+        Result rc = fileSystemProxy.Get.RegisterProgramIndexMapInfo(InBuffer.FromSpan(mapInfo), mapInfo.Length);
         fs.Impl.AbortIfNeeded(rc);
-        return rc;
+        if (rc.IsFailure()) return rc.Miss();
+
+        return Result.Success;
     }
 }

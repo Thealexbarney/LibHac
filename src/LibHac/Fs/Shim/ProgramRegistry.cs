@@ -1,5 +1,6 @@
 ﻿using System;
 using LibHac.Common;
+using LibHac.Diag;
 using LibHac.FsSrv;
 using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
@@ -7,6 +8,11 @@ using LibHac.Sf;
 
 namespace LibHac.Fs.Shim;
 
+/// <summary>
+/// Contains functions for registering and unregistering currently running
+/// processes and their permissions in the FS program registry.
+/// </summary>
+/// <remarks>Based on nnSdk 13.4.0</remarks>
 public static class ProgramRegistry
 {
     /// <inheritdoc cref="ProgramRegistryImpl.RegisterProgram"/>
@@ -33,11 +39,8 @@ public static class ProgramRegistry
     {
         using SharedRef<IProgramRegistry> programRegistry = fs.Impl.GetProgramRegistryServiceObject();
 
-        Result rc = programRegistry.Get.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value);
-        if (rc.IsFailure()) return rc.Miss();
-
-        rc = programRegistry.Get.UnregisterProgram(processId);
-        if (rc.IsFailure()) return rc.Miss();
+        Abort.DoAbortUnlessSuccess(programRegistry.Get.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value));
+        Abort.DoAbortUnlessSuccess(programRegistry.Get.UnregisterProgram(processId));
 
         return Result.Success;
     }

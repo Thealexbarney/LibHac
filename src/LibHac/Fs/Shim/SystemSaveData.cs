@@ -11,6 +11,10 @@ using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Shim;
 
+/// <summary>
+/// Contains functions for mounting system save data file systems.
+/// </summary>
+/// <remarks>Based on nnSdk 13.4.0</remarks>
 [SkipLocalsInit]
 public static class SystemSaveData
 {
@@ -19,16 +23,16 @@ public static class SystemSaveData
         return fs.MountSystemSaveData(mountName, saveDataId, Fs.SaveData.InvalidUserId);
     }
 
-    public static Result MountSystemSaveData(this FileSystemClient fs, U8Span mountName, SaveDataSpaceId spaceId,
-        ulong saveDataId)
-    {
-        return fs.MountSystemSaveData(mountName, spaceId, saveDataId, Fs.SaveData.InvalidUserId);
-    }
-
     public static Result MountSystemSaveData(this FileSystemClient fs, U8Span mountName, ulong saveDataId,
         UserId userId)
     {
         return fs.MountSystemSaveData(mountName, SaveDataSpaceId.System, saveDataId, userId);
+    }
+
+    public static Result MountSystemSaveData(this FileSystemClient fs, U8Span mountName, SaveDataSpaceId spaceId,
+        ulong saveDataId)
+    {
+        return fs.MountSystemSaveData(mountName, spaceId, saveDataId, Fs.SaveData.InvalidUserId);
     }
 
     public static Result MountSystemSaveData(this FileSystemClient fs, U8Span mountName,
@@ -58,6 +62,11 @@ public static class SystemSaveData
         }
 
         fs.Impl.AbortIfNeeded(rc);
+        if (rc.IsFailure()) return rc.Miss();
+
+        if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
+            fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
+
         return rc;
 
         static Result Mount(FileSystemClient fs, U8Span mountName, SaveDataSpaceId spaceId, ulong saveDataId,
@@ -86,8 +95,9 @@ public static class SystemSaveData
             if (spaceId == SaveDataSpaceId.System)
             {
                 using var mountNameGenerator = new UniqueRef<ICommonMountNameGenerator>();
-                return fs.Register(mountName, fileSystemAdapterRaw, ref fileSystemAdapter.Ref(),
-                    ref mountNameGenerator.Ref(), false, null, false);
+                return fs.Register(mountName, multiCommitTarget: fileSystemAdapterRaw, ref fileSystemAdapter.Ref(),
+                    ref mountNameGenerator.Ref(), useDataCache: false, storageForPurgeFileDataCache: null,
+                    usePathCache: false);
             }
             else
             {
