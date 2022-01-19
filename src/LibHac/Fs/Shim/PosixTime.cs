@@ -3,6 +3,10 @@ using LibHac.FsSrv.Sf;
 
 namespace LibHac.Fs.Shim;
 
+/// <summary>
+/// Contains functions for setting the current time used by FS.
+/// </summary>
+/// <remarks>Based on nnSdk 13.4.0</remarks>
 public static class PosixTimeShim
 {
     public static Result SetCurrentPosixTime(this FileSystemClient fs, Time.PosixTime currentPosixTime,

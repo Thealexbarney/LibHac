@@ -12,9 +12,34 @@ using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Shim;
 
+/// <summary>
+/// Contains functions for mounting save data and checking if save data already exists or not.
+/// </summary>
+/// <remarks>Based on nnSdk 13.4.0</remarks>
 [SkipLocalsInit]
 public static class SaveData
 {
+    private const long SaveDataSizeForDebug = 0x2000000;
+    private const long SaveDataJournalSizeForDebug = 0x2000000;
+
+    private static Result OpenSaveDataInternalStorageFileSystemImpl(FileSystemClient fs,
+        ref UniqueRef<IFileSystem> outFileSystem, SaveDataSpaceId spaceId, ulong saveDataId)
+    {
+        using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
+        using var fileSystem = new SharedRef<IFileSystemSf>();
+
+        Result rc = fileSystemProxy.Get.OpenSaveDataInternalStorageFileSystem(ref fileSystem.Ref(), spaceId,
+            saveDataId);
+        if (rc.IsFailure()) return rc.Miss();
+
+        using var fileSystemAdapter =
+            new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
+
+        outFileSystem.Set(ref fileSystemAdapter.Ref());
+
+        return Result.Success;
+    }
+
     private static Result MountSaveDataImpl(this FileSystemClientImpl fs, U8Span mountName, SaveDataSpaceId spaceId,
         ProgramId programId, UserId userId, SaveDataType type, bool openReadOnly, ushort index)
     {
@@ -49,11 +74,80 @@ public static class SaveData
 
         using var mountNameGenerator = new UniqueRef<ICommonMountNameGenerator>();
 
-        rc = fs.Fs.Register(mountName, fileSystemAdapterRaw, ref fileSystemAdapter.Ref(),
-            ref mountNameGenerator.Ref(), false, null, true);
+        rc = fs.Fs.Register(mountName, fileSystemAdapterRaw, ref fileSystemAdapter.Ref(), ref mountNameGenerator.Ref(),
+            false, null, true);
         if (rc.IsFailure()) return rc.Miss();
 
         return Result.Success;
+    }
+
+    public static Result EnsureSaveDataForDebug(this FileSystemClientImpl fs, UserId userId)
+    {
+        using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
+
+        Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, ProgramId.InvalidId, SaveDataType.Account,
+            UserId.InvalidId, 0);
+        if (rc.IsFailure()) return rc;
+
+        rc = SaveDataCreationInfo.Make(out SaveDataCreationInfo creationInfo, SaveDataSizeForDebug,
+            SaveDataJournalSizeForDebug, default, SaveDataFlags.None, SaveDataSpaceId.User);
+        if (rc.IsFailure()) return rc.Miss();
+
+        var metaInfo = new SaveDataMetaInfo
+        {
+            Type = SaveDataMetaType.None,
+            Size = 0
+        };
+
+        rc = fileSystemProxy.Get.CreateSaveDataFileSystem(in attribute, in creationInfo, in metaInfo);
+
+        if (rc.IsFailure())
+        {
+            // Return successfully if the save data already exists
+            if (ResultFs.PathAlreadyExists.Includes(rc))
+                rc.Catch();
+            else
+                return rc.Miss();
+        }
+
+        return Result.Success;
+    }
+
+    public static Result MountSaveData(this FileSystemClientImpl fs, U8Span mountName, UserId userId)
+    {
+        return MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, ProgramId.InvalidId, userId,
+            SaveDataType.Account, openReadOnly: false, index: 0);
+    }
+
+    public static Result MountSaveData(this FileSystemClient fs, U8Span mountName, UserId userId)
+    {
+        Result rc;
+        Span<byte> logBuffer = stackalloc byte[0x60];
+
+        if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
+        {
+            Tick start = fs.Hos.Os.GetSystemTick();
+            rc = MountSaveData(fs.Impl, mountName, UserId.InvalidId);
+            Tick end = fs.Hos.Os.GetSystemTick();
+
+            var sb = new U8StringBuilder(logBuffer, true);
+            sb.Append(LogName).Append(mountName).Append(LogQuote)
+                .Append(LogUserId).AppendFormat(userId.Id.High, 'X', 16).AppendFormat(userId.Id.Low, 'X', 16);
+
+            fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+        }
+        else
+        {
+            rc = MountSaveData(fs.Impl, mountName, UserId.InvalidId);
+        }
+
+        fs.Impl.AbortIfNeeded(rc);
+        if (rc.IsFailure()) return rc;
+
+        if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
+            fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
+
+        return rc;
     }
 
     public static Result MountSaveData(this FileSystemClient fs, U8Span mountName, Ncm.ApplicationId applicationId,
@@ -126,6 +220,45 @@ public static class SaveData
         return rc;
     }
 
+    public static Result IsSaveDataExisting(this FileSystemClientImpl fs, out bool exists, UserId userId)
+    {
+        return IsSaveDataExisting(fs, out exists, default, userId);
+    }
+
+    public static Result IsSaveDataExisting(this FileSystemClientImpl fs, out bool exists,
+        Ncm.ApplicationId applicationId, UserId userId)
+    {
+        return IsSaveDataExisting(fs, out exists, default, SaveDataType.Account, userId);
+    }
+
+    public static Result IsSaveDataExisting(this FileSystemClientImpl fs, out bool exists,
+        Ncm.ApplicationId applicationId, SaveDataType type, UserId userId)
+    {
+        UnsafeHelpers.SkipParamInit(out exists);
+
+        using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
+
+        Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, applicationId, type, UserId.InvalidId, 0);
+        if (rc.IsFailure()) return rc.Miss();
+
+        using var fileSystem = new SharedRef<IFileSystemSf>();
+        rc = fileSystemProxy.Get.OpenSaveDataFileSystem(ref fileSystem.Ref(), SaveDataSpaceId.User, in attribute);
+
+        if (rc.IsSuccess() || ResultFs.TargetLocked.Includes(rc) || ResultFs.SaveDataExtending.Includes(rc))
+        {
+            exists = true;
+            return Result.Success;
+        }
+
+        if (ResultFs.TargetNotFound.Includes(rc))
+        {
+            exists = false;
+            return Result.Success;
+        }
+
+        return rc.Miss();
+    }
+
     public static Result MountTemporaryStorage(this FileSystemClient fs, U8Span mountName)
     {
         Result rc;
@@ -195,6 +328,7 @@ public static class SaveData
         Result rc;
         Span<byte> logBuffer = stackalloc byte[0x40];
 
+
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
@@ -223,8 +357,7 @@ public static class SaveData
         return rc;
     }
 
-    public static Result MountCacheStorage(this FileSystemClient fs, U8Span mountName,
-        Ncm.ApplicationId applicationId)
+    public static Result MountCacheStorage(this FileSystemClient fs, U8Span mountName, Ncm.ApplicationId applicationId)
     {
         Result rc;
         Span<byte> logBuffer = stackalloc byte[0x50];
@@ -257,8 +390,8 @@ public static class SaveData
         return rc;
     }
 
-    public static Result MountCacheStorage(this FileSystemClient fs, U8Span mountName,
-        Ncm.ApplicationId applicationId, int index)
+    public static Result MountCacheStorage(this FileSystemClient fs, U8Span mountName, Ncm.ApplicationId applicationId,
+        int index)
     {
         Result rc;
         Span<byte> logBuffer = stackalloc byte[0x60];
@@ -290,5 +423,38 @@ public static class SaveData
             fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
 
         return rc;
+    }
+
+    public static Result OpenSaveDataInternalStorageFileSystem(this FileSystemClient fs,
+        ref UniqueRef<IFileSystem> outFileSystem, SaveDataSpaceId spaceId, ulong saveDataId)
+    {
+        Result rc = OpenSaveDataInternalStorageFileSystemImpl(fs, ref outFileSystem, spaceId, saveDataId);
+        fs.Impl.AbortIfNeeded(rc);
+        if (rc.IsFailure()) return rc.Miss();
+
+        return Result.Success;
+    }
+
+    public static Result MountSaveDataInternalStorage(this FileSystemClient fs, U8Span mountName,
+        SaveDataSpaceId spaceId, ulong saveDataId)
+    {
+        Result rc = Operate(fs, mountName, spaceId, saveDataId);
+
+        fs.Impl.AbortIfNeeded(rc);
+        if (rc.IsFailure()) return rc.Miss();
+
+        return Result.Success;
+
+        static Result Operate(FileSystemClient fs, U8Span mountName, SaveDataSpaceId spaceId, ulong saveDataId)
+        {
+            Result rc = fs.Impl.CheckMountName(mountName);
+            if (rc.IsFailure()) return rc.Miss();
+
+            using var fileSystem = new UniqueRef<IFileSystem>();
+            rc = OpenSaveDataInternalStorageFileSystemImpl(fs, ref fileSystem.Ref(), spaceId, saveDataId);
+            if (rc.IsFailure()) return rc.Miss();
+
+            return fs.Register(mountName, ref fileSystem.Ref());
+        }
     }
 }
