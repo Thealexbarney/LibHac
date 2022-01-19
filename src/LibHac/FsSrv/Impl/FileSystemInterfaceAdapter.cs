@@ -566,7 +566,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         static Result PermissionCheck(QueryId queryId, FileSystemInterfaceAdapter fsAdapter)
         {
             if (queryId == QueryId.SetConcatenationFileAttribute ||
-                queryId == QueryId.IsSignedSystemPartitionOnSdCardValid ||
+                queryId == QueryId.IsSignedSystemPartition ||
                 queryId == QueryId.QueryUnpreparedFileInformation)
             {
                 return Result.Success;

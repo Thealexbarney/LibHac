@@ -1,5 +1,12 @@
 ﻿namespace LibHac.Sdmmc;
 
+public enum BusWidth
+{
+    Width1Bit = 0,
+    Width4Bit = 1,
+    Width8Bit = 2,
+}
+
 public enum SpeedMode
 {
     MmcIdentification = 0,
@@ -17,4 +24,11 @@ public enum SpeedMode
     SdCardDdr50 = 12,
     GcAsicFpgaSpeed = 13,
     GcAsicSpeed = 14
+}
+
+public enum Port
+{
+    Mmc0 = 0,
+    SdCard0 = 1,
+    GcAsic0 = 2
 }

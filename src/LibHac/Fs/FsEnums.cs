@@ -189,13 +189,6 @@ public enum CommitOptionFlag
     SetRestoreFlag = 2
 }
 
-public enum SdmmcPort
-{
-    Mmc = 0,
-    SdCard = 1,
-    GcAsic = 2
-}
-
 public enum CacheStorageTargetMedia
 {
     None = 0,
@@ -261,4 +254,37 @@ public enum SdCardSpeedMode
     Sdr104 = 6,
     Ddr50 = 7,
     Unknown = 8
+}
+
+public enum SdmmcBusWidth
+{
+    Width1Bit = 0,
+    Width4Bit = 1,
+    Width8Bit = 2,
+}
+
+public enum SdmmcSpeedMode
+{
+    MmcIdentification = 0,
+    MmcLegacySpeed = 1,
+    MmcHighSpeed = 2,
+    MmcHs200 = 3,
+    MmcHs400 = 4,
+    SdCardIdentification = 5,
+    SdCardDefaultSpeed = 6,
+    SdCardHighSpeed = 7,
+    SdCardSdr12 = 8,
+    SdCardSdr25 = 9,
+    SdCardSdr50 = 10,
+    SdCardSdr104 = 11,
+    SdCardDdr50 = 12,
+    GcAsicFpgaSpeed = 13,
+    GcAsicSpeed = 14
+}
+
+public enum SdmmcPort
+{
+    Mmc = 0,
+    SdCard = 1,
+    GcAsic = 2
 }

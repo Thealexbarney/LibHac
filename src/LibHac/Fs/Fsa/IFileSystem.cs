@@ -371,6 +371,6 @@ public enum QueryId
     /// </summary>
     SetConcatenationFileAttribute = 0,
     UpdateMac = 1,
-    IsSignedSystemPartitionOnSdCardValid = 2,
+    IsSignedSystemPartition = 2,
     QueryUnpreparedFileInformation = 3
 }
