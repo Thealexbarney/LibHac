@@ -29,7 +29,7 @@ public static class ApplicationSaveDataManagement
 
             Result CreateAccountSaveFunc()
             {
-                UserId userId = ConvertAccountUidToFsUserId(uidLocal);
+                UserId userId = Utility.ConvertAccountUidToFsUserId(uidLocal);
                 return fs.CreateSaveData(applicationId, userId, saveDataOwnerId, accountSaveDataSize,
                     accountSaveJournalSize, SaveDataFlags.None);
             }
@@ -464,10 +464,5 @@ public static class ApplicationSaveDataManagement
             return Result.Success;
 
         return rc;
-    }
-
-    public static UserId ConvertAccountUidToFsUserId(Uid uid)
-    {
-        return new UserId(uid.Id.High, uid.Id.Low);
     }
 }

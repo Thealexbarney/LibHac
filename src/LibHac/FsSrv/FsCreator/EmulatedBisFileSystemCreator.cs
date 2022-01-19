@@ -2,7 +2,8 @@
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
-using LibHac.FsSrv.Impl;
+
+using Utility = LibHac.FsSrv.Impl.Utility;
 
 namespace LibHac.FsSrv.FsCreator;
 

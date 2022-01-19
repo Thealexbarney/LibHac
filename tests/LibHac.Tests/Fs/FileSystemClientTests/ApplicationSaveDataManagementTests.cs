@@ -35,7 +35,7 @@ public class ApplicationSaveDataManagementTests
 
         Assert.Equal(1, entriesRead);
         Assert.Equal(applicationId, info[0].ProgramId);
-        Assert.Equal(ConvertAccountUidToFsUserId(userId), info[0].UserId);
+        Assert.Equal(Utility.ConvertAccountUidToFsUserId(userId), info[0].UserId);
         Assert.Equal(SaveDataType.Account, info[0].Type);
     }
 

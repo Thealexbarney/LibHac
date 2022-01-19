@@ -1135,5 +1135,33 @@ namespace LibHac.Fs.Impl
                 (byte)',', (byte)' ', (byte)'f', (byte)'u', (byte)'n', (byte)'c', (byte)'t', (byte)'i',
                 (byte)'o', (byte)'n', (byte)':', (byte)' ', (byte)'"'
             };
+
+        /// <summary>"<c>, cachestoragelist_handle: 0x</c>"</summary>
+        public static ReadOnlySpan<byte> LogCacheStorageListHandle =>
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'c', (byte)'a', (byte)'c', (byte)'h', (byte)'e', (byte)'s',
+                (byte)'t', (byte)'o', (byte)'r', (byte)'a', (byte)'g', (byte)'e', (byte)'l', (byte)'i',
+                (byte)'s', (byte)'t', (byte)'_', (byte)'h', (byte)'a', (byte)'n', (byte)'d', (byte)'l',
+                (byte)'e', (byte)':', (byte)' ', (byte)'0', (byte)'x'
+            };
+
+        /// <summary>"<c>, infobuffercount: 0x</c>"</summary>
+        public static ReadOnlySpan<byte> LogInfoBufferCount =>
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'i', (byte)'n', (byte)'f', (byte)'o', (byte)'b', (byte)'u',
+                (byte)'f', (byte)'f', (byte)'e', (byte)'r', (byte)'c', (byte)'o', (byte)'u', (byte)'n',
+                (byte)'t', (byte)':', (byte)' ', (byte)'0', (byte)'x'
+            };
+
+        /// <summary>"<c>, cache_storage_count: </c>"</summary>
+        public static ReadOnlySpan<byte> LogCacheStorageCount =>
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'c', (byte)'a', (byte)'c', (byte)'h', (byte)'e', (byte)'_',
+                (byte)'s', (byte)'t', (byte)'o', (byte)'r', (byte)'a', (byte)'g', (byte)'e', (byte)'_',
+                (byte)'c', (byte)'o', (byte)'u', (byte)'n', (byte)'t', (byte)':', (byte)' '
+            };
     }
 }

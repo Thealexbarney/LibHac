@@ -577,6 +577,73 @@ public class SaveDataManagement
         Assert.Equal(timeStamp, actualTimeStamp);
     }
 
+    [Fact]
+    public void OpenCacheStorageList_ReadIntoLargeBuffer_AllIndexesAreRead()
+    {
+        var applicationId = new Ncm.ApplicationId(1);
+
+        Horizon hos = HorizonFactory.CreateBasicHorizon();
+
+        HorizonClient client = hos.CreateHorizonClient(new ProgramLocation(applicationId, StorageId.BuiltInSystem),
+            (AccessControlBits.Bits)ulong.MaxValue);
+
+        Assert.Success(client.Fs.CreateCacheStorage(applicationId, SaveDataSpaceId.User, applicationId.Value, 0, 0, 0, SaveDataFlags.None));
+        Assert.Success(client.Fs.CreateCacheStorage(applicationId, SaveDataSpaceId.User, applicationId.Value, 6, 0, 0, SaveDataFlags.None));
+        Assert.Success(client.Fs.CreateCacheStorage(applicationId, SaveDataSpaceId.User, applicationId.Value, 2, 0, 0, SaveDataFlags.None));
+        Assert.Success(client.Fs.CreateCacheStorage(applicationId, SaveDataSpaceId.User, applicationId.Value, 3, 0, 0, SaveDataFlags.None));
+
+        Assert.Success(client.Fs.OpenCacheStorageList(out CacheStorageListHandle handle));
+        var infoBuffer = new CacheStorageInfo[5];
+
+        Assert.Success(client.Fs.ReadCacheStorageList(out int readCount, infoBuffer, handle));
+
+        Assert.Equal(4, readCount);
+
+        Assert.Equal(0, infoBuffer[0].Index);
+        Assert.Equal(2, infoBuffer[1].Index);
+        Assert.Equal(3, infoBuffer[2].Index);
+        Assert.Equal(6, infoBuffer[3].Index);
+
+        client.Fs.CloseCacheStorageList(handle);
+    }
+
+    [Fact]
+    public void OpenCacheStorageList_ReadIntoMultipleBuffers_AllIndexesAreRead()
+    {
+        var applicationId = new Ncm.ApplicationId(1);
+
+        Horizon hos = HorizonFactory.CreateBasicHorizon();
+
+        HorizonClient client = hos.CreateHorizonClient(new ProgramLocation(applicationId, StorageId.BuiltInSystem),
+            (AccessControlBits.Bits)ulong.MaxValue);
+
+        Assert.Success(client.Fs.CreateCacheStorage(applicationId, SaveDataSpaceId.User, applicationId.Value, 0, 0, 0, SaveDataFlags.None));
+        Assert.Success(client.Fs.CreateCacheStorage(applicationId, SaveDataSpaceId.User, applicationId.Value, 6, 0, 0, SaveDataFlags.None));
+        Assert.Success(client.Fs.CreateCacheStorage(applicationId, SaveDataSpaceId.User, applicationId.Value, 2, 0, 0, SaveDataFlags.None));
+        Assert.Success(client.Fs.CreateCacheStorage(applicationId, SaveDataSpaceId.User, applicationId.Value, 3, 0, 0, SaveDataFlags.None));
+
+        Assert.Success(client.Fs.OpenCacheStorageList(out CacheStorageListHandle handle));
+        var infoBuffer = new CacheStorageInfo[2];
+
+        Assert.Success(client.Fs.ReadCacheStorageList(out int readCount, infoBuffer, handle));
+
+        Assert.Equal(2, readCount);
+        Assert.Equal(0, infoBuffer[0].Index);
+        Assert.Equal(2, infoBuffer[1].Index);
+
+        Assert.Success(client.Fs.ReadCacheStorageList(out readCount, infoBuffer, handle));
+
+        Assert.Equal(2, readCount);
+        Assert.Equal(3, infoBuffer[0].Index);
+        Assert.Equal(6, infoBuffer[1].Index);
+
+        Assert.Success(client.Fs.ReadCacheStorageList(out readCount, infoBuffer, handle));
+
+        Assert.Equal(0, readCount);
+
+        client.Fs.CloseCacheStorageList(handle);
+    }
+
     private static Result PopulateSaveData(FileSystemClient fs, int count, int seed = -1)
     {
         if (seed == -1)

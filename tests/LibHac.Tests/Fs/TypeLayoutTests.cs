@@ -354,4 +354,15 @@ public class TypeLayoutTests
         Assert.Equal(3, GetOffset(in s, in s.CompressionRate));
         Assert.Equal(4, GetOffset(in s, in s.Reserved));
     }
+
+    [Fact]
+    public static void CacheStorageInfo_Layout()
+    {
+        var s = new CacheStorageInfo();
+
+        Assert.Equal(0x20, Unsafe.SizeOf<CacheStorageInfo>());
+
+        Assert.Equal(0, GetOffset(in s, in s.Index));
+        Assert.Equal(4, GetOffset(in s, in s.Reserved));
+    }
 }
