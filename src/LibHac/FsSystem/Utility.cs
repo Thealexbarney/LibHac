@@ -9,7 +9,7 @@ namespace LibHac.FsSystem;
 /// <summary>
 /// Various utility functions used by the <see cref="LibHac.FsSystem"/> namespace.
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 internal static class Utility
 {
     public delegate Result FsIterationTask(in Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure);
@@ -172,7 +172,7 @@ internal static class Utility
         rc = destFileSystem.OpenFile(ref destFile.Ref(), in destPath, OpenMode.Write);
         if (rc.IsFailure()) return rc;
 
-        // Read/Write file in work buffer sized chunks.
+        // Read/Write file in work-buffer-sized chunks.
         long remaining = fileSize;
         long offset = 0;
 

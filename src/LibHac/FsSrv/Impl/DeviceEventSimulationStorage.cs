@@ -1,5 +1,6 @@
 ﻿using System;
 using LibHac.Common;
+using LibHac.Diag;
 using LibHac.Fs;
 
 namespace LibHac.FsSrv.Impl;
@@ -7,16 +8,16 @@ namespace LibHac.FsSrv.Impl;
 /// <summary>
 /// An <see cref="IStorage"/> for simulating device failures
 /// </summary>
-/// <remarks>Based on FS 12.1.0 (nnSdk 12.3.1)</remarks>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 internal class DeviceEventSimulationStorage : IStorage
 {
     private SharedRef<IStorage> _baseStorage;
-    private IDeviceEventSimulator _eventSimulator;
+    private IDeviceEventSimulator _deviceEventSimulator;
 
-    public DeviceEventSimulationStorage(ref SharedRef<IStorage> baseStorage, IDeviceEventSimulator eventSimulator)
+    public DeviceEventSimulationStorage(ref SharedRef<IStorage> baseStorage, IDeviceEventSimulator deviceEventSimulator)
     {
         _baseStorage = SharedRef<IStorage>.CreateMove(ref baseStorage);
-        _eventSimulator = eventSimulator;
+        _deviceEventSimulator = deviceEventSimulator;
     }
 
     public override void Dispose()
@@ -27,7 +28,9 @@ internal class DeviceEventSimulationStorage : IStorage
 
     public override Result Read(long offset, Span<byte> destination)
     {
-        Result rc = _eventSimulator.CheckSimulatedAccessFailureEvent(SimulatingDeviceTargetOperation.Read);
+        Assert.SdkNotNull(_deviceEventSimulator);
+
+        Result rc = _deviceEventSimulator.CheckSimulatedAccessFailureEvent(SimulatingDeviceTargetOperation.Read);
         if (rc.IsFailure()) return rc;
 
         return _baseStorage.Get.Read(offset, destination);
@@ -35,7 +38,9 @@ internal class DeviceEventSimulationStorage : IStorage
 
     public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
-        Result rc = _eventSimulator.CheckSimulatedAccessFailureEvent(SimulatingDeviceTargetOperation.Write);
+        Assert.SdkNotNull(_deviceEventSimulator);
+
+        Result rc = _deviceEventSimulator.CheckSimulatedAccessFailureEvent(SimulatingDeviceTargetOperation.Write);
         if (rc.IsFailure()) return rc;
 
         return _baseStorage.Get.Write(offset, source);

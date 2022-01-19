@@ -20,7 +20,7 @@ internal struct MultiCommitManagerGlobals
 
     public void Initialize()
     {
-        MultiCommitMutex.Initialize();
+        MultiCommitMutex = new SdkMutexType();
     }
 }
 
@@ -40,7 +40,7 @@ internal struct MultiCommitManagerGlobals
 /// Save data image files are designed so that minimal changes are made when fully committing a provisionally committed save.
 /// However if any commit fails for any reason, all other saves in the multi-commit will still be committed.
 /// This can especially cause issues with directory save data where finishing a commit is much more involved.
-/// <para>Based on FS 12.1.0 (nnSdk 12.3.1)</para>
+/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para>
 /// </remarks>
 internal class MultiCommitManager : IMultiCommitManager
 {
@@ -501,7 +501,9 @@ internal class MultiCommitManager : IMultiCommitManager
     {
         public int Version;
         public CommitState State;
+        // ReSharper disable once NotAccessedField.Local
         public int FileSystemCount;
+        // ReSharper disable once NotAccessedField.Local
         public long Counter;
     }
 
