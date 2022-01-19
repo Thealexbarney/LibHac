@@ -74,6 +74,11 @@ public static class FileSystemServerInitializer
         Memory<byte> heapBuffer = GC.AllocateArray<byte>(BufferManagerHeapSize, true);
         bufferManager.Initialize(BufferManagerCacheSize, heapBuffer, BufferManagerBlockSize);
 
+        // Todo: Assign based on the value of "IsDevelopment"
+        var debugConfigurationServiceConfig = new DebugConfigurationServiceImpl.Configuration();
+        debugConfigurationServiceConfig.IsDisabled = false;
+        var debugConfigurationService = new DebugConfigurationServiceImpl(in debugConfigurationServiceConfig);
+
         var saveDataIndexerManager = new SaveDataIndexerManager(server.Hos.Fs, Fs.SaveData.SaveIndexerId,
             new ArrayPoolMemoryResource(), new SdHandleManager(), false);
 
@@ -175,7 +180,8 @@ public static class FileSystemServerInitializer
             TimeService = timeService,
             StatusReportService = statusReportService,
             ProgramRegistryService = programRegistryService,
-            AccessLogService = accessLogService
+            AccessLogService = accessLogService,
+            DebugConfigurationService = debugConfigurationService
         };
 
         server.InitializeFileSystemProxy(fspConfig);

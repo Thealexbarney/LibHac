@@ -14,4 +14,5 @@ public class FileSystemProxyConfiguration
     public StatusReportServiceImpl StatusReportService { get; set; }
     public ProgramRegistryServiceImpl ProgramRegistryService { get; set; }
     public AccessLogServiceImpl AccessLogService { get; set; }
+    public DebugConfigurationServiceImpl DebugConfigurationService { get; set; }
 }

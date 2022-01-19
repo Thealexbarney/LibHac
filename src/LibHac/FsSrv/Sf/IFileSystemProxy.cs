@@ -124,6 +124,8 @@ public interface IFileSystemProxy : IDisposable
     Result FlushAccessLogOnSdCard();
     Result OutputApplicationInfoAccessLog(in ApplicationInfo applicationInfo);
     Result OutputMultiProgramTagAccessLog();
+    Result RegisterDebugConfiguration(uint key, long value);
+    Result UnregisterDebugConfiguration(uint key);
     Result OverrideSaveDataTransferTokenSignVerificationKey(InBuffer key);
     Result CorruptSaveDataFileSystemByOffset(SaveDataSpaceId spaceId, ulong saveDataId, long offset);
     Result OpenMultiCommitManager(ref SharedRef<IMultiCommitManager> outCommitManager);

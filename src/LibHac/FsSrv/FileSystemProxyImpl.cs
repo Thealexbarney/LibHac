@@ -35,6 +35,7 @@ public static class FileSystemProxyImplGlobalMethods
         g.StatusReportServiceImpl = configuration.StatusReportService;
         g.ProgramRegistryServiceImpl = configuration.ProgramRegistryService;
         g.AccessLogServiceImpl = configuration.AccessLogService;
+        g.DebugConfigurationServiceImpl = configuration.DebugConfigurationService;
     }
 }
 
@@ -49,6 +50,7 @@ internal struct FileSystemProxyImplGlobals
     public StatusReportServiceImpl StatusReportServiceImpl;
     public ProgramRegistryServiceImpl ProgramRegistryServiceImpl;
     public AccessLogServiceImpl AccessLogServiceImpl;
+    public DebugConfigurationServiceImpl DebugConfigurationServiceImpl;
     public Optional<FileSystemProxyCoreImpl> FileSystemProxyCoreImpl;
 }
 
@@ -144,6 +146,11 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
     private AccessLogService GetAccessLogService()
     {
         return new AccessLogService(Globals.AccessLogServiceImpl, _currentProcess);
+    }
+
+    private DebugConfigurationService GetDebugConfigurationService()
+    {
+        return new DebugConfigurationService(_fsServer, Globals.DebugConfigurationServiceImpl, _currentProcess);
     }
 
     public Result OpenFileSystemWithId(ref SharedRef<IFileSystemSf> outFileSystem, in FspPath path,
@@ -1150,5 +1157,15 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
         ulong transferMemorySize)
     {
         return GetBaseFileSystemService().OpenBisWiper(ref outBisWiper, transferMemoryHandle, transferMemorySize);
+    }
+
+    public Result RegisterDebugConfiguration(uint key, long value)
+    {
+        return GetDebugConfigurationService().Register(key, value);
+    }
+
+    public Result UnregisterDebugConfiguration(uint key)
+    {
+        return GetDebugConfigurationService().Unregister(key);
     }
 }
