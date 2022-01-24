@@ -342,6 +342,20 @@ public class TypeLayoutTests
     }
 
     [Fact]
+    public static void ExportReportInfo_Layout()
+    {
+        var s = new ExportReportInfo();
+
+        Assert.Equal(0x20, Unsafe.SizeOf<ExportReportInfo>());
+
+        Assert.Equal(0, GetOffset(in s, in s.DiffChunkCount));
+        Assert.Equal(1, GetOffset(in s, in s.DoubleDivisionDiffChunkCount));
+        Assert.Equal(2, GetOffset(in s, in s.HalfDivisionDiffChunkCount));
+        Assert.Equal(3, GetOffset(in s, in s.CompressionRate));
+        Assert.Equal(4, GetOffset(in s, in s.Reserved));
+    }
+
+    [Fact]
     public static void ImportReportInfo_Layout()
     {
         var s = new ImportReportInfo();
@@ -364,5 +378,45 @@ public class TypeLayoutTests
 
         Assert.Equal(0, GetOffset(in s, in s.Index));
         Assert.Equal(4, GetOffset(in s, in s.Reserved));
+    }
+
+    [Fact]
+    public static void Challenge_Layout()
+    {
+        var s = new SaveDataTransferManagerVersion2.Challenge();
+
+        Assert.Equal(0x10, Unsafe.SizeOf<SaveDataTransferManagerVersion2.Challenge>());
+
+        Assert.Equal(0, GetOffset(in s, in s.Value));
+    }
+
+    [Fact]
+    public static void SaveDataTag_Layout()
+    {
+        var s = new SaveDataTransferManagerVersion2.SaveDataTag();
+
+        Assert.Equal(0x40, Unsafe.SizeOf<SaveDataTransferManagerVersion2.SaveDataTag>());
+
+        Assert.Equal(0, GetOffset(in s, in s.Value));
+    }
+
+    [Fact]
+    public static void KeySeedPackage_Layout()
+    {
+        var s = new SaveDataTransferManagerVersion2.KeySeedPackage();
+
+        Assert.Equal(0x200, Unsafe.SizeOf<SaveDataTransferManagerVersion2.KeySeedPackage>());
+
+        Assert.Equal(0, GetOffset(in s, in s.Value));
+    }
+
+    [Fact]
+    public static void InitialDataVersion2_Layout()
+    {
+        var s = new InitialDataVersion2();
+
+        Assert.Equal(0x2000, Unsafe.SizeOf<InitialDataVersion2>());
+
+        Assert.Equal(0, GetOffset(in s, in s.Value));
     }
 }

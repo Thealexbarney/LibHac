@@ -19,5 +19,5 @@ public interface ISaveDataDivisionExporter : IDisposable
     public Result GetInitialDataMacKeyGeneration(out int keyGeneration);
     public Result GetImportInitialDataAad(out InitialDataAad initialDataAad);
     public Result SetExportInitialDataAad(in InitialDataAad initialDataAad);
-    public Result GetReportInfo(out ImportReportInfo reportInfo);
+    public Result GetReportInfo(out ExportReportInfo reportInfo);
 }

@@ -8,5 +8,5 @@ public static class SaveData
     public static ProgramId InvalidProgramId => ProgramId.InvalidId;
     public static ProgramId AutoResolveCallerProgramId => new ProgramId(ulong.MaxValue - 1);
     public static UserId InvalidUserId => UserId.InvalidId;
-    public static readonly ulong InvalidSystemSaveDataId = 0;
+    public static ulong InvalidSystemSaveDataId => 0;
 }

@@ -205,9 +205,15 @@ public struct SaveDataFilter
     }
 
     public static SaveDataFilter Make(Optional<ulong> programId, Optional<SaveDataType> saveType,
+        Optional<UserId> userId, Optional<ulong> saveDataId, Optional<ushort> index)
+    {
+        return Make(programId, saveType, userId, saveDataId, index, SaveDataRank.Primary);
+    }
+
+    public static SaveDataFilter Make(Optional<ulong> programId, Optional<SaveDataType> saveType,
         Optional<UserId> userId, Optional<ulong> saveDataId, Optional<ushort> index, SaveDataRank rank)
     {
-        var filter = new SaveDataFilter();
+        SaveDataFilter filter = default;
 
         if (programId.HasValue)
         {
