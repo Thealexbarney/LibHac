@@ -6,6 +6,8 @@ using LibHac.Fs.Shim;
 using LibHac.Tests.Fs.FileSystemClientTests;
 using Xunit;
 
+using static LibHac.Fs.SaveData;
+
 namespace LibHac.Tests.Fs.FsaTests;
 
 public class MultiCommitTests
@@ -25,8 +27,8 @@ public class MultiCommitTests
         foreach ((int id, string name) info in saveInfo)
         {
             var applicationId = new Ncm.ApplicationId((uint)info.id);
-            fs.CreateSaveData(applicationId, UserId.InvalidId, 0, 0x4000, 0x4000, SaveDataFlags.None);
-            fs.MountSaveData(info.name.ToU8Span(), applicationId, UserId.InvalidId);
+            fs.CreateSaveData(applicationId, InvalidUserId, 0, 0x4000, 0x4000, SaveDataFlags.None);
+            fs.MountSaveData(info.name.ToU8Span(), applicationId, InvalidUserId);
         }
 
         foreach ((int id, string name) info in saveInfo)
@@ -51,7 +53,7 @@ public class MultiCommitTests
         foreach ((int id, string name) info in saveInfo)
         {
             var applicationId = new Ncm.ApplicationId((uint)info.id);
-            fs.MountSaveData(info.name.ToU8Span(), applicationId, UserId.InvalidId);
+            fs.MountSaveData(info.name.ToU8Span(), applicationId, InvalidUserId);
         }
 
         foreach ((int id, string name) info in saveInfo)

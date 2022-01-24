@@ -9,7 +9,7 @@ namespace LibHac.Account;
 [StructLayout(LayoutKind.Sequential, Size = 0x10)]
 public struct Uid : IEquatable<Uid>, IComparable<Uid>, IComparable
 {
-    public static Uid Zero => default;
+    public static Uid InvalidUid => default;
 
     public readonly Id128 Id;
 

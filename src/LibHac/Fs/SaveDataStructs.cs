@@ -17,30 +17,10 @@ public struct SaveDataAttribute : IEquatable<SaveDataAttribute>, IComparable<Sav
     public ushort Index;
     public Array24<byte> Reserved;
 
-    public SaveDataAttribute(ProgramId programId, SaveDataType type, UserId userId, ulong saveDataId) : this(
-        programId, type, userId, saveDataId, 0, SaveDataRank.Primary)
-    { }
-
-    public SaveDataAttribute(ProgramId programId, SaveDataType type, UserId userId, ulong saveDataId,
-        ushort index) : this(programId, type, userId, saveDataId, index, SaveDataRank.Primary)
-    { }
-
-    public SaveDataAttribute(ProgramId programId, SaveDataType type, UserId userId, ulong saveDataId, ushort index,
-        SaveDataRank rank)
-    {
-        ProgramId = programId;
-        Type = type;
-        UserId = userId;
-        StaticSaveDataId = saveDataId;
-        Index = index;
-        Rank = rank;
-        Reserved = new Array24<byte>();
-    }
-
     public static Result Make(out SaveDataAttribute attribute, ProgramId programId, SaveDataType type,
         UserId userId, ulong staticSaveDataId)
     {
-        return Make(out attribute, programId, type, userId, staticSaveDataId, 0, SaveDataRank.Primary);
+        return Make(out attribute, programId, type, userId, staticSaveDataId, index: 0, SaveDataRank.Primary);
     }
 
     public static Result Make(out SaveDataAttribute attribute, ProgramId programId, SaveDataType type,
@@ -153,36 +133,6 @@ public struct SaveDataFilter
     public SaveDataRank Rank;
 
     public SaveDataAttribute Attribute;
-
-    public void SetProgramId(ProgramId value)
-    {
-        FilterByProgramId = true;
-        Attribute.ProgramId = value;
-    }
-
-    public void SetSaveDataType(SaveDataType value)
-    {
-        FilterBySaveDataType = true;
-        Attribute.Type = value;
-    }
-
-    public void SetUserId(UserId value)
-    {
-        FilterByUserId = true;
-        Attribute.UserId = value;
-    }
-
-    public void SetSaveDataId(ulong value)
-    {
-        FilterBySaveDataId = true;
-        Attribute.StaticSaveDataId = value;
-    }
-
-    public void SetIndex(ushort value)
-    {
-        FilterByIndex = true;
-        Attribute.Index = value;
-    }
 
     public static Result Make(out SaveDataFilter filter, Optional<ulong> programId, Optional<SaveDataType> saveType,
         Optional<UserId> userId, Optional<ulong> saveDataId, Optional<ushort> index)

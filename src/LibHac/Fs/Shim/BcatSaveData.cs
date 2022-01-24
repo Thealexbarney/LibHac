@@ -5,7 +5,9 @@ using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Os;
+
 using static LibHac.Fs.Impl.AccessLogStrings;
+using static LibHac.Fs.SaveData;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
@@ -58,7 +60,7 @@ public static class BcatSaveData
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
             rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, applicationId, SaveDataType.Bcat,
-                Fs.SaveData.InvalidUserId, 0);
+                InvalidUserId, InvalidSystemSaveDataId);
             if (rc.IsFailure()) return rc;
 
             using var fileSystem = new SharedRef<IFileSystemSf>();

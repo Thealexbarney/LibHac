@@ -8,6 +8,8 @@ using LibHac.Ncm;
 using LibHac.Time;
 using Xunit;
 
+using static LibHac.Fs.SaveData;
+
 namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests;
 
 public class SaveDataManagement
@@ -322,7 +324,7 @@ public class SaveDataManagement
 
         Assert.Success(client.Fs.RegisterProgramIndexMapInfo(mapInfo));
 
-        Assert.Success(subProgramClient.Fs.CreateSaveData(Ncm.ApplicationId.InvalidId, UserId.InvalidId, 0, 0x4000,
+        Assert.Success(subProgramClient.Fs.CreateSaveData(Ncm.ApplicationId.InvalidId, InvalidUserId, 0, 0x4000,
             0x4000, SaveDataFlags.None));
 
         // Get the created save data's ID
@@ -497,7 +499,8 @@ public class SaveDataManagement
             Assert.Success(fs.CreateSaveData(applicationId, user2Id, 0, 0x4000, 0x4000, SaveDataFlags.None));
         }
 
-        Assert.Success(SaveDataFilter.Make(out SaveDataFilter filter, default, default, user2Id, default, default));
+        Assert.Success(SaveDataFilter.Make(out SaveDataFilter filter, programId: default, saveType: default, user2Id,
+            saveDataId: default, index: default));
 
         using var iterator = new UniqueRef<SaveDataIterator>();
         Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User, in filter));
@@ -651,7 +654,7 @@ public class SaveDataManagement
             for (int i = 1; i <= count; i++)
             {
                 var applicationId = new Ncm.ApplicationId((uint)i);
-                Result rc = fs.CreateSaveData(applicationId, UserId.InvalidId, 0, 0x4000, 0x4000, SaveDataFlags.None);
+                Result rc = fs.CreateSaveData(applicationId, InvalidUserId, 0, 0x4000, 0x4000, SaveDataFlags.None);
                 if (rc.IsFailure()) return rc;
             }
         }
@@ -662,7 +665,7 @@ public class SaveDataManagement
             for (int i = 1; i <= count; i++)
             {
                 var applicationId = new Ncm.ApplicationId((uint)rng.Next());
-                Result rc = fs.CreateSaveData(applicationId, UserId.InvalidId, 0, 0x4000, 0x4000, SaveDataFlags.None);
+                Result rc = fs.CreateSaveData(applicationId, InvalidUserId, 0, 0x4000, 0x4000, SaveDataFlags.None);
                 if (rc.IsFailure()) return rc;
             }
         }

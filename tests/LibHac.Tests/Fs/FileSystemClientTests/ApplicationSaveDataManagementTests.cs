@@ -5,7 +5,7 @@ using LibHac.Fs.Shim;
 using LibHac.Ns;
 using Xunit;
 
-using static LibHac.Fs.ApplicationSaveDataManagement;
+using static LibHac.Fs.SaveData;
 
 namespace LibHac.Tests.Fs.FileSystemClientTests;
 
@@ -19,13 +19,13 @@ public class ApplicationSaveDataManagementTests
         var applicationId = new Ncm.ApplicationId(11);
         var userId = new Uid(2, 3);
 
-        var nacp = new ApplicationControlProperty
+        var controlProperty = new ApplicationControlProperty
         {
             UserAccountSaveDataSize = 0x1000,
             UserAccountSaveDataJournalSize = 0x1000
         };
 
-        Assert.Success(EnsureApplicationSaveData(fs, out _, applicationId, ref nacp, ref userId));
+        Assert.Success(fs.EnsureApplicationSaveData(out _, applicationId, in controlProperty, in userId));
 
         using var iterator = new UniqueRef<SaveDataIterator>();
         fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
@@ -47,13 +47,13 @@ public class ApplicationSaveDataManagementTests
         var applicationId = new Ncm.ApplicationId(11);
         var userId = new Uid(2, 3);
 
-        var nacp = new ApplicationControlProperty
+        var controlProperty = new ApplicationControlProperty
         {
             DeviceSaveDataSize = 0x1000,
             DeviceSaveDataJournalSize = 0x1000
         };
 
-        Assert.Success(EnsureApplicationSaveData(fs, out _, applicationId, ref nacp, ref userId));
+        Assert.Success(fs.EnsureApplicationSaveData(out _, applicationId, in controlProperty, in userId));
 
         using var iterator = new UniqueRef<SaveDataIterator>();
         fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
@@ -63,7 +63,7 @@ public class ApplicationSaveDataManagementTests
 
         Assert.Equal(1, entriesRead);
         Assert.Equal(applicationId, info[0].ProgramId);
-        Assert.Equal(UserId.InvalidId, info[0].UserId);
+        Assert.Equal(InvalidUserId, info[0].UserId);
         Assert.Equal(SaveDataType.Device, info[0].Type);
     }
 
@@ -75,12 +75,12 @@ public class ApplicationSaveDataManagementTests
         var applicationId = new Ncm.ApplicationId(11);
         var userId = new Uid(2, 3);
 
-        var nacp = new ApplicationControlProperty
+        var controlProperty = new ApplicationControlProperty
         {
             BcatDeliveryCacheStorageSize = 0x1000
         };
 
-        Assert.Success(EnsureApplicationSaveData(fs, out _, applicationId, ref nacp, ref userId));
+        Assert.Success(fs.EnsureApplicationSaveData(out _, applicationId, in controlProperty, in userId));
 
         using var iterator = new UniqueRef<SaveDataIterator>();
         fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
@@ -90,7 +90,7 @@ public class ApplicationSaveDataManagementTests
 
         Assert.Equal(1, entriesRead);
         Assert.Equal(applicationId, info[0].ProgramId);
-        Assert.Equal(UserId.InvalidId, info[0].UserId);
+        Assert.Equal(InvalidUserId, info[0].UserId);
         Assert.Equal(SaveDataType.Bcat, info[0].Type);
     }
 
@@ -102,12 +102,12 @@ public class ApplicationSaveDataManagementTests
         var applicationId = new Ncm.ApplicationId(11);
         var userId = new Uid(2, 3);
 
-        var nacp = new ApplicationControlProperty
+        var controlProperty = new ApplicationControlProperty
         {
             TemporaryStorageSize = 0x1000
         };
 
-        Assert.Success(EnsureApplicationSaveData(fs, out _, applicationId, ref nacp, ref userId));
+        Assert.Success(fs.EnsureApplicationSaveData(out _, applicationId, in controlProperty, in userId));
 
         using var iterator = new UniqueRef<SaveDataIterator>();
         fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.Temporary);
@@ -117,8 +117,52 @@ public class ApplicationSaveDataManagementTests
 
         Assert.Equal(1, entriesRead);
         Assert.Equal(applicationId, info[0].ProgramId);
-        Assert.Equal(UserId.InvalidId, info[0].UserId);
+        Assert.Equal(InvalidUserId, info[0].UserId);
         Assert.Equal(SaveDataType.Temporary, info[0].Type);
+    }
+    [Fact]
+    public static void EnsureApplicationSaveData_NeedsExtension_IsExtended()
+    {
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+
+        var applicationId = new Ncm.ApplicationId(11);
+        var userId = new Uid(2, 3);
+
+        var controlProperty = new ApplicationControlProperty
+        {
+            UserAccountSaveDataSize = 0x1000,
+            UserAccountSaveDataJournalSize = 0x1000
+        };
+
+        Assert.Success(fs.EnsureApplicationSaveData(out _, applicationId, in controlProperty, in userId));
+
+        const int newAvailableSize = 1024 * 1024 * 2;
+        const int newJournalSize = 1024 * 1024;
+
+        controlProperty.UserAccountSaveDataSize = newAvailableSize;
+        controlProperty.UserAccountSaveDataJournalSize = newJournalSize;
+
+        Assert.Success(fs.EnsureApplicationSaveData(out _, applicationId, in controlProperty, in userId));
+
+        using var iterator = new UniqueRef<SaveDataIterator>();
+        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
+
+        var info = new SaveDataInfo[2];
+        Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
+
+        Assert.Equal(1, entriesRead);
+        Assert.Equal(applicationId, info[0].ProgramId);
+        Assert.Equal(Utility.ConvertAccountUidToFsUserId(userId), info[0].UserId);
+        Assert.Equal(SaveDataType.Account, info[0].Type);
+
+        // ReSharper disable UnusedVariable
+        Assert.Success(fs.GetSaveDataAvailableSize(out long availableSize, SaveDataSpaceId.User, info[0].SaveDataId));
+        Assert.Success(fs.GetSaveDataJournalSize(out long journalSize, SaveDataSpaceId.User, info[0].SaveDataId));
+        // ReSharper restore UnusedVariable
+
+        // Todo: Remove once save data extension is implemented
+        // Assert.Equal(newAvailableSize, availableSize);
+        // Assert.Equal(newJournalSize, journalSize);
     }
 
     [Fact]
@@ -128,14 +172,14 @@ public class ApplicationSaveDataManagementTests
 
         var applicationId = new Ncm.ApplicationId(11);
 
-        var nacp = new ApplicationControlProperty
+        var controlProperty = new ApplicationControlProperty
         {
             CacheStorageSize = 0x1000,
             CacheStorageJournalSize = 0x1000
         };
 
         Assert.Success(fs.EnsureApplicationCacheStorage(out _, out CacheStorageTargetMedia target, applicationId,
-            ref nacp));
+            in controlProperty));
 
         Assert.Equal(CacheStorageTargetMedia.SdCard, target);
 
@@ -157,14 +201,14 @@ public class ApplicationSaveDataManagementTests
 
         var applicationId = new Ncm.ApplicationId(11);
 
-        var nacp = new ApplicationControlProperty
+        var controlProperty = new ApplicationControlProperty
         {
             CacheStorageSize = 0x1000,
             CacheStorageJournalSize = 0x1000
         };
 
         Assert.Success(fs.EnsureApplicationCacheStorage(out _, out CacheStorageTargetMedia target, applicationId,
-            ref nacp));
+            in controlProperty));
 
         Assert.Equal(CacheStorageTargetMedia.Nand, target);
 
@@ -188,13 +232,14 @@ public class ApplicationSaveDataManagementTests
 
         var applicationId = new Ncm.ApplicationId(11);
 
-        var nacp = new ApplicationControlProperty
+        var controlProperty = new ApplicationControlProperty
         {
             CacheStorageSize = 0x1000,
             CacheStorageJournalSize = 0x1000
         };
 
-        fs.EnsureApplicationCacheStorage(out _, out CacheStorageTargetMedia targetFromCreation, applicationId, ref nacp);
+        fs.EnsureApplicationCacheStorage(out _, out CacheStorageTargetMedia targetFromCreation, applicationId,
+            in controlProperty);
 
         Assert.Success(fs.GetCacheStorageTargetMedia(out CacheStorageTargetMedia target, applicationId));
         Assert.Equal(targetFromCreation, target);

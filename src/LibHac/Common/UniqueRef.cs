@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using InlineIL;
 using static InlineIL.IL.Emit;
 
 namespace LibHac.Common;
@@ -11,7 +12,7 @@ public static class UniqueRefExtensions
     {
         Ldarg(nameof(value));
         Ret();
-        throw InlineIL.IL.Unreachable();
+        throw IL.Unreachable();
     }
 }
 
@@ -20,7 +21,17 @@ public struct UniqueRef<T> : IDisposable where T : class, IDisposable
 {
     private T _value;
 
-    public readonly T Get => _value;
+    public readonly ref T Get
+    {
+        get
+        {
+            Ldarg_0();
+            Ldflda(new FieldRef(typeof(UniqueRef<T>), nameof(_value)));
+            Ret();
+            throw IL.Unreachable();
+        }
+    }
+
     public readonly bool HasValue => Get is not null;
 
     public UniqueRef(T value)

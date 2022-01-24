@@ -12,7 +12,9 @@ using LibHac.Ncm;
 using LibHac.Os;
 using LibHac.Sf;
 using LibHac.Time;
+
 using static LibHac.Fs.Impl.AccessLogStrings;
+using static LibHac.Fs.SaveData;
 
 namespace LibHac.Fs
 {
@@ -297,7 +299,7 @@ namespace LibHac.Fs.Shim
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
 
             Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, applicationId, SaveDataType.Account,
-                userId, staticSaveDataId: 0);
+                userId, InvalidSystemSaveDataId);
             if (rc.IsFailure()) return rc;
 
             rc = SaveDataCreationInfo.Make(out SaveDataCreationInfo creationInfo, size, journalSize, ownerId, flags,
@@ -319,7 +321,7 @@ namespace LibHac.Fs.Shim
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
 
             Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, applicationId, SaveDataType.Bcat,
-                Fs.SaveData.InvalidUserId, staticSaveDataId: 0);
+                InvalidUserId, InvalidSystemSaveDataId);
             if (rc.IsFailure()) return rc;
 
             rc = SaveDataCreationInfo.Make(out SaveDataCreationInfo creationInfo, size,
@@ -345,7 +347,7 @@ namespace LibHac.Fs.Shim
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
 
             Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, applicationId, SaveDataType.Device,
-                Fs.SaveData.InvalidUserId, staticSaveDataId: 0);
+                InvalidUserId, InvalidSystemSaveDataId);
             if (rc.IsFailure()) return rc;
 
             rc = SaveDataCreationInfo.Make(out SaveDataCreationInfo creationInfo, size, journalSize, ownerId, flags,
@@ -367,7 +369,7 @@ namespace LibHac.Fs.Shim
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
 
             Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, applicationId, SaveDataType.Cache,
-                Fs.SaveData.InvalidUserId, staticSaveDataId: 0, index);
+                InvalidUserId, InvalidSystemSaveDataId, index);
             if (rc.IsFailure()) return rc;
 
             rc = SaveDataCreationInfo.Make(out SaveDataCreationInfo creationInfo, size, journalSize, ownerId, flags,
@@ -492,7 +494,7 @@ namespace LibHac.Fs.Shim
             {
                 using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-                Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, Fs.SaveData.InvalidProgramId,
+                Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, InvalidProgramId,
                     SaveDataType.System, userId, saveDataId);
                 if (rc.IsFailure()) return rc;
 
@@ -529,7 +531,7 @@ namespace LibHac.Fs.Shim
                 using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                 Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, new ProgramId(applicationId.Value),
-                    SaveDataType.Device, Fs.SaveData.InvalidUserId, staticSaveDataId: 0);
+                    SaveDataType.Device, InvalidUserId, InvalidSystemSaveDataId);
                 if (rc.IsFailure()) return rc;
 
                 return fileSystemProxy.Get.DeleteSaveDataFileSystemBySaveDataAttribute(SaveDataSpaceId.User, in attribute);
@@ -587,7 +589,7 @@ namespace LibHac.Fs.Shim
         }
 
         public static Result ReadSaveDataIteratorSaveDataInfo(this FileSystemClientImpl fs, out long readCount,
-            Span<SaveDataInfo> buffer, in SaveDataIterator iterator)
+            Span<SaveDataInfo> buffer, ref SaveDataIterator iterator)
         {
             Result rc = iterator.ReadSaveDataInfo(out readCount, buffer);
             if (rc.IsFailure()) return rc.Miss();
@@ -743,7 +745,7 @@ namespace LibHac.Fs.Shim
                 using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
                 Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, applicationId, SaveDataType.Account,
-                    userId, staticSaveDataId: 0);
+                    userId, InvalidSystemSaveDataId);
                 if (rc.IsFailure()) return rc;
 
                 rc = SaveDataCreationInfo.Make(out SaveDataCreationInfo creationInfo, size, journalSize, ownerId, flags,
@@ -820,7 +822,7 @@ namespace LibHac.Fs.Shim
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
 
             Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, applicationId, SaveDataType.Temporary,
-                Fs.SaveData.InvalidUserId, staticSaveDataId: 0);
+                InvalidUserId, InvalidSystemSaveDataId);
             if (rc.IsFailure()) return rc;
 
             rc = SaveDataCreationInfo.Make(out SaveDataCreationInfo creationInfo, size, journalSize: 0, ownerId, flags,
@@ -946,7 +948,7 @@ namespace LibHac.Fs.Shim
             {
                 using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-                Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, Fs.SaveData.InvalidProgramId,
+                Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, InvalidProgramId,
                     SaveDataType.System, userId, saveDataId);
                 if (rc.IsFailure()) return rc;
 
@@ -961,8 +963,7 @@ namespace LibHac.Fs.Shim
         public static Result CreateSystemSaveData(this FileSystemClient fs, ulong saveDataId, UserId userId,
             ulong ownerId, long size, long journalSize, SaveDataFlags flags)
         {
-            return CreateSystemSaveData(fs, SaveDataSpaceId.System, saveDataId, userId, ownerId, size, journalSize,
-                flags);
+            return CreateSystemSaveData(fs, SaveDataSpaceId.System, saveDataId, userId, ownerId, size, journalSize, flags);
         }
 
         public static Result CreateSystemSaveData(this FileSystemClient fs, ulong saveDataId, UserId userId, long size,
@@ -974,20 +975,19 @@ namespace LibHac.Fs.Shim
         public static Result CreateSystemSaveData(this FileSystemClient fs, ulong saveDataId, ulong ownerId, long size,
             long journalSize, SaveDataFlags flags)
         {
-            return CreateSystemSaveData(fs, saveDataId, Fs.SaveData.InvalidUserId, ownerId, size, journalSize, flags);
+            return CreateSystemSaveData(fs, saveDataId, InvalidUserId, ownerId, size, journalSize, flags);
         }
 
         public static Result CreateSystemSaveData(this FileSystemClient fs, ulong saveDataId, long size,
             long journalSize, SaveDataFlags flags)
         {
-            return CreateSystemSaveData(fs, saveDataId, Fs.SaveData.InvalidUserId, ownerId: 0, size, journalSize, flags);
+            return CreateSystemSaveData(fs, saveDataId, InvalidUserId, ownerId: 0, size, journalSize, flags);
         }
 
         public static Result CreateSystemSaveData(this FileSystemClient fs, SaveDataSpaceId spaceId, ulong saveDataId,
             ulong ownerId, long size, long journalSize, SaveDataFlags flags)
         {
-            return CreateSystemSaveData(fs, spaceId, saveDataId, Fs.SaveData.InvalidUserId, ownerId, size, journalSize,
-                flags);
+            return CreateSystemSaveData(fs, spaceId, saveDataId, InvalidUserId, ownerId, size, journalSize, flags);
         }
 
         public static Result ExtendSaveData(this FileSystemClientImpl fs, SaveDataSpaceId spaceId, ulong saveDataId,
@@ -1295,7 +1295,7 @@ namespace LibHac.Fs.Shim
             {
                 UnsafeHelpers.SkipParamInit(out flags);
 
-                Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, Fs.SaveData.InvalidProgramId,
+                Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, InvalidProgramId,
                     SaveDataType.System, userId, saveDataId);
                 if (rc.IsFailure()) return rc;
 
@@ -1392,7 +1392,7 @@ namespace LibHac.Fs.Shim
                 SaveDataExtraData extraData = default;
                 extraData.Flags = flags;
 
-                Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, Fs.SaveData.InvalidProgramId,
+                Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, InvalidProgramId,
                     SaveDataType.System, userId, saveDataId);
                 if (rc.IsFailure()) return rc;
 
@@ -2186,8 +2186,8 @@ namespace LibHac.Fs.Shim
                 Result rc = fileSystem.GetSaveDataAttribute(out SaveDataAttribute attribute);
                 if (rc.IsFailure()) return rc;
 
-                if (attribute.ProgramId == Fs.SaveData.InvalidProgramId)
-                    attribute.ProgramId = Fs.SaveData.AutoResolveCallerProgramId;
+                if (attribute.ProgramId == InvalidProgramId)
+                    attribute.ProgramId = AutoResolveCallerProgramId;
 
                 SaveDataExtraData extraDataMask = default;
                 extraDataMask.Flags = SaveDataFlags.Restore;
@@ -2239,7 +2239,7 @@ namespace LibHac.Fs.Shim
                 extraDataMask.JournalSize = unchecked((long)0xFFFFFFFFFFFFFFFF);
 
                 Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, new ProgramId(applicationId.Value),
-                    SaveDataType.Device, Fs.SaveData.InvalidUserId, staticSaveDataId: 0);
+                    SaveDataType.Device, InvalidUserId, InvalidSystemSaveDataId);
                 if (rc.IsFailure()) return rc;
 
                 rc = fs.Impl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraData, SaveDataSpaceId.User,

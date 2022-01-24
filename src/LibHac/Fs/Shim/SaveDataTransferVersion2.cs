@@ -178,7 +178,7 @@ namespace LibHac.Fs
         public Result OpenSaveDataImporter(ref UniqueRef<ISaveDataDivisionImporter> outImporter,
             in InitialDataVersion2 initialData, SaveDataSpaceId spaceId, bool useSwap)
         {
-            return OpenSaveDataImporterImpl(ref outImporter, in initialData, UserId.InvalidId, spaceId, useSwap);
+            return OpenSaveDataImporterImpl(ref outImporter, in initialData, InvalidUserId, spaceId, useSwap);
         }
 
         public Result OpenSaveDataImporterByContext(ref UniqueRef<ISaveDataDivisionImporter> outImporter,
@@ -354,7 +354,7 @@ namespace LibHac.Fs.Shim
                 Unsafe.SkipInit(out SaveDataInfo info);
 
                 rc = fs.Impl.ReadSaveDataIteratorSaveDataInfo(out long count, SpanHelpers.AsSpan(ref info),
-                    iterator.Get);
+                   ref iterator.Get);
 
                 fs.Impl.LogResultErrorMessage(rc);
                 if (rc.IsFailure()) return rc.Miss();

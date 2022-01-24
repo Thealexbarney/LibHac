@@ -12,7 +12,8 @@ using LibHac.Kvdb;
 using LibHac.Os;
 using LibHac.Sf;
 using LibHac.Util;
-using SaveData = LibHac.Fs.SaveData;
+
+using static LibHac.Fs.SaveData;
 
 namespace LibHac.FsSrv;
 
@@ -451,8 +452,8 @@ public class SaveDataIndexer : ISaveDataIndexer
         if (rc.IsFailure()) return rc;
 
         Assert.SdkRequires(_isLoaded);
-        Assert.SdkRequires(key.StaticSaveDataId != SaveData.InvalidSystemSaveDataId);
-        Assert.SdkRequires(key.UserId == SaveData.InvalidUserId);
+        Assert.SdkRequires(key.StaticSaveDataId != InvalidSystemSaveDataId);
+        Assert.SdkRequires(key.UserId == InvalidUserId);
 
         // Iterate through all existing values to check if the save ID is already in use.
         FlatMapKeyValueStore<SaveDataAttribute>.Iterator iterator = _kvDatabase.GetBeginIterator();

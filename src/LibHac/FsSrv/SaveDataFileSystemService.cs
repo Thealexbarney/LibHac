@@ -10,13 +10,15 @@ using LibHac.Kvdb;
 using LibHac.Ncm;
 using LibHac.Sf;
 using LibHac.Util;
+
+using static LibHac.Fs.SaveData;
+using static LibHac.Fs.StringTraits;
+
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 using IFile = LibHac.Fs.Fsa.IFile;
 using IFileSf = LibHac.FsSrv.Sf.IFile;
 using Path = LibHac.Fs.Path;
-using SaveData = LibHac.Fs.SaveData;
-using static LibHac.Fs.StringTraits;
 using Utility = LibHac.FsSystem.Utility;
 
 namespace LibHac.FsSrv;
@@ -146,7 +148,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
                         return ResultFs.PermissionDenied.Log();
                 }
             }
-            else if (attribute.Type == SaveDataType.Account && attribute.UserId == UserId.InvalidId)
+            else if (attribute.Type == SaveDataType.Account && attribute.UserId == InvalidUserId)
             {
                 bool canAccess =
                     accessControl.CanCall(OperationType.CreateSaveData) ||
@@ -195,7 +197,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             }
             else if (attribute.Type == SaveDataType.Account)
             {
-                bool canAccess = attribute.UserId != UserId.InvalidId ||
+                bool canAccess = attribute.UserId != InvalidUserId ||
                                  accessControl.CanCall(OperationType.DebugSaveData);
 
                 if (!canAccess)
@@ -478,7 +480,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
     private Result DeleteSaveDataFileSystemBySaveDataSpaceIdCore(SaveDataSpaceId spaceId, ulong saveDataId)
     {
-        if (saveDataId != SaveData.SaveIndexerId)
+        if (saveDataId != SaveIndexerId)
         {
             using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
             Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
@@ -515,7 +517,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         SaveDataSpaceId actualSpaceId;
 
         // Only the FS process may delete the save indexer's save data.
-        if (saveDataId == SaveData.SaveIndexerId)
+        if (saveDataId == SaveIndexerId)
         {
             if (!_serviceImpl.FsServer.IsCurrentProcess(_processId))
                 return ResultFs.PermissionDenied.Log();
@@ -565,7 +567,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
         // Remove the save data from the indexer.
         // The indexer doesn't track itself, so skip if deleting its save data.
-        if (saveDataId != SaveData.SaveIndexerId)
+        if (saveDataId != SaveIndexerId)
         {
             rc = accessor.Get.GetInterface().Delete(saveDataId);
             if (rc.IsFailure()) return rc;
@@ -656,7 +658,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     // ReSharper disable once UnusedParameter.Global
     public Result UpdateSaveDataMacForDebug(SaveDataSpaceId spaceId, ulong saveDataId)
     {
-        if (saveDataId == SaveData.SaveIndexerId)
+        if (saveDataId == SaveIndexerId)
             return ResultFs.InvalidArgument.Log();
 
         return ResultFs.NotImplemented.Log();
@@ -697,10 +699,10 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         try
         {
             // Add the new save data to the save indexer
-            if (attribute.StaticSaveDataId == SaveData.SaveIndexerId)
+            if (attribute.StaticSaveDataId == SaveIndexerId)
             {
                 // The save indexer doesn't index itself
-                saveDataId = SaveData.SaveIndexerId;
+                saveDataId = SaveIndexerId;
                 rc = _serviceImpl.DoesSaveDataEntityExist(out bool saveExists, creationInfo.SpaceId, saveDataId);
 
                 if (rc.IsSuccess() && saveExists)
@@ -720,7 +722,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
                 SaveDataAttribute indexerKey = attribute;
 
                 // Add the new value to the indexer
-                if (attribute.StaticSaveDataId != 0 && attribute.UserId == UserId.InvalidId)
+                if (attribute.StaticSaveDataId != 0 && attribute.UserId == InvalidUserId)
                 {
                     // If a static save data ID is specified that ID is always used
                     saveDataId = attribute.StaticSaveDataId;
@@ -823,7 +825,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             }
 
             // The indexer's save data isn't tracked, so we don't need to update its state.
-            if (attribute.StaticSaveDataId != SaveData.SaveIndexerId)
+            if (attribute.StaticSaveDataId != SaveIndexerId)
             {
                 // Mark the save data as being successfully created
                 rc = accessor.Get.GetInterface().SetState(saveDataId, SaveDataState.Normal);
@@ -843,7 +845,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             {
                 DeleteSaveDataFileSystemCore(creationInfo.SpaceId, saveDataId, false).IgnoreResult();
 
-                if (accessorInitialized && saveDataId != SaveData.SaveIndexerId)
+                if (accessorInitialized && saveDataId != SaveIndexerId)
                 {
                     rc = accessor.Get.GetInterface().GetValue(out SaveDataIndexerValue value, saveDataId);
 
@@ -922,7 +924,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         rc = SaveDataAccessibilityChecker.CheckCreate(in attribute, in creationInfo, programInfo, programId);
         if (rc.IsFailure()) return rc;
 
-        if (tempAttribute.Type == SaveDataType.Account && tempAttribute.UserId == UserId.InvalidId)
+        if (tempAttribute.Type == SaveDataType.Account && tempAttribute.UserId == InvalidUserId)
         {
             if (tempAttribute.ProgramId == ProgramId.InvalidId)
             {
@@ -995,7 +997,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
         ulong tempSaveDataId;
-        bool isStaticSaveDataId = attribute.StaticSaveDataId != 0 && attribute.UserId == UserId.InvalidId;
+        bool isStaticSaveDataId =
+            attribute.StaticSaveDataId != InvalidSystemSaveDataId && attribute.UserId == InvalidUserId;
 
         // Get the ID of the save data
         if (isStaticSaveDataId)
@@ -1052,7 +1055,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
         Result RemoveSaveIndexerEntry()
         {
-            if (tempSaveDataId == SaveData.SaveIndexerId)
+            if (tempSaveDataId == SaveIndexerId)
                 return Result.Success;
 
             if (isStaticSaveDataId)
@@ -1379,7 +1382,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
         SaveDataAttribute tempAttribute = attribute;
 
-        if (tempAttribute.ProgramId == SaveData.AutoResolveCallerProgramId)
+        if (tempAttribute.ProgramId == AutoResolveCallerProgramId)
         {
             tempAttribute.ProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId);
         }
@@ -1428,7 +1431,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
         SaveDataAttribute tempAttribute = attribute;
 
-        if (tempAttribute.ProgramId == SaveData.AutoResolveCallerProgramId)
+        if (tempAttribute.ProgramId == AutoResolveCallerProgramId)
         {
             tempAttribute.ProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId);
         }
@@ -1505,7 +1508,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
         SaveDataAttribute tempAttribute = attribute;
 
-        if (tempAttribute.ProgramId == SaveData.AutoResolveCallerProgramId)
+        if (tempAttribute.ProgramId == AutoResolveCallerProgramId)
         {
             tempAttribute.ProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId);
         }
@@ -2042,7 +2045,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         {
             Index = 0,
             Type = SaveDataType.System,
-            UserId = UserId.InvalidId,
+            UserId = InvalidUserId,
             StaticSaveDataId = MultiCommitManager.SaveDataId,
             ProgramId = new ProgramId(MultiCommitManager.ProgramId)
         };
@@ -2067,7 +2070,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         {
             Index = saveInfo.Index,
             Type = saveInfo.Type,
-            UserId = UserId.InvalidId,
+            UserId = InvalidUserId,
             StaticSaveDataId = saveInfo.StaticSaveDataId,
             ProgramId = saveInfo.ProgramId
         };

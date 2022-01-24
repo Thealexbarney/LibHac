@@ -5,7 +5,9 @@ using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Os;
+
 using static LibHac.Fs.Impl.AccessLogStrings;
+using static LibHac.Fs.SaveData;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
@@ -20,7 +22,7 @@ public static class SystemSaveData
 {
     public static Result MountSystemSaveData(this FileSystemClient fs, U8Span mountName, ulong saveDataId)
     {
-        return fs.MountSystemSaveData(mountName, saveDataId, Fs.SaveData.InvalidUserId);
+        return fs.MountSystemSaveData(mountName, saveDataId, InvalidUserId);
     }
 
     public static Result MountSystemSaveData(this FileSystemClient fs, U8Span mountName, ulong saveDataId,
@@ -32,7 +34,7 @@ public static class SystemSaveData
     public static Result MountSystemSaveData(this FileSystemClient fs, U8Span mountName, SaveDataSpaceId spaceId,
         ulong saveDataId)
     {
-        return fs.MountSystemSaveData(mountName, spaceId, saveDataId, Fs.SaveData.InvalidUserId);
+        return fs.MountSystemSaveData(mountName, spaceId, saveDataId, InvalidUserId);
     }
 
     public static Result MountSystemSaveData(this FileSystemClient fs, U8Span mountName,
@@ -77,7 +79,7 @@ public static class SystemSaveData
 
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-            rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, Fs.SaveData.InvalidProgramId,
+            rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, InvalidProgramId,
                 SaveDataType.System, userId, saveDataId);
             if (rc.IsFailure()) return rc;
 

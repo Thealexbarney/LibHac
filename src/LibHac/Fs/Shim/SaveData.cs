@@ -6,7 +6,9 @@ using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
 using LibHac.Os;
+
 using static LibHac.Fs.Impl.AccessLogStrings;
+using static LibHac.Fs.SaveData;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
@@ -48,7 +50,8 @@ public static class SaveData
 
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
 
-        rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, programId, type, userId, 0, index);
+        rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, programId, type, userId, InvalidSystemSaveDataId,
+            index);
         if (rc.IsFailure()) return rc;
 
         using var fileSystem = new SharedRef<IFileSystemSf>();
@@ -86,7 +89,7 @@ public static class SaveData
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
 
         Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, ProgramId.InvalidId, SaveDataType.Account,
-            UserId.InvalidId, 0);
+            InvalidUserId, InvalidSystemSaveDataId);
         if (rc.IsFailure()) return rc;
 
         rc = SaveDataCreationInfo.Make(out SaveDataCreationInfo creationInfo, SaveDataSizeForDebug,
@@ -127,7 +130,7 @@ public static class SaveData
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = MountSaveData(fs.Impl, mountName, UserId.InvalidId);
+            rc = MountSaveData(fs.Impl, mountName, InvalidUserId);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
@@ -138,7 +141,7 @@ public static class SaveData
         }
         else
         {
-            rc = MountSaveData(fs.Impl, mountName, UserId.InvalidId);
+            rc = MountSaveData(fs.Impl, mountName, InvalidUserId);
         }
 
         fs.Impl.AbortIfNeeded(rc);
@@ -238,7 +241,8 @@ public static class SaveData
 
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
 
-        Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, applicationId, type, UserId.InvalidId, 0);
+        Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, applicationId, type, userId,
+            InvalidSystemSaveDataId);
         if (rc.IsFailure()) return rc.Miss();
 
         using var fileSystem = new SharedRef<IFileSystemSf>();
@@ -267,8 +271,8 @@ public static class SaveData
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = MountSaveDataImpl(fs.Impl, mountName, SaveDataSpaceId.Temporary, Fs.SaveData.InvalidProgramId,
-                Fs.SaveData.InvalidUserId, SaveDataType.Temporary, openReadOnly: false, index: 0);
+            rc = MountSaveDataImpl(fs.Impl, mountName, SaveDataSpaceId.Temporary, InvalidProgramId, InvalidUserId,
+                SaveDataType.Temporary, openReadOnly: false, index: 0);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
@@ -278,8 +282,8 @@ public static class SaveData
         }
         else
         {
-            rc = MountSaveDataImpl(fs.Impl, mountName, SaveDataSpaceId.Temporary, Fs.SaveData.InvalidProgramId,
-                Fs.SaveData.InvalidUserId, SaveDataType.Temporary, openReadOnly: false, index: 0);
+            rc = MountSaveDataImpl(fs.Impl, mountName, SaveDataSpaceId.Temporary, InvalidProgramId, InvalidUserId,
+                SaveDataType.Temporary, openReadOnly: false, index: 0);
         }
 
         fs.Impl.AbortIfNeeded(rc);
@@ -299,8 +303,8 @@ public static class SaveData
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = MountSaveDataImpl(fs.Impl, mountName, SaveDataSpaceId.User, Fs.SaveData.InvalidProgramId,
-                Fs.SaveData.InvalidUserId, SaveDataType.Cache, openReadOnly: false, index: 0);
+            rc = MountSaveDataImpl(fs.Impl, mountName, SaveDataSpaceId.User, InvalidProgramId,
+                InvalidUserId, SaveDataType.Cache, openReadOnly: false, index: 0);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
@@ -310,8 +314,8 @@ public static class SaveData
         }
         else
         {
-            rc = MountSaveDataImpl(fs.Impl, mountName, SaveDataSpaceId.User, Fs.SaveData.InvalidProgramId,
-                Fs.SaveData.InvalidUserId, SaveDataType.Cache, openReadOnly: false, index: 0);
+            rc = MountSaveDataImpl(fs.Impl, mountName, SaveDataSpaceId.User, InvalidProgramId,
+                InvalidUserId, SaveDataType.Cache, openReadOnly: false, index: 0);
         }
 
         fs.Impl.AbortIfNeeded(rc);
@@ -332,8 +336,8 @@ public static class SaveData
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = MountSaveDataImpl(fs.Impl, mountName, SaveDataSpaceId.User, Fs.SaveData.InvalidProgramId,
-                Fs.SaveData.InvalidUserId, SaveDataType.Cache, openReadOnly: false, (ushort)index);
+            rc = MountSaveDataImpl(fs.Impl, mountName, SaveDataSpaceId.User, InvalidProgramId,
+                InvalidUserId, SaveDataType.Cache, openReadOnly: false, (ushort)index);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
@@ -344,8 +348,8 @@ public static class SaveData
         }
         else
         {
-            rc = MountSaveDataImpl(fs.Impl, mountName, SaveDataSpaceId.User, Fs.SaveData.InvalidProgramId,
-                Fs.SaveData.InvalidUserId, SaveDataType.Cache, openReadOnly: false, (ushort)index);
+            rc = MountSaveDataImpl(fs.Impl, mountName, SaveDataSpaceId.User, InvalidProgramId,
+                InvalidUserId, SaveDataType.Cache, openReadOnly: false, (ushort)index);
         }
 
         fs.Impl.AbortIfNeeded(rc);
@@ -366,7 +370,7 @@ public static class SaveData
         {
             Tick start = fs.Hos.Os.GetSystemTick();
             rc = MountSaveDataImpl(fs.Impl, mountName, SaveDataSpaceId.User, applicationId,
-                Fs.SaveData.InvalidUserId, SaveDataType.Cache, openReadOnly: false, index: 0);
+                InvalidUserId, SaveDataType.Cache, openReadOnly: false, index: 0);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
@@ -378,7 +382,7 @@ public static class SaveData
         else
         {
             rc = MountSaveDataImpl(fs.Impl, mountName, SaveDataSpaceId.User, applicationId,
-                Fs.SaveData.InvalidUserId, SaveDataType.Cache, openReadOnly: false, index: 0);
+                InvalidUserId, SaveDataType.Cache, openReadOnly: false, index: 0);
         }
 
         fs.Impl.AbortIfNeeded(rc);
@@ -400,7 +404,7 @@ public static class SaveData
         {
             Tick start = fs.Hos.Os.GetSystemTick();
             rc = MountSaveDataImpl(fs.Impl, mountName, SaveDataSpaceId.User, applicationId,
-                Fs.SaveData.InvalidUserId, SaveDataType.Cache, openReadOnly: false, (ushort)index);
+                InvalidUserId, SaveDataType.Cache, openReadOnly: false, (ushort)index);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
@@ -413,7 +417,7 @@ public static class SaveData
         else
         {
             rc = MountSaveDataImpl(fs.Impl, mountName, SaveDataSpaceId.User, applicationId,
-                Fs.SaveData.InvalidUserId, SaveDataType.Cache, openReadOnly: false, (ushort)index);
+                InvalidUserId, SaveDataType.Cache, openReadOnly: false, (ushort)index);
         }
 
         fs.Impl.AbortIfNeeded(rc);
