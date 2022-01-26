@@ -1,14 +1,20 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace LibHac.Fs;
 
+/// <summary>
+/// Allows interacting with a <see cref="byte"/> array via the <see cref="IStorage"/> interface.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public class MemoryStorage : IStorage
 {
-    private byte[] StorageBuffer { get; }
+    private byte[] _storageBuffer;
 
     public MemoryStorage(byte[] buffer)
     {
-        StorageBuffer = buffer;
+        _storageBuffer = buffer;
     }
 
     public override Result Read(long offset, Span<byte> destination)
@@ -16,10 +22,10 @@ public class MemoryStorage : IStorage
         if (destination.Length == 0)
             return Result.Success;
 
-        if (!CheckAccessRange(offset, destination.Length, StorageBuffer.Length))
+        if (!CheckAccessRange(offset, destination.Length, _storageBuffer.Length))
             return ResultFs.OutOfRange.Log();
 
-        StorageBuffer.AsSpan((int)offset, destination.Length).CopyTo(destination);
+        _storageBuffer.AsSpan((int)offset, destination.Length).CopyTo(destination);
 
         return Result.Success;
     }
@@ -29,10 +35,10 @@ public class MemoryStorage : IStorage
         if (source.Length == 0)
             return Result.Success;
 
-        if (!CheckAccessRange(offset, source.Length, StorageBuffer.Length))
+        if (!CheckAccessRange(offset, source.Length, _storageBuffer.Length))
             return ResultFs.OutOfRange.Log();
 
-        source.CopyTo(StorageBuffer.AsSpan((int)offset));
+        source.CopyTo(_storageBuffer.AsSpan((int)offset));
 
         return Result.Success;
     }
@@ -49,7 +55,7 @@ public class MemoryStorage : IStorage
 
     public override Result GetSize(out long size)
     {
-        size = StorageBuffer.Length;
+        size = _storageBuffer.Length;
 
         return Result.Success;
     }
@@ -57,6 +63,18 @@ public class MemoryStorage : IStorage
     public override Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
         ReadOnlySpan<byte> inBuffer)
     {
-        throw new NotImplementedException();
+        switch (operationId)
+        {
+            case OperationId.InvalidateCache:
+                return Result.Success;
+            case OperationId.QueryRange:
+                if (outBuffer.Length != Unsafe.SizeOf<QueryRangeInfo>())
+                    return ResultFs.InvalidSize.Log();
+
+                Unsafe.As<byte, QueryRangeInfo>(ref MemoryMarshal.GetReference(outBuffer)).Clear();
+                return Result.Success;
+            default:
+                return ResultFs.UnsupportedOperateRangeForMemoryStorage.Log();
+        }
     }
 }

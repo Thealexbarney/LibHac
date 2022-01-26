@@ -18,6 +18,10 @@ internal enum StorageType
     All = Bis | SdCard | GameCard | Usb
 }
 
+/// <summary>
+/// Contains functions for validating the storage layout type flag.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 internal static class StorageLayoutType
 {
     public static bool IsStorageFlagValid(StorageType storageFlag)
@@ -40,6 +44,11 @@ internal struct ScopedStorageLayoutTypeSetter : IDisposable
     }
 }
 
+/// <summary>
+/// Wraps an <see cref="IStorage"/>, automatically setting the thread's storage type when accessing the storage.
+/// This is used to determine which storage speed emulation parameters to use for the current thread.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 internal class StorageLayoutTypeSetStorage : IStorage
 {
     private SharedRef<IStorage> _baseStorage;
@@ -55,8 +64,10 @@ internal class StorageLayoutTypeSetStorage : IStorage
 
     public override void Dispose()
     {
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(_storageFlag);
-        _baseStorage.Destroy();
+        using (new ScopedStorageLayoutTypeSetter(_storageFlag))
+        {
+            _baseStorage.Destroy();
+        }
 
         base.Dispose();
     }
@@ -99,6 +110,11 @@ internal class StorageLayoutTypeSetStorage : IStorage
     }
 }
 
+/// <summary>
+/// Wraps an <see cref="IFile"/>, automatically setting the thread's storage type when accessing the file.
+/// This is used to determine which storage speed emulation parameters to use for the current thread.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 internal class StorageLayoutTypeSetFile : IFile
 {
     private IFile _baseFile;
@@ -126,11 +142,12 @@ internal class StorageLayoutTypeSetFile : IFile
 
     public override void Dispose()
     {
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(_storageFlag);
-
-        _baseFile = null;
-        _baseFileUnique.Destroy();
-        _baseFileShared.Destroy();
+        using (new ScopedStorageLayoutTypeSetter(_storageFlag))
+        {
+            _baseFile = null;
+            _baseFileUnique.Destroy();
+            _baseFileShared.Destroy();
+        }
 
         base.Dispose();
     }
@@ -173,6 +190,11 @@ internal class StorageLayoutTypeSetFile : IFile
     }
 }
 
+/// <summary>
+/// Wraps an <see cref="IDirectory"/>, automatically setting the thread's storage type when accessing the directory.
+/// This is used to determine which storage speed emulation parameters to use for the current thread.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 internal class StorageLayoutTypeSetDirectory : IDirectory
 {
     private UniqueRef<IDirectory> _baseDirectory;
@@ -186,8 +208,10 @@ internal class StorageLayoutTypeSetDirectory : IDirectory
 
     public override void Dispose()
     {
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(_storageFlag);
-        _baseDirectory.Destroy();
+        using (new ScopedStorageLayoutTypeSetter(_storageFlag))
+        {
+            _baseDirectory.Destroy();
+        }
 
         base.Dispose();
     }
@@ -205,6 +229,10 @@ internal class StorageLayoutTypeSetDirectory : IDirectory
     }
 }
 
+/// <summary>
+/// Wraps an <see cref="IFileSystem"/>, automatically setting the thread's storage type when accessing the file system.
+/// This is used to determine which storage speed emulation parameters to use for the current thread.
+/// </summary>
 internal class StorageLayoutTypeSetFileSystem : IFileSystem
 {
     private SharedRef<IFileSystem> _baseFileSystem;
@@ -220,8 +248,11 @@ internal class StorageLayoutTypeSetFileSystem : IFileSystem
 
     public override void Dispose()
     {
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(_storageFlag);
-        _baseFileSystem.Destroy();
+        using (new ScopedStorageLayoutTypeSetter(_storageFlag))
+        {
+            _baseFileSystem.Destroy();
+        }
+
         base.Dispose();
     }
 
