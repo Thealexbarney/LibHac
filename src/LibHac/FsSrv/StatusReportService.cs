@@ -1,9 +1,16 @@
 ﻿using LibHac.Diag;
 using LibHac.Fs;
+using LibHac.FsSystem;
 using LibHac.Os;
 
 namespace LibHac.FsSrv;
 
+/// <summary>
+/// Handles status-report-related calls for <see cref="FileSystemProxyImpl"/>.
+/// </summary>
+/// <remarks><para>This struct handles forwarding calls to the <see cref="StatusReportServiceImpl"/> object.
+/// No permissions are needed to call any of this struct's functions.</para>
+/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para></remarks>
 public readonly struct StatusReportService
 {
     private readonly StatusReportServiceImpl _serviceImpl;
@@ -30,6 +37,10 @@ public readonly struct StatusReportService
     }
 }
 
+/// <summary>
+/// Manages getting and resetting various status reports and statistics about parts of the FS service.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public class StatusReportServiceImpl
 {
     private Configuration _config;
@@ -38,13 +49,13 @@ public class StatusReportServiceImpl
     public StatusReportServiceImpl(in Configuration configuration)
     {
         _config = configuration;
-        _mutex.Initialize();
+        _mutex = new SdkMutexType();
     }
 
     public struct Configuration
     {
-        public NcaFileSystemServiceImpl NcaFsServiceImpl;
-        public SaveDataFileSystemServiceImpl SaveFsServiceImpl;
+        public NcaFileSystemServiceImpl NcaFileSystemServiceImpl;
+        public SaveDataFileSystemServiceImpl SaveDataFileSystemServiceImpl;
         // Missing: FatFileSystemCreator (Not an IFatFileSystemCreator)
         public MemoryReport BufferManagerMemoryReport;
         public MemoryReport ExpHeapMemoryReport;
@@ -60,15 +71,19 @@ public class StatusReportServiceImpl
 
     public Result GetAndClearFileSystemProxyErrorInfo(out FileSystemProxyErrorInfo errorInfo)
     {
-        errorInfo = new FileSystemProxyErrorInfo();
+        errorInfo = default;
 
-        _config.NcaFsServiceImpl.GetAndClearRomFsErrorInfo(out errorInfo.RemountForDataCorruptionCount,
+        Assert.SdkRequiresNotNull(_config.NcaFileSystemServiceImpl);
+
+        _config.NcaFileSystemServiceImpl.GetAndClearRomFsErrorInfo(out errorInfo.RemountForDataCorruptionCount,
             out errorInfo.UnrecoverableDataCorruptionByRemountCount,
             out errorInfo.RecoveredByInvalidateCacheCount);
 
         // Missing: GetFatInfo
 
-        Result rc = _config.SaveFsServiceImpl.GetSaveDataIndexCount(out int count);
+        Assert.SdkRequiresNotNull(_config.SaveDataFileSystemServiceImpl);
+
+        Result rc = _config.SaveDataFileSystemServiceImpl.GetSaveDataIndexCount(out int count);
         if (rc.IsFailure()) return rc;
 
         errorInfo.SaveDataIndexCount = count;
@@ -77,40 +92,40 @@ public class StatusReportServiceImpl
 
     public Result GetAndClearMemoryReportInfo(out MemoryReportInfo reportInfo)
     {
-        using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
+        using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        reportInfo = new MemoryReportInfo();
+        reportInfo = default;
 
-        // Missing: Get and clear pooled buffer stats
-        reportInfo.PooledBufferFreeSizePeak = 0;
-        reportInfo.PooledBufferRetriedCount = 0;
-        reportInfo.PooledBufferReduceAllocationCount = 0;
+        reportInfo.PooledBufferFreeSizePeak = _config.FsServer.GetPooledBufferFreeSizePeak();
+        reportInfo.PooledBufferRetriedCount = _config.FsServer.GetPooledBufferRetriedCount();
+        reportInfo.PooledBufferReduceAllocationCount = _config.FsServer.GetPooledBufferReduceAllocationCount();
+        reportInfo.PooledBufferFailedIdealAllocationCountOnAsyncAccess =
+            _config.FsServer.GetPooledBufferFailedIdealAllocationCountOnAsyncAccess();
 
-        MemoryReport report = _config.BufferManagerMemoryReport;
-        if (report != null)
+        _config.FsServer.ClearPooledBufferPeak();
+
+        if (_config.BufferManagerMemoryReport is not null)
         {
-            reportInfo.BufferManagerFreeSizePeak = report.GetFreeSizePeak();
-            reportInfo.BufferManagerTotalAllocatableSizePeak = report.GetTotalAllocatableSizePeak();
-            reportInfo.BufferManagerRetriedCount = report.GetRetriedCount();
-            report.Clear();
+            reportInfo.BufferManagerFreeSizePeak = _config.BufferManagerMemoryReport.GetFreeSizePeak();
+            reportInfo.BufferManagerTotalAllocatableSizePeak = _config.BufferManagerMemoryReport.GetTotalAllocatableSizePeak();
+            reportInfo.BufferManagerRetriedCount = _config.BufferManagerMemoryReport.GetRetriedCount();
+            _config.BufferManagerMemoryReport.Clear();
         }
 
-        report = _config.ExpHeapMemoryReport;
-        if (report != null)
+        if (_config.ExpHeapMemoryReport is not null)
         {
-            reportInfo.ExpHeapFreeSizePeak = report.GetFreeSizePeak();
-            report.Clear();
+            reportInfo.ExpHeapFreeSizePeak = _config.ExpHeapMemoryReport.GetFreeSizePeak();
+            _config.ExpHeapMemoryReport.Clear();
         }
 
-        report = _config.BufferPoolMemoryReport;
-        if (report != null)
+        if (_config.BufferPoolMemoryReport is not null)
         {
-            reportInfo.BufferPoolFreeSizePeak = report.GetFreeSizePeak();
-            reportInfo.BufferPoolAllocateSizeMax = report.GetAllocateSizeMax();
-            report.Clear();
+            reportInfo.BufferPoolFreeSizePeak = _config.BufferPoolMemoryReport.GetFreeSizePeak();
+            reportInfo.BufferPoolAllocateSizeMax = _config.BufferPoolMemoryReport.GetAllocateSizeMax();
+            _config.BufferPoolMemoryReport.Clear();
         }
 
-        if (_config.GetPatrolAllocateCounts != null)
+        if (_config.GetPatrolAllocateCounts is not null)
         {
             _config.GetPatrolAllocateCounts(out reportInfo.PatrolReadAllocateBufferSuccessCount,
                 out reportInfo.PatrolReadAllocateBufferFailureCount);

@@ -1,5 +1,6 @@
 ﻿using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Storage;
+using LibHac.FsSystem;
 
 namespace LibHac.FsSrv;
 
@@ -34,6 +35,7 @@ internal struct FileSystemServerGlobals
     public SaveDataSharedFileStorageGlobals SaveDataSharedFileStorage;
     public MultiCommitManagerGlobals MultiCommitManager;
     public LocationResolverSetGlobals LocationResolverSet;
+    public PooledBufferGlobals PooledBuffer;
 
     public void Initialize(HorizonClient horizonClient, FileSystemServer fsServer)
     {
@@ -43,6 +45,7 @@ internal struct FileSystemServerGlobals
         SaveDataSharedFileStorage.Initialize(fsServer);
         MultiCommitManager.Initialize();
         LocationResolverSet.Initialize();
+        PooledBuffer.Initialize();
     }
 }
 

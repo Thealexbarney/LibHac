@@ -1,59 +1,68 @@
 ﻿using System;
 using LibHac.Common;
+using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
 namespace LibHac.FsSystem;
 
+/// <summary>
+/// Allows interacting with an <see cref="IStorage"/> via an <see cref="IFile"/> interface.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public class StorageFile : IFile
 {
-    private IStorage BaseStorage { get; }
-    private OpenMode Mode { get; }
+    private IStorage _baseStorage;
+    private OpenMode _mode;
 
     public StorageFile(IStorage baseStorage, OpenMode mode)
     {
-        BaseStorage = baseStorage;
-        Mode = mode;
+        _baseStorage = baseStorage;
+        _mode = mode;
     }
 
-    protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination,
-        in ReadOption option)
+    protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination, in ReadOption option)
     {
         UnsafeHelpers.SkipParamInit(out bytesRead);
 
-        Result rc = DryRead(out long toRead, offset, destination.Length, in option, Mode);
+        Assert.SdkRequiresNotNull(_baseStorage);
+
+        Result rc = DryRead(out long readSize, offset, destination.Length, in option, _mode);
         if (rc.IsFailure()) return rc;
 
-        if (toRead == 0)
+        if (readSize == 0)
         {
             bytesRead = 0;
             return Result.Success;
         }
 
-        rc = BaseStorage.Read(offset, destination.Slice(0, (int)toRead));
+        rc = _baseStorage.Read(offset, destination.Slice(0, (int)readSize));
         if (rc.IsFailure()) return rc;
 
-        bytesRead = toRead;
+        bytesRead = readSize;
         return Result.Success;
     }
 
     protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
     {
-        Result rc = DryWrite(out bool isResizeNeeded, offset, source.Length, in option, Mode);
+        Assert.SdkRequiresNotNull(_baseStorage);
+
+        Result rc = DryWrite(out bool isAppendNeeded, offset, source.Length, in option, _mode);
         if (rc.IsFailure()) return rc;
 
-        if (isResizeNeeded)
+        if (isAppendNeeded)
         {
             rc = DoSetSize(offset + source.Length);
             if (rc.IsFailure()) return rc;
         }
 
-        rc = BaseStorage.Write(offset, source);
+        rc = _baseStorage.Write(offset, source);
         if (rc.IsFailure()) return rc;
 
         if (option.HasFlushFlag())
         {
-            return Flush();
+            rc = Flush();
+            if (rc.IsFailure()) return rc.Miss();
         }
 
         return Result.Success;
@@ -61,28 +70,68 @@ public class StorageFile : IFile
 
     protected override Result DoFlush()
     {
-        if (!Mode.HasFlag(OpenMode.Write))
+        Assert.SdkRequiresNotNull(_baseStorage);
+
+        if (!_mode.HasFlag(OpenMode.Write))
             return Result.Success;
 
-        return BaseStorage.Flush();
+        return _baseStorage.Flush();
     }
 
     protected override Result DoGetSize(out long size)
     {
-        return BaseStorage.GetSize(out size);
+        Assert.SdkRequiresNotNull(_baseStorage);
+
+        return _baseStorage.GetSize(out size);
     }
 
     protected override Result DoSetSize(long size)
     {
-        if (!Mode.HasFlag(OpenMode.Write))
-            return ResultFs.WriteUnpermitted.Log();
+        Assert.SdkRequiresNotNull(_baseStorage);
 
-        return BaseStorage.SetSize(size);
+        Result rc = DrySetSize(size, _mode);
+        if (rc.IsFailure()) return rc.Miss();
+
+        return _baseStorage.SetSize(size);
     }
 
     protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
         ReadOnlySpan<byte> inBuffer)
     {
-        return ResultFs.NotImplemented.Log();
+        Assert.SdkRequiresNotNull(_baseStorage);
+
+        switch (operationId)
+        {
+            case OperationId.InvalidateCache:
+            {
+                if (!_mode.HasFlag(OpenMode.Read))
+                    return ResultFs.ReadUnpermitted.Log();
+
+                Result rc = _baseStorage.OperateRange(OperationId.InvalidateCache, offset, size);
+                if (rc.IsFailure()) return rc.Miss();
+
+                break;
+            }
+            case OperationId.QueryRange:
+            {
+                if (offset < 0)
+                    return ResultFs.InvalidOffset.Log();
+
+                Result rc = GetSize(out long fileSize);
+                if (rc.IsFailure()) return rc.Miss();
+
+                long operableSize = Math.Max(0, fileSize - offset);
+                long operateSize = Math.Min(operableSize, size);
+
+                rc = _baseStorage.OperateRange(outBuffer, operationId, offset, operateSize, inBuffer);
+                if (rc.IsFailure()) return rc.Miss();
+
+                break;
+            }
+            default:
+                return ResultFs.UnsupportedOperateRangeForStorageFile.Log();
+        }
+
+        return Result.Success;
     }
 }

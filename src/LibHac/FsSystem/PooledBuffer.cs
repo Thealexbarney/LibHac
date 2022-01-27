@@ -1,8 +1,63 @@
 ﻿using System;
 using System.Buffers;
 using LibHac.Diag;
+using LibHac.FsSrv;
+using LibHac.Os;
 
 namespace LibHac.FsSystem;
+
+public static class PooledBufferGlobalMethods
+{
+    public static long GetPooledBufferRetriedCount(this FileSystemServer fsSrv)
+    {
+        return fsSrv.Globals.PooledBuffer.CountRetried;
+    }
+
+    public static long GetPooledBufferReduceAllocationCount(this FileSystemServer fsSrv)
+    {
+        return fsSrv.Globals.PooledBuffer.CountReduceAllocation;
+    }
+
+    public static long GetPooledBufferFailedIdealAllocationCountOnAsyncAccess(this FileSystemServer fsSrv)
+    {
+        return fsSrv.Globals.PooledBuffer.CountFailedIdealAllocationOnAsyncAccess;
+    }
+
+    public static long GetPooledBufferFreeSizePeak(this FileSystemServer fsSrv)
+    {
+        ref PooledBufferGlobals g = ref fsSrv.Globals.PooledBuffer;
+
+        using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref g.HeapMutex);
+        return g.SizeHeapFreePeak;
+    }
+
+    public static void ClearPooledBufferPeak(this FileSystemServer fsSrv)
+    {
+        ref PooledBufferGlobals g = ref fsSrv.Globals.PooledBuffer;
+
+        using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref g.HeapMutex);
+
+        // Missing: Get SizeHeapFreePeak from the heap object 
+        g.CountRetried = 0;
+        g.CountReduceAllocation = 0;
+        g.CountFailedIdealAllocationOnAsyncAccess = 0;
+    }
+}
+
+internal struct PooledBufferGlobals
+{
+    public SdkMutexType HeapMutex;
+    public long SizeHeapFreePeak;
+    public Memory<byte> HeapBuffer;
+    public long CountRetried;
+    public long CountReduceAllocation;
+    public long CountFailedIdealAllocationOnAsyncAccess;
+
+    public void Initialize()
+    {
+        HeapMutex = new SdkMutexType();
+    }
+}
 
 // Implement the PooledBuffer interface using .NET ArrayPools
 public struct PooledBuffer : IDisposable

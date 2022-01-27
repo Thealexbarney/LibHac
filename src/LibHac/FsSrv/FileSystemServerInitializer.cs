@@ -150,8 +150,8 @@ public static class FileSystemServerInitializer
         var saveFsService = new SaveDataFileSystemServiceImpl(in saveFsServiceConfig);
 
         var statusReportServiceConfig = new StatusReportServiceImpl.Configuration();
-        statusReportServiceConfig.NcaFsServiceImpl = ncaFsService;
-        statusReportServiceConfig.SaveFsServiceImpl = saveFsService;
+        statusReportServiceConfig.NcaFileSystemServiceImpl = ncaFsService;
+        statusReportServiceConfig.SaveDataFileSystemServiceImpl = saveFsService;
         statusReportServiceConfig.BufferManagerMemoryReport = null;
         statusReportServiceConfig.ExpHeapMemoryReport = null;
         statusReportServiceConfig.BufferPoolMemoryReport = null;

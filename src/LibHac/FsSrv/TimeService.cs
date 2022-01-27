@@ -6,6 +6,12 @@ using LibHac.Os;
 
 namespace LibHac.FsSrv;
 
+/// <summary>
+/// Handles time-related calls for <see cref="FileSystemProxyImpl"/>.
+/// </summary>
+/// <remarks><para>This struct handles checking a process' permissions before forwarding
+/// a request to the <see cref="TimeServiceImpl"/> object.</para>
+/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para></remarks>
 public readonly struct TimeService
 {
     private readonly TimeServiceImpl _serviceImpl;
@@ -19,7 +25,8 @@ public readonly struct TimeService
 
     public Result SetCurrentPosixTimeWithTimeDifference(long currentTime, int timeDifference)
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
+        using var programRegistry = new ProgramRegistryImpl(_serviceImpl.FsServer);
+        Result rc = programRegistry.GetProgramInfo(out ProgramInfo programInfo, _processId);
         if (rc.IsFailure()) return rc;
 
         if (!programInfo.AccessControl.CanCall(OperationType.SetCurrentPosixTime))
@@ -28,32 +35,33 @@ public readonly struct TimeService
         _serviceImpl.SetCurrentPosixTimeWithTimeDifference(currentTime, timeDifference);
         return Result.Success;
     }
-
-    private Result GetProgramInfo(out ProgramInfo programInfo)
-    {
-        return _serviceImpl.GetProgramInfo(out programInfo, _processId);
-    }
 }
 
+/// <summary>
+/// Manages the current time used by the FS service.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public class TimeServiceImpl
 {
     private long _basePosixTime;
-    private int _timeDifference;
+    private int _timeDifferenceSeconds;
     private SdkMutexType _mutex;
 
-    private FileSystemServer _fsServer;
+    // LibHac addition
+    internal FileSystemServer FsServer { get; }
 
     public TimeServiceImpl(FileSystemServer fsServer)
     {
-        _fsServer = fsServer;
         _basePosixTime = 0;
-        _timeDifference = 0;
-        _mutex.Initialize();
+        _timeDifferenceSeconds = 0;
+        _mutex = new SdkMutexType();
+
+        FsServer = fsServer;
     }
 
     private long GetSystemSeconds()
     {
-        OsState os = _fsServer.Hos.Os;
+        OsState os = FsServer.Hos.Os;
 
         Tick tick = os.GetSystemTick();
         TimeSpan timeSpan = os.ConvertToTimeSpan(tick);
@@ -69,7 +77,7 @@ public class TimeServiceImpl
     {
         UnsafeHelpers.SkipParamInit(out currentTime, out timeDifference);
 
-        using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
+        using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
         if (_basePosixTime == 0)
             return ResultFs.NotInitialized.Log();
@@ -81,7 +89,7 @@ public class TimeServiceImpl
 
         if (!Unsafe.IsNullRef(ref timeDifference))
         {
-            timeDifference = _timeDifference;
+            timeDifference = _timeDifferenceSeconds;
         }
 
         return Result.Success;
@@ -89,15 +97,9 @@ public class TimeServiceImpl
 
     public void SetCurrentPosixTimeWithTimeDifference(long currentTime, int timeDifference)
     {
-        using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _mutex);
+        using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
         _basePosixTime = currentTime - GetSystemSeconds();
-        _timeDifference = timeDifference;
-    }
-
-    internal Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
-    {
-        var registry = new ProgramRegistryImpl(_fsServer);
-        return registry.GetProgramInfo(out programInfo, processId);
+        _timeDifferenceSeconds = timeDifference;
     }
 }
