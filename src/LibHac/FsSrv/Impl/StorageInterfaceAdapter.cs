@@ -8,6 +8,10 @@ using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.FsSrv.Impl;
 
+/// <summary>
+/// Wraps an <see cref="IStorage"/> to allow interfacing with it via the <see cref="IStorageSf"/> interface over IPC.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public class StorageInterfaceAdapter : IStorageSf
 {
     private SharedRef<IStorage> _baseStorage;
@@ -32,6 +36,9 @@ public class StorageInterfaceAdapter : IStorageSf
         if (destination.Size < 0)
             return ResultFs.InvalidSize.Log();
 
+        if (destination.Size < size)
+            return ResultFs.InvalidSize.Log();
+
         Result rc = Result.Success;
 
         for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
@@ -52,6 +59,9 @@ public class StorageInterfaceAdapter : IStorageSf
             return ResultFs.InvalidOffset.Log();
 
         if (source.Size < 0)
+            return ResultFs.InvalidSize.Log();
+
+        if (source.Size < size)
             return ResultFs.InvalidSize.Log();
 
         using var scopedPriorityChanger = new ScopedThreadPriorityChangerByAccessPriority(

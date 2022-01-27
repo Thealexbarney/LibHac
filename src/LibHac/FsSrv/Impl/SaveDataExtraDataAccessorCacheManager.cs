@@ -10,8 +10,13 @@ namespace LibHac.FsSrv.Impl;
 /// <summary>
 /// Holds the <see cref="ISaveDataExtraDataAccessor"/>s for opened save data file systems.
 /// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public class SaveDataExtraDataAccessorCacheManager : ISaveDataExtraDataAccessorCacheObserver
 {
+    /// <summary>
+    /// Holds a single cached extra data accessor identified by its save data ID and save data space ID.
+    /// </summary>
+    /// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
     [NonCopyable]
     private struct Cache : IDisposable
     {
@@ -19,8 +24,7 @@ public class SaveDataExtraDataAccessorCacheManager : ISaveDataExtraDataAccessorC
         private readonly SaveDataSpaceId _spaceId;
         private readonly ulong _saveDataId;
 
-        public Cache(in SharedRef<ISaveDataExtraDataAccessor> accessor, SaveDataSpaceId spaceId,
-            ulong saveDataId)
+        public Cache(in SharedRef<ISaveDataExtraDataAccessor> accessor, SaveDataSpaceId spaceId, ulong saveDataId)
         {
             _accessor = new WeakRef<ISaveDataExtraDataAccessor>(in accessor);
             _spaceId = spaceId;
@@ -49,7 +53,7 @@ public class SaveDataExtraDataAccessorCacheManager : ISaveDataExtraDataAccessorC
     public SaveDataExtraDataAccessorCacheManager()
     {
         _accessorList = new LinkedList<Cache>();
-        _mutex.Initialize();
+        _mutex = new SdkRecursiveMutexType();
     }
 
     public void Dispose()

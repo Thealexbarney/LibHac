@@ -6,6 +6,11 @@ using LibHac.Fs.Fsa;
 namespace LibHac.FsSrv.Impl;
 
 // ReSharper disable once InconsistentNaming
+/// <summary>
+/// Wraps an <see cref="IFile"/>, converting its returned <see cref="Result"/>s to different
+/// <see cref="Result"/>s based on the <see cref="ConvertResult"/> function.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public abstract class IResultConvertFile : IFile
 {
     protected UniqueRef<IFile> BaseFile;
@@ -56,6 +61,11 @@ public abstract class IResultConvertFile : IFile
 }
 
 // ReSharper disable once InconsistentNaming
+/// <summary>
+/// Wraps an <see cref="IDirectory"/>, converting its returned <see cref="Result"/>s to different
+/// <see cref="Result"/>s based on the <see cref="ConvertResult"/> function.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public abstract class IResultConvertDirectory : IDirectory
 {
     protected UniqueRef<IDirectory> BaseDirectory;
@@ -85,6 +95,11 @@ public abstract class IResultConvertDirectory : IDirectory
 }
 
 // ReSharper disable once InconsistentNaming
+/// <summary>
+/// Wraps an <see cref="IFileSystem"/>, converting its returned <see cref="Result"/>s to different
+/// <see cref="Result"/>s based on the <see cref="ConvertResult"/> function.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public abstract class IResultConvertFileSystem : IFileSystem
 {
     protected SharedRef<IFileSystem> BaseFileSystem;
@@ -145,6 +160,8 @@ public abstract class IResultConvertFileSystem : IFileSystem
         return ConvertResult(BaseFileSystem.Get.GetEntryType(out entryType, path));
     }
 
+    // Note: The original code uses templates to determine which type of IFile/IDirectory to return. To make things
+    // easier in C# these two functions have been made abstract functions.
     protected abstract override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode);
 
     protected abstract override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,

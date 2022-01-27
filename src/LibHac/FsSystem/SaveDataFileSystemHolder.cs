@@ -6,6 +6,13 @@ using LibHac.Fs.Fsa;
 
 namespace LibHac.FsSystem;
 
+/// <summary>
+/// Holds a file system for adding to the save data file system cache.
+/// </summary>
+/// <remarks> Nintendo uses concrete types in <see cref="ISaveDataFileSystemCacheManager"/> instead of an interface.
+/// This class allows <see cref="DirectorySaveDataFileSystem"/> to be cached in a way that changes the original
+/// design as little as possible.
+/// </remarks>
 public class SaveDataFileSystemHolder : ForwardingFileSystem
 {
     public SaveDataFileSystemHolder(ref SharedRef<IFileSystem> baseFileSystem) : base(ref baseFileSystem)

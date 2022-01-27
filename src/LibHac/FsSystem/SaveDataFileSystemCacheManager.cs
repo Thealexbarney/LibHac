@@ -5,8 +5,17 @@ using LibHac.Os;
 
 namespace LibHac.FsSystem;
 
+/// <summary>
+/// Manages a list of cached save data file systems. Each file system is registered and retrieved
+/// based on its save data ID and save data space ID.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public class SaveDataFileSystemCacheManager : ISaveDataFileSystemCacheManager
 {
+    /// <summary>
+    /// Holds a single cached file system identified by its save data ID and save data space ID.
+    /// </summary>
+    /// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
     [NonCopyable]
     private struct Cache
     {
@@ -26,9 +35,9 @@ public class SaveDataFileSystemCacheManager : ISaveDataFileSystemCacheManager
             return _fileSystem.HasValue && _spaceId == spaceId && _saveDataId == saveDataId;
         }
 
-        public void Move(ref SharedRef<SaveDataFileSystemHolder> outFileSystem)
+        public SharedRef<SaveDataFileSystemHolder> Move()
         {
-            outFileSystem.SetByMove(ref _fileSystem);
+            return SharedRef<SaveDataFileSystemHolder>.CreateMove(ref _fileSystem);
         }
 
         public void Register(ref SharedRef<SaveDataFileSystemHolder> fileSystem)
@@ -52,7 +61,7 @@ public class SaveDataFileSystemCacheManager : ISaveDataFileSystemCacheManager
 
     public SaveDataFileSystemCacheManager()
     {
-        _mutex.Initialize();
+        _mutex = new SdkRecursiveMutexType();
     }
 
     public void Dispose()
@@ -77,11 +86,12 @@ public class SaveDataFileSystemCacheManager : ISaveDataFileSystemCacheManager
         Assert.SdkAssert(_cachedFileSystems is null);
 
         _maxCachedFileSystemCount = maxCacheCount;
-        if (maxCacheCount <= 0)
-            return Result.Success;
+        if (maxCacheCount > 0)
+        {
+            // Note: The original checks for overflow here
+            _cachedFileSystems = new Cache[maxCacheCount];
+        }
 
-        // Note: The original checks for overflow here
-        _cachedFileSystems = new Cache[maxCacheCount];
         return Result.Success;
     }
 
@@ -96,7 +106,9 @@ public class SaveDataFileSystemCacheManager : ISaveDataFileSystemCacheManager
         {
             if (_cachedFileSystems[i].IsCached(spaceId, saveDataId))
             {
-                _cachedFileSystems[i].Move(ref outFileSystem);
+                using SharedRef<SaveDataFileSystemHolder> cachedFs = _cachedFileSystems[i].Move();
+                outFileSystem.SetByMove(ref cachedFs.Ref());
+
                 return true;
             }
         }

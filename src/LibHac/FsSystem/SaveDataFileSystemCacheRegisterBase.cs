@@ -1,5 +1,5 @@
 ﻿using System;
-using InlineIL;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
@@ -14,6 +14,7 @@ namespace LibHac.FsSystem;
 /// </summary>
 /// <typeparam name="T">The type of the base file system. Must be one of <see cref="SaveDataFileSystem"/>,
 /// <see cref="ApplicationTemporaryFileSystem"/> or <see cref="DirectorySaveDataFileSystem"/>.</typeparam>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public class SaveDataFileSystemCacheRegisterBase<T> : IFileSystem where T : IFileSystem
 {
     private SharedRef<T> _baseFileSystem;
@@ -36,33 +37,16 @@ public class SaveDataFileSystemCacheRegisterBase<T> : IFileSystem where T : IFil
     {
         if (typeof(T) == typeof(SaveDataFileSystemHolder))
         {
-            _cacheManager.Register(ref GetBaseFileSystemNormal());
+            _cacheManager.Register(ref Unsafe.As<SharedRef<T>, SharedRef<SaveDataFileSystemHolder>>(ref _baseFileSystem));
         }
         else if (typeof(T) == typeof(ApplicationTemporaryFileSystem))
         {
-            _cacheManager.Register(ref GetBaseFileSystemTemp());
+            _cacheManager.Register(ref Unsafe.As<SharedRef<T>, SharedRef<ApplicationTemporaryFileSystem>>(ref _baseFileSystem));
         }
         else
         {
             Assert.SdkAssert(false, "Invalid save data file system type.");
         }
-    }
-
-    // Hack around not being able to use Unsafe.As on ref structs
-    private ref SharedRef<SaveDataFileSystemHolder> GetBaseFileSystemNormal()
-    {
-        IL.Emit.Ldarg_0();
-        IL.Emit.Ldflda(new FieldRef(typeof(SaveDataFileSystemCacheRegisterBase<T>), nameof(_baseFileSystem)));
-        IL.Emit.Ret();
-        throw IL.Unreachable();
-    }
-
-    private ref SharedRef<ApplicationTemporaryFileSystem> GetBaseFileSystemTemp()
-    {
-        IL.Emit.Ldarg_0();
-        IL.Emit.Ldflda(new FieldRef(typeof(SaveDataFileSystemCacheRegisterBase<T>), nameof(_baseFileSystem)));
-        IL.Emit.Ret();
-        throw IL.Unreachable();
     }
 
     protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
