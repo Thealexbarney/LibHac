@@ -10,23 +10,23 @@ public enum SdCardManagerOperationIdValue
 
 public enum SdCardOperationIdValue
 {
-    GetSpeedMode = 0x1,
-    GetCid = 0x2,
-    GetUserAreaNumSectors = 0x3,
-    GetUserAreaSize = 0x4,
-    GetProtectedAreaNumSectors = 0x5,
-    GetProtectedAreaSize = 0x6
+    GetSpeedMode = 1,
+    GetCid = 2,
+    GetUserAreaNumSectors = 3,
+    GetUserAreaSize = 4,
+    GetProtectedAreaNumSectors = 5,
+    GetProtectedAreaSize = 6
 }
 
 public enum MmcManagerOperationIdValue
 {
-    GetAndClearErrorInfo = 0x1,
-    SuspendControl = 0x2,
-    ResumeControl = 0x3,
-    GetAndClearPatrolReadAllocateBufferCount = 0x4,
-    GetPatrolCount = 0x5,
-    SuspendPatrol = 0x6,
-    ResumePatrol = 0x7
+    GetAndClearErrorInfo = 1,
+    SuspendControl = 2,
+    ResumeControl = 3,
+    GetAndClearPatrolReadAllocateBufferCount = 4,
+    GetPatrolCount = 5,
+    SuspendPatrol = 6,
+    ResumePatrol = 7
 }
 
 public enum MmcOperationIdValue

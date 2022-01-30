@@ -11,13 +11,29 @@ using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.FsSrv.Storage;
 
+/// <summary>
+/// Contains global MMC-storage-related functions.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+public static class MmcServiceGlobalMethods
+{
+    public static Result GetAndClearPatrolReadAllocateBufferCount(this FileSystemServer fsSrv, out long successCount,
+        out long failureCount)
+    {
+        return fsSrv.Storage.GetAndClearPatrolReadAllocateBufferCount(out successCount, out failureCount);
+    }
+}
+
+/// <summary>
+/// Contains functions for interacting with the MMC storage device.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 internal static class MmcService
 {
     private static int MakeOperationId(MmcManagerOperationIdValue operation) => (int)operation;
     private static int MakeOperationId(MmcOperationIdValue operation) => (int)operation;
 
-    private static Result GetMmcManager(this StorageService service,
-        ref SharedRef<IStorageDeviceManager> outManager)
+    private static Result GetMmcManager(this StorageService service, ref SharedRef<IStorageDeviceManager> outManager)
     {
         return service.CreateStorageDeviceManager(ref outManager, StorageDevicePortId.Mmc);
     }
@@ -146,7 +162,7 @@ internal static class MmcService
     public static Result EraseMmc(this StorageService service, MmcPartition partition)
     {
         using var mmcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetMmcOperator(ref mmcOperator.Ref(), MmcPartition.UserData);
+        Result rc = service.GetMmcOperator(ref mmcOperator.Ref(), partition);
         if (rc.IsFailure()) return rc;
 
         return mmcOperator.Get.Operate(MakeOperationId(MmcOperationIdValue.Erase));
@@ -157,7 +173,7 @@ internal static class MmcService
         UnsafeHelpers.SkipParamInit(out size);
 
         using var mmcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetMmcOperator(ref mmcOperator.Ref(), MmcPartition.UserData);
+        Result rc = service.GetMmcOperator(ref mmcOperator.Ref(), partition);
         if (rc.IsFailure()) return rc;
 
         int operationId = MakeOperationId(MmcOperationIdValue.GetPartitionSize);
@@ -242,7 +258,7 @@ internal static class MmcService
         return mmcOperator.Get.OperateOut2(out _, successCountBuffer, out _, failureCountBuffer, operationId);
     }
 
-    public static Result SuspendSdmmcControl(this StorageService service)
+    public static Result SuspendMmcControl(this StorageService service)
     {
         using var mmcOperator = new SharedRef<IStorageDeviceOperator>();
         Result rc = service.GetMmcManagerOperator(ref mmcOperator.Ref());

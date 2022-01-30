@@ -14,13 +14,16 @@ using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.FsSrv.Storage;
 
+/// <summary>
+/// Contains functions for interacting with the SD card storage device.
+/// </summary>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 internal static class SdCardService
 {
     private static int MakeOperationId(SdCardManagerOperationIdValue operation) => (int)operation;
     private static int MakeOperationId(SdCardOperationIdValue operation) => (int)operation;
 
-    private static Result GetSdCardManager(this StorageService service,
-        ref SharedRef<IStorageDeviceManager> outManager)
+    private static Result GetSdCardManager(this StorageService service, ref SharedRef<IStorageDeviceManager> outManager)
     {
         return service.CreateStorageDeviceManager(ref outManager, StorageDevicePortId.SdCard);
     }
