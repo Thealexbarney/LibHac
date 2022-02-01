@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common.FixedArrays;
 
 namespace LibHac.Fs;
 
@@ -40,4 +41,52 @@ public enum GameCardAttribute : byte
     RepairToolFlag = 1 << 2,
     DifferentRegionCupToTerraDeviceFlag = 1 << 3,
     DifferentRegionCupToGlobalDeviceFlag = 1 << 4
+}
+
+public struct GameCardErrorInfo
+{
+    public ushort GameCardCrcErrorCount;
+    public ushort Reserved2;
+    public ushort AsicCrcErrorCount;
+    public ushort Reserved6;
+    public ushort RefreshCount;
+    public ushort ReservedA;
+    public ushort ReadRetryCount;
+    public ushort TimeoutRetryErrorCount;
+}
+
+public struct GameCardErrorReportInfo
+{
+    public GameCardErrorInfo ErrorInfo;
+    public ushort AsicReinitializeFailureDetail;
+    public ushort InsertionCount;
+    public ushort RemovalCount;
+    public ushort AsicReinitializeCount;
+    public uint AsicInitializeCount;
+    public ushort AsicReinitializeFailureCount;
+    public ushort AwakenFailureCount;
+    public ushort Reserved20;
+    public ushort RefreshCount;
+    public uint LastReadErrorPageAddress;
+    public uint LastReadErrorPageCount;
+    public uint AwakenCount;
+    public uint ReadCountFromInsert;
+    public uint ReadCountFromAwaken;
+    public Array8<byte> Reserved38;
+}
+
+public readonly struct GameCardHandle : IEquatable<GameCardHandle>
+{
+    public readonly int Value;
+
+    public GameCardHandle(int value)
+    {
+        Value = value;
+    }
+
+    public override bool Equals(object obj) => obj is GameCardHandle handle && Equals(handle);
+    public bool Equals(GameCardHandle other) => Value == other.Value;
+    public override int GetHashCode() => Value.GetHashCode();
+    public static bool operator ==(GameCardHandle left, GameCardHandle right) => left.Equals(right);
+    public static bool operator !=(GameCardHandle left, GameCardHandle right) => !(left == right);
 }

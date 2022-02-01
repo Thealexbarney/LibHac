@@ -4,7 +4,6 @@ using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
-using LibHac.FsSrv;
 using LibHac.FsSrv.Sf;
 using LibHac.Os;
 using LibHac.Util;

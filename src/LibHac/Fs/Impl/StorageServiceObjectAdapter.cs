@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.FsSrv.Storage.Sf;
 using LibHac.Sf;
 using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
@@ -16,6 +17,11 @@ internal class StorageServiceObjectAdapter : IStorage
     private SharedRef<IStorageSf> _baseStorage;
 
     public StorageServiceObjectAdapter(ref SharedRef<IStorageSf> baseStorage)
+    {
+        _baseStorage = SharedRef<IStorageSf>.CreateMove(ref baseStorage);
+    }
+
+    public StorageServiceObjectAdapter(ref SharedRef<IStorageDevice> baseStorage)
     {
         _baseStorage = SharedRef<IStorageSf>.CreateMove(ref baseStorage);
     }

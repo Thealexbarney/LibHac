@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Diag;
 using BaseType = System.UInt32;
 
 namespace LibHac;
@@ -209,6 +210,27 @@ public readonly struct Result : IEquatable<Result>
 
     }
 
+    internal static T ConvertResultToReturnType<T>(Result result)
+    {
+        result.Miss();
+        ConvertInvalidImpl(result);
+
+        return default;
+    }
+
+    internal static void ConvertInvalidImpl(Result result)
+    {
+        OnUnhandledResult(result);
+    }
+
+    internal static void OnUnhandledResult(Result result)
+    {
+        Abort.DoAbortUnless(result.IsSuccess());
+
+        // The original does an infinite loop here
+        throw new HorizonResultException(result, "Unhandled result.");
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static BaseType GetBitsValue(BaseType value, int bitsOffset, int bitsCount)
     {
@@ -232,7 +254,7 @@ public readonly struct Result : IEquatable<Result>
     /// <br/>A Result definition should look like this: <c>public static Result.Base PathNotFound => new Result.Base(ModuleFs, 1);</c>
     /// <br/>Being a computed property like this will allow the compiler to do constant propagation to optimize comparisons.
     /// <br/><br/>This is an example of how a Result should be returned from a function: <c>return PathNotFound.Log();</c>
-    /// <br/>The <see cref="Log()"/> method will return the <see cref="Result"/> for the specified <see cref="Base"/>, and
+    /// <br/>The <see cref="Result.Log"/> method will return the <see cref="Result"/> for the specified <see cref="Base"/>, and
     /// will optionally log the returned Result when running in debug mode for easier debugging. All Result logging functionality
     /// is removed from release builds.
     /// If the <see cref="Result"/> is not being used as a return value, <see cref="Value"/> will get the Result without logging anything.

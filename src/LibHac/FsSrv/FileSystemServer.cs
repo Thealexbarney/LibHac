@@ -1,10 +1,11 @@
-﻿using LibHac.FsSrv.Impl;
+﻿using System;
+using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Storage;
 using LibHac.FsSystem;
 
 namespace LibHac.FsSrv;
 
-public class FileSystemServer
+public class FileSystemServer : IDisposable
 {
     internal FileSystemServerGlobals Globals;
 
@@ -20,9 +21,15 @@ public class FileSystemServer
     {
         Globals.Initialize(horizonClient, this);
     }
+
+    public void Dispose()
+    {
+        Globals.Dispose();
+        Globals = default;
+    }
 }
 
-internal struct FileSystemServerGlobals
+internal struct FileSystemServerGlobals : IDisposable
 {
     public HorizonClient Hos;
     public object InitMutex;
@@ -36,6 +43,7 @@ internal struct FileSystemServerGlobals
     public MultiCommitManagerGlobals MultiCommitManager;
     public LocationResolverSetGlobals LocationResolverSet;
     public PooledBufferGlobals PooledBuffer;
+    public GameCardServiceGlobals GameCardService;
 
     public void Initialize(HorizonClient horizonClient, FileSystemServer fsServer)
     {
@@ -46,6 +54,12 @@ internal struct FileSystemServerGlobals
         MultiCommitManager.Initialize();
         LocationResolverSet.Initialize();
         PooledBuffer.Initialize();
+        GameCardService.Initialize();
+    }
+
+    public void Dispose()
+    {
+        GameCardService.Dispose();
     }
 }
 
