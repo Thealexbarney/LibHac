@@ -541,6 +541,7 @@ public partial class BucketTree : IDisposable
             _entryStorage.Set(in entryStorage);
             _nodeSize = nodeSize;
             _entrySize = entrySize;
+            _entryCount = entryCount;
             _offsetCount = offsetCount;
             _entrySetCount = entrySetCount;
             _offsetCache.IsInitialized = true;

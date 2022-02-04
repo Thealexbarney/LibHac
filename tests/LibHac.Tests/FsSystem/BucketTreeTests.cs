@@ -182,4 +182,12 @@ public class BucketTreeTests : IClassFixture<BucketTreeBuffers>
             Assert.Equal(expectedEntry.StorageIndex, actualEntry.StorageIndex);
         }
     }
+
+    [Theory, MemberData(nameof(BucketTreeTestTheoryData))]
+    private void GetEntryCount_ReturnsCorrectCount(int treeIndex)
+    {
+        BucketTree tree = _treeData[treeIndex].CreateBucketTree();
+
+        Assert.Equal(_treeData[treeIndex].EntryCount, tree.GetEntryCount());
+    }
 }
