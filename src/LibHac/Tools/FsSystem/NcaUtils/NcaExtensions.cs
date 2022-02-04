@@ -157,7 +157,7 @@ public static class NcaExtensions
         NcaHashType hashType = sect.HashType;
         if (hashType != NcaHashType.Sha256 && hashType != NcaHashType.Ivfc) return Validity.Unchecked;
 
-        var stream = nca.OpenStorage(index, IntegrityCheckLevel.IgnoreOnInvalid)
+        var stream = nca.OpenStorage(index, IntegrityCheckLevel.IgnoreOnInvalid, true)
             as HierarchicalIntegrityVerificationStorage;
         if (stream == null) return Validity.Unchecked;
 
@@ -188,7 +188,7 @@ public static class NcaExtensions
         NcaHashType hashType = sect.HashType;
         if (hashType != NcaHashType.Sha256 && hashType != NcaHashType.Ivfc) return Validity.Unchecked;
 
-        var stream = nca.OpenStorageWithPatch(patchNca, index, IntegrityCheckLevel.IgnoreOnInvalid)
+        var stream = nca.OpenStorageWithPatch(patchNca, index, IntegrityCheckLevel.IgnoreOnInvalid, true)
             as HierarchicalIntegrityVerificationStorage;
         if (stream == null) return Validity.Unchecked;
 

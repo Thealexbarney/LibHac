@@ -78,6 +78,16 @@ public struct ValueSubStorage : IDisposable
         _sharedBaseStorage.Destroy();
     }
 
+    public readonly SubStorage GetSubStorage()
+    {
+        if (_sharedBaseStorage.HasValue)
+        {
+            return new SubStorage(in _sharedBaseStorage, _offset, _size);
+        }
+
+        return new SubStorage(_baseStorage, _offset, _size);
+    }
+
     public void Set(in ValueSubStorage other)
     {
         if (!Unsafe.AreSame(ref Unsafe.AsRef(in this), ref Unsafe.AsRef(in other)))

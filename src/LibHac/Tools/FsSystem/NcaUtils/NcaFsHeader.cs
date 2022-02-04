@@ -73,6 +73,17 @@ public struct NcaFsHeader
         return GetSparseInfo().Generation != 0;
     }
 
+    public ref NcaCompressionInfo GetCompressionInfo()
+    {
+        return ref MemoryMarshal.Cast<byte, NcaCompressionInfo>(_header.Span.Slice(FsHeaderStruct.CompressionInfoOffset,
+            FsHeaderStruct.CompressionInfoSize))[0];
+    }
+
+    public bool ExistsCompressionLayer()
+    {
+        return GetCompressionInfo().MetaOffset != 0 && GetCompressionInfo().MetaSize != 0;
+    }
+
     public ulong Counter
     {
         get => Header.UpperCounter;
@@ -100,6 +111,8 @@ public struct NcaFsHeader
         public const int PatchInfoSize = 0x40;
         public const int SparseInfoOffset = 0x148;
         public const int SparseInfoSize = 0x30;
+        public const int CompressionInfoOffset = 0x178;
+        public const int CompressionInfoSize = 0x20;
 
         [FieldOffset(0)] public short Version;
         [FieldOffset(2)] public byte FormatType;

@@ -1,6 +1,6 @@
 ﻿namespace LibHac.FsSystem;
 
-public enum CompressionType
+public enum CompressionType : byte
 {
     None = 0,
     Zeroed = 1,

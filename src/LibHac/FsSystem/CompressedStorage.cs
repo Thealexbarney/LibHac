@@ -262,6 +262,7 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
         public long VirtualOffset;
         public long PhysicalOffset;
         public CompressionType CompressionType;
+        public sbyte CompressionLevel;
         public uint PhysicalSize;
 
         public readonly long GetPhysicalSize() => PhysicalSize;
@@ -360,18 +361,18 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
         switch (operationId)
         {
             case OperationId.InvalidateCache:
-                {
-                    _cacheManager.Invalidate();
-                    Result rc = _core.Invalidate();
-                    if (rc.IsFailure()) return rc.Miss();
-                    break;
-                }
+            {
+                _cacheManager.Invalidate();
+                Result rc = _core.Invalidate();
+                if (rc.IsFailure()) return rc.Miss();
+                break;
+            }
             case OperationId.QueryRange:
-                {
-                    Result rc = _core.QueryRange(outBuffer, offset, size);
-                    if (rc.IsFailure()) return rc.Miss();
-                    break;
-                }
+            {
+                Result rc = _core.QueryRange(outBuffer, offset, size);
+                if (rc.IsFailure()) return rc.Miss();
+                break;
+            }
             default:
                 return ResultFs.UnsupportedOperateRangeForCompressedStorage.Log();
         }

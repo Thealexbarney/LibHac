@@ -202,8 +202,6 @@ public class Nca
                 using var nodeStorage = new ValueSubStorage(metaStorage, nodeOffset, nodeSize);
                 using var entryStorage = new ValueSubStorage(metaStorage, entryOffset, entrySize);
 
-                new SubStorage(metaStorage, nodeOffset, nodeSize).WriteAllBytes("nodeStorage");
-
                 sparseStorage.Initialize(new ArrayPoolMemoryResource(), in nodeStorage, in entryStorage, header.EntryCount).ThrowIfFailure();
 
                 using var dataStorage = new ValueSubStorage(baseStorage, 0, sparseInfo.GetPhysicalSize());
@@ -369,6 +367,11 @@ public class Nca
 
     public IStorage OpenStorage(int index, IntegrityCheckLevel integrityCheckLevel)
     {
+        return OpenStorage(index, integrityCheckLevel, false);
+    }
+
+    public IStorage OpenStorage(int index, IntegrityCheckLevel integrityCheckLevel, bool leaveCompressed)
+    {
         IStorage rawStorage = OpenRawStorage(index);
         NcaFsHeader header = GetFsHeader(index);
 
@@ -377,15 +380,62 @@ public class Nca
             return rawStorage.Slice(0, header.GetPatchInfo().RelocationTreeOffset);
         }
 
-        return CreateVerificationStorage(integrityCheckLevel, header, rawStorage);
+        IStorage returnStorage = CreateVerificationStorage(integrityCheckLevel, header, rawStorage);
+
+        if (!leaveCompressed && header.ExistsCompressionLayer())
+        {
+            returnStorage = OpenCompressedStorage(header, returnStorage);
+        }
+
+        return returnStorage;
     }
 
     public IStorage OpenStorageWithPatch(Nca patchNca, int index, IntegrityCheckLevel integrityCheckLevel)
     {
+        return OpenStorageWithPatch(patchNca, index, integrityCheckLevel, false);
+    }
+
+    public IStorage OpenStorageWithPatch(Nca patchNca, int index, IntegrityCheckLevel integrityCheckLevel,
+        bool leaveCompressed)
+    {
         IStorage rawStorage = OpenRawStorageWithPatch(patchNca, index);
         NcaFsHeader header = patchNca.GetFsHeader(index);
 
-        return CreateVerificationStorage(integrityCheckLevel, header, rawStorage);
+        IStorage returnStorage = CreateVerificationStorage(integrityCheckLevel, header, rawStorage);
+
+        if (!leaveCompressed && header.ExistsCompressionLayer())
+        {
+            returnStorage = OpenCompressedStorage(header, returnStorage);
+        }
+
+        return returnStorage;
+    }
+
+    private static IStorage OpenCompressedStorage(NcaFsHeader header, IStorage baseStorage)
+    {
+        ref NcaCompressionInfo compressionInfo = ref header.GetCompressionInfo();
+
+        Unsafe.SkipInit(out BucketTree.Header bucketTreeHeader);
+        compressionInfo.MetaHeader.ItemsRo.CopyTo(SpanHelpers.AsByteSpan(ref bucketTreeHeader));
+        bucketTreeHeader.Verify().ThrowIfFailure();
+
+        long nodeStorageSize = CompressedStorage.QueryNodeStorageSize(bucketTreeHeader.EntryCount);
+        long entryStorageSize = CompressedStorage.QueryEntryStorageSize(bucketTreeHeader.EntryCount);
+        long tableOffset = compressionInfo.MetaOffset;
+        long tableSize = compressionInfo.MetaSize;
+
+        if (entryStorageSize + nodeStorageSize > tableSize)
+            throw new HorizonResultException(ResultFs.NcaInvalidCompressionInfo.Value);
+
+        using var dataStorage = new ValueSubStorage(baseStorage, 0, tableOffset);
+        using var nodeStorage = new ValueSubStorage(baseStorage, tableOffset, nodeStorageSize);
+        using var entryStorage = new ValueSubStorage(baseStorage, tableOffset + nodeStorageSize, entryStorageSize);
+
+        var compressedStorage = new CompressedStorage();
+        compressedStorage.Initialize(new ArrayPoolMemoryResource(), in dataStorage, in nodeStorage, in entryStorage,
+            bucketTreeHeader.EntryCount).ThrowIfFailure();
+
+        return new CachedStorage(compressedStorage, 0x4000, 32, true);
     }
 
     private IStorage CreateVerificationStorage(IntegrityCheckLevel integrityCheckLevel, NcaFsHeader header,

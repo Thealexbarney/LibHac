@@ -24,6 +24,13 @@ public struct NcaSparseInfo
     }
 }
 
+public struct NcaCompressionInfo
+{
+    public long MetaOffset;
+    public long MetaSize;
+    public Array16<byte> MetaHeader;
+}
+
 [StructLayout(LayoutKind.Explicit)]
 public struct NcaAesCtrUpperIv
 {
