@@ -6,11 +6,12 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSrv;
 using LibHac.FsSystem;
+using LibHac.Tests.Fs;
 using LibHac.Tests.Fs.IFileSystemTestBase;
 using LibHac.Tools.Fs;
 using Xunit;
 
-namespace LibHac.Tests.Fs;
+namespace LibHac.Tests.FsSystem;
 
 public class DirectorySaveDataFileSystemTests : CommittableIFileSystemTests
 {
@@ -79,7 +80,7 @@ public class DirectorySaveDataFileSystemTests : CommittableIFileSystemTests
     }
 
     [Fact]
-    public void CreateFile_CreatedInWorkingDirectory()
+    public void CreateFile_CreatedInModifiedDirectory()
     {
         (IFileSystem baseFs, IFileSystem saveFs) = CreateFileSystemInternal();
 
@@ -165,7 +166,7 @@ public class DirectorySaveDataFileSystemTests : CommittableIFileSystemTests
     }
 
     [Fact]
-    public void Initialize_InterruptedAfterCommitPart1_UsesWorkingData()
+    public void Initialize_InterruptedAfterCommitPart1_UsesModifiedData()
     {
         var baseFs = new InMemoryFileSystem();
 
@@ -183,7 +184,7 @@ public class DirectorySaveDataFileSystemTests : CommittableIFileSystemTests
     }
 
     [Fact]
-    public void Initialize_InterruptedDuringCommitPart2_UsesWorkingData()
+    public void Initialize_InterruptedDuringCommitPart2_UsesModifiedData()
     {
         var baseFs = new InMemoryFileSystem();
 
@@ -299,7 +300,7 @@ public class DirectorySaveDataFileSystemTests : CommittableIFileSystemTests
     }
 
     [Fact]
-    public void Initialize_InterruptedAfterCommitPart1_UsesWorkingExtraData()
+    public void Initialize_InterruptedAfterCommitPart1_UsesModifiedExtraData()
     {
         var baseFs = new InMemoryFileSystem();
 
@@ -311,6 +312,109 @@ public class DirectorySaveDataFileSystemTests : CommittableIFileSystemTests
         saveFs.ReadExtraData(out SaveDataExtraData extraData).ThrowIfFailure();
 
         Assert.Equal(0x67890, extraData.DataSize);
+    }
+
+    [Fact]
+    public void Initialize_OnlySynchronizingExtraDataExists_UsesSynchronizingExtraData()
+    {
+        var baseFs = new InMemoryFileSystem();
+
+        CreateExtraDataForTest(baseFs, "/ExtraData_", 0x67890).ThrowIfFailure();
+
+        CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true).ThrowIfFailure();
+
+        saveFs.ReadExtraData(out SaveDataExtraData extraData).ThrowIfFailure();
+
+        Assert.Equal(0x67890, extraData.DataSize);
+    }
+
+    [Fact]
+    public void Initialize_OnlyCommittedExtraDataExists_UsesCommittedExtraData()
+    {
+        var baseFs = new InMemoryFileSystem();
+
+        CreateExtraDataForTest(baseFs, "/ExtraData0", 0x67890).ThrowIfFailure();
+
+        CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true).ThrowIfFailure();
+
+        saveFs.ReadExtraData(out SaveDataExtraData extraData).ThrowIfFailure();
+
+        Assert.Equal(0x67890, extraData.DataSize);
+    }
+
+    [Fact]
+    public void Initialize_OnlyModifiedExtraDataExists_UsesModifiedExtraData()
+    {
+        var baseFs = new InMemoryFileSystem();
+
+        CreateExtraDataForTest(baseFs, "/ExtraData1", 0x67890).ThrowIfFailure();
+
+        CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true).ThrowIfFailure();
+
+        saveFs.ReadExtraData(out SaveDataExtraData extraData).ThrowIfFailure();
+
+        Assert.Equal(0x67890, extraData.DataSize);
+    }
+
+    [Fact]
+    public void Initialize_SynchronizingAndCommittedExtraDataExist_UsesCommittedExtraData()
+    {
+        var baseFs = new InMemoryFileSystem();
+
+        CreateExtraDataForTest(baseFs, "/ExtraData_", 0x12345).ThrowIfFailure();
+        CreateExtraDataForTest(baseFs, "/ExtraData0", 0x67890).ThrowIfFailure();
+
+        CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true).ThrowIfFailure();
+
+        saveFs.ReadExtraData(out SaveDataExtraData extraData).ThrowIfFailure();
+
+        Assert.Equal(0x67890, extraData.DataSize);
+    }
+
+    [Fact]
+    public void Initialize_SynchronizingAndModifiedExtraDataExist_UsesModifiedExtraData()
+    {
+        var baseFs = new InMemoryFileSystem();
+
+        CreateExtraDataForTest(baseFs, "/ExtraData_", 0x12345).ThrowIfFailure();
+        CreateExtraDataForTest(baseFs, "/ExtraData1", 0x67890).ThrowIfFailure();
+
+        CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true).ThrowIfFailure();
+
+        saveFs.ReadExtraData(out SaveDataExtraData extraData).ThrowIfFailure();
+
+        Assert.Equal(0x67890, extraData.DataSize);
+    }
+
+    [Fact]
+    public void Initialize_CommittedAndModifiedExtraDataExist_UsesCommittedExtraData()
+    {
+        var baseFs = new InMemoryFileSystem();
+
+        CreateExtraDataForTest(baseFs, "/ExtraData0", 0x12345).ThrowIfFailure();
+        CreateExtraDataForTest(baseFs, "/ExtraData1", 0x67890).ThrowIfFailure();
+
+        CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true).ThrowIfFailure();
+
+        saveFs.ReadExtraData(out SaveDataExtraData extraData).ThrowIfFailure();
+
+        Assert.Equal(0x12345, extraData.DataSize);
+    }
+
+    [Fact]
+    public void Initialize_AllThreeExtraDataFilesExist_UsesCommittedExtraData()
+    {
+        var baseFs = new InMemoryFileSystem();
+
+        CreateExtraDataForTest(baseFs, "/ExtraData_", 0x12345).ThrowIfFailure();
+        CreateExtraDataForTest(baseFs, "/ExtraData0", 0x54321).ThrowIfFailure();
+        CreateExtraDataForTest(baseFs, "/ExtraData1", 0x67890).ThrowIfFailure();
+
+        CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, baseFs, true, true, true).ThrowIfFailure();
+
+        saveFs.ReadExtraData(out SaveDataExtraData extraData).ThrowIfFailure();
+
+        Assert.Equal(0x54321, extraData.DataSize);
     }
 
     [Fact]

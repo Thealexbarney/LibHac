@@ -728,6 +728,24 @@ public class DirectorySaveDataFileSystem : IFileSystem, ISaveDataExtraDataAccess
             (byte)'t', (byte)'a', (byte)'_'
         };
 
+    /// <summary>
+    /// Initializes the save data's extra data files.
+    /// </summary>
+    /// <returns></returns>
+    /// <remarks><para>There's no telling what state users might leave the extra data files in, so we want
+    /// to be able to handle or recover from all possible states based on which files exist:</para>
+    /// <para>This is the state a properly committed save should be in.<br/>
+    /// Committed, Modified -> Use committed</para>
+    /// <para>This is the state the save will be in after an interrupted commit.<br/>
+    /// Working, Synchronizing -> Use modified</para>
+    /// <para>These states shouldn't normally happen. Use the committed file, ignoring the others.<br/>
+    /// Committed, Synchronizing -> Use committed<br/>
+    /// Committed, Modified, Synchronizing -> Use committed</para>
+    /// <para>If only one file exists then use that file.<br/>
+    /// Committed -> Use committed<br/>
+    /// Modified -> Use modified<br/>
+    /// Synchronizing -> Use synchronizing</para>
+    /// </remarks>
     private Result InitializeExtraData()
     {
         using var pathModifiedExtraData = new Path();
@@ -742,7 +760,8 @@ public class DirectorySaveDataFileSystem : IFileSystem, ISaveDataExtraDataAccess
         rc = PathFunctions.SetUpFixedPath(ref pathSynchronizingExtraData.Ref(), SynchronizingExtraDataName);
         if (rc.IsFailure()) return rc;
 
-        // Ensure the extra data files exist
+        // Ensure the extra data files exist.
+        // We don't currently handle the case where some of the extra data paths are directories instead of files.
         rc = _baseFs.GetEntryType(out _, in pathModifiedExtraData);
 
         if (rc.IsFailure())
@@ -750,14 +769,36 @@ public class DirectorySaveDataFileSystem : IFileSystem, ISaveDataExtraDataAccess
             if (!ResultFs.PathNotFound.Includes(rc))
                 return rc;
 
+            // The Modified file doesn't exist. Create it.
             rc = _baseFs.CreateFile(in pathModifiedExtraData, Unsafe.SizeOf<SaveDataExtraData>());
             if (rc.IsFailure()) return rc;
 
             if (_isJournalingSupported)
             {
-                rc = _baseFs.CreateFile(in pathCommittedExtraData, Unsafe.SizeOf<SaveDataExtraData>());
-                if (rc.IsFailure() && !ResultFs.PathAlreadyExists.Includes(rc))
-                    return rc;
+                rc = _baseFs.GetEntryType(out _, in pathCommittedExtraData);
+
+                if (rc.IsFailure())
+                {
+                    if (!ResultFs.PathNotFound.Includes(rc))
+                        return rc;
+
+                    // Neither the modified or committed files existed.
+                    // Check if the synchronizing file exists and use it if it does.
+                    rc = _baseFs.GetEntryType(out _, in pathSynchronizingExtraData);
+
+                    if (rc.IsSuccess())
+                    {
+                        rc = _baseFs.RenameFile(in pathSynchronizingExtraData, in pathCommittedExtraData);
+                        if (rc.IsFailure()) return rc;
+                    }
+                    else
+                    {
+                        // The synchronizing file did not exist. Create an empty committed extra data file.
+                        rc = _baseFs.CreateFile(in pathCommittedExtraData, Unsafe.SizeOf<SaveDataExtraData>());
+                        if (rc.IsFailure() && !ResultFs.PathAlreadyExists.Includes(rc))
+                            return rc;
+                    }
+                }
             }
         }
         else
@@ -785,13 +826,31 @@ public class DirectorySaveDataFileSystem : IFileSystem, ISaveDataExtraDataAccess
             }
             else if (ResultFs.PathNotFound.Includes(rc))
             {
-                // If a previous commit failed, the committed extra data may be missing.
-                // Finish that commit by copying the working extra data to the committed extra data
-                rc = SynchronizeExtraData(in pathSynchronizingExtraData, in pathModifiedExtraData);
-                if (rc.IsFailure()) return rc;
+                // The committed file doesn't exist. Try to recover from whatever invalid state we're in.
 
-                rc = _baseFs.RenameFile(in pathSynchronizingExtraData, in pathCommittedExtraData);
-                if (rc.IsFailure()) return rc;
+                // If the synchronizing file exists then the previous commit failed.
+                // Finish that commit by copying the working extra data to the committed extra data
+                if (_baseFs.GetEntryType(out _, in pathSynchronizingExtraData).IsSuccess())
+                {
+                    rc = SynchronizeExtraData(in pathSynchronizingExtraData, in pathModifiedExtraData);
+                    if (rc.IsFailure()) return rc;
+
+                    rc = _baseFs.RenameFile(in pathSynchronizingExtraData, in pathCommittedExtraData);
+                    if (rc.IsFailure()) return rc;
+                }
+                else
+                {
+                    // The only existing file is the modified file.
+                    // Copy the working extra data to the committed extra data.
+                    rc = _baseFs.CreateFile(in pathSynchronizingExtraData, Unsafe.SizeOf<SaveDataExtraData>());
+                    if (rc.IsFailure()) return rc;
+
+                    rc = SynchronizeExtraData(in pathSynchronizingExtraData, in pathModifiedExtraData);
+                    if (rc.IsFailure()) return rc;
+
+                    rc = _baseFs.RenameFile(in pathSynchronizingExtraData, in pathCommittedExtraData);
+                    if (rc.IsFailure()) return rc;
+                }
             }
             else
             {
