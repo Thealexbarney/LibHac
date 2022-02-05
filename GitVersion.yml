@@ -1,6 +1,6 @@
 mode: ContinuousDeployment
 increment: Patch
-next-version: 0.15.0
+next-version: 0.16.0
 branches:
   master:
     tag: alpha
