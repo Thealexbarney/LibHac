@@ -98,7 +98,7 @@ public class AccessControl
                 accessControlData.Slice(data.ContentOwnerInfoOffset + sizeof(int), infoCount * sizeof(ulong)));
 
             // Verify the size in the header matches the actual size of the info
-            Abort.DoAbortUnless(data.ContentOwnerInfoSize == infoCount * sizeof(long));
+            Abort.DoAbortUnless(data.ContentOwnerInfoSize == sizeof(int) + infoCount * sizeof(long));
 
             foreach (ulong id in ids)
             {
