@@ -333,7 +333,7 @@ partial class Build : NukeBuild
 
     // ReSharper disable once UnusedMember.Local
     Target AppVeyorBuild => _ => _
-        .DependsOn(Zip, Native, Publish)
+        .DependsOn(Zip, Native, Test, Publish)
         .Unlisted()
         .Executes(PrintResults);
 
