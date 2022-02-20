@@ -245,7 +245,7 @@ internal static class ProcessSwitchFs
                 title.Version?.ToString(),
                 title.Metadata?.Type.Print(),
                 Utilities.GetBytesReadable(title.GetSize()),
-                title.Control.Value.DisplayVersion.ToString(),
+                title.Control.Value.DisplayVersionString.ToString(),
                 title.Name);
         }
 

@@ -406,14 +406,14 @@ public class Application
         {
             Name = Patch.Name;
             Version = Patch.Version;
-            DisplayVersion = Patch.Control.Value.DisplayVersion.ToString();
+            DisplayVersion = Patch.Control.Value.DisplayVersionString.ToString();
             Nacp = Patch.Control;
         }
         else if (Main != null)
         {
             Name = Main.Name;
             Version = Main.Version;
-            DisplayVersion = Main.Control.Value.DisplayVersion.ToString();
+            DisplayVersion = Main.Control.Value.DisplayVersionString.ToString();
             Nacp = Main.Control;
         }
         else
