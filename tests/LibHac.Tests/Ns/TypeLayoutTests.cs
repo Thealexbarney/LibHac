@@ -15,8 +15,11 @@ public class TypeLayoutTests
 
         Assert.Equal(0x300, Unsafe.SizeOf<ApplicationTitle>());
 
-        Assert.Equal(0x000, GetOffset(in s, in s.Name.Value[0]));
-        Assert.Equal(0x200, GetOffset(in s, in s.Publisher.Value[0]));
+        Assert.Equal(0x000, GetOffset(in s, in s.Name));
+        Assert.Equal(0x200, GetOffset(in s, in s.Publisher));
+
+        Assert.Equal(0x000, GetOffset(in s, in s.NameString.Value[0]));
+        Assert.Equal(0x200, GetOffset(in s, in s.PublisherString.Value[0]));
     }
 
     [Fact]

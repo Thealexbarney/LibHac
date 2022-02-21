@@ -231,9 +231,9 @@ public class SwitchFs : IDisposable
 
             foreach (ref readonly ApplicationControlProperty.ApplicationTitle desc in title.Control.Value.Title.ItemsRo)
             {
-                if (!desc.Name.IsEmpty())
+                if (!desc.NameString.IsEmpty())
                 {
-                    title.Name = desc.Name.ToString();
+                    title.Name = desc.NameString.ToString();
                     break;
                 }
             }
