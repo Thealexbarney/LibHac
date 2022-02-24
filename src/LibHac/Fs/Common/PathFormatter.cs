@@ -155,7 +155,7 @@ public static class PathFormatter
 
                 currentPath = path.Slice(1);
             }
-            else if (path.Length != 0 && WindowsPath.IsWindowsDrive(path.Slice(1)))
+            else if (WindowsPath.IsWindowsDrive(path.Slice(1)))
             {
                 if (normalizeBuffer.Length == 0)
                     return ResultFs.NotNormalized.Log();
@@ -356,8 +356,12 @@ public static class PathFormatter
         if (path.At(0) == Dot && (path.At(1) == NullTerminator || path.At(1) == DirectorySeparator ||
                                   path.At(1) == AltDirectorySeparator))
         {
-            if (relativePathBuffer.Length >= 2)
+            if (relativePathBuffer.Length != 0)
             {
+                // Note: Nintendo doesn't check if the buffer is long enough here
+                if (relativePathBuffer.Length < 2)
+                    return ResultFs.TooLongPath.Log();
+
                 relativePathBuffer[0] = Dot;
                 relativePathBuffer[1] = NullTerminator;
             }

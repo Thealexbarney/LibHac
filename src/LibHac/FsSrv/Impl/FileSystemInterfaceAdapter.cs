@@ -49,7 +49,7 @@ public class FileInterfaceAdapter : IFileSf
         if (offset < 0)
             return ResultFs.InvalidOffset.Log();
 
-        if (destination.Size < 0)
+        if (size < 0)
             return ResultFs.InvalidSize.Log();
 
         if (destination.Size < (int)size)
@@ -78,7 +78,7 @@ public class FileInterfaceAdapter : IFileSf
         if (offset < 0)
             return ResultFs.InvalidOffset.Log();
 
-        if (source.Size < 0)
+        if (size < 0)
             return ResultFs.InvalidSize.Log();
 
         if (source.Size < (int)size)

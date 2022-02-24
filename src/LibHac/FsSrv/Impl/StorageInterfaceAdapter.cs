@@ -33,7 +33,7 @@ public class StorageInterfaceAdapter : IStorageSf
         if (offset < 0)
             return ResultFs.InvalidOffset.Log();
 
-        if (destination.Size < 0)
+        if (size < 0)
             return ResultFs.InvalidSize.Log();
 
         if (destination.Size < size)
@@ -58,7 +58,7 @@ public class StorageInterfaceAdapter : IStorageSf
         if (offset < 0)
             return ResultFs.InvalidOffset.Log();
 
-        if (source.Size < 0)
+        if (size < 0)
             return ResultFs.InvalidSize.Log();
 
         if (source.Size < size)
