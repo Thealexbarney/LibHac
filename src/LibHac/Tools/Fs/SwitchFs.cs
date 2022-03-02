@@ -15,6 +15,7 @@ using LibHac.Tools.FsSystem.NcaUtils;
 using LibHac.Tools.FsSystem.Save;
 using LibHac.Tools.Ncm;
 using LibHac.Util;
+using KeyType = LibHac.Common.Keys.KeyType;
 
 namespace LibHac.Tools.Fs;
 

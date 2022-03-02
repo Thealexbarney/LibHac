@@ -13,6 +13,7 @@ using LibHac.Os;
 using LibHac.Spl;
 using LibHac.Tools.FsSystem.NcaUtils;
 using LibHac.Util;
+using NcaFsHeader = LibHac.Tools.FsSystem.NcaUtils.NcaFsHeader;
 using RightsId = LibHac.Fs.RightsId;
 using Utility = LibHac.FsSystem.Utility;
 

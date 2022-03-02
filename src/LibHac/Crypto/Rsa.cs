@@ -6,6 +6,9 @@ namespace LibHac.Crypto;
 
 public static class Rsa
 {
+    public static readonly int ModulusSize2048Pss = 256;
+    public static readonly int MaximumExponentSize2048Pss = 3;
+
     public static bool VerifyRsa2048PssSha256(ReadOnlySpan<byte> signature, ReadOnlySpan<byte> modulus,
         ReadOnlySpan<byte> exponent, ReadOnlySpan<byte> message) =>
             VerifyRsa2048Sha256(signature, modulus, exponent, message, RSASignaturePadding.Pss);

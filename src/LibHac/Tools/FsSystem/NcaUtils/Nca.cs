@@ -13,6 +13,7 @@ using LibHac.FsSystem;
 using LibHac.Spl;
 using LibHac.Tools.Crypto;
 using LibHac.Tools.FsSystem.RomFs;
+using KeyType = LibHac.Common.Keys.KeyType;
 
 namespace LibHac.Tools.FsSystem.NcaUtils;
 
@@ -416,13 +417,13 @@ public class Nca
         ref NcaCompressionInfo compressionInfo = ref header.GetCompressionInfo();
 
         Unsafe.SkipInit(out BucketTree.Header bucketTreeHeader);
-        compressionInfo.MetaHeader.ItemsRo.CopyTo(SpanHelpers.AsByteSpan(ref bucketTreeHeader));
+        compressionInfo.TableHeader.ItemsRo.CopyTo(SpanHelpers.AsByteSpan(ref bucketTreeHeader));
         bucketTreeHeader.Verify().ThrowIfFailure();
 
         long nodeStorageSize = CompressedStorage.QueryNodeStorageSize(bucketTreeHeader.EntryCount);
         long entryStorageSize = CompressedStorage.QueryEntryStorageSize(bucketTreeHeader.EntryCount);
-        long tableOffset = compressionInfo.MetaOffset;
-        long tableSize = compressionInfo.MetaSize;
+        long tableOffset = compressionInfo.TableOffset;
+        long tableSize = compressionInfo.TableSize;
 
         if (entryStorageSize + nodeStorageSize > tableSize)
             throw new HorizonResultException(ResultFs.NcaInvalidCompressionInfo.Value);

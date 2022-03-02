@@ -81,7 +81,7 @@ public struct NcaFsHeader
 
     public bool ExistsCompressionLayer()
     {
-        return GetCompressionInfo().MetaOffset != 0 && GetCompressionInfo().MetaSize != 0;
+        return GetCompressionInfo().TableOffset != 0 && GetCompressionInfo().TableSize != 0;
     }
 
     public ulong Counter

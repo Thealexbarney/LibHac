@@ -7,6 +7,7 @@ using LibHac.FsSystem;
 using LibHac.FsSystem.Impl;
 using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
+using NcaFsHeader = LibHac.Tools.FsSystem.NcaUtils.NcaFsHeader;
 
 namespace LibHac.FsSrv.FsCreator;
 
