@@ -572,7 +572,99 @@ public static class Assert
     }
 
     // ---------------------------------------------------------------------
-    // In range
+    // Null UniqueRef<T>
+    // ---------------------------------------------------------------------
+
+    private static void NullImpl<T>(AssertionType assertionType, in UniqueRef<T> value,
+        string valueText, string functionName, string fileName, int lineNumber) where T : class, IDisposable
+    {
+        if (AssertImpl.Null(in value))
+            return;
+
+        AssertImpl.InvokeAssertionNotNull(assertionType, valueText, functionName, fileName, lineNumber);
+    }
+
+    [Conditional(AssertCondition)]
+    public static void Null<T>(in UniqueRef<T> value,
+        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerMemberName] string functionName = "",
+        [CallerFilePath] string fileName = "",
+        [CallerLineNumber] int lineNumber = 0)
+        where T : class, IDisposable
+    {
+        NullImpl(AssertionType.UserAssert, in value, valueText, functionName, fileName, lineNumber);
+    }
+
+    [Conditional(AssertCondition)]
+    internal static void SdkNull<T>(in UniqueRef<T> value,
+        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerMemberName] string functionName = "",
+        [CallerFilePath] string fileName = "",
+        [CallerLineNumber] int lineNumber = 0)
+        where T : class, IDisposable
+    {
+        NullImpl(AssertionType.SdkAssert, in value, valueText, functionName, fileName, lineNumber);
+    }
+
+    [Conditional(AssertCondition)]
+    internal static void SdkRequiresNull<T>(in UniqueRef<T> value,
+        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerMemberName] string functionName = "",
+        [CallerFilePath] string fileName = "",
+        [CallerLineNumber] int lineNumber = 0)
+        where T : class, IDisposable
+    {
+        NullImpl(AssertionType.SdkRequires, in value, valueText, functionName, fileName, lineNumber);
+    }
+
+    // ---------------------------------------------------------------------
+    // Null SharedRef<T>
+    // ---------------------------------------------------------------------
+
+    private static void NullImpl<T>(AssertionType assertionType, in SharedRef<T> value,
+        string valueText, string functionName, string fileName, int lineNumber) where T : class, IDisposable
+    {
+        if (AssertImpl.Null(in value))
+            return;
+
+        AssertImpl.InvokeAssertionNotNull(assertionType, valueText, functionName, fileName, lineNumber);
+    }
+
+    [Conditional(AssertCondition)]
+    public static void Null<T>(in SharedRef<T> value,
+        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerMemberName] string functionName = "",
+        [CallerFilePath] string fileName = "",
+        [CallerLineNumber] int lineNumber = 0)
+        where T : class, IDisposable
+    {
+        NullImpl(AssertionType.UserAssert, in value, valueText, functionName, fileName, lineNumber);
+    }
+
+    [Conditional(AssertCondition)]
+    internal static void SdkNull<T>(in SharedRef<T> value,
+        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerMemberName] string functionName = "",
+        [CallerFilePath] string fileName = "",
+        [CallerLineNumber] int lineNumber = 0)
+        where T : class, IDisposable
+    {
+        NullImpl(AssertionType.SdkAssert, in value, valueText, functionName, fileName, lineNumber);
+    }
+
+    [Conditional(AssertCondition)]
+    internal static void SdkRequiresNull<T>(in SharedRef<T> value,
+        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerMemberName] string functionName = "",
+        [CallerFilePath] string fileName = "",
+        [CallerLineNumber] int lineNumber = 0)
+        where T : class, IDisposable
+    {
+        NullImpl(AssertionType.SdkRequires, in value, valueText, functionName, fileName, lineNumber);
+    }
+
+    // ---------------------------------------------------------------------
+    // In range int
     // ---------------------------------------------------------------------
 
     private static void InRangeImpl(AssertionType assertionType, int value, int lower, int upper, string valueText,
@@ -613,6 +705,59 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresInRange(int value, int lowerInclusive, int upperExclusive,
+        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression("lowerInclusive")] string lowerInclusiveText = "",
+        [CallerArgumentExpression("upperExclusive")] string upperExclusiveText = "",
+        [CallerMemberName] string functionName = "",
+        [CallerFilePath] string fileName = "",
+        [CallerLineNumber] int lineNumber = 0)
+    {
+        InRangeImpl(AssertionType.SdkRequires, value, lowerInclusive, upperExclusive, valueText, lowerInclusiveText,
+            upperExclusiveText, functionName, fileName, lineNumber);
+    }
+
+    // ---------------------------------------------------------------------
+    // In range long
+    // ---------------------------------------------------------------------
+
+    private static void InRangeImpl(AssertionType assertionType, long value, long lower, long upper, string valueText,
+        string lowerText, string upperText, string functionName, string fileName, int lineNumber)
+    {
+        if (AssertImpl.WithinRange(value, lower, upper))
+            return;
+
+        AssertImpl.InvokeAssertionInRange(assertionType, value, lower, upper, valueText, lowerText, upperText, functionName,
+            fileName, lineNumber);
+    }
+
+    [Conditional(AssertCondition)]
+    public static void InRange(long value, long lowerInclusive, long upperExclusive,
+        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression("lowerInclusive")] string lowerInclusiveText = "",
+        [CallerArgumentExpression("upperExclusive")] string upperExclusiveText = "",
+        [CallerMemberName] string functionName = "",
+        [CallerFilePath] string fileName = "",
+        [CallerLineNumber] int lineNumber = 0)
+    {
+        InRangeImpl(AssertionType.UserAssert, value, lowerInclusive, upperExclusive, valueText, lowerInclusiveText,
+            upperExclusiveText, functionName, fileName, lineNumber);
+    }
+
+    [Conditional(AssertCondition)]
+    internal static void SdkInRange(long value, long lowerInclusive, long upperExclusive,
+        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression("lowerInclusive")] string lowerInclusiveText = "",
+        [CallerArgumentExpression("upperExclusive")] string upperExclusiveText = "",
+        [CallerMemberName] string functionName = "",
+        [CallerFilePath] string fileName = "",
+        [CallerLineNumber] int lineNumber = 0)
+    {
+        InRangeImpl(AssertionType.SdkAssert, value, lowerInclusive, upperExclusive, valueText, lowerInclusiveText,
+            upperExclusiveText, functionName, fileName, lineNumber);
+    }
+
+    [Conditional(AssertCondition)]
+    internal static void SdkRequiresInRange(long value, long lowerInclusive, long upperExclusive,
         [CallerArgumentExpression("value")] string valueText = "",
         [CallerArgumentExpression("lowerInclusive")] string lowerInclusiveText = "",
         [CallerArgumentExpression("upperExclusive")] string upperExclusiveText = "",

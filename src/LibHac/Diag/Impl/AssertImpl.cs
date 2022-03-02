@@ -22,7 +22,7 @@ internal static class AssertImpl
             $"{valueText} must be nullptr.");
     }
 
-    internal static void InvokeAssertionInRange(AssertionType assertionType, int value, int lower, int upper,
+    internal static void InvokeAssertionInRange(AssertionType assertionType, long value, long lower, long upper,
         string valueText, string lowerText, string upperText, string functionName, string fileName, int lineNumber)
     {
         string message =
@@ -124,6 +124,16 @@ internal static class AssertImpl
     public static bool Null<T>(ref T item)
     {
         return Unsafe.IsNullRef(ref item);
+    }
+
+    public static bool Null<T>(in UniqueRef<T> item) where T : class, IDisposable
+    {
+        return !item.HasValue;
+    }
+
+    public static bool Null<T>(in SharedRef<T> item) where T : class, IDisposable
+    {
+        return !item.HasValue;
     }
 
     public static bool NotNull<T>(T item) where T : class
