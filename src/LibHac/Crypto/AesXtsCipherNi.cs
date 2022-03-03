@@ -18,9 +18,9 @@ public class AesXtsEncryptorNi : ICipherWithIv
         _baseCipher.Initialize(key1, key2, iv, false);
     }
 
-    public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
+    public int Transform(ReadOnlySpan<byte> input, Span<byte> output)
     {
-        _baseCipher.Encrypt(input, output);
+        return _baseCipher.Encrypt(input, output);
     }
 }
 
@@ -36,8 +36,8 @@ public class AesXtsDecryptorNi : ICipherWithIv
         _baseCipher.Initialize(key1, key2, iv, true);
     }
 
-    public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
+    public int Transform(ReadOnlySpan<byte> input, Span<byte> output)
     {
-        _baseCipher.Decrypt(input, output);
+        return _baseCipher.Decrypt(input, output);
     }
 }

@@ -98,9 +98,10 @@ public struct AesCoreNi
         return AesNi.DecryptLast(b, keys[0]);
     }
 
-    public readonly void EncryptInterleaved8(ReadOnlySpan<byte> input, Span<byte> output)
+    public readonly int EncryptInterleaved8(ReadOnlySpan<byte> input, Span<byte> output)
     {
         int remainingBlocks = Math.Min(input.Length, output.Length) >> 4;
+        int length = remainingBlocks << 4;
 
         ref Vector128<byte> inBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(input));
         ref Vector128<byte> outBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(output));
@@ -138,11 +139,14 @@ public struct AesCoreNi
             outBlock = ref Unsafe.Add(ref outBlock, 1);
             remainingBlocks -= 1;
         }
+
+        return length;
     }
 
-    public readonly void DecryptInterleaved8(ReadOnlySpan<byte> input, Span<byte> output)
+    public readonly int DecryptInterleaved8(ReadOnlySpan<byte> input, Span<byte> output)
     {
         int remainingBlocks = Math.Min(input.Length, output.Length) >> 4;
+        int length = remainingBlocks << 4;
 
         ref Vector128<byte> inBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(input));
         ref Vector128<byte> outBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(output));
@@ -180,6 +184,8 @@ public struct AesCoreNi
             outBlock = ref Unsafe.Add(ref outBlock, 1);
             remainingBlocks -= 1;
         }
+
+        return length;
     }
 
     // When inlining this function, RyuJIT will almost make the

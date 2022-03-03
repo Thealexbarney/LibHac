@@ -11,13 +11,13 @@ public struct AesEcbModeNi
         _aesCore.Initialize(key, isDecrypting);
     }
 
-    public void Encrypt(ReadOnlySpan<byte> input, Span<byte> output)
+    public int Encrypt(ReadOnlySpan<byte> input, Span<byte> output)
     {
-        _aesCore.EncryptInterleaved8(input, output);
+        return _aesCore.EncryptInterleaved8(input, output);
     }
 
-    public void Decrypt(ReadOnlySpan<byte> input, Span<byte> output)
+    public int Decrypt(ReadOnlySpan<byte> input, Span<byte> output)
     {
-        _aesCore.DecryptInterleaved8(input, output);
+        return _aesCore.DecryptInterleaved8(input, output);
     }
 }

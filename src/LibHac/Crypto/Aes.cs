@@ -102,7 +102,7 @@ public static class Aes
         return new AesXtsEncryptor(key1, key2, iv);
     }
 
-    public static void EncryptEcb128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
+    public static int EncryptEcb128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
         bool preferDotNetCrypto = false)
     {
         if (IsAesNiSupported() && !preferDotNetCrypto)
@@ -110,16 +110,15 @@ public static class Aes
             Unsafe.SkipInit(out AesEcbModeNi cipherNi);
 
             cipherNi.Initialize(key, false);
-            cipherNi.Encrypt(input, output);
-            return;
+            return cipherNi.Encrypt(input, output);
         }
 
         ICipher cipher = CreateEcbEncryptor(key, preferDotNetCrypto);
 
-        cipher.Transform(input, output);
+        return cipher.Transform(input, output);
     }
 
-    public static void DecryptEcb128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
+    public static int DecryptEcb128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
         bool preferDotNetCrypto = false)
     {
         if (IsAesNiSupported() && !preferDotNetCrypto)
@@ -127,16 +126,15 @@ public static class Aes
             Unsafe.SkipInit(out AesEcbModeNi cipherNi);
 
             cipherNi.Initialize(key, true);
-            cipherNi.Decrypt(input, output);
-            return;
+            return cipherNi.Decrypt(input, output);
         }
 
         ICipher cipher = CreateEcbDecryptor(key, preferDotNetCrypto);
 
-        cipher.Transform(input, output);
+        return cipher.Transform(input, output);
     }
 
-    public static void EncryptCbc128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
+    public static int EncryptCbc128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
         ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false)
     {
         if (IsAesNiSupported() && !preferDotNetCrypto)
@@ -144,16 +142,15 @@ public static class Aes
             Unsafe.SkipInit(out AesCbcModeNi cipherNi);
 
             cipherNi.Initialize(key, iv, false);
-            cipherNi.Encrypt(input, output);
-            return;
+            return cipherNi.Encrypt(input, output);
         }
 
         ICipher cipher = CreateCbcEncryptor(key, iv, preferDotNetCrypto);
 
-        cipher.Transform(input, output);
+        return cipher.Transform(input, output);
     }
 
-    public static void DecryptCbc128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
+    public static int DecryptCbc128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
         ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false)
     {
         if (IsAesNiSupported() && !preferDotNetCrypto)
@@ -161,16 +158,15 @@ public static class Aes
             Unsafe.SkipInit(out AesCbcModeNi cipherNi);
 
             cipherNi.Initialize(key, iv, true);
-            cipherNi.Decrypt(input, output);
-            return;
+            return cipherNi.Decrypt(input, output);
         }
 
         ICipher cipher = CreateCbcDecryptor(key, iv, preferDotNetCrypto);
 
-        cipher.Transform(input, output);
+        return cipher.Transform(input, output);
     }
 
-    public static void EncryptCtr128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
+    public static int EncryptCtr128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
         ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false)
     {
         if (IsAesNiSupported() && !preferDotNetCrypto)
@@ -178,16 +174,15 @@ public static class Aes
             Unsafe.SkipInit(out AesCtrModeNi cipherNi);
 
             cipherNi.Initialize(key, iv);
-            cipherNi.Transform(input, output);
-            return;
+            return cipherNi.Transform(input, output);
         }
 
         ICipher cipher = CreateCtrEncryptor(key, iv, preferDotNetCrypto);
 
-        cipher.Transform(input, output);
+        return cipher.Transform(input, output);
     }
 
-    public static void DecryptCtr128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
+    public static int DecryptCtr128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
         ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false)
     {
         if (IsAesNiSupported() && !preferDotNetCrypto)
@@ -195,16 +190,15 @@ public static class Aes
             Unsafe.SkipInit(out AesCtrModeNi cipherNi);
 
             cipherNi.Initialize(key, iv);
-            cipherNi.Transform(input, output);
-            return;
+            return cipherNi.Transform(input, output);
         }
 
         ICipher cipher = CreateCtrDecryptor(key, iv, preferDotNetCrypto);
 
-        cipher.Transform(input, output);
+        return cipher.Transform(input, output);
     }
 
-    public static void EncryptXts128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key1,
+    public static int EncryptXts128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key1,
         ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false)
     {
         if (IsAesNiSupported() && !preferDotNetCrypto)
@@ -212,16 +206,15 @@ public static class Aes
             Unsafe.SkipInit(out AesXtsModeNi cipherNi);
 
             cipherNi.Initialize(key1, key2, iv, false);
-            cipherNi.Encrypt(input, output);
-            return;
+            return cipherNi.Encrypt(input, output);
         }
 
         ICipher cipher = CreateXtsEncryptor(key1, key2, iv, preferDotNetCrypto);
 
-        cipher.Transform(input, output);
+        return cipher.Transform(input, output);
     }
 
-    public static void DecryptXts128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key1,
+    public static int DecryptXts128(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key1,
         ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false)
     {
         if (IsAesNiSupported() && !preferDotNetCrypto)
@@ -229,13 +222,12 @@ public static class Aes
             Unsafe.SkipInit(out AesXtsModeNi cipherNi);
 
             cipherNi.Initialize(key1, key2, iv, true);
-            cipherNi.Decrypt(input, output);
-            return;
+            return cipherNi.Decrypt(input, output);
         }
 
         ICipher cipher = CreateXtsDecryptor(key1, key2, iv, preferDotNetCrypto);
 
-        cipher.Transform(input, output);
+        return cipher.Transform(input, output);
     }
 
     /// <summary>

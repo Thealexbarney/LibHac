@@ -300,7 +300,7 @@ public class Package1
         return Result.Success;
     }
 
-    private delegate void Decryptor(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
+    private delegate int Decryptor(ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<byte> key,
         ReadOnlySpan<byte> iv, bool preferDotNetCrypto = false);
 
     private bool TryFindEristaKeyRevision()

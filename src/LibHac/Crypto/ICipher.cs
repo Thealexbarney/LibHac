@@ -5,7 +5,7 @@ namespace LibHac.Crypto;
 
 public interface ICipher
 {
-    void Transform(ReadOnlySpan<byte> input, Span<byte> output);
+    int Transform(ReadOnlySpan<byte> input, Span<byte> output);
 }
 
 public interface ICipherWithIv : ICipher

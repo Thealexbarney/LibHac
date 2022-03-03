@@ -13,9 +13,9 @@ public class AesCbcEncryptor : ICipher
         _baseCipher.Initialize(key, iv, false);
     }
 
-    public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
+    public int Transform(ReadOnlySpan<byte> input, Span<byte> output)
     {
-        _baseCipher.Encrypt(input, output);
+        return _baseCipher.Encrypt(input, output);
     }
 }
 
@@ -29,8 +29,8 @@ public class AesCbcDecryptor : ICipher
         _baseCipher.Initialize(key, iv, true);
     }
 
-    public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
+    public int Transform(ReadOnlySpan<byte> input, Span<byte> output)
     {
-        _baseCipher.Decrypt(input, output);
+        return _baseCipher.Decrypt(input, output);
     }
 }

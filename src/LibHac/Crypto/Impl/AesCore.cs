@@ -31,43 +31,45 @@ public struct AesCore
         _isDecrypting = isDecrypting;
     }
 
-    public void Encrypt(ReadOnlySpan<byte> input, Span<byte> output)
+    public int Encrypt(ReadOnlySpan<byte> input, Span<byte> output)
     {
         Debug.Assert(!_isDecrypting);
-        Transform(input, output);
+        return Transform(input, output);
     }
 
-    public void Decrypt(ReadOnlySpan<byte> input, Span<byte> output)
+    public int Decrypt(ReadOnlySpan<byte> input, Span<byte> output)
     {
         Debug.Assert(_isDecrypting);
-        Transform(input, output);
+        return Transform(input, output);
     }
 
-    public void Encrypt(byte[] input, byte[] output, int length)
+    public int Encrypt(byte[] input, byte[] output, int length)
     {
         Debug.Assert(!_isDecrypting);
-        Transform(input, output, length);
+        return Transform(input, output, length);
     }
 
-    public void Decrypt(byte[] input, byte[] output, int length)
+    public int Decrypt(byte[] input, byte[] output, int length)
     {
         Debug.Assert(_isDecrypting);
-        Transform(input, output, length);
+        return Transform(input, output, length);
     }
 
-    private void Transform(ReadOnlySpan<byte> input, Span<byte> output)
+    private int Transform(ReadOnlySpan<byte> input, Span<byte> output)
     {
         using var rented = new RentedArray<byte>(input.Length);
 
         input.CopyTo(rented.Array);
 
-        Transform(rented.Array, rented.Array, input.Length);
+        int bytesWritten = Transform(rented.Array, rented.Array, input.Length);
 
         rented.Array.CopyTo(output);
+
+        return bytesWritten;
     }
 
-    private void Transform(byte[] input, byte[] output, int length)
+    private int Transform(byte[] input, byte[] output, int length)
     {
-        _transform.TransformBlock(input, 0, length, output, 0);
+        return _transform.TransformBlock(input, 0, length, output, 0);
     }
 }

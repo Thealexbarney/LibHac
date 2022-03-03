@@ -26,7 +26,7 @@ public struct AesXtsMode
         Iv = Unsafe.ReadUnaligned<Buffer16>(ref MemoryMarshal.GetReference(iv));
     }
 
-    public void Encrypt(ReadOnlySpan<byte> input, Span<byte> output)
+    public int Encrypt(ReadOnlySpan<byte> input, Span<byte> output)
     {
         int length = Math.Min(input.Length, output.Length);
         int blockCount = length >> 4;
@@ -74,9 +74,11 @@ public struct AesXtsMode
             _dataAesCore.Encrypt(tmp, tmp);
             XorBuffer(ref prevOutBlock, ref tmp, ref tweak);
         }
+
+        return length;
     }
 
-    public void Decrypt(ReadOnlySpan<byte> input, Span<byte> output)
+    public int Decrypt(ReadOnlySpan<byte> input, Span<byte> output)
     {
         int length = Math.Min(input.Length, output.Length);
         int blockCount = length >> 4;
@@ -139,6 +141,8 @@ public struct AesXtsMode
             _dataAesCore.Decrypt(tmp, tmp);
             XorBuffer(ref outBlock, ref tmp, ref tweak);
         }
+
+        return length;
     }
 
     private static Buffer16 FillTweakBuffer(Buffer16 initialTweak, Span<Buffer16> tweakBuffer)

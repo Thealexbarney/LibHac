@@ -24,7 +24,7 @@ public struct AesCtrMode
         Iv = Unsafe.ReadUnaligned<Buffer16>(ref MemoryMarshal.GetReference(iv));
     }
 
-    public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
+    public int Transform(ReadOnlySpan<byte> input, Span<byte> output)
     {
         int blockCount = BitUtil.DivideUp(input.Length, Aes.BlockSize);
         int length = blockCount * Aes.BlockSize;
@@ -34,6 +34,8 @@ public struct AesCtrMode
 
         _aesCore.Encrypt(counterBuffer.Array, counterBuffer.Array, length);
         Utilities.XorArrays(output, input, counterBuffer.Span);
+
+        return Math.Min(input.Length, output.Length);
     }
 
     private static void FillDecryptedCounter(Span<byte> counter, Span<byte> buffer)

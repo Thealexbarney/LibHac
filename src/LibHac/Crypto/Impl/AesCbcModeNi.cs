@@ -22,7 +22,7 @@ public struct AesCbcModeNi
         Iv = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(iv));
     }
 
-    public void Encrypt(ReadOnlySpan<byte> input, Span<byte> output)
+    public int Encrypt(ReadOnlySpan<byte> input, Span<byte> output)
     {
         int blockCount = Math.Min(input.Length, output.Length) >> 4;
 
@@ -42,9 +42,11 @@ public struct AesCbcModeNi
         }
 
         Iv = iv;
+
+        return Math.Min(input.Length, output.Length) & ~0xF;
     }
 
-    public void Decrypt(ReadOnlySpan<byte> input, Span<byte> output)
+    public int Decrypt(ReadOnlySpan<byte> input, Span<byte> output)
     {
         int remainingBlocks = Math.Min(input.Length, output.Length) >> 4;
 
@@ -104,5 +106,7 @@ public struct AesCbcModeNi
         }
 
         Iv = iv;
+
+        return Math.Min(input.Length, output.Length) & ~0xF;
     }
 }

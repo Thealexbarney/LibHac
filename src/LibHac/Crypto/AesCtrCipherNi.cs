@@ -18,8 +18,8 @@ public class AesCtrCipherNi : ICipherWithIv
         _baseCipher.Initialize(key, iv);
     }
 
-    public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
+    public int Transform(ReadOnlySpan<byte> input, Span<byte> output)
     {
-        _baseCipher.Transform(input, output);
+        return _baseCipher.Transform(input, output);
     }
 }

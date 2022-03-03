@@ -23,9 +23,10 @@ public struct AesCtrModeNi
         Iv = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(iv));
     }
 
-    public void Transform(ReadOnlySpan<byte> input, Span<byte> output)
+    public int Transform(ReadOnlySpan<byte> input, Span<byte> output)
     {
-        int remaining = Math.Min(input.Length, output.Length);
+        int length = Math.Min(input.Length, output.Length);
+        int remaining = length;
         int blockCount = remaining >> 4;
 
         ref Vector128<byte> inBlock = ref Unsafe.As<byte, Vector128<byte>>(ref MemoryMarshal.GetReference(input));
@@ -103,6 +104,8 @@ public struct AesCtrModeNi
         {
             EncryptCtrPartialBlock(input.Slice(blockCount * 0x10), output.Slice(blockCount * 0x10));
         }
+
+        return length;
     }
 
     private void EncryptCtrPartialBlock(ReadOnlySpan<byte> input, Span<byte> output)

@@ -13,13 +13,13 @@ public struct AesCbcMode
         _aesCore.Initialize(key, iv, CipherMode.CBC, isDecrypting);
     }
 
-    public void Encrypt(ReadOnlySpan<byte> input, Span<byte> output)
+    public int Encrypt(ReadOnlySpan<byte> input, Span<byte> output)
     {
-        _aesCore.Encrypt(input, output);
+        return _aesCore.Encrypt(input, output);
     }
 
-    public void Decrypt(ReadOnlySpan<byte> input, Span<byte> output)
+    public int Decrypt(ReadOnlySpan<byte> input, Span<byte> output)
     {
-        _aesCore.Decrypt(input, output);
+        return _aesCore.Decrypt(input, output);
     }
 }

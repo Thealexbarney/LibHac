@@ -25,7 +25,7 @@ public struct AesXtsModeNi
         Iv = Unsafe.ReadUnaligned<Vector128<byte>>(ref MemoryMarshal.GetReference(iv));
     }
 
-    public void Encrypt(ReadOnlySpan<byte> input, Span<byte> output)
+    public int Encrypt(ReadOnlySpan<byte> input, Span<byte> output)
     {
         int length = Math.Min(input.Length, output.Length);
         int remainingBlocks = length >> 4;
@@ -101,9 +101,11 @@ public struct AesXtsModeNi
         {
             EncryptPartialFinalBlock(ref inBlock, ref outBlock, tweak, leftover);
         }
+
+        return length;
     }
 
-    public void Decrypt(ReadOnlySpan<byte> input, Span<byte> output)
+    public int Decrypt(ReadOnlySpan<byte> input, Span<byte> output)
     {
         int length = Math.Min(input.Length, output.Length);
         int remainingBlocks = length >> 4;
@@ -181,6 +183,8 @@ public struct AesXtsModeNi
         {
             DecryptPartialFinalBlock(ref inBlock, ref outBlock, tweak, mask, leftover);
         }
+
+        return length;
     }
 
     // ReSharper disable once RedundantAssignment
