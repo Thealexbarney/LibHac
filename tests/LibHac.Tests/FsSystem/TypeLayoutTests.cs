@@ -247,4 +247,16 @@ public class TypeLayoutTests
         Assert.Equal(NcaCryptoConfiguration.KeyAreaEncryptionKeyCount + 3, (int)KeyType.SaveDataSeedUniqueMac);
         Assert.Equal(NcaCryptoConfiguration.KeyAreaEncryptionKeyCount + 4, (int)KeyType.SaveDataTransferMac);
     }
+
+    [Fact]
+    public static void AesCtrCounterExtendedStorage_Entry_Layout()
+    {
+        AesCtrCounterExtendedStorage.Entry s = default;
+
+        Assert.Equal(0x10, Unsafe.SizeOf<AesCtrCounterExtendedStorage.Entry>());
+
+        Assert.Equal(0x0, GetOffset(in s, in s.Offset));
+        Assert.Equal(0x8, GetOffset(in s, in s.Reserved));
+        Assert.Equal(0xC, GetOffset(in s, in s.Generation));
+    }
 }
