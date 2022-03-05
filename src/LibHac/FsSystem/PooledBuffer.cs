@@ -8,6 +8,12 @@ namespace LibHac.FsSystem;
 
 public static class PooledBufferGlobalMethods
 {
+    // ReSharper disable once UnusedParameter.Global
+    public static bool IsPooledBuffer(ReadOnlySpan<byte> buffer)
+    {
+        return false;
+    }
+
     public static long GetPooledBufferRetriedCount(this FileSystemServer fsSrv)
     {
         return fsSrv.Globals.PooledBuffer.CountRetried;
@@ -41,6 +47,24 @@ public static class PooledBufferGlobalMethods
         g.CountRetried = 0;
         g.CountReduceAllocation = 0;
         g.CountFailedIdealAllocationOnAsyncAccess = 0;
+    }
+
+    public static bool IsAdditionalDeviceAddress(ReadOnlySpan<byte> buffer)
+    {
+        return false;
+    }
+
+    // ReSharper disable once UnusedParameter.Global
+    /// <summary>
+    /// Checks if the provided buffer is located at a "device address".
+    /// </summary>
+    /// <param name="buffer">The buffer to check.</param>
+    /// <returns><see langword="true"/> if this is a device address; otherwise <see langword="false"/>.</returns>
+    /// <remarks>A device address is one that is either located in the pooled buffer heap
+    /// or in any of the registered additional device address ranges.</remarks>
+    public static bool IsDeviceAddress(ReadOnlySpan<byte> buffer)
+    {
+        return IsPooledBuffer(buffer) || IsAdditionalDeviceAddress(buffer);
     }
 }
 
