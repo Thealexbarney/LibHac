@@ -1,4 +1,5 @@
-﻿using System;
+﻿// ReSharper disable UnusedMember.Local NotAccessedField.Local
+using System;
 using System.Runtime.CompilerServices;
 using LibHac.Diag;
 using LibHac.Fs;
@@ -12,9 +13,6 @@ namespace LibHac.FsSystem;
 
 public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
 {
-    public delegate Result DecompressorFunction(Span<byte> destination, ReadOnlySpan<byte> source);
-    public delegate DecompressorFunction GetDecompressorFunction(CompressionType type);
-
     public class CompressedStorageCore : IDisposable
     {
         private long _blockSizeMax;
