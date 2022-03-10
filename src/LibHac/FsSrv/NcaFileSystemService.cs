@@ -73,7 +73,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
     public Result OpenFileSystemWithPatch(ref SharedRef<IFileSystemSf> outFileSystem, ProgramId programId,
         FileSystemProxyType fsType)
     {
-        const StorageType storageFlag = StorageType.All;
+        const StorageLayoutType storageFlag = StorageLayoutType.All;
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         // Get the program info for the caller and verify permissions
@@ -228,7 +228,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
     public Result OpenFileSystemWithId(ref SharedRef<IFileSystemSf> outFileSystem, in FspPath path,
         ulong id, FileSystemProxyType fsType)
     {
-        const StorageType storageFlag = StorageType.All;
+        const StorageLayoutType storageFlag = StorageLayoutType.All;
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         Result rc = GetProgramInfo(out ProgramInfo programInfo);
@@ -361,7 +361,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
     {
         UnsafeHelpers.SkipParamInit(out outRightsId);
 
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.All);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.All);
 
         Result rc = GetProgramInfo(out ProgramInfo programInfo);
         if (rc.IsFailure()) return rc;
@@ -389,7 +389,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         const ulong checkThroughProgramId = ulong.MaxValue;
         UnsafeHelpers.SkipParamInit(out outRightsId, out outKeyGeneration);
 
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.All);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.All);
 
         Result rc = GetProgramInfo(out ProgramInfo programInfo);
         if (rc.IsFailure()) return rc;
@@ -426,7 +426,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
     {
         UnsafeHelpers.SkipParamInit(out isHostFs);
 
-        StorageType storageFlag = _serviceImpl.GetStorageFlag(programId);
+        StorageLayoutType storageFlag = _serviceImpl.GetStorageFlag(programId);
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         using var programPath = new Path();
@@ -452,7 +452,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
     public Result OpenContentStorageFileSystem(ref SharedRef<IFileSystemSf> outFileSystem,
         ContentStorageId contentStorageId)
     {
-        StorageType storageFlag = contentStorageId == ContentStorageId.System ? StorageType.Bis : StorageType.All;
+        StorageLayoutType storageFlag = contentStorageId == ContentStorageId.System ? StorageLayoutType.Bis : StorageLayoutType.All;
         using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         Result rc = GetProgramInfo(out ProgramInfo programInfo);
@@ -535,7 +535,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
 
     public Result OpenRegisteredUpdatePartition(ref SharedRef<IFileSystemSf> outFileSystem)
     {
-        var storageFlag = StorageType.All;
+        var storageFlag = StorageLayoutType.All;
         using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         Result rc = GetProgramInfo(out ProgramInfo programInfo);

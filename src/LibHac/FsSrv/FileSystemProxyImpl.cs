@@ -803,7 +803,7 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
     public Result OpenCloudBackupWorkStorageFileSystem(ref SharedRef<IFileSystemSf> outFileSystem,
         CloudBackupWorkStorageId storageId)
     {
-        var storageFlag = StorageType.NonGameCard;
+        var storageFlag = StorageLayoutType.NonGameCard;
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         Result rc = GetProgramInfo(out ProgramInfo programInfo);
@@ -836,7 +836,7 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
 
     public Result OpenCustomStorageFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, CustomStorageId storageId)
     {
-        var storageFlag = StorageType.NonGameCard;
+        var storageFlag = StorageLayoutType.NonGameCard;
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         Result rc = GetProgramInfo(out ProgramInfo programInfo);

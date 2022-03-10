@@ -7,7 +7,7 @@ using LibHac.Fs.Fsa;
 namespace LibHac.FsSystem;
 
 [Flags]
-internal enum StorageType
+internal enum StorageLayoutType
 {
     Bis = 1 << 0,
     SdCard = 1 << 1,
@@ -22,9 +22,9 @@ internal enum StorageType
 /// Contains functions for validating the storage layout type flag.
 /// </summary>
 /// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
-internal static class StorageLayoutType
+internal static class StorageLayoutTypeFunctions
 {
-    public static bool IsStorageFlagValid(StorageType storageFlag)
+    public static bool IsStorageFlagValid(StorageLayoutType storageFlag)
     {
         return storageFlag != 0;
     }
@@ -33,7 +33,7 @@ internal static class StorageLayoutType
 internal struct ScopedStorageLayoutTypeSetter : IDisposable
 {
     // ReSharper disable once UnusedParameter.Local
-    public ScopedStorageLayoutTypeSetter(StorageType storageFlag)
+    public ScopedStorageLayoutTypeSetter(StorageLayoutType storageFlag)
     {
         // Todo: Implement
     }
@@ -52,14 +52,14 @@ internal struct ScopedStorageLayoutTypeSetter : IDisposable
 internal class StorageLayoutTypeSetStorage : IStorage
 {
     private SharedRef<IStorage> _baseStorage;
-    private StorageType _storageFlag;
+    private StorageLayoutType _storageFlag;
 
-    public StorageLayoutTypeSetStorage(ref SharedRef<IStorage> baseStorage, StorageType storageFlag)
+    public StorageLayoutTypeSetStorage(ref SharedRef<IStorage> baseStorage, StorageLayoutType storageFlag)
     {
         _baseStorage = SharedRef<IStorage>.CreateMove(ref baseStorage);
         _storageFlag = storageFlag;
 
-        Assert.SdkAssert(StorageLayoutType.IsStorageFlagValid(storageFlag));
+        Assert.SdkAssert(StorageLayoutTypeFunctions.IsStorageFlagValid(storageFlag));
     }
 
     public override void Dispose()
@@ -120,24 +120,24 @@ internal class StorageLayoutTypeSetFile : IFile
     private IFile _baseFile;
     private UniqueRef<IFile> _baseFileUnique;
     private SharedRef<IFile> _baseFileShared;
-    private StorageType _storageFlag;
+    private StorageLayoutType _storageFlag;
 
-    public StorageLayoutTypeSetFile(ref UniqueRef<IFile> baseFile, StorageType storageFlag)
+    public StorageLayoutTypeSetFile(ref UniqueRef<IFile> baseFile, StorageLayoutType storageFlag)
     {
         _baseFile = baseFile.Get;
         _baseFileUnique = new UniqueRef<IFile>(ref baseFile);
         _storageFlag = storageFlag;
 
-        Assert.SdkAssert(StorageLayoutType.IsStorageFlagValid(storageFlag));
+        Assert.SdkAssert(StorageLayoutTypeFunctions.IsStorageFlagValid(storageFlag));
     }
 
-    public StorageLayoutTypeSetFile(ref SharedRef<IFile> baseFile, StorageType storageFlag)
+    public StorageLayoutTypeSetFile(ref SharedRef<IFile> baseFile, StorageLayoutType storageFlag)
     {
         _baseFile = baseFile.Get;
         _baseFileShared = SharedRef<IFile>.CreateMove(ref baseFile);
         _storageFlag = storageFlag;
 
-        Assert.SdkAssert(StorageLayoutType.IsStorageFlagValid(storageFlag));
+        Assert.SdkAssert(StorageLayoutTypeFunctions.IsStorageFlagValid(storageFlag));
     }
 
     public override void Dispose()
@@ -198,9 +198,9 @@ internal class StorageLayoutTypeSetFile : IFile
 internal class StorageLayoutTypeSetDirectory : IDirectory
 {
     private UniqueRef<IDirectory> _baseDirectory;
-    private StorageType _storageFlag;
+    private StorageLayoutType _storageFlag;
 
-    public StorageLayoutTypeSetDirectory(ref UniqueRef<IDirectory> baseDirectory, StorageType storageFlag)
+    public StorageLayoutTypeSetDirectory(ref UniqueRef<IDirectory> baseDirectory, StorageLayoutType storageFlag)
     {
         _baseDirectory = new UniqueRef<IDirectory>(ref baseDirectory);
         _storageFlag = storageFlag;
@@ -236,14 +236,14 @@ internal class StorageLayoutTypeSetDirectory : IDirectory
 internal class StorageLayoutTypeSetFileSystem : IFileSystem
 {
     private SharedRef<IFileSystem> _baseFileSystem;
-    private StorageType _storageFlag;
+    private StorageLayoutType _storageFlag;
 
-    public StorageLayoutTypeSetFileSystem(ref SharedRef<IFileSystem> baseFileSystem, StorageType storageFlag)
+    public StorageLayoutTypeSetFileSystem(ref SharedRef<IFileSystem> baseFileSystem, StorageLayoutType storageFlag)
     {
         _baseFileSystem = SharedRef<IFileSystem>.CreateMove(ref baseFileSystem);
         _storageFlag = storageFlag;
 
-        Assert.SdkAssert(StorageLayoutType.IsStorageFlagValid(storageFlag));
+        Assert.SdkAssert(StorageLayoutTypeFunctions.IsStorageFlagValid(storageFlag));
     }
 
     public override void Dispose()

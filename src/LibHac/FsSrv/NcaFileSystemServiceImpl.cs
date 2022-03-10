@@ -815,13 +815,13 @@ public class NcaFileSystemServiceImpl
         return _locationResolverSet.ResolveRegisteredHtmlDocumentPath(ref path, id);
     }
 
-    internal StorageType GetStorageFlag(ulong programId)
+    internal StorageLayoutType GetStorageFlag(ulong programId)
     {
         if (programId >= _config.SpeedEmulationRange.ProgramIdMin &&
             programId <= _config.SpeedEmulationRange.ProgramIdMax)
-            return StorageType.Bis;
+            return StorageLayoutType.Bis;
         else
-            return StorageType.All;
+            return StorageLayoutType.All;
     }
 
     public Result HandleResolubleAccessFailure(out bool wasDeferred, Result resultForNoFailureDetected,

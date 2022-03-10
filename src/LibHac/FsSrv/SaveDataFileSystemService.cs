@@ -450,7 +450,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
     public Result DeleteSaveDataFileSystem(ulong saveDataId)
     {
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.Bis);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.Bis);
 
         return DeleteSaveDataFileSystemCommon(SaveDataSpaceId.System, saveDataId);
     }
@@ -473,7 +473,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
     public Result DeleteSaveDataFileSystemBySaveDataSpaceId(SaveDataSpaceId spaceId, ulong saveDataId)
     {
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
         return DeleteSaveDataFileSystemBySaveDataSpaceIdCore(spaceId, saveDataId);
     }
@@ -499,7 +499,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     public Result DeleteSaveDataFileSystemBySaveDataAttribute(SaveDataSpaceId spaceId,
         in SaveDataAttribute attribute)
     {
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
         Result rs = GetSaveDataInfo(out SaveDataInfo info, spaceId, in attribute);
         if (rs.IsFailure()) return rs;
@@ -691,7 +691,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         bool accessorInitialized = false;
         Result rc;
 
-        StorageType storageFlag = DecidePossibleStorageFlag(attribute.Type, creationInfo.SpaceId);
+        StorageLayoutType storageFlag = DecidePossibleStorageFlag(attribute.Type, creationInfo.SpaceId);
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
@@ -863,7 +863,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     {
         UnsafeHelpers.SkipParamInit(out info);
 
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
         using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
         Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
@@ -906,7 +906,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     private Result CreateSaveDataFileSystemWithHashSaltImpl(in SaveDataAttribute attribute,
         in SaveDataCreationInfo creationInfo, in SaveDataMetaInfo metaInfo, in Optional<HashSalt> hashSalt)
     {
-        StorageType storageFlag = DecidePossibleStorageFlag(attribute.Type, creationInfo.SpaceId);
+        StorageLayoutType storageFlag = DecidePossibleStorageFlag(attribute.Type, creationInfo.SpaceId);
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         Result rc = GetProgramInfo(out ProgramInfo programInfo);
@@ -943,7 +943,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     public Result CreateSaveDataFileSystemBySystemSaveDataId(in SaveDataAttribute attribute,
         in SaveDataCreationInfo creationInfo)
     {
-        StorageType storageFlag = DecidePossibleStorageFlag(attribute.Type, creationInfo.SpaceId);
+        StorageLayoutType storageFlag = DecidePossibleStorageFlag(attribute.Type, creationInfo.SpaceId);
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         Result rc = GetProgramInfo(out ProgramInfo programInfo);
@@ -1083,7 +1083,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     private Result OpenUserSaveDataFileSystemCore(ref SharedRef<IFileSystemSf> outFileSystem,
         SaveDataSpaceId spaceId, in SaveDataAttribute attribute, ProgramInfo programInfo, bool openReadOnly)
     {
-        StorageType storageFlag = DecidePossibleStorageFlag(attribute.Type, spaceId);
+        StorageLayoutType storageFlag = DecidePossibleStorageFlag(attribute.Type, spaceId);
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         // Try grabbing the mount count semaphore
@@ -1199,7 +1199,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         Result rc = GetProgramInfo(out ProgramInfo programInfo);
         if (rc.IsFailure()) return rc;
 
-        StorageType storageFlag = DecidePossibleStorageFlag(attribute.Type, spaceId);
+        StorageLayoutType storageFlag = DecidePossibleStorageFlag(attribute.Type, spaceId);
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         Accessibility accessibility =
@@ -1272,7 +1272,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     {
         UnsafeHelpers.SkipParamInit(out extraData);
 
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
         using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
         Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
@@ -1291,7 +1291,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     {
         UnsafeHelpers.SkipParamInit(out extraData);
 
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
         Result rc = GetProgramInfo(out ProgramInfo programInfo);
         if (rc.IsFailure()) return rc;
@@ -1445,7 +1445,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     private Result WriteSaveDataFileSystemExtraDataCore(SaveDataSpaceId spaceId, ulong saveDataId,
         in SaveDataExtraData extraData, SaveDataType saveType, bool updateTimeStamp)
     {
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
         using Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
         return _serviceImpl.WriteSaveDataFileSystemExtraData(spaceId, saveDataId, in extraData, in saveDataRootPath,
@@ -1455,7 +1455,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     private Result WriteSaveDataFileSystemExtraDataWithMaskCore(ulong saveDataId, SaveDataSpaceId spaceId,
         in SaveDataExtraData extraData, in SaveDataExtraData extraDataMask)
     {
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
         Result rc = GetProgramInfo(out ProgramInfo programInfo);
         if (rc.IsFailure()) return rc;
@@ -1539,7 +1539,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
     public Result OpenSaveDataInfoReader(ref SharedRef<ISaveDataInfoReader> outInfoReader)
     {
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.Bis);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.Bis);
 
         Result rc = GetProgramInfo(out ProgramInfo programInfo);
         if (rc.IsFailure()) return rc;
@@ -1569,7 +1569,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     public Result OpenSaveDataInfoReaderBySaveDataSpaceId(
         ref SharedRef<ISaveDataInfoReader> outInfoReader, SaveDataSpaceId spaceId)
     {
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
         Result rc = GetProgramInfo(out ProgramInfo programInfo);
         if (rc.IsFailure()) return rc;
@@ -1603,7 +1603,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     public Result OpenSaveDataInfoReaderWithFilter(ref SharedRef<ISaveDataInfoReader> outInfoReader,
         SaveDataSpaceId spaceId, in SaveDataFilter filter)
     {
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
         Result rc = GetProgramInfo(out ProgramInfo programInfo);
         if (rc.IsFailure()) return rc;
@@ -1664,7 +1664,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         if (saveDataInfoBuffer.Size != Unsafe.SizeOf<SaveDataInfo>())
             return ResultFs.InvalidArgument.Log();
 
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
         Result rc = GetProgramInfo(out ProgramInfo programInfo);
         if (rc.IsFailure()) return rc;
@@ -1730,7 +1730,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
     public Result OpenSaveDataInfoReaderOnlyCacheStorage(ref SharedRef<ISaveDataInfoReader> outInfoReader)
     {
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
         // Find where the current program's cache storage is located
         Result rc = GetCacheStorageSpaceId(out SaveDataSpaceId spaceId);
@@ -1749,7 +1749,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     private Result OpenSaveDataInfoReaderOnlyCacheStorage(ref SharedRef<ISaveDataInfoReader> outInfoReader,
         SaveDataSpaceId spaceId)
     {
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
         Result rc = GetProgramInfo(out ProgramInfo programInfo);
         if (rc.IsFailure()) return rc;
@@ -1876,7 +1876,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
     public Result DeleteCacheStorage(ushort index)
     {
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
         Result rc = FindCacheStorage(out SaveDataInfo saveInfo, out SaveDataSpaceId spaceId, index);
         if (rc.IsFailure()) return rc;
@@ -1891,7 +1891,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     {
         UnsafeHelpers.SkipParamInit(out usableDataSize, out journalSize);
 
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.NonGameCard);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
         Result rc = FindCacheStorage(out SaveDataInfo saveInfo, out SaveDataSpaceId spaceId, index);
         if (rc.IsFailure()) return rc;
@@ -1972,7 +1972,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
     public Result CleanUpSaveData()
     {
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.Bis);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.Bis);
         using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
         Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
@@ -1989,7 +1989,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
     public Result CompleteSaveDataExtension()
     {
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.Bis);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.Bis);
         using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
         Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
@@ -2006,7 +2006,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
     public Result CleanUpTemporaryStorage()
     {
-        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageType.Bis);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.Bis);
         using var fileSystem = new SharedRef<IFileSystem>();
 
         Result rc = _serviceImpl.OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref(), SaveDataSpaceId.Temporary);
@@ -2197,16 +2197,16 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         }
     }
 
-    private StorageType DecidePossibleStorageFlag(SaveDataType type, SaveDataSpaceId spaceId)
+    private StorageLayoutType DecidePossibleStorageFlag(SaveDataType type, SaveDataSpaceId spaceId)
     {
         if (type == SaveDataType.Cache || type == SaveDataType.Bcat)
-            return StorageType.Bis | StorageType.SdCard | StorageType.Usb;
+            return StorageLayoutType.Bis | StorageLayoutType.SdCard | StorageLayoutType.Usb;
 
         if (type == SaveDataType.System ||
             spaceId != SaveDataSpaceId.SdSystem && spaceId != SaveDataSpaceId.SdUser)
-            return StorageType.Bis;
+            return StorageLayoutType.Bis;
 
-        return StorageType.SdCard | StorageType.Usb;
+        return StorageLayoutType.SdCard | StorageLayoutType.Usb;
     }
 
     Result ISaveDataTransferCoreInterface.CreateSaveDataFileSystemCore(in SaveDataAttribute attribute,

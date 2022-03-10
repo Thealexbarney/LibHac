@@ -61,7 +61,7 @@ public readonly struct BaseStorageService
 
     public Result OpenBisStorage(ref SharedRef<IStorageSf> outStorage, BisPartitionId id)
     {
-        var storageFlag = StorageType.Bis;
+        var storageFlag = StorageLayoutType.Bis;
         using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         Result rc = GetProgramInfo(out ProgramInfo programInfo);

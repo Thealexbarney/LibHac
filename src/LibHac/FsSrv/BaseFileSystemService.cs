@@ -112,7 +112,7 @@ public readonly struct BaseFileSystemService
         if (!accessibility.CanRead || !accessibility.CanWrite)
             return ResultFs.PermissionDenied.Log();
 
-        const StorageType storageFlag = StorageType.Bis;
+        const StorageLayoutType storageFlag = StorageLayoutType.Bis;
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         // Normalize the path
@@ -218,7 +218,7 @@ public readonly struct BaseFileSystemService
         if (!accessibility.CanRead || !accessibility.CanWrite)
             return ResultFs.PermissionDenied.Log();
 
-        const StorageType storageFlag = StorageType.Bis;
+        const StorageLayoutType storageFlag = StorageLayoutType.Bis;
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         using var fileSystem = new SharedRef<IFileSystem>();
