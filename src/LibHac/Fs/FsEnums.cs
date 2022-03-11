@@ -288,3 +288,10 @@ public enum SdmmcPort
     SdCard = 1,
     GcAsic = 2
 }
+
+public enum StorageType
+{
+    SaveData = 0,
+    RomFs = 1,
+    Authoring = 2
+}

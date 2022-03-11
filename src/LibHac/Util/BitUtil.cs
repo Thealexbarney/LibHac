@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace LibHac.Util;
 
@@ -34,6 +35,11 @@ public static class BitUtil
     private static ulong ResetLeastSignificantOneBit(ulong value)
     {
         return value & (value - 1);
+    }
+
+    public static int CountLeadingZeros(uint value)
+    {
+        return BitOperations.LeadingZeroCount(value);
     }
 
     // DivideUp comes from a C++ template that always casts to unsigned types

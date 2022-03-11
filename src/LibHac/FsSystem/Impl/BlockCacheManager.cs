@@ -28,6 +28,13 @@ public interface IBlockCacheManagerRange
     long GetEndOffset();
 }
 
+/// <summary>
+/// Handles caching buffers with the given <see cref="IBufferManager"/>.
+/// </summary>
+/// <typeparam name="TEntry">The type of the entries to be stores in the cache manager.</typeparam>
+/// <typeparam name="TRange">The type that <typeparamref name="TEntry"/> uses
+/// to represent the range cached by an entry.</typeparam>
+/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
 public class BlockCacheManager<TEntry, TRange> : IDisposable
     where TEntry : struct, IBlockCacheManagerEntry<TRange>
     where TRange : struct, IBlockCacheManagerRange

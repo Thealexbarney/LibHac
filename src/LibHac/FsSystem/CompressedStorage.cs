@@ -162,8 +162,8 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
             public long Offset { get; set; }
             public uint Size { get; set; }
 
-            public long GetEndOffset() => Offset + Size;
-            public bool IsIncluded(long offset) => Offset <= offset && offset < GetEndOffset();
+            public readonly long GetEndOffset() => Offset + Size;
+            public readonly bool IsIncluded(long offset) => Offset <= offset && offset < GetEndOffset();
         }
 
         public struct AccessRange
