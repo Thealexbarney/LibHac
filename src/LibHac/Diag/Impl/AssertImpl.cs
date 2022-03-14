@@ -106,7 +106,7 @@ internal static class AssertImpl
         Assert.OnAssertionFailure(assertionType, "GreaterEqual", functionName, fileName, lineNumber, message);
     }
 
-    internal static void InvokeAssertionAligned(AssertionType assertionType, ulong value, int alignment,
+    internal static void InvokeAssertionAligned<T>(AssertionType assertionType, T value, int alignment,
         string valueText, string alignmentText, string functionName, string fileName, int lineNumber)
     {
         string message =
@@ -244,6 +244,11 @@ internal static class AssertImpl
     public static bool GreaterEqual<T>(ref T lhs, ref T rhs) where T : IComparable<T>
     {
         return lhs.CompareTo(rhs) >= 0;
+    }
+
+    public static bool IsAligned(long value, int alignment)
+    {
+        return Alignment.IsAlignedPow2(value, (uint)alignment);
     }
 
     public static bool IsAligned(ulong value, int alignment)

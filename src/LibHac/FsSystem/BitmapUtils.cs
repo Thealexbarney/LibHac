@@ -4,6 +4,7 @@ namespace LibHac.FsSystem;
 
 public static class BitmapUtils
 {
+    // ReSharper disable once InconsistentNaming
     public static uint ILog2(uint value)
     {
         Assert.SdkRequiresGreater(value, 0u);

@@ -1272,7 +1272,57 @@ public static class Assert
     }
 
     // ---------------------------------------------------------------------
-    // Aligned
+    // Aligned long
+    // ---------------------------------------------------------------------
+
+    private static void AlignedImpl(AssertionType assertionType, long value, int alignment, string valueText,
+        string alignmentText, string functionName, string fileName, int lineNumber)
+    {
+        if (AssertImpl.IsAligned(value, alignment))
+            return;
+
+        AssertImpl.InvokeAssertionAligned(assertionType, value, alignment, valueText, alignmentText, functionName, fileName,
+            lineNumber);
+    }
+
+    [Conditional(AssertCondition)]
+    public static void Aligned(long value, int alignment,
+        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression("alignment")] string alignmentText = "",
+        [CallerMemberName] string functionName = "",
+        [CallerFilePath] string fileName = "",
+        [CallerLineNumber] int lineNumber = 0)
+    {
+        AlignedImpl(AssertionType.UserAssert, value, alignment, valueText, alignmentText, functionName, fileName,
+            lineNumber);
+    }
+
+    [Conditional(AssertCondition)]
+    internal static void SdkAligned(long value, int alignment,
+        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression("alignment")] string alignmentText = "",
+        [CallerMemberName] string functionName = "",
+        [CallerFilePath] string fileName = "",
+        [CallerLineNumber] int lineNumber = 0)
+    {
+        AlignedImpl(AssertionType.SdkAssert, value, alignment, valueText, alignmentText, functionName, fileName,
+            lineNumber);
+    }
+
+    [Conditional(AssertCondition)]
+    internal static void SdkRequiresAligned(long value, int alignment,
+        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression("alignment")] string alignmentText = "",
+        [CallerMemberName] string functionName = "",
+        [CallerFilePath] string fileName = "",
+        [CallerLineNumber] int lineNumber = 0)
+    {
+        AlignedImpl(AssertionType.SdkRequires, value, alignment, valueText, alignmentText, functionName, fileName,
+            lineNumber);
+    }
+
+    // ---------------------------------------------------------------------
+    // Aligned ulong
     // ---------------------------------------------------------------------
 
     private static void AlignedImpl(AssertionType assertionType, ulong value, int alignment, string valueText,
