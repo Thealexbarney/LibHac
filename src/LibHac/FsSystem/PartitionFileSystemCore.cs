@@ -57,7 +57,7 @@ public class PartitionFileSystemCore<T> : IFileSystem where T : unmanaged, IPart
 
         ReadOnlySpan<byte> rootPath = new[] { (byte)'/' };
 
-        if (path == rootPath)
+        if (path != rootPath)
             return ResultFs.PathNotFound.Log();
 
         outDirectory.Reset(new PartitionDirectory(this, mode));
