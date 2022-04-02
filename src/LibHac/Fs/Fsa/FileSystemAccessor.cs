@@ -536,7 +536,7 @@ internal class FileSystemAccessor : IDisposable
             (byte)'S', (byte)' ', (byte)'E', (byte)'R', (byte)'R', (byte)'O', (byte)'R', (byte)' ',
             (byte)'I', (byte)'N', (byte)'F', (byte)'O', (byte)'R', (byte)'M', (byte)'A', (byte)'T',
             (byte)'I', (byte)'O', (byte)'N', (byte)' ', (byte)'-', (byte)'-', (byte)'-', (byte)'-',
-            (byte)'-', (byte)'-', (byte)'\\', (byte)'n'
+            (byte)'-', (byte)'-', (byte)'\n'
         };
 
     /// <summary>"<c>Error: File not closed</c>"</summary>
@@ -575,7 +575,7 @@ internal class FileSystemAccessor : IDisposable
         };
 
     /// <summary>"<c>)\n</c>"</summary>
-    public static ReadOnlySpan<byte> LogLineEnd => new[] { (byte)')', (byte)'\\', (byte)'n' }; // ")\n"
+    public static ReadOnlySpan<byte> LogLineEnd => new[] { (byte)')', (byte)'\n' }; // ")\n"
 
     /// <summary>"<c> | </c>"</summary>
     public static ReadOnlySpan<byte> LogOrOperator => new[] { (byte)' ', (byte)'|', (byte)' ' };  // " | "
