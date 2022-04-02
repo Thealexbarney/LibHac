@@ -67,11 +67,11 @@ public static class Common
 
         if (oldFile?.SequenceEqual(newFile) == true)
         {
-            Logger.Normal($"{relativePath} is already up-to-date");
+            Serilog.Log.Debug($"{relativePath} is already up-to-date");
             return;
         }
 
-        Logger.Normal($"Generated file {relativePath}");
+        Serilog.Log.Debug($"Generated file {relativePath}");
         File.WriteAllBytes(fullPath, newFile);
     }
 

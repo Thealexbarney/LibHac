@@ -108,16 +108,16 @@ partial class Build : NukeBuild
             {
                 if (!e.Message.Contains("not a git repository", StringComparison.OrdinalIgnoreCase))
                 {
-                    Logger.Error(e);
+                    Serilog.Log.Error(e, e.Message);
                 }
             }
 
             if (gitRepository == null || gitVersion == null)
             {
-                Logger.Normal("Unable to read Git version.");
+                Serilog.Log.Debug("Unable to read Git version.");
 
                 VersionString = GetCsprojVersion();
-                Logger.Normal($"Using version from .csproj: {VersionString}");
+                Serilog.Log.Debug($"Using version from .csproj: {VersionString}");
 
                 return;
             }
@@ -165,7 +165,7 @@ partial class Build : NukeBuild
                 ["VersionSuffix"] = suffix
             };
 
-            Logger.Normal($"Building version {VersionString}");
+            Serilog.Log.Debug($"Building version {VersionString}");
         });
 
     Target Clean => _ => _
@@ -288,7 +288,7 @@ partial class Build : NukeBuild
             EnsureExistingDirectory(ArtifactsDirectory);
 
             ZipFiles(CliCoreZip, namesCore);
-            Logger.Normal($"Created {CliCoreZip}");
+            Serilog.Log.Debug($"Created {CliCoreZip}");
 
             PushArtifact(CliCoreZip);
         });
@@ -319,7 +319,7 @@ partial class Build : NukeBuild
 
             if (pwd == string.Empty)
             {
-                Logger.Normal("Skipping sign task");
+                Serilog.Log.Debug("Skipping sign task");
                 return;
             }
 
@@ -348,7 +348,7 @@ partial class Build : NukeBuild
 
     public void PrintResults()
     {
-        Logger.Normal("SHA-1:");
+        Serilog.Log.Debug("SHA-1:");
         using (var sha = SHA1.Create())
         {
             foreach (string filename in Directory.EnumerateFiles(ArtifactsDirectory))
@@ -356,7 +356,7 @@ partial class Build : NukeBuild
                 using (var stream = new FileStream(filename, FileMode.Open))
                 {
                     string hash = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "");
-                    Logger.Normal($"{hash} - {Path.GetFileName(filename)}");
+                    Serilog.Log.Debug($"{hash} - {Path.GetFileName(filename)}");
                 }
             }
         }
@@ -391,7 +391,8 @@ partial class Build : NukeBuild
         EnsureExistingDirectory(ArtifactsDirectory);
 
         ZipFile(CliNativeZip, CliNativeExe, $"hactoolnet{NativeProgramExtension}");
-        Logger.Normal($"Created {CliNativeZip}");
+        Serilog.Log.Debug($"Created {CliNativeZip}");
+        Serilog.Log.Debug($"Created {CliNativeZip}");
 
         PushArtifact(CliNativeZip);
     }
@@ -530,12 +531,12 @@ partial class Build : NukeBuild
 
         if (!File.Exists(path))
         {
-            Logger.Warn($"Unable to add artifact {path}");
+            Serilog.Log.Warning($"Unable to add artifact {path}");
         }
 
         appVeyor.PushArtifact(path, name);
 
-        Logger.Normal($"Added AppVeyor artifact {path}");
+        Serilog.Log.Debug($"Added AppVeyor artifact {path}");
     }
 
     public static void ReplaceLineEndings(string filename)
@@ -565,7 +566,7 @@ partial class Build : NukeBuild
         AbsolutePath coreFxDir = TempDirectory / ("sign_" + Path.GetFileName(CliCoreZip));
         AbsolutePath nativeZipDir = TempDirectory / ("sign_" + Path.GetFileName(CliNativeZip));
 
-        bool signNative = FileExists(CliNativeExe);
+        bool signNative = CliNativeExe.FileExists();
 
         try
         {
@@ -647,7 +648,7 @@ partial class Build : NukeBuild
 
     public void RunCodegenStage2()
     {
-        Logger.Normal("\nBuilding stage 2 codegen project.");
+        Serilog.Log.Debug("\nBuilding stage 2 codegen project.");
 
         DotNetRunSettings settings = new DotNetRunSettings()
             .SetProjectFile(CodeGenProject.Path);
@@ -656,11 +657,11 @@ partial class Build : NukeBuild
         try
         {
             DotNetRun(settings);
-            Logger.Normal();
+            Serilog.Log.Debug("");
         }
         catch (ProcessException)
         {
-            Logger.Error("\nError running stage 2 codegen. Skipping...\n");
+            Serilog.Log.Error("\nError running stage 2 codegen. Skipping...\n");
         }
     }
 }
