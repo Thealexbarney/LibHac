@@ -340,6 +340,37 @@ public class SaveDataManagement
     }
 
     [Fact]
+    public void CreateTemporaryStorage_DoesNotExist_SaveIsCreated()
+    {
+        long availableSize = 0x220000;
+
+        var applicationId = new Ncm.ApplicationId(1);
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+
+        Assert.Success(fs.CreateTemporaryStorage(applicationId, 0, availableSize, SaveDataFlags.None));
+
+        using var iterator = new UniqueRef<SaveDataIterator>();
+        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.Temporary);
+
+        var info = new SaveDataInfo[2];
+        iterator.Get.ReadSaveDataInfo(out long entriesRead, info);
+
+        Assert.Equal(1, entriesRead);
+        Assert.Equal(applicationId, info[0].ProgramId);
+        Assert.Equal(SaveDataType.Temporary, info[0].Type);
+    }
+
+    [Fact]
+    public void CreateTemporaryStorage_AlreadyExists_ReturnsPathAlreadyExists()
+    {
+        var applicationId = new Ncm.ApplicationId(1);
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+
+        Assert.Success(fs.CreateTemporaryStorage(applicationId, 0, 0x400000, SaveDataFlags.None));
+        Assert.Result(ResultFs.PathAlreadyExists, fs.CreateTemporaryStorage(applicationId, 0, 0x400000, SaveDataFlags.None));
+    }
+
+    [Fact]
     public void DeleteSaveData_DoesNotExist_ReturnsTargetNotFound()
     {
         FileSystemClient fs = FileSystemServerFactory.CreateClient(true);

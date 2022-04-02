@@ -26,17 +26,25 @@ public class ApplicationSaveDataManagementTests
         };
 
         Assert.Success(fs.EnsureApplicationSaveData(out _, applicationId, in controlProperty, in userId));
+        AssertSaveExists();
 
-        using var iterator = new UniqueRef<SaveDataIterator>();
-        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
+        // EnsureApplicationSaveData should do nothing the second time it is called
+        Assert.Success(fs.EnsureApplicationSaveData(out _, applicationId, in controlProperty, in userId));
+        AssertSaveExists();
 
-        var info = new SaveDataInfo[2];
-        Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
+        void AssertSaveExists()
+        {
+            using var iterator = new UniqueRef<SaveDataIterator>();
+            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
 
-        Assert.Equal(1, entriesRead);
-        Assert.Equal(applicationId, info[0].ProgramId);
-        Assert.Equal(Utility.ConvertAccountUidToFsUserId(userId), info[0].UserId);
-        Assert.Equal(SaveDataType.Account, info[0].Type);
+            var info = new SaveDataInfo[2];
+            Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
+
+            Assert.Equal(1, entriesRead);
+            Assert.Equal(applicationId, info[0].ProgramId);
+            Assert.Equal(Utility.ConvertAccountUidToFsUserId(userId), info[0].UserId);
+            Assert.Equal(SaveDataType.Account, info[0].Type);
+        }
     }
 
     [Fact]
@@ -54,17 +62,24 @@ public class ApplicationSaveDataManagementTests
         };
 
         Assert.Success(fs.EnsureApplicationSaveData(out _, applicationId, in controlProperty, in userId));
+        AssertSaveExists();
 
-        using var iterator = new UniqueRef<SaveDataIterator>();
-        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
+        Assert.Success(fs.EnsureApplicationSaveData(out _, applicationId, in controlProperty, in userId));
+        AssertSaveExists();
 
-        var info = new SaveDataInfo[2];
-        Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
+        void AssertSaveExists()
+        {
+            using var iterator = new UniqueRef<SaveDataIterator>();
+            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
 
-        Assert.Equal(1, entriesRead);
-        Assert.Equal(applicationId, info[0].ProgramId);
-        Assert.Equal(InvalidUserId, info[0].UserId);
-        Assert.Equal(SaveDataType.Device, info[0].Type);
+            var info = new SaveDataInfo[2];
+            Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
+
+            Assert.Equal(1, entriesRead);
+            Assert.Equal(applicationId, info[0].ProgramId);
+            Assert.Equal(InvalidUserId, info[0].UserId);
+            Assert.Equal(SaveDataType.Device, info[0].Type);
+        }
     }
 
     [Fact]
@@ -81,17 +96,24 @@ public class ApplicationSaveDataManagementTests
         };
 
         Assert.Success(fs.EnsureApplicationSaveData(out _, applicationId, in controlProperty, in userId));
+        AssertSaveExists();
 
-        using var iterator = new UniqueRef<SaveDataIterator>();
-        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
+        Assert.Success(fs.EnsureApplicationSaveData(out _, applicationId, in controlProperty, in userId));
+        AssertSaveExists();
 
-        var info = new SaveDataInfo[2];
-        Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
+        void AssertSaveExists()
+        {
+            using var iterator = new UniqueRef<SaveDataIterator>();
+            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
 
-        Assert.Equal(1, entriesRead);
-        Assert.Equal(applicationId, info[0].ProgramId);
-        Assert.Equal(InvalidUserId, info[0].UserId);
-        Assert.Equal(SaveDataType.Bcat, info[0].Type);
+            var info = new SaveDataInfo[2];
+            Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
+
+            Assert.Equal(1, entriesRead);
+            Assert.Equal(applicationId, info[0].ProgramId);
+            Assert.Equal(InvalidUserId, info[0].UserId);
+            Assert.Equal(SaveDataType.Bcat, info[0].Type);
+        }
     }
 
     [Fact]
@@ -108,18 +130,26 @@ public class ApplicationSaveDataManagementTests
         };
 
         Assert.Success(fs.EnsureApplicationSaveData(out _, applicationId, in controlProperty, in userId));
+        AssertSaveExists();
 
-        using var iterator = new UniqueRef<SaveDataIterator>();
-        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.Temporary);
+        Assert.Success(fs.EnsureApplicationSaveData(out _, applicationId, in controlProperty, in userId));
+        AssertSaveExists();
 
-        var info = new SaveDataInfo[2];
-        Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
+        void AssertSaveExists()
+        {
+            using var iterator = new UniqueRef<SaveDataIterator>();
+            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.Temporary);
 
-        Assert.Equal(1, entriesRead);
-        Assert.Equal(applicationId, info[0].ProgramId);
-        Assert.Equal(InvalidUserId, info[0].UserId);
-        Assert.Equal(SaveDataType.Temporary, info[0].Type);
+            var info = new SaveDataInfo[2];
+            Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
+
+            Assert.Equal(1, entriesRead);
+            Assert.Equal(applicationId, info[0].ProgramId);
+            Assert.Equal(InvalidUserId, info[0].UserId);
+            Assert.Equal(SaveDataType.Temporary, info[0].Type);
+        }
     }
+
     [Fact]
     public static void EnsureApplicationSaveData_NeedsExtension_IsExtended()
     {
@@ -180,18 +210,25 @@ public class ApplicationSaveDataManagementTests
 
         Assert.Success(fs.EnsureApplicationCacheStorage(out _, out CacheStorageTargetMedia target, applicationId,
             in controlProperty));
+        AssertSaveExists();
 
-        Assert.Equal(CacheStorageTargetMedia.SdCard, target);
+        Assert.Success(fs.EnsureApplicationCacheStorage(out _, out target, applicationId, in controlProperty));
+        AssertSaveExists();
 
-        using var iterator = new UniqueRef<SaveDataIterator>();
-        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.SdUser);
+        void AssertSaveExists()
+        {
+            Assert.Equal(CacheStorageTargetMedia.SdCard, target);
 
-        var info = new SaveDataInfo[2];
-        Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
+            using var iterator = new UniqueRef<SaveDataIterator>();
+            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.SdUser);
 
-        Assert.Equal(1, entriesRead);
-        Assert.Equal(applicationId, info[0].ProgramId);
-        Assert.Equal(SaveDataType.Cache, info[0].Type);
+            var info = new SaveDataInfo[2];
+            Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
+
+            Assert.Equal(1, entriesRead);
+            Assert.Equal(applicationId, info[0].ProgramId);
+            Assert.Equal(SaveDataType.Cache, info[0].Type);
+        }
     }
 
     [Fact]

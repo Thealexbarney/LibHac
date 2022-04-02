@@ -677,6 +677,7 @@ public static class ApplicationSaveDataManagement
                     if (ResultFs.PathAlreadyExists.Includes(rc))
                     {
                         // Nothing to do if the save already exists.
+                        rc.Catch().Handle();
                     }
                     else if (ResultFs.UsableSpaceNotEnough.Includes(rc))
                     {
@@ -686,6 +687,7 @@ public static class ApplicationSaveDataManagement
                     }
                     else
                     {
+                        fs.Impl.AbortIfNeeded(rc);
                         return rc.Miss();
                     }
                 }
@@ -706,6 +708,7 @@ public static class ApplicationSaveDataManagement
             }
             else
             {
+                fs.Impl.AbortIfNeeded(rc);
                 return rc.Miss();
             }
         }
@@ -742,8 +745,14 @@ public static class ApplicationSaveDataManagement
 
                         requiredSize += temporaryStorageSize;
                     }
+                    else if (ResultFs.PathAlreadyExists.Includes(rc))
+                    {
+                        // Nothing to do if the save already exists.
+                        rc.Catch().Handle();
+                    }
                     else
                     {
+                        fs.Impl.AbortIfNeeded(rc);
                         return rc.Miss();
                     }
                 }
@@ -776,6 +785,7 @@ public static class ApplicationSaveDataManagement
                     }
                     else
                     {
+                        fs.Impl.AbortIfNeeded(rc);
                         return rc.Miss();
                     }
                 }
@@ -789,7 +799,10 @@ public static class ApplicationSaveDataManagement
         }
 
         outRequiredSize = requiredSize;
-        return ResultFs.UsableSpaceNotEnough.Log();
+
+        rc = ResultFs.UsableSpaceNotEnough.Log();
+        fs.Impl.AbortIfNeeded(rc);
+        return rc;
     }
 
     public static Result ExtendApplicationSaveData(this FileSystemClient fs, out long outRequiredSize,
