@@ -1,11 +1,16 @@
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text;
 using LibHac.Common;
 using LibHac.Common.Keys;
 using LibHac.Crypto;
 using LibHac.Fs;
+using LibHac.Gc.Impl;
 using LibHac.Tools.Crypto;
+using LibHac.Tools.FsSystem;
+using Aes = LibHac.Crypto.Aes;
 
 namespace LibHac.Tools.Fs;
 
@@ -13,7 +18,9 @@ public class XciHeader
 {
     private const int SignatureSize = 0x100;
     private const string HeaderMagic = "HEAD";
+    private const uint HeaderMagicValue = 0x44414548; // HEAD
     private const int EncryptedHeaderSize = 0x70;
+    private const int GcTitleKeyKekIndexMax = 0x10;
 
     private static readonly byte[] XciHeaderPubk =
     {
@@ -56,6 +63,7 @@ public class XciHeader
     public int SelKey { get; set; }
     public int LimAreaPage { get; set; }
 
+    public bool IsHeaderDecrypted { get; set; }
     public ulong FwVersion { get; set; }
     public CardClockRate AccCtrl1 { get; set; }
     public int Wait1TimeRead { get; set; }
@@ -64,6 +72,7 @@ public class XciHeader
     public int Wait2TimeWrite { get; set; }
     public int FwMode { get; set; }
     public int UppVersion { get; set; }
+    public byte CompatibilityType { get; set; }
     public byte[] UppHash { get; set; }
     public ulong UppId { get; set; }
 
@@ -71,10 +80,38 @@ public class XciHeader
 
     public Validity SignatureValidity { get; set; }
     public Validity PartitionFsHeaderValidity { get; set; }
+    public Validity InitialDataValidity { get; set; }
+
+    public bool HasInitialData { get; set; }
+    public byte[] InitialDataPackageId { get; set; }
+    public byte[] InitialDataAuthData { get; set; }
+    public byte[] InitialDataAuthMac { get; set; }
+    public byte[] InitialDataAuthNonce { get; set; }
+    public byte[] InitialData { get; set; }
+    public byte[] DecryptedTitleKey { get; set; }
 
     public XciHeader(KeySet keySet, Stream stream)
     {
-        using (var reader = new BinaryReader(stream, Encoding.Default, true))
+        DetermineXciSubStorages(out IStorage keyAreaStorage, out IStorage bodyStorage, stream.AsStorage())
+            .ThrowIfFailure();
+
+        if (keyAreaStorage is not null)
+        {
+            using (var r = new BinaryReader(keyAreaStorage.AsStream(), Encoding.Default, true))
+            {
+                HasInitialData = true;
+                InitialDataPackageId = r.ReadBytes(8);
+                r.BaseStream.Position += 8;
+                InitialDataAuthData = r.ReadBytes(0x10);
+                InitialDataAuthMac = r.ReadBytes(0x10);
+                InitialDataAuthNonce = r.ReadBytes(0xC);
+
+                r.BaseStream.Position = 0;
+                InitialData = r.ReadBytes(Unsafe.SizeOf<CardInitialData>());
+            }
+        }
+
+        using (var reader = new BinaryReader(bodyStorage.AsStream(), Encoding.Default, true))
         {
             Signature = reader.ReadBytes(SignatureSize);
             Magic = reader.ReadAscii(4);
@@ -112,6 +149,8 @@ public class XciHeader
 
             if (keySet != null && !keySet.XciHeaderKey.IsZeros())
             {
+                IsHeaderDecrypted = true;
+
                 byte[] encHeader = reader.ReadBytes(EncryptedHeaderSize);
                 byte[] decHeader = new byte[EncryptedHeaderSize];
                 Aes.DecryptCbc128(encHeader, decHeader, keySet.XciHeaderKey, AesCbcIv);
@@ -126,7 +165,8 @@ public class XciHeader
                     Wait2TimeWrite = decReader.ReadInt32();
                     FwMode = decReader.ReadInt32();
                     UppVersion = decReader.ReadInt32();
-                    decReader.BaseStream.Position += 4;
+                    CompatibilityType = decReader.ReadByte();
+                    decReader.BaseStream.Position += 3;
                     UppHash = decReader.ReadBytes(8);
                     UppId = decReader.ReadUInt64();
                 }
@@ -142,14 +182,103 @@ public class XciHeader
             Sha256.GenerateSha256Hash(headerBytes, actualHeaderHash);
 
             PartitionFsHeaderValidity = Utilities.SpansEqual(RootPartitionHeaderHash, actualHeaderHash) ? Validity.Valid : Validity.Invalid;
+
+            if (HasInitialData)
+            {
+                Span<byte> actualInitialDataHash = stackalloc byte[Sha256.DigestSize];
+                Sha256.GenerateSha256Hash(InitialData, actualInitialDataHash);
+
+                InitialDataValidity = Utilities.SpansEqual(InitialDataHash, actualInitialDataHash)
+                    ? Validity.Valid
+                    : Validity.Invalid;
+            }
+
+            Span<byte> key = stackalloc byte[0x10];
+            Result rc = DecryptCardInitialData(key, InitialData, KekIndex, keySet);
+            if (rc.IsSuccess())
+            {
+                DecryptedTitleKey = key.ToArray();
+            }
         }
+    }
+
+    private Result DecryptCardInitialData(Span<byte> dest, ReadOnlySpan<byte> initialData, int kekIndex, KeySet keySet)
+    {
+        if (initialData.Length != Unsafe.SizeOf<CardInitialData>())
+            return ResultFs.GameCardPreconditionViolation.Log();
+
+        if (kekIndex >= GcTitleKeyKekIndexMax)
+            return ResultFs.GameCardPreconditionViolation.Log();
+
+        // Verify the kek is preset.
+        if (keySet.GcTitleKeyKeks[kekIndex].IsZeros())
+            return ResultFs.GameCardPreconditionViolation.Log();
+
+        // Generate the key.
+        Span<byte> key = stackalloc byte[0x10];
+        Aes.DecryptEcb128(initialData.Slice(0, 0x10), key, keySet.GcTitleKeyKeks[kekIndex]);
+
+        ref readonly CardInitialData data = ref SpanHelpers.AsReadOnlyStruct<CardInitialData>(initialData);
+
+        if (dest.Length != data.Payload.AuthData.ItemsRo.Length)
+            return ResultFs.GameCardPreconditionViolation.Log();
+
+        // Verify padding is all-zero.
+        bool anyNonZero = false;
+        for (int i = 0; i < data.Padding.ItemsRo.Length; i++)
+        {
+            anyNonZero |= data.Padding.ItemsRo[i] != 0;
+        }
+
+        if (anyNonZero)
+            return ResultFs.GameCardInitialNotFilledWithZero.Log();
+
+        using (var decryptor = new AesCcm(key))
+        {
+            try
+            {
+                decryptor.Decrypt(data.Payload.AuthNonce, data.Payload.AuthData, data.Payload.AuthMac, dest);
+            }
+            catch (CryptographicException)
+            {
+                return ResultFs.GameCardKekIndexMismatch.Log();
+            }
+        }
+
+        return Result.Success;
+    }
+
+    private Result DetermineXciSubStorages(out IStorage keyAreaStorage, out IStorage bodyStorage, IStorage baseStorage)
+    {
+        UnsafeHelpers.SkipParamInit(out keyAreaStorage, out bodyStorage);
+
+        Result rc = baseStorage.GetSize(out long storageSize);
+        if (rc.IsFailure()) return rc.Miss();
+
+        if (storageSize >= 0x1104)
+        {
+            uint magic = 0;
+            rc = baseStorage.Read(0x1100, SpanHelpers.AsByteSpan(ref magic));
+            if (rc.IsFailure()) return rc.Miss();
+
+            if (magic == HeaderMagicValue)
+            {
+                keyAreaStorage = new SubStorage(baseStorage, 0, 0x1000);
+                bodyStorage = new SubStorage(baseStorage, 0x1000, storageSize - 0x1000);
+                return Result.Success;
+            }
+        }
+
+        keyAreaStorage = null;
+        bodyStorage = baseStorage;
+        return Result.Success;
     }
 }
 
 public enum CardClockRate
 {
-    ClockRate25 = 10551312,
-    ClockRate50
+    ClockRate25 = 0xA10011,
+    ClockRate50 = 0xA10010
 }
 
 public enum XciPartitionType

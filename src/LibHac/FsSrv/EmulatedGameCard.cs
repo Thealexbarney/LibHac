@@ -39,10 +39,9 @@ public class EmulatedGameCard
     {
         RemoveGameCard();
 
-        CardImageStorage = cardImageStorage;
-
         CardImage = new Xci(KeySet, cardImageStorage);
         CardHeader = CardImage.Header;
+        CardImageStorage = CardImage.BaseStorage;
     }
 
     public void RemoveGameCard()

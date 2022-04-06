@@ -240,123 +240,156 @@ public static class ResultFs
 
         /// <summary>Error code: 2002-2500; Range: 2500-2999; Inner value: 0x138802</summary>
         public static Result.Base GameCardAccessFailed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2500, 2999); }
+            /// <summary>Error code: 2002-2501; Inner value: 0x138a02</summary>
+            public static Result.Base GameCardUnknown => new Result.Base(ModuleFs, 2501);
+            /// <summary>Error code: 2002-2502; Inner value: 0x138c02</summary>
+            public static Result.Base GameCardUnexpectedDeadCode => new Result.Base(ModuleFs, 2502);
             /// <summary>Error code: 2002-2503; Inner value: 0x138e02</summary>
             public static Result.Base GameCardPreconditionViolation => new Result.Base(ModuleFs, 2503);
             /// <summary>Error code: 2002-2504; Inner value: 0x139002</summary>
             public static Result.Base GameCardNotImplemented => new Result.Base(ModuleFs, 2504);
             /// <summary>Error code: 2002-2510; Inner value: 0x139c02</summary>
-            public static Result.Base GameCardNoAvailableLockers => new Result.Base(ModuleFs, 2510);
+            public static Result.Base GameCardQueueFullFailure => new Result.Base(ModuleFs, 2510);
             /// <summary>Error code: 2002-2511; Inner value: 0x139e02</summary>
-            public static Result.Base GameCardLockerIndexOutOfRange => new Result.Base(ModuleFs, 2511);
+            public static Result.Base GameCardLockerOutOfRange => new Result.Base(ModuleFs, 2511);
+            /// <summary>Error code: 2002-2516; Inner value: 0x13a802</summary>
+            public static Result.Base GameCardFailedIoMappingForGpio => new Result.Base(ModuleFs, 2516);
             /// <summary>Error code: 2002-2520; Inner value: 0x13b002</summary>
             public static Result.Base GameCardCardNotInserted => new Result.Base(ModuleFs, 2520);
             /// <summary>Error code: 2002-2521; Inner value: 0x13b202</summary>
-            public static Result.Base InvalidGameCardIdInSpecificData => new Result.Base(ModuleFs, 2521);
+            public static Result.Base GameCardCardIdMismatch => new Result.Base(ModuleFs, 2521);
             /// <summary>Error code: 2002-2522; Inner value: 0x13b402</summary>
             public static Result.Base GameCardCardNotActivated => new Result.Base(ModuleFs, 2522);
             /// <summary>Error code: 2002-2523; Inner value: 0x13b602</summary>
-            public static Result.Base InvalidCommandForDeactivatedGameCardAsic => new Result.Base(ModuleFs, 2523);
-            /// <summary>Error code: 2002-2531; Inner value: 0x13c602</summary>
-            public static Result.Base GameCardCardAccessTimeout => new Result.Base(ModuleFs, 2531);
-            /// <summary>Error code: 2002-2532; Inner value: 0x13c802</summary>
-            public static Result.Base GameCardStatusFatalError => new Result.Base(ModuleFs, 2532);
-            /// <summary>Error code: 2002-2533; Inner value: 0x13ca02</summary>
-            public static Result.Base GameCardReadFailure => new Result.Base(ModuleFs, 2533);
-            /// <summary>Error code: 2002-2536; Inner value: 0x13d002</summary>
-            public static Result.Base GameCardRetryLimitHit => new Result.Base(ModuleFs, 2536);
-            /// <summary>Error code: 2002-2537; Inner value: 0x13d202</summary>
-            public static Result.Base GameCardStatusRefreshRequested => new Result.Base(ModuleFs, 2537);
-            /// <summary>Error code: 2002-2538; Inner value: 0x13d402</summary>
-            public static Result.Base GameCardStatusCrcErrorAndRefreshRequested => new Result.Base(ModuleFs, 2538);
-            /// <summary>Error code: 2002-2540; Inner value: 0x13d802</summary>
-            public static Result.Base GameCardInvalidSecureAccess => new Result.Base(ModuleFs, 2540);
-            /// <summary>Error code: 2002-2541; Inner value: 0x13da02</summary>
-            public static Result.Base GameCardInvalidNormalAccess => new Result.Base(ModuleFs, 2541);
-            /// <summary>Error code: 2002-2542; Inner value: 0x13dc02</summary>
-            public static Result.Base GameCardInvalidAccessAcrossMode => new Result.Base(ModuleFs, 2542);
+            public static Result.Base GameCardNotAwakened => new Result.Base(ModuleFs, 2523);
 
-            /// <summary>Error code: 2002-2543; Range: 2543-2546; Inner value: 0x13de02</summary>
-            public static Result.Base GameCardWrongCard { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2543, 2546); }
-                /// <summary>Error code: 2002-2544; Inner value: 0x13e002</summary>
-                public static Result.Base GameCardInitialDataMismatch => new Result.Base(ModuleFs, 2544);
-                /// <summary>Error code: 2002-2545; Inner value: 0x13e202</summary>
-                public static Result.Base GameCardInitialNotFilledWithZero => new Result.Base(ModuleFs, 2545);
-                /// <summary>Error code: 2002-2546; Inner value: 0x13e402</summary>
-                public static Result.Base GameCardKekIndexMismatch => new Result.Base(ModuleFs, 2546);
+            /// <summary>Error code: 2002-2530; Range: 2530-2559; Inner value: 0x13c402</summary>
+            public static Result.Base GameCardCardAccessFailure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2530, 2559); }
+                /// <summary>Error code: 2002-2531; Inner value: 0x13c602</summary>
+                public static Result.Base GameCardCardAccessTimeout => new Result.Base(ModuleFs, 2531);
+                /// <summary>Error code: 2002-2532; Inner value: 0x13c802</summary>
+                public static Result.Base GameCardCardFatal => new Result.Base(ModuleFs, 2532);
+                /// <summary>Error code: 2002-2533; Inner value: 0x13ca02</summary>
+                public static Result.Base GameCardCardNeedRetry => new Result.Base(ModuleFs, 2533);
+                /// <summary>Error code: 2002-2534; Inner value: 0x13cc02</summary>
+                public static Result.Base GameCardCardRetryFailure => new Result.Base(ModuleFs, 2534);
+                /// <summary>Error code: 2002-2536; Inner value: 0x13d002</summary>
+                public static Result.Base GameCardRetryLimitOut => new Result.Base(ModuleFs, 2536);
 
-            /// <summary>Error code: 2002-2548; Inner value: 0x13e802</summary>
-            public static Result.Base GameCardInvalidGetCardDeviceCertificate => new Result.Base(ModuleFs, 2548);
-            /// <summary>Error code: 2002-2549; Inner value: 0x13ea02</summary>
-            public static Result.Base GameCardUnregisteredCardSecureMethod => new Result.Base(ModuleFs, 2549);
-            /// <summary>Error code: 2002-2550; Inner value: 0x13ec02</summary>
-            public static Result.Base GameCardCardNeedRetryAfterAsicReinitialize => new Result.Base(ModuleFs, 2550);
-            /// <summary>Error code: 2002-2551; Inner value: 0x13ee02</summary>
-            public static Result.Base GameCardCardHeaderReadFailure => new Result.Base(ModuleFs, 2551);
-            /// <summary>Error code: 2002-2552; Inner value: 0x13f002</summary>
-            public static Result.Base GameCardCardReinitializeFailure => new Result.Base(ModuleFs, 2552);
-            /// <summary>Error code: 2002-2553; Inner value: 0x13f202</summary>
-            public static Result.Base GameCardInvalidChallengeCardExistenceMode => new Result.Base(ModuleFs, 2553);
-            /// <summary>Error code: 2002-2554; Inner value: 0x13f402</summary>
-            public static Result.Base GameCardInvalidCardHeader => new Result.Base(ModuleFs, 2554);
-            /// <summary>Error code: 2002-2555; Inner value: 0x13f602</summary>
-            public static Result.Base GameCardInvalidCardCertificate => new Result.Base(ModuleFs, 2555);
-            /// <summary>Error code: 2002-2557; Inner value: 0x13fa02</summary>
-            public static Result.Base Result2557 => new Result.Base(ModuleFs, 2557);
-            /// <summary>Error code: 2002-2558; Inner value: 0x13fc02</summary>
-            public static Result.Base Result2558 => new Result.Base(ModuleFs, 2558);
+                /// <summary>Error code: 2002-2537; Range: 2537-2538; Inner value: 0x13d202</summary>
+                public static Result.Base GameCardNeedRefresh { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2537, 2538); }
+                    /// <summary>Error code: 2002-2538; Inner value: 0x13d402</summary>
+                    public static Result.Base GameCardNeedRefreshAndCardNeedRetry => new Result.Base(ModuleFs, 2538);
+
+                /// <summary>Error code: 2002-2540; Inner value: 0x13d802</summary>
+                public static Result.Base GameCardInvalidSecureAccess => new Result.Base(ModuleFs, 2540);
+                /// <summary>Error code: 2002-2541; Inner value: 0x13da02</summary>
+                public static Result.Base GameCardInvalidNormalAccess => new Result.Base(ModuleFs, 2541);
+                /// <summary>Error code: 2002-2542; Inner value: 0x13dc02</summary>
+                public static Result.Base GameCardInvalidAccessAcrossMode => new Result.Base(ModuleFs, 2542);
+
+                /// <summary>Error code: 2002-2543; Range: 2543-2546; Inner value: 0x13de02</summary>
+                public static Result.Base GameCardWrongCard { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2543, 2546); }
+                    /// <summary>Error code: 2002-2544; Inner value: 0x13e002</summary>
+                    public static Result.Base GameCardInitialDataMismatch => new Result.Base(ModuleFs, 2544);
+                    /// <summary>Error code: 2002-2545; Inner value: 0x13e202</summary>
+                    public static Result.Base GameCardInitialNotFilledWithZero => new Result.Base(ModuleFs, 2545);
+                    /// <summary>Error code: 2002-2546; Inner value: 0x13e402</summary>
+                    public static Result.Base GameCardKekIndexMismatch => new Result.Base(ModuleFs, 2546);
+
+                /// <summary>Error code: 2002-2548; Inner value: 0x13e802</summary>
+                public static Result.Base GameCardInvalidGetCardDeviceCertificate => new Result.Base(ModuleFs, 2548);
+                /// <summary>Error code: 2002-2549; Inner value: 0x13ea02</summary>
+                public static Result.Base GameCardUnregisteredCardSecureMethod => new Result.Base(ModuleFs, 2549);
+                /// <summary>Error code: 2002-2550; Inner value: 0x13ec02</summary>
+                public static Result.Base GameCardCardNeedRetryAfterAsicReinitialize => new Result.Base(ModuleFs, 2550);
+                /// <summary>Error code: 2002-2551; Inner value: 0x13ee02</summary>
+                public static Result.Base GameCardCardHeaderReadFailure => new Result.Base(ModuleFs, 2551);
+                /// <summary>Error code: 2002-2552; Inner value: 0x13f002</summary>
+                public static Result.Base GameCardCardReinitializeFailure => new Result.Base(ModuleFs, 2552);
+                /// <summary>Error code: 2002-2553; Inner value: 0x13f202</summary>
+                public static Result.Base GameCardInvalidChallengeCardExistenceMode => new Result.Base(ModuleFs, 2553);
+                /// <summary>Error code: 2002-2554; Inner value: 0x13f402</summary>
+                public static Result.Base GameCardInvalidCardHeader => new Result.Base(ModuleFs, 2554);
+                /// <summary>Error code: 2002-2555; Inner value: 0x13f602</summary>
+                public static Result.Base GameCardInvalidT1CardCertificate => new Result.Base(ModuleFs, 2555);
+                /// <summary>Error code: 2002-2557; Inner value: 0x13fa02</summary>
+                public static Result.Base GameCardInvalidCa10Certificate => new Result.Base(ModuleFs, 2557);
+                /// <summary>Error code: 2002-2558; Inner value: 0x13fc02</summary>
+                public static Result.Base GameCardInvalidCa10CardHeader => new Result.Base(ModuleFs, 2558);
 
             /// <summary>Error code: 2002-2565; Range: 2565-2595; Inner value: 0x140a02</summary>
             public static Result.Base GameCardCommunicationFailure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2565, 2595); }
+                /// <summary>Error code: 2002-2566; Inner value: 0x140c02</summary>
+                public static Result.Base GameCardFinishOperationFailed => new Result.Base(ModuleFs, 2566);
 
-            /// <summary>Error code: 2002-2599; Inner value: 0x144e02</summary>
-            public static Result.Base GameCardInvalidStateTransition => new Result.Base(ModuleFs, 2599);
-            /// <summary>Error code: 2002-2600; Inner value: 0x145002</summary>
-            public static Result.Base GameCardAsicInvalidTransitionToNormalMode => new Result.Base(ModuleFs, 2600);
-            /// <summary>Error code: 2002-2601; Inner value: 0x145202</summary>
-            public static Result.Base GameCardAsicInvalidTransitionToSecureMode => new Result.Base(ModuleFs, 2601);
-            /// <summary>Error code: 2002-2602; Inner value: 0x145402</summary>
-            public static Result.Base GameCardAsicInvalidTransitionToWriteMode => new Result.Base(ModuleFs, 2602);
-            /// <summary>Error code: 2002-2629; Inner value: 0x148a02</summary>
-            public static Result.Base GameCardAsicInitializationFailureForWriterFirmware => new Result.Base(ModuleFs, 2629);
+            /// <summary>Error code: 2002-2597; Range: 2597-2627; Inner value: 0x144a02</summary>
+            public static Result.Base GameCardStateTransitionFailure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2597, 2627); }
+                /// <summary>Error code: 2002-2598; Inner value: 0x144c02</summary>
+                public static Result.Base GameCardAlreadyTransitionedState => new Result.Base(ModuleFs, 2598);
+                /// <summary>Error code: 2002-2599; Inner value: 0x144e02</summary>
+                public static Result.Base GameCardShouldTransitFromAsicInitialToSecure => new Result.Base(ModuleFs, 2599);
+                /// <summary>Error code: 2002-2600; Inner value: 0x145002</summary>
+                public static Result.Base GameCardShouldTransitFromInitialToNormal => new Result.Base(ModuleFs, 2600);
+                /// <summary>Error code: 2002-2601; Inner value: 0x145202</summary>
+                public static Result.Base GameCardShouldTransitFromNormalModeToSecure => new Result.Base(ModuleFs, 2601);
+                /// <summary>Error code: 2002-2602; Inner value: 0x145402</summary>
+                public static Result.Base GameCardShouldTransitFromNormalModeToDebug => new Result.Base(ModuleFs, 2602);
 
-            /// <summary>Error code: 2002-2630; Range: 2630-2669; Inner value: 0x148c02</summary>
-            public static Result.Base GameCardAsicInitializationFailure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2630, 2669); }
-                /// <summary>Error code: 2002-2631; Inner value: 0x148e02</summary>
-                public static Result.Base GameCardAsicGetDeviceStatusFailure => new Result.Base(ModuleFs, 2631);
-                /// <summary>Error code: 2002-2632; Inner value: 0x149002</summary>
-                public static Result.Base GameCardAsicActivationFailure => new Result.Base(ModuleFs, 2632);
+            /// <summary>Error code: 2002-2629; Range: 2629-2669; Inner value: 0x148a02</summary>
+            public static Result.Base GameCardInitializeAsicFailure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2629, 2669); }
+                /// <summary>Error code: 2002-2630; Inner value: 0x148c02</summary>
+                public static Result.Base GameCardAlreadyInitializedAsic => new Result.Base(ModuleFs, 2630);
+
+                /// <summary>Error code: 2002-2631; Range: 2631-2632; Inner value: 0x148e02</summary>
+                public static Result.Base GameCardActivateAsicFailure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2631, 2632); }
+                    /// <summary>Error code: 2002-2632; Inner value: 0x149002</summary>
+                    public static Result.Base GameCardAsicBootFailure => new Result.Base(ModuleFs, 2632);
+
                 /// <summary>Error code: 2002-2634; Inner value: 0x149402</summary>
-                public static Result.Base GameCardAsicSetUserAsicFirmwareFailure => new Result.Base(ModuleFs, 2634);
-                /// <summary>Error code: 2002-2637; Inner value: 0x149a02</summary>
-                public static Result.Base GameCardAsicGetAsicCertFailure => new Result.Base(ModuleFs, 2637);
-                /// <summary>Error code: 2002-2638; Inner value: 0x149c02</summary>
-                public static Result.Base GameCardParseCertificateFailure => new Result.Base(ModuleFs, 2638);
-                /// <summary>Error code: 2002-2639; Inner value: 0x149e02</summary>
-                public static Result.Base InvalidGameCardAsicCertificate => new Result.Base(ModuleFs, 2639);
-                /// <summary>Error code: 2002-2640; Inner value: 0x14a002</summary>
-                public static Result.Base GameCardAsicSetEmmcEmbeddedSocCertificateFailure => new Result.Base(ModuleFs, 2640);
-                /// <summary>Error code: 2002-2645; Inner value: 0x14aa02</summary>
-                public static Result.Base GameCardAsicGetAsicEncryptedMessageFailure => new Result.Base(ModuleFs, 2645);
-                /// <summary>Error code: 2002-2646; Inner value: 0x14ac02</summary>
-                public static Result.Base GameCardAsicSetLibraryEncryptedMessageFailure => new Result.Base(ModuleFs, 2646);
-                /// <summary>Error code: 2002-2651; Inner value: 0x14b602</summary>
-                public static Result.Base GameCardAsicGetAsicAuthenticationDataFailure => new Result.Base(ModuleFs, 2651);
-                /// <summary>Error code: 2002-2652; Inner value: 0x14b802</summary>
-                public static Result.Base GameCardAsicSetAsicAuthenticationDataHashFailure => new Result.Base(ModuleFs, 2652);
-                /// <summary>Error code: 2002-2653; Inner value: 0x14ba02</summary>
-                public static Result.Base GameCardAsicSetLibraryAuthenticationDataFailure => new Result.Base(ModuleFs, 2653);
-                /// <summary>Error code: 2002-2654; Inner value: 0x14bc02</summary>
-                public static Result.Base GameCardAsicGetLibraryAuthenticationDataHashFailure => new Result.Base(ModuleFs, 2654);
-                /// <summary>Error code: 2002-2655; Inner value: 0x14be02</summary>
-                public static Result.Base GameCardInvalidLibraryAuthenticationDataHash => new Result.Base(ModuleFs, 2655);
+                public static Result.Base GameCardSendFirmwareFailure => new Result.Base(ModuleFs, 2634);
+
+                /// <summary>Error code: 2002-2636; Range: 2636-2641; Inner value: 0x149802</summary>
+                public static Result.Base GameCardVerifyCertificateFailure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2636, 2641); }
+                    /// <summary>Error code: 2002-2637; Inner value: 0x149a02</summary>
+                    public static Result.Base GameCardReceiveCertificateFailure => new Result.Base(ModuleFs, 2637);
+                    /// <summary>Error code: 2002-2638; Inner value: 0x149c02</summary>
+                    public static Result.Base GameCardParseCertificateFailure => new Result.Base(ModuleFs, 2638);
+                    /// <summary>Error code: 2002-2639; Inner value: 0x149e02</summary>
+                    public static Result.Base GameCardInvalidCertificate => new Result.Base(ModuleFs, 2639);
+                    /// <summary>Error code: 2002-2640; Inner value: 0x14a002</summary>
+                    public static Result.Base GameCardSendSocCertificateFailure => new Result.Base(ModuleFs, 2640);
+
+                /// <summary>Error code: 2002-2644; Range: 2644-2647; Inner value: 0x14a802</summary>
+                public static Result.Base GameCardGenerateCommonKeyFailure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2644, 2647); }
+                    /// <summary>Error code: 2002-2645; Inner value: 0x14aa02</summary>
+                    public static Result.Base GameCardReceiveRandomValueFailure => new Result.Base(ModuleFs, 2645);
+                    /// <summary>Error code: 2002-2646; Inner value: 0x14ac02</summary>
+                    public static Result.Base GameCardSendRandomValueFailure => new Result.Base(ModuleFs, 2646);
+                    /// <summary>Error code: 2002-2647; Inner value: 0x14ae02</summary>
+                    public static Result.Base GameCardDecryptRandomValueFailure => new Result.Base(ModuleFs, 2647);
+
+                /// <summary>Error code: 2002-2650; Range: 2650-2655; Inner value: 0x14b402</summary>
+                public static Result.Base GameCardAuthenticateMutuallyFailure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2650, 2655); }
+                    /// <summary>Error code: 2002-2651; Inner value: 0x14b602</summary>
+                    public static Result.Base GameCardReceiveDeviceChallengeFailure => new Result.Base(ModuleFs, 2651);
+                    /// <summary>Error code: 2002-2652; Inner value: 0x14b802</summary>
+                    public static Result.Base GameCardRespondDeviceChallengeFailure => new Result.Base(ModuleFs, 2652);
+                    /// <summary>Error code: 2002-2653; Inner value: 0x14ba02</summary>
+                    public static Result.Base GameCardSendHostChallengeFailure => new Result.Base(ModuleFs, 2653);
+                    /// <summary>Error code: 2002-2654; Inner value: 0x14bc02</summary>
+                    public static Result.Base GameCardReceiveChallengeResponseFailure => new Result.Base(ModuleFs, 2654);
+                    /// <summary>Error code: 2002-2655; Inner value: 0x14be02</summary>
+                    public static Result.Base GameCardChallengeAndResponseFailure => new Result.Base(ModuleFs, 2655);
+
                 /// <summary>Error code: 2002-2658; Inner value: 0x14c402</summary>
-                public static Result.Base GameCardAsicEnterSecureAsicModeFailure => new Result.Base(ModuleFs, 2658);
+                public static Result.Base GameCardChangeModeToSecureFailure => new Result.Base(ModuleFs, 2658);
                 /// <summary>Error code: 2002-2659; Inner value: 0x14c602</summary>
-                public static Result.Base GameCardAsicExchangeRandomValuesInSecureModeFailure => new Result.Base(ModuleFs, 2659);
+                public static Result.Base GameCardExchangeRandomValuesFailure => new Result.Base(ModuleFs, 2659);
                 /// <summary>Error code: 2002-2660; Inner value: 0x14c802</summary>
                 public static Result.Base GameCardAsicChallengeCardExistenceFailure => new Result.Base(ModuleFs, 2660);
                 /// <summary>Error code: 2002-2663; Inner value: 0x14ce02</summary>
-                public static Result.Base GameCardAsicActivationTimeout => new Result.Base(ModuleFs, 2663);
+                public static Result.Base GameCardInitializeAsicTimeOut => new Result.Base(ModuleFs, 2663);
 
                 /// <summary>Error code: 2002-2665; Range: 2665-2669; Inner value: 0x14d202</summary>
                 public static Result.Base GameCardSplFailure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2665, 2669); }
@@ -370,55 +403,88 @@ public static class ResultFs
                     public static Result.Base GameCardSplDecryptGcMessageFailure => new Result.Base(ModuleFs, 2669);
 
             /// <summary>Error code: 2002-2671; Inner value: 0x14de02</summary>
-            public static Result.Base GameCardAsicReadAsicRegisterFailure => new Result.Base(ModuleFs, 2671);
+            public static Result.Base GameCardReadRegisterFailure => new Result.Base(ModuleFs, 2671);
             /// <summary>Error code: 2002-2672; Inner value: 0x14e002</summary>
-            public static Result.Base GameCardAsicWriteAsicRegisterFailure => new Result.Base(ModuleFs, 2672);
+            public static Result.Base GameCardWriteRegisterFailure => new Result.Base(ModuleFs, 2672);
             /// <summary>Error code: 2002-2673; Inner value: 0x14e202</summary>
-            public static Result.Base GameCardAsicEnableCardBusFailure => new Result.Base(ModuleFs, 2673);
+            public static Result.Base GameCardEnableCardBusFailure => new Result.Base(ModuleFs, 2673);
             /// <summary>Error code: 2002-2674; Inner value: 0x14e402</summary>
-            public static Result.Base GameCardAsicGetCardHeaderFailure => new Result.Base(ModuleFs, 2674);
+            public static Result.Base GameCardGetCardHeaderFailure => new Result.Base(ModuleFs, 2674);
             /// <summary>Error code: 2002-2675; Inner value: 0x14e602</summary>
             public static Result.Base GameCardAsicStatusError => new Result.Base(ModuleFs, 2675);
             /// <summary>Error code: 2002-2676; Inner value: 0x14e802</summary>
-            public static Result.Base GameCardAsicGetCardKeyAreaFailure => new Result.Base(ModuleFs, 2676);
+            public static Result.Base GameCardChangeGcModeToSecureFailure => new Result.Base(ModuleFs, 2676);
             /// <summary>Error code: 2002-2677; Inner value: 0x14ea02</summary>
-            public static Result.Base GameCardAsicChangeDebugModeFailure => new Result.Base(ModuleFs, 2677);
+            public static Result.Base GameCardChangeGcModeToDebugFailure => new Result.Base(ModuleFs, 2677);
             /// <summary>Error code: 2002-2678; Inner value: 0x14ec02</summary>
-            public static Result.Base GameCardAsicGetRmaInformationFailure => new Result.Base(ModuleFs, 2678);
-            /// <summary>Error code: 2002-2680; Inner value: 0x14f002</summary>
-            public static Result.Base GameCardAsicStatusBit22Set => new Result.Base(ModuleFs, 2680);
-            /// <summary>Error code: 2002-2681; Inner value: 0x14f202</summary>
-            public static Result.Base GameCardSecureValuesNotInitialized => new Result.Base(ModuleFs, 2681);
-            /// <summary>Error code: 2002-2692; Inner value: 0x150802</summary>
-            public static Result.Base InvalidSecureGameCardCommand => new Result.Base(ModuleFs, 2692);
-            /// <summary>Error code: 2002-2693; Inner value: 0x150a02</summary>
-            public static Result.Base InvalidWriteGameCardCommand => new Result.Base(ModuleFs, 2693);
-            /// <summary>Error code: 2002-2703; Inner value: 0x151e02</summary>
-            public static Result.Base GameCardSetVoltageFailure => new Result.Base(ModuleFs, 2703);
-            /// <summary>Error code: 2002-2731; Inner value: 0x155602</summary>
-            public static Result.Base GameCardCommandReadId1Failure => new Result.Base(ModuleFs, 2731);
-            /// <summary>Error code: 2002-2732; Inner value: 0x155802</summary>
-            public static Result.Base GameCardCommandReadId2Failure => new Result.Base(ModuleFs, 2732);
-            /// <summary>Error code: 2002-2733; Inner value: 0x155a02</summary>
-            public static Result.Base GameCardCommandReadId3Failure => new Result.Base(ModuleFs, 2733);
-            /// <summary>Error code: 2002-2735; Inner value: 0x155e02</summary>
-            public static Result.Base GameCardCommandReadPageFailure => new Result.Base(ModuleFs, 2735);
-            /// <summary>Error code: 2002-2736; Inner value: 0x156002</summary>
-            public static Result.Base GameCardCommandReadPageUnalignedFailure => new Result.Base(ModuleFs, 2736);
-            /// <summary>Error code: 2002-2737; Inner value: 0x156202</summary>
-            public static Result.Base GameCardCommandWritePageFailure => new Result.Base(ModuleFs, 2737);
-            /// <summary>Error code: 2002-2738; Inner value: 0x156402</summary>
-            public static Result.Base GameCardCommandRefreshFailure => new Result.Base(ModuleFs, 2738);
-            /// <summary>Error code: 2002-2739; Inner value: 0x156602</summary>
-            public static Result.Base GameCardCommandUpdateKeyFailure => new Result.Base(ModuleFs, 2739);
-            /// <summary>Error code: 2002-2742; Inner value: 0x156c02</summary>
-            public static Result.Base GameCardCommandReadCrcFailure => new Result.Base(ModuleFs, 2742);
-            /// <summary>Error code: 2002-2743; Inner value: 0x156e02</summary>
-            public static Result.Base GameCardCommandEraseFailure => new Result.Base(ModuleFs, 2743);
-            /// <summary>Error code: 2002-2744; Inner value: 0x157002</summary>
-            public static Result.Base GameCardCommandReadDevParamFailure => new Result.Base(ModuleFs, 2744);
-            /// <summary>Error code: 2002-2745; Inner value: 0x157202</summary>
-            public static Result.Base GameCardCommandWriteDevParamFailure => new Result.Base(ModuleFs, 2745);
+            public static Result.Base GameCardReadRmaInfoFailure => new Result.Base(ModuleFs, 2678);
+
+            /// <summary>Error code: 2002-2680; Range: 2680-2683; Inner value: 0x14f002</summary>
+            public static Result.Base GameCardUpdateKeyFailure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2680, 2683); }
+                /// <summary>Error code: 2002-2681; Inner value: 0x14f202</summary>
+                public static Result.Base GameCardKeySourceNotFound => new Result.Base(ModuleFs, 2681);
+
+            /// <summary>Error code: 2002-2690; Range: 2690-2695; Inner value: 0x150402</summary>
+            public static Result.Base GameCardStateFailure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2690, 2695); }
+                /// <summary>Error code: 2002-2691; Inner value: 0x150602</summary>
+                public static Result.Base GameCardStateCardNormalModeRequired => new Result.Base(ModuleFs, 2691);
+                /// <summary>Error code: 2002-2692; Inner value: 0x150802</summary>
+                public static Result.Base GameCardStateCardSecureModeRequired => new Result.Base(ModuleFs, 2692);
+                /// <summary>Error code: 2002-2693; Inner value: 0x150a02</summary>
+                public static Result.Base GameCardStateCardDebugModeRequired => new Result.Base(ModuleFs, 2693);
+                /// <summary>Error code: 2002-2694; Inner value: 0x150c02</summary>
+                public static Result.Base GameCardStateAsicInitialRequired => new Result.Base(ModuleFs, 2694);
+                /// <summary>Error code: 2002-2695; Inner value: 0x150e02</summary>
+                public static Result.Base GameCardStateAsicSecureRequired => new Result.Base(ModuleFs, 2695);
+
+            /// <summary>Error code: 2002-2700; Range: 2700-2708; Inner value: 0x151802</summary>
+            public static Result.Base GameCardGeneralIoFailure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2700, 2708); }
+                /// <summary>Error code: 2002-2701; Inner value: 0x151a02</summary>
+                public static Result.Base GameCardGeneralIoReleaseAsicResetFailure => new Result.Base(ModuleFs, 2701);
+                /// <summary>Error code: 2002-2702; Inner value: 0x151c02</summary>
+                public static Result.Base GameCardGeneralIoHoldAsicResetFailure => new Result.Base(ModuleFs, 2702);
+                /// <summary>Error code: 2002-2703; Inner value: 0x151e02</summary>
+                public static Result.Base GameCardSetVoltageFailure => new Result.Base(ModuleFs, 2703);
+
+            /// <summary>Error code: 2002-2710; Range: 2710-2718; Inner value: 0x152c02</summary>
+            public static Result.Base GameCardDataIoFailure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2710, 2718); }
+                /// <summary>Error code: 2002-2711; Inner value: 0x152e02</summary>
+                public static Result.Base GameCardDataIoActivateFailure => new Result.Base(ModuleFs, 2711);
+
+            /// <summary>Error code: 2002-2730; Range: 2730-2749; Inner value: 0x155402</summary>
+            public static Result.Base GameCardCardCommandFailure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2730, 2749); }
+                /// <summary>Error code: 2002-2731; Inner value: 0x155602</summary>
+                public static Result.Base GameCardCommandReadId1Failure => new Result.Base(ModuleFs, 2731);
+                /// <summary>Error code: 2002-2732; Inner value: 0x155802</summary>
+                public static Result.Base GameCardCommandReadId2Failure => new Result.Base(ModuleFs, 2732);
+                /// <summary>Error code: 2002-2733; Inner value: 0x155a02</summary>
+                public static Result.Base GameCardCommandReadId3Failure => new Result.Base(ModuleFs, 2733);
+                /// <summary>Error code: 2002-2734; Inner value: 0x155c02</summary>
+                public static Result.Base GameCardSendCardReadUidFailure => new Result.Base(ModuleFs, 2734);
+                /// <summary>Error code: 2002-2735; Inner value: 0x155e02</summary>
+                public static Result.Base GameCardCommandReadPageFailure => new Result.Base(ModuleFs, 2735);
+                /// <summary>Error code: 2002-2736; Inner value: 0x156002</summary>
+                public static Result.Base GameCardCommandReadPageUnalignedFailure => new Result.Base(ModuleFs, 2736);
+                /// <summary>Error code: 2002-2737; Inner value: 0x156202</summary>
+                public static Result.Base GameCardCommandWritePageFailure => new Result.Base(ModuleFs, 2737);
+                /// <summary>Error code: 2002-2738; Inner value: 0x156402</summary>
+                public static Result.Base GameCardCommandRefreshFailure => new Result.Base(ModuleFs, 2738);
+                /// <summary>Error code: 2002-2739; Inner value: 0x156602</summary>
+                public static Result.Base GameCardCommandUpdateKeyFailure => new Result.Base(ModuleFs, 2739);
+                /// <summary>Error code: 2002-2740; Inner value: 0x156802</summary>
+                public static Result.Base GameCardSendCardSelfRefreshFailure => new Result.Base(ModuleFs, 2740);
+                /// <summary>Error code: 2002-2741; Inner value: 0x156a02</summary>
+                public static Result.Base GameCardSendCardReadRefreshStatusFailure => new Result.Base(ModuleFs, 2741);
+                /// <summary>Error code: 2002-2742; Inner value: 0x156c02</summary>
+                public static Result.Base GameCardCommandReadCrcFailure => new Result.Base(ModuleFs, 2742);
+                /// <summary>Error code: 2002-2743; Inner value: 0x156e02</summary>
+                public static Result.Base GameCardCommandEraseFailure => new Result.Base(ModuleFs, 2743);
+                /// <summary>Error code: 2002-2744; Inner value: 0x157002</summary>
+                public static Result.Base GameCardCommandReadDevParamFailure => new Result.Base(ModuleFs, 2744);
+                /// <summary>Error code: 2002-2745; Inner value: 0x157202</summary>
+                public static Result.Base GameCardCommandWriteDevParamFailure => new Result.Base(ModuleFs, 2745);
+                /// <summary>Error code: 2002-2746; Inner value: 0x157402</summary>
+                public static Result.Base GameCardSendCardReadErrorCountFailure => new Result.Base(ModuleFs, 2746);
 
             /// <summary>Error code: 2002-2900; Range: 2900-2919; Inner value: 0x16a802</summary>
             public static Result.Base GameCardDevCardUnexpectedFailure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2900, 2919); }
@@ -441,6 +507,8 @@ public static class ResultFs
                 public static Result.Base GameCardFsGetHandleFailure => new Result.Base(ModuleFs, 2951);
                 /// <summary>Error code: 2002-2952; Inner value: 0x171002</summary>
                 public static Result.Base GameCardFsCheckHandleInReadFailure => new Result.Base(ModuleFs, 2952);
+                /// <summary>Error code: 2002-2953; Inner value: 0x171202</summary>
+                public static Result.Base GameCardFsCheckHandleInWriteFailure => new Result.Base(ModuleFs, 2953);
                 /// <summary>Error code: 2002-2954; Inner value: 0x171402</summary>
                 public static Result.Base GameCardFsCheckHandleInGetStatusFailure => new Result.Base(ModuleFs, 2954);
                 /// <summary>Error code: 2002-2955; Inner value: 0x171602</summary>
@@ -460,7 +528,7 @@ public static class ResultFs
                 /// <summary>Error code: 2002-2962; Inner value: 0x172402</summary>
                 public static Result.Base GameCardFsInvalidCompatibilityType => new Result.Base(ModuleFs, 2962);
                 /// <summary>Error code: 2002-2963; Inner value: 0x172602</summary>
-                public static Result.Base GameCardsNotSupportedOnDeviceModel => new Result.Base(ModuleFs, 2963);
+                public static Result.Base GameCardNotSupportedOnDeviceModel => new Result.Base(ModuleFs, 2963);
 
     /// <summary>Error code: 2002-3000; Range: 3000-7999; Inner value: 0x177002</summary>
     public static Result.Base Internal { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 3000, 7999); }

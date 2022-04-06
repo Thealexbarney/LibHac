@@ -11,6 +11,7 @@ using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.Sf;
+using LibHac.Gc.Impl;
 using LibHac.Os;
 using LibHac.Sf;
 using static LibHac.Fs.Impl.AccessLogStrings;
@@ -158,7 +159,7 @@ namespace LibHac.Fs.Impl
         public static IdentifyAccessLogHandle MakeHandle(object handle) => new IdentifyAccessLogHandle(handle);
     }
 
-    internal struct IdString
+    public struct IdString
     {
         private Buffer32 _buffer;
 
@@ -294,6 +295,74 @@ namespace LibHac.Fs.Impl
             {
                 case MountHostOptionFlag.PseudoCaseSensitive: return new[] { (byte)'M', (byte)'o', (byte)'u', (byte)'n', (byte)'t', (byte)'H', (byte)'o', (byte)'s', (byte)'t', (byte)'O', (byte)'p', (byte)'t', (byte)'i', (byte)'o', (byte)'n', (byte)'F', (byte)'l', (byte)'a', (byte)'g', (byte)'_', (byte)'P', (byte)'s', (byte)'e', (byte)'u', (byte)'d', (byte)'o', (byte)'C', (byte)'a', (byte)'s', (byte)'e', (byte)'S', (byte)'e', (byte)'n', (byte)'s', (byte)'i', (byte)'t', (byte)'i', (byte)'v', (byte)'e' };
                 default: return ToValueString((int)value.Flags);
+            }
+        }
+
+        public ReadOnlySpan<byte> ToString(MemoryCapacity value)
+        {
+            switch (value)
+            {
+                case MemoryCapacity.Capacity1GB: return new[] { (byte)'1', (byte)'G', (byte)'B' };
+                case MemoryCapacity.Capacity2GB: return new[] { (byte)'2', (byte)'G', (byte)'B' };
+                case MemoryCapacity.Capacity4GB: return new[] { (byte)'4', (byte)'G', (byte)'B' };
+                case MemoryCapacity.Capacity8GB: return new[] { (byte)'8', (byte)'G', (byte)'B' };
+                case MemoryCapacity.Capacity16GB: return new[] { (byte)'1', (byte)'6', (byte)'G', (byte)'B' };
+                case MemoryCapacity.Capacity32GB: return new[] { (byte)'3', (byte)'2', (byte)'G', (byte)'B' };
+                default: return ToValueString((int)value);
+            }
+        }
+
+        public ReadOnlySpan<byte> ToString(SelSec value)
+        {
+            switch (value)
+            {
+                case SelSec.T1: return new[] { (byte)'T', (byte)'1' };
+                case SelSec.T2: return new[] { (byte)'T', (byte)'2' };
+                default: return ToValueString((int)value);
+            }
+        }
+
+        public ReadOnlySpan<byte> ToString(KekIndex value)
+        {
+            switch (value)
+            {
+                case KekIndex.Version0: return new[] { (byte)'V', (byte)'e', (byte)'r', (byte)'s', (byte)'i', (byte)'o', (byte)'n', (byte)'0' };
+                case KekIndex.ForDev: return new[] { (byte)'V', (byte)'e', (byte)'r', (byte)'s', (byte)'i', (byte)'o', (byte)'n', (byte)'F', (byte)'o', (byte)'r', (byte)'D', (byte)'e', (byte)'v' };
+                default: return ToValueString((int)value);
+            }
+        }
+
+        public ReadOnlySpan<byte> ToString(AccessControl1ClockRate value)
+        {
+            switch (value)
+            {
+                case AccessControl1ClockRate.ClockRate25MHz: return new[] { (byte)'2', (byte)'5', (byte)' ', (byte)'M', (byte)'H', (byte)'z' };
+                case AccessControl1ClockRate.ClockRate50MHz: return new[] { (byte)'5', (byte)'0', (byte)' ', (byte)'M', (byte)'H', (byte)'z' };
+                default: return ToValueString((int)value);
+            }
+        }
+
+        public ReadOnlySpan<byte> ToString(FwVersion value)
+        {
+            switch (value)
+            {
+                case FwVersion.ForDev: return new[] { (byte)'F', (byte)'o', (byte)'r', (byte)'D', (byte)'e', (byte)'v' };
+                case FwVersion.Since1_0_0: return new[] { (byte)'1', (byte)'.', (byte)'0', (byte)'.', (byte)'0' };
+                case FwVersion.Since4_0_0: return new[] { (byte)'4', (byte)'.', (byte)'0', (byte)'.', (byte)'0' };
+                case FwVersion.Since9_0_0: return new[] { (byte)'9', (byte)'.', (byte)'0', (byte)'.', (byte)'0' };
+                case FwVersion.Since11_0_0: return new[] { (byte)'1', (byte)'1', (byte)'.', (byte)'0', (byte)'.', (byte)'0' };
+                case FwVersion.Since12_0_0: return new[] { (byte)'1', (byte)'2', (byte)'.', (byte)'0', (byte)'.', (byte)'0' };
+                default: return ToValueString((int)value);
+            }
+        }
+
+        public ReadOnlySpan<byte> ToString(GameCardCompatibilityType value)
+        {
+            switch (value)
+            {
+                case GameCardCompatibilityType.Normal: return new[] { (byte)'N', (byte)'o', (byte)'r', (byte)'m', (byte)'a', (byte)'l' };
+                case GameCardCompatibilityType.Terra: return new[] { (byte)'T', (byte)'e', (byte)'r', (byte)'r', (byte)'a' };
+                default: return ToValueString((int)value);
             }
         }
     }

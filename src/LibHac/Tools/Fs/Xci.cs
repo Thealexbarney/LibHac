@@ -11,7 +11,7 @@ public class Xci
 {
     public XciHeader Header { get; }
 
-    private IStorage BaseStorage { get; }
+    internal IStorage BaseStorage { get; }
     private object InitLocker { get; } = new object();
     private XciPartition RootPartition { get; set; }
 
@@ -19,6 +19,11 @@ public class Xci
     {
         BaseStorage = storage;
         Header = new XciHeader(keySet, storage.AsStream());
+
+        if (Header.HasInitialData)
+        {
+            BaseStorage = storage.Slice(0x1000);
+        }
     }
 
     public bool HasPartition(XciPartitionType type)

@@ -40,7 +40,15 @@ public enum GameCardAttribute : byte
     HistoryEraseFlag = 1 << 1,
     RepairToolFlag = 1 << 2,
     DifferentRegionCupToTerraDeviceFlag = 1 << 3,
-    DifferentRegionCupToGlobalDeviceFlag = 1 << 4
+    DifferentRegionCupToGlobalDeviceFlag = 1 << 4,
+
+    HasCa10CertificateFlag = 1 << 7
+}
+
+public enum GameCardCompatibilityType : byte
+{
+    Normal = 0,
+    Terra = 1
 }
 
 public struct GameCardErrorInfo

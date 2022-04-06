@@ -54,6 +54,7 @@ public class KeySet
     public Span<AesKey> TsecAuthSignatures => RootKeys.TsecAuthSignatures.Items;
     public Span<AesKey> TsecRootKeys => RootKeys.TsecRootKeys.Items;
     public Span<AesKey> MasterKekSources => _keys.KeySeeds.MasterKekSources.Items;
+    public Span<AesKey> GcTitleKeyKeks => RootKeys.GcTitleKeyKeks.Items;
 
     public Span<AesKey> MarikoMasterKekSources => _mode == Mode.Dev
         ? _keys.KeySeeds.MarikoMasterKekSourcesDev.Items
@@ -293,6 +294,9 @@ public struct RootKeys
 
     // Derived by TSEC. This is the first public root key for >= 6.2.0 Erista
     public Array32<AesKey> TsecRootKeys;
+
+    // Used to decrypt the title keys found in an XCI's initial data
+    public Array16<AesKey> GcTitleKeyKeks;
 }
 
 public struct KeySeeds

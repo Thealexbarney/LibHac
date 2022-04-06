@@ -167,6 +167,7 @@ internal static partial class DefaultKeySet
         keys.Add(new KeyInfo(264, Type.CommonSeed, "sd_card_custom_storage_key_source", (set, _) => set.SdCardKeySources[2]));
 
         keys.Add(new KeyInfo(270, Type.CommonSeedDiff, "xci_header_key", (set, _) => set.XciHeaderKey));
+        keys.Add(new KeyInfo(271, Type.CommonRoot, "xci_t1_titlekey_kek", 0, 0x10, (set, i) => set.GcTitleKeyKeks[i]));
 
         keys.Add(new KeyInfo(280, Type.CommonRoot, "eticket_rsa_kek", (set, _) => set.ETicketRsaKek));
         keys.Add(new KeyInfo(281, Type.CommonRoot, "ssl_rsa_kek", (set, _) => set.SslRsaKek));
