@@ -115,6 +115,9 @@ package1_key_05 = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 # The XCI header key will decrypt the gamecard info in an XCI. Not usually needed.
 xci_header_key  = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+# Used to decrypt the keys found in an XCI's initial data that are used for communication with game cards. Not usually needed.
+xci_t1_titlekey_kek_##  = XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
 # Methods of obtaining the keys below are not publicly available as of Oct. 2020,
 # but they're included anyway for completion's sake
 
