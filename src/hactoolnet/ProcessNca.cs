@@ -39,15 +39,35 @@ internal static class ProcessNca
                 baseNca = new Nca(ctx.KeySet, baseFile);
             }
 
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 4; i++)
             {
-                if (ctx.Options.SectionOut[i] != null)
+                if ((ctx.Options.SectionOut[i] is not null || ctx.Options.SectionOutDir[i] is not null) && !nca.SectionExists(i))
                 {
+                    ctx.Logger.LogMessage($"WARNING: NCA section {i} does not exist.");
+                    continue;
+                }
+
+                if (ctx.Options.SectionOut[i] is not null)
+                {
+                    // Prioritize the --exefs and --romfs options over --section# ones
+                    if (Nca.GetSectionTypeFromIndex(i, nca.Header.ContentType) == NcaSectionType.Code && ctx.Options.ExefsOut is not null)
+                        continue;
+
+                    if (Nca.GetSectionTypeFromIndex(i, nca.Header.ContentType) == NcaSectionType.Data && ctx.Options.RomfsOut is not null)
+                        continue;
+
                     OpenStorage(i).WriteAllBytes(ctx.Options.SectionOut[i], ctx.Logger);
                 }
 
-                if (ctx.Options.SectionOutDir[i] != null)
+                if (ctx.Options.SectionOutDir[i] is not null)
                 {
+                    // Prioritize the --exefsdir and --romfsdir options over --section#dir ones
+                    if (Nca.GetSectionTypeFromIndex(i, nca.Header.ContentType) == NcaSectionType.Code && ctx.Options.ExefsOutDir is not null)
+                        continue;
+
+                    if (Nca.GetSectionTypeFromIndex(i, nca.Header.ContentType) == NcaSectionType.Data && ctx.Options.RomfsOutDir is not null)
+                        continue;
+
                     FileSystemClient fs = ctx.Horizon.Fs;
 
                     string mountName = $"section{i}";
