@@ -146,7 +146,7 @@ public class Nca
 
     private IStorage OpenSectionStorage(int index)
     {
-        if (!SectionExists(index)) throw new ArgumentException(nameof(index), Messages.NcaSectionMissing);
+        if (!SectionExists(index)) throw new ArgumentException(string.Format(Messages.NcaSectionMissing, index), nameof(index));
 
         long offset = Header.GetSectionStartOffset(index);
         long size = Header.GetSectionSize(index);
@@ -796,7 +796,7 @@ public class Nca
 
     private IStorage OpenNca0RawStorage(int index, bool openEncrypted)
     {
-        if (!SectionExists(index)) throw new ArgumentException(nameof(index), Messages.NcaSectionMissing);
+        if (!SectionExists(index)) throw new ArgumentException(string.Format(Messages.NcaSectionMissing, index), nameof(index));
 
         long offset = Header.GetSectionStartOffset(index) - 0x400;
         long size = Header.GetSectionSize(index);

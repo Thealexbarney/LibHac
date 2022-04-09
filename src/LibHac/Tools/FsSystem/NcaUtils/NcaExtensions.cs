@@ -55,7 +55,7 @@ public static class NcaExtensions
 
     public static Validity ValidateSectionMasterHash(this Nca nca, int index)
     {
-        if (!nca.SectionExists(index)) throw new ArgumentException(nameof(index), Messages.NcaSectionMissing);
+        if (!nca.SectionExists(index)) throw new ArgumentException(string.Format(Messages.NcaSectionMissing, index), nameof(index));
         if (!nca.CanOpenSection(index)) return Validity.MissingKey;
 
         NcaFsHeader header = nca.GetFsHeader(index);
