@@ -1,13 +1,15 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using LibHac.Diag;
 
 namespace LibHac.Os.Impl;
 
-internal struct InternalConditionVariableImpl
+internal struct InternalConditionVariableImpl : IDisposable
 {
     private object _obj;
 
     public InternalConditionVariableImpl() => _obj = new object();
+    public void Dispose() { }
     public void Initialize() => _obj = new object();
 
     public void Signal()

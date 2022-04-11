@@ -1,12 +1,19 @@
-﻿namespace LibHac.Os.Impl;
+﻿using System;
 
-internal struct InternalConditionVariable
+namespace LibHac.Os.Impl;
+
+internal struct InternalConditionVariable : IDisposable
 {
     private InternalConditionVariableImpl _impl;
 
     public InternalConditionVariable()
     {
         _impl = new InternalConditionVariableImpl();
+    }
+
+    public void Dispose()
+    {
+        _impl.Dispose();
     }
 
     public void Initialize() => _impl.Initialize();
