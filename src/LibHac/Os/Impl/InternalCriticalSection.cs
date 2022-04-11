@@ -1,12 +1,19 @@
-﻿namespace LibHac.Os.Impl;
+﻿using System;
 
-public struct InternalCriticalSection : ILockable
+namespace LibHac.Os.Impl;
+
+public struct InternalCriticalSection : ILockable, IDisposable
 {
     private InternalCriticalSectionImpl _impl;
 
     public InternalCriticalSection()
     {
         _impl = new InternalCriticalSectionImpl();
+    }
+
+    public void Dispose()
+    {
+        _impl.Dispose();
     }
 
     public void Initialize() => _impl.Initialize();

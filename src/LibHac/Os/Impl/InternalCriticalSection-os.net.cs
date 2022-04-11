@@ -1,8 +1,9 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 
 namespace LibHac.Os.Impl;
 
-internal struct InternalCriticalSectionImpl
+internal struct InternalCriticalSectionImpl : IDisposable
 {
     private object _obj;
 
@@ -10,6 +11,8 @@ internal struct InternalCriticalSectionImpl
     {
         _obj = new object();
     }
+
+    public void Dispose() { }
 
     public void Initialize()
     {
