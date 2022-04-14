@@ -39,8 +39,8 @@ public class CachedStorage : IStorage
         long inOffset = offset;
         int outOffset = 0;
 
-        if (!CheckAccessRange(offset, destination.Length, Length))
-            return ResultFs.OutOfRange.Log();
+        Result rc = CheckAccessRange(offset, destination.Length, Length);
+        if (rc.IsFailure()) return rc.Miss();
 
         lock (Blocks)
         {
@@ -69,8 +69,8 @@ public class CachedStorage : IStorage
         long inOffset = offset;
         int outOffset = 0;
 
-        if (!CheckAccessRange(offset, source.Length, Length))
-            return ResultFs.OutOfRange.Log();
+        Result rc = CheckAccessRange(offset, source.Length, Length);
+        if (rc.IsFailure()) return rc.Miss();
 
         lock (Blocks)
         {

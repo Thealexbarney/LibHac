@@ -112,10 +112,13 @@ public struct ValueSubStorage : IDisposable
         if (!IsValid()) return ResultFs.NotInitialized.Log();
         if (destination.Length == 0) return Result.Success;
 
-        if (!IStorage.CheckAccessRange(offset, destination.Length, _size))
-            return ResultFs.OutOfRange.Log();
+        Result rc = IStorage.CheckAccessRange(offset, destination.Length, _size);
+        if (rc.IsFailure()) return rc.Miss();
 
-        return _baseStorage.Read(_offset + offset, destination);
+        rc = _baseStorage.Read(_offset + offset, destination);
+        if (rc.IsFailure()) return rc.Miss();
+
+        return Result.Success;
     }
 
     public readonly Result Write(long offset, ReadOnlySpan<byte> source)
@@ -123,26 +126,34 @@ public struct ValueSubStorage : IDisposable
         if (!IsValid()) return ResultFs.NotInitialized.Log();
         if (source.Length == 0) return Result.Success;
 
-        if (!IStorage.CheckAccessRange(offset, source.Length, _size))
-            return ResultFs.OutOfRange.Log();
+        Result rc = IStorage.CheckAccessRange(offset, source.Length, _size);
+        if (rc.IsFailure()) return rc.Miss();
 
-        return _baseStorage.Write(_offset + offset, source);
+        rc = _baseStorage.Write(_offset + offset, source);
+        if (rc.IsFailure()) return rc.Miss();
+
+        return Result.Success;
     }
 
     public readonly Result Flush()
     {
         if (!IsValid()) return ResultFs.NotInitialized.Log();
 
-        return _baseStorage.Flush();
+        Result rc = _baseStorage.Flush();
+        if (rc.IsFailure()) return rc.Miss();
+
+        return Result.Success;
     }
 
     public Result SetSize(long size)
     {
         if (!IsValid()) return ResultFs.NotInitialized.Log();
         if (!_isResizable) return ResultFs.UnsupportedSetSizeForNotResizableSubStorage.Log();
-        if (!IStorage.CheckOffsetAndSize(_offset, size)) return ResultFs.InvalidSize.Log();
 
-        Result rc = _baseStorage.GetSize(out long currentSize);
+        Result rc = IStorage.CheckOffsetAndSize(_offset, size);
+        if (rc.IsFailure()) return rc;
+
+        rc = _baseStorage.GetSize(out long currentSize);
         if (rc.IsFailure()) return rc;
 
         if (currentSize != _offset + _size)
@@ -181,7 +192,9 @@ public struct ValueSubStorage : IDisposable
         if (operationId != OperationId.InvalidateCache)
         {
             if (size == 0) return Result.Success;
-            if (!IStorage.CheckOffsetAndSize(_offset, size)) return ResultFs.OutOfRange.Log();
+
+            Result rc = IStorage.CheckOffsetAndSize(_offset, size);
+            if (rc.IsFailure()) return rc.Miss();
         }
 
         return _baseStorage.OperateRange(outBuffer, operationId, _offset + offset, size, inBuffer);

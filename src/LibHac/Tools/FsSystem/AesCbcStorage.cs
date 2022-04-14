@@ -28,10 +28,10 @@ public class AesCbcStorage : SectorStorage
 
     public override Result Read(long offset, Span<byte> destination)
     {
-        if (!CheckAccessRange(offset, destination.Length, _size))
-            return ResultFs.OutOfRange.Log();
+        Result rc = CheckAccessRange(offset, destination.Length, _size);
+        if (rc.IsFailure()) return rc.Miss();
 
-        Result rc = base.Read(offset, destination);
+        rc = base.Read(offset, destination);
         if (rc.IsFailure()) return rc;
 
         rc = GetDecryptor(out ICipher cipher, offset);

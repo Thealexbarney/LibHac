@@ -11,7 +11,7 @@ namespace LibHac.Fs;
 /// <summary>
 /// Allows interacting with an <see cref="IFile"/> via an <see cref="IStorage"/> interface.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
 public class FileStorage : IStorage
 {
     private const long InvalidSize = -1;
@@ -60,8 +60,8 @@ public class FileStorage : IStorage
         Result rc = UpdateSize();
         if (rc.IsFailure()) return rc.Miss();
 
-        if (!CheckAccessRange(offset, destination.Length, _fileSize))
-            return ResultFs.OutOfRange.Log();
+        rc = CheckAccessRange(offset, destination.Length, _fileSize);
+        if (rc.IsFailure()) return rc.Miss();
 
         return _baseFile.Read(out _, offset, destination, ReadOption.None);
     }
@@ -74,8 +74,8 @@ public class FileStorage : IStorage
         Result rc = UpdateSize();
         if (rc.IsFailure()) return rc.Miss();
 
-        if (!CheckAccessRange(offset, source.Length, _fileSize))
-            return ResultFs.OutOfRange.Log();
+        rc = CheckAccessRange(offset, source.Length, _fileSize);
+        if (rc.IsFailure()) return rc.Miss();
 
         return _baseFile.Write(offset, source, WriteOption.None);
     }
@@ -104,35 +104,37 @@ public class FileStorage : IStorage
 
     public override Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
     {
-        if (operationId == OperationId.InvalidateCache)
+        switch (operationId)
         {
-            Result rc = _baseFile.OperateRange(OperationId.InvalidateCache, offset, size);
-            if (rc.IsFailure()) return rc.Miss();
-
-            return Result.Success;
-        }
-
-        if (operationId == OperationId.QueryRange)
-        {
-            if (size == 0)
+            case OperationId.InvalidateCache:
             {
-                if (outBuffer.Length != Unsafe.SizeOf<QueryRangeInfo>())
-                    return ResultFs.InvalidSize.Log();
+                Result rc = _baseFile.OperateRange(OperationId.InvalidateCache, offset, size);
+                if (rc.IsFailure()) return rc.Miss();
 
-                SpanHelpers.AsStruct<QueryRangeInfo>(outBuffer).Clear();
                 return Result.Success;
             }
+            case OperationId.QueryRange:
+            {
+                if (size == 0)
+                {
+                    if (outBuffer.Length != Unsafe.SizeOf<QueryRangeInfo>())
+                        return ResultFs.InvalidSize.Log();
 
-            Result rc = UpdateSize();
-            if (rc.IsFailure()) return rc.Miss();
+                    SpanHelpers.AsStruct<QueryRangeInfo>(outBuffer).Clear();
+                    return Result.Success;
+                }
 
-            if (!CheckOffsetAndSize(offset, size))
-                return ResultFs.OutOfRange.Log();
+                Result rc = UpdateSize();
+                if (rc.IsFailure()) return rc.Miss();
 
-            return _baseFile.OperateRange(outBuffer, operationId, offset, size, inBuffer);
+                rc = CheckOffsetAndSize(offset, size);
+                if (rc.IsFailure()) return rc.Miss();
+
+                return _baseFile.OperateRange(outBuffer, operationId, offset, size, inBuffer);
+            }
+            default:
+                return ResultFs.UnsupportedOperateRangeForFileStorage.Log();
         }
-
-        return ResultFs.UnsupportedOperateRangeForFileStorage.Log();
     }
 
     private Result UpdateSize()
@@ -153,7 +155,7 @@ public class FileStorage : IStorage
 /// <see cref="IStorage"/> interface. The opened file will automatically be closed when the
 /// <see cref="FileStorageBasedFileSystem"/> is disposed.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
 public class FileStorageBasedFileSystem : FileStorage
 {
     private SharedRef<IFileSystem> _baseFileSystem;
@@ -196,7 +198,7 @@ public class FileStorageBasedFileSystem : FileStorage
 /// Provides an <see cref="IStorage"/> interface for interacting with an opened file from a mounted file system.
 /// The caller may choose whether or not the file will be closed when the <see cref="FileHandleStorage"/> is disposed.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
 public class FileHandleStorage : IStorage
 {
     private const long InvalidSize = -1;
@@ -230,7 +232,7 @@ public class FileHandleStorage : IStorage
         _handle = handle;
         _closeFile = closeFile;
         _size = InvalidSize;
-        _mutex.Initialize();
+        _mutex = new SdkMutexType();
     }
 
     public override void Dispose()
@@ -255,8 +257,8 @@ public class FileHandleStorage : IStorage
         Result rc = UpdateSize();
         if (rc.IsFailure()) return rc.Miss();
 
-        if (!CheckAccessRange(offset, destination.Length, _size))
-            return ResultFs.OutOfRange.Log();
+        rc = CheckAccessRange(offset, destination.Length, _size);
+        if (rc.IsFailure()) return rc.Miss();
 
         return _fsClient.ReadFile(_handle, offset, destination, ReadOption.None);
     }
@@ -271,8 +273,8 @@ public class FileHandleStorage : IStorage
         Result rc = UpdateSize();
         if (rc.IsFailure()) return rc.Miss();
 
-        if (!CheckAccessRange(offset, source.Length, _size))
-            return ResultFs.OutOfRange.Log();
+        rc = CheckAccessRange(offset, source.Length, _size);
+        if (rc.IsFailure()) return rc.Miss();
 
         return _fsClient.WriteFile(_handle, offset, source, WriteOption.None);
     }

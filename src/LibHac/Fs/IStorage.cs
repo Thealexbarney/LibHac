@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using LibHac.Util;
 
 namespace LibHac.Fs;
 
@@ -7,12 +8,7 @@ namespace LibHac.Fs;
 /// <summary>
 /// Provides an interface for reading and writing a sequence of bytes.
 /// </summary>
-/// <remarks>
-/// The official IStorage makes the <c>Read</c> etc. methods abstract and doesn't
-/// have <c>DoRead</c> etc. methods. We're using them here so we can make sure
-/// the object isn't disposed before calling the method implementation.
-/// </remarks>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
 public abstract class IStorage : IDisposable
 {
     public virtual void Dispose() { }
@@ -78,20 +74,70 @@ public abstract class IStorage : IDisposable
         return OperateRange(Span<byte>.Empty, operationId, offset, size, ReadOnlySpan<byte>.Empty);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool CheckAccessRange(long offset, long size, long totalSize)
+    public static Result CheckAccessRange(long offset, long size, long totalSize)
     {
-        return offset >= 0 &&
-               size >= 0 &&
-               size <= totalSize &&
-               offset <= totalSize - size;
+        if (offset < 0)
+            return ResultFs.InvalidOffset.Log();
+
+        if (size < 0)
+            return ResultFs.InvalidSize.Log();
+
+        if (!IntUtil.CanAddWithoutOverflow(offset, size))
+            return ResultFs.OutOfRange.Log();
+
+        if (size + offset > totalSize)
+            return ResultFs.OutOfRange.Log();
+
+        return Result.Success;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool CheckOffsetAndSize(long offset, long size)
+    public static Result CheckAccessRange(long offset, ulong size, long totalSize)
     {
-        return offset >= 0 &&
-               size >= 0 &&
-               offset <= offset + size;
+        Result rc = CheckAccessRange(offset, unchecked((long)size), totalSize);
+        if (rc.IsFailure()) return rc.Miss();
+
+        return Result.Success;
+    }
+
+    public static Result CheckOffsetAndSize(long offset, long size)
+    {
+        if (offset < 0)
+            return ResultFs.InvalidOffset.Log();
+
+        if (size < 0)
+            return ResultFs.InvalidSize.Log();
+
+        if (!IntUtil.CanAddWithoutOverflow(offset, size))
+            return ResultFs.OutOfRange.Log();
+
+        return Result.Success;
+    }
+
+    public static Result CheckOffsetAndSize(long offset, ulong size)
+    {
+        Result rc = CheckOffsetAndSize(offset, unchecked((long)size));
+        if (rc.IsFailure()) return rc.Miss();
+
+        return Result.Success;
+    }
+
+    public static Result CheckOffsetAndSizeWithResult(long offset, long size, Result resultOnFailure)
+    {
+        Result rc = CheckOffsetAndSize(offset, size);
+
+        if (rc.IsFailure())
+            return resultOnFailure.Log();
+
+        return Result.Success;
+    }
+
+    public static Result CheckOffsetAndSizeWithResult(long offset, ulong size, Result resultOnFailure)
+    {
+        Result rc = CheckOffsetAndSize(offset, size);
+
+        if (rc.IsFailure())
+            return resultOnFailure.Log();
+
+        return Result.Success;
     }
 }

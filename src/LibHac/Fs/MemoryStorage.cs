@@ -7,7 +7,7 @@ namespace LibHac.Fs;
 /// <summary>
 /// Allows interacting with a <see cref="byte"/> array via the <see cref="IStorage"/> interface.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
 public class MemoryStorage : IStorage
 {
     private byte[] _storageBuffer;
@@ -22,8 +22,8 @@ public class MemoryStorage : IStorage
         if (destination.Length == 0)
             return Result.Success;
 
-        if (!CheckAccessRange(offset, destination.Length, _storageBuffer.Length))
-            return ResultFs.OutOfRange.Log();
+        Result rc = CheckAccessRange(offset, destination.Length, _storageBuffer.Length);
+        if (rc.IsFailure()) return rc.Miss();
 
         _storageBuffer.AsSpan((int)offset, destination.Length).CopyTo(destination);
 
@@ -35,8 +35,8 @@ public class MemoryStorage : IStorage
         if (source.Length == 0)
             return Result.Success;
 
-        if (!CheckAccessRange(offset, source.Length, _storageBuffer.Length))
-            return ResultFs.OutOfRange.Log();
+        Result rc = CheckAccessRange(offset, source.Length, _storageBuffer.Length);
+        if (rc.IsFailure()) return rc.Miss();
 
         source.CopyTo(_storageBuffer.AsSpan((int)offset));
 

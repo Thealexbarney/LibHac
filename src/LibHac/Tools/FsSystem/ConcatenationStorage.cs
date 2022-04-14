@@ -34,8 +34,8 @@ public class ConcatenationStorage : IStorage
         int outPos = 0;
         int remaining = destination.Length;
 
-        if (!CheckAccessRange(offset, destination.Length, Length))
-            return ResultFs.OutOfRange.Log();
+        Result rc = CheckAccessRange(offset, destination.Length, Length);
+        if (rc.IsFailure()) return rc.Miss();
 
         int sourceIndex = FindSource(inPos);
 
@@ -47,7 +47,7 @@ public class ConcatenationStorage : IStorage
 
             int bytesToRead = (int)Math.Min(entryRemain, remaining);
 
-            Result rc = entry.Storage.Read(entryPos, destination.Slice(outPos, bytesToRead));
+            rc = entry.Storage.Read(entryPos, destination.Slice(outPos, bytesToRead));
             if (rc.IsFailure()) return rc;
 
             outPos += bytesToRead;
@@ -65,8 +65,8 @@ public class ConcatenationStorage : IStorage
         int outPos = 0;
         int remaining = source.Length;
 
-        if (!CheckAccessRange(offset, source.Length, Length))
-            return ResultFs.OutOfRange.Log();
+        Result rc = CheckAccessRange(offset, source.Length, Length);
+        if (rc.IsFailure()) return rc.Miss();
 
         int sourceIndex = FindSource(inPos);
 
@@ -78,7 +78,7 @@ public class ConcatenationStorage : IStorage
 
             int bytesToWrite = (int)Math.Min(entryRemain, remaining);
 
-            Result rc = entry.Storage.Write(entryPos, source.Slice(outPos, bytesToWrite));
+            rc = entry.Storage.Write(entryPos, source.Slice(outPos, bytesToWrite));
             if (rc.IsFailure()) return rc;
 
             outPos += bytesToWrite;

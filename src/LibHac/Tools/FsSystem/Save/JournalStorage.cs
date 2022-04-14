@@ -40,8 +40,8 @@ public class JournalStorage : IStorage
         int outPos = 0;
         int remaining = destination.Length;
 
-        if (!CheckAccessRange(offset, destination.Length, Length))
-            return ResultFs.OutOfRange.Log();
+        Result rc = CheckAccessRange(offset, destination.Length, Length);
+        if (rc.IsFailure()) return rc.Miss();
 
         while (remaining > 0)
         {
@@ -52,7 +52,7 @@ public class JournalStorage : IStorage
 
             int bytesToRead = Math.Min(remaining, BlockSize - blockPos);
 
-            Result rc = BaseStorage.Read(physicalOffset, destination.Slice(outPos, bytesToRead));
+            rc = BaseStorage.Read(physicalOffset, destination.Slice(outPos, bytesToRead));
             if (rc.IsFailure()) return rc;
 
             outPos += bytesToRead;
@@ -69,8 +69,8 @@ public class JournalStorage : IStorage
         int outPos = 0;
         int remaining = source.Length;
 
-        if (!CheckAccessRange(offset, source.Length, Length))
-            return ResultFs.OutOfRange.Log();
+        Result rc = CheckAccessRange(offset, source.Length, Length);
+        if (rc.IsFailure()) return rc.Miss();
 
         while (remaining > 0)
         {
@@ -81,7 +81,7 @@ public class JournalStorage : IStorage
 
             int bytesToWrite = Math.Min(remaining, BlockSize - blockPos);
 
-            Result rc = BaseStorage.Write(physicalOffset, source.Slice(outPos, bytesToWrite));
+            rc = BaseStorage.Write(physicalOffset, source.Slice(outPos, bytesToWrite));
             if (rc.IsFailure()) return rc;
 
             outPos += bytesToWrite;

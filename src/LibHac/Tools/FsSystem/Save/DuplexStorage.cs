@@ -33,8 +33,8 @@ public class DuplexStorage : IStorage
         int outPos = 0;
         int remaining = destination.Length;
 
-        if (!CheckAccessRange(offset, destination.Length, Length))
-            return ResultFs.OutOfRange.Log();
+        Result rc = CheckAccessRange(offset, destination.Length, Length);
+        if (rc.IsFailure()) return rc.Miss();
 
         while (remaining > 0)
         {
@@ -45,7 +45,7 @@ public class DuplexStorage : IStorage
 
             IStorage data = Bitmap.Bitmap[blockNum] ? DataB : DataA;
 
-            Result rc = data.Read(inPos, destination.Slice(outPos, bytesToRead));
+            rc = data.Read(inPos, destination.Slice(outPos, bytesToRead));
             if (rc.IsFailure()) return rc;
 
             outPos += bytesToRead;
@@ -62,8 +62,8 @@ public class DuplexStorage : IStorage
         int outPos = 0;
         int remaining = source.Length;
 
-        if (!CheckAccessRange(offset, source.Length, Length))
-            return ResultFs.OutOfRange.Log();
+        Result rc = CheckAccessRange(offset, source.Length, Length);
+        if (rc.IsFailure()) return rc.Miss();
 
         while (remaining > 0)
         {
@@ -74,7 +74,7 @@ public class DuplexStorage : IStorage
 
             IStorage data = Bitmap.Bitmap[blockNum] ? DataB : DataA;
 
-            Result rc = data.Write(inPos, source.Slice(outPos, bytesToWrite));
+            rc = data.Write(inPos, source.Slice(outPos, bytesToWrite));
             if (rc.IsFailure()) return rc;
 
             outPos += bytesToWrite;

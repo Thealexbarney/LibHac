@@ -8,16 +8,17 @@ namespace LibHac.Fs;
 /// Presents a subsection of a base IStorage as a new IStorage.
 /// </summary>
 /// <remarks>
-/// A SubStorage presents a sub-range of an IStorage as a separate IStorage.
+/// <para>A SubStorage presents a sub-range of an IStorage as a separate IStorage.</para>
 ///
-/// The SubStorage doesn't check if the offset and size provided are actually in the base storage.
+/// <para>The SubStorage doesn't check if the offset and size provided are actually in the base storage.
 /// GetSize will return the size given to the SubStorage at initialization and will not query
-/// the base storage's size.
+/// the base storage's size.</para>
 ///
-/// A SubStorage is non-resizable by default. <see cref="SetResizable"/> may be used to mark
+/// <para>A SubStorage is non-resizable by default. <see cref="SetResizable"/> may be used to mark
 /// the SubStorage as resizable. The SubStorage may only be resized if the end of the SubStorage
 /// is located at the end of the base storage. When resizing the SubStorage, the base storage
-/// will be resized to the appropriate length. 
+/// will be resized to the appropriate length.</para>
+/// <para>Based on FS 14.1.0 (nnSdk 14.3.0)</para>
 /// </remarks>
 public class SubStorage : IStorage
 {
@@ -158,10 +159,13 @@ public class SubStorage : IStorage
         if (!IsValid()) return ResultFs.NotInitialized.Log();
         if (destination.Length == 0) return Result.Success;
 
-        if (!CheckAccessRange(offset, destination.Length, _size))
-            return ResultFs.OutOfRange.Log();
+        Result rc = CheckAccessRange(offset, destination.Length, _size);
+        if (rc.IsFailure()) return rc.Miss();
 
-        return BaseStorage.Read(_offset + offset, destination);
+        rc = BaseStorage.Read(_offset + offset, destination);
+        if (rc.IsFailure()) return rc.Miss();
+
+        return Result.Success;
     }
 
     public override Result Write(long offset, ReadOnlySpan<byte> source)
@@ -169,26 +173,34 @@ public class SubStorage : IStorage
         if (!IsValid()) return ResultFs.NotInitialized.Log();
         if (source.Length == 0) return Result.Success;
 
-        if (!CheckAccessRange(offset, source.Length, _size))
-            return ResultFs.OutOfRange.Log();
+        Result rc = CheckAccessRange(offset, source.Length, _size);
+        if (rc.IsFailure()) return rc.Miss();
 
-        return BaseStorage.Write(_offset + offset, source);
+        rc = BaseStorage.Write(_offset + offset, source);
+        if (rc.IsFailure()) return rc.Miss();
+
+        return Result.Success;
     }
 
     public override Result Flush()
     {
         if (!IsValid()) return ResultFs.NotInitialized.Log();
 
-        return BaseStorage.Flush();
+        Result rc = BaseStorage.Flush();
+        if (rc.IsFailure()) return rc.Miss();
+
+        return Result.Success;
     }
 
     public override Result SetSize(long size)
     {
         if (!IsValid()) return ResultFs.NotInitialized.Log();
         if (!_isResizable) return ResultFs.UnsupportedSetSizeForNotResizableSubStorage.Log();
-        if (!CheckOffsetAndSize(_offset, size)) return ResultFs.InvalidSize.Log();
 
-        Result rc = BaseStorage.GetSize(out long currentSize);
+        Result rc = CheckOffsetAndSize(_offset, size);
+        if (rc.IsFailure()) return rc.Miss();
+
+        rc = BaseStorage.GetSize(out long currentSize);
         if (rc.IsFailure()) return rc;
 
         if (currentSize != _offset + _size)
@@ -222,7 +234,9 @@ public class SubStorage : IStorage
         if (operationId != OperationId.InvalidateCache)
         {
             if (size == 0) return Result.Success;
-            if (!CheckOffsetAndSize(_offset, size)) return ResultFs.OutOfRange.Log();
+
+            Result rc = CheckOffsetAndSize(_offset, size);
+            if (rc.IsFailure()) return rc.Miss();
         }
 
         return BaseStorage.OperateRange(outBuffer, operationId, _offset + offset, size, inBuffer);
