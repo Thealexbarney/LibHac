@@ -17,11 +17,11 @@ namespace LibHac.FsSystem;
 /// <remarks><para>The base data used for this storage comes with a table of ranges and counter values that are used
 /// to decrypt each range. This encryption scheme is used for encrypting content updates so that no counter values
 /// are ever reused.</para>
-/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para></remarks>
+/// <para>Based on FS 14.1.0 (nnSdk 14.3.0)</para></remarks>
 public class AesCtrCounterExtendedStorage : IStorage
 {
-    public delegate Result DecryptFunction(Span<byte> destination, int index, ReadOnlySpan<byte> encryptedKey,
-        ReadOnlySpan<byte> iv, ReadOnlySpan<byte> source);
+    public delegate Result DecryptFunction(Span<byte> destination, int index, int generation,
+        ReadOnlySpan<byte> encryptedKey, ReadOnlySpan<byte> iv, ReadOnlySpan<byte> source);
 
     public interface IDecryptor : IDisposable
     {
@@ -32,8 +32,15 @@ public class AesCtrCounterExtendedStorage : IStorage
     public struct Entry
     {
         public Array8<byte> Offset;
-        public int Reserved;
+        public Encryption EncryptionValue;
+        public Array3<byte> Reserved;
         public int Generation;
+
+        public enum Encryption : byte
+        {
+            Encrypted = 0,
+            NotEncrypted = 1
+        }
 
         public void SetOffset(long value)
         {
@@ -74,9 +81,9 @@ public class AesCtrCounterExtendedStorage : IStorage
     }
 
     public static Result CreateExternalDecryptor(ref UniqueRef<IDecryptor> outDecryptor,
-        DecryptFunction decryptFunction, int keyIndex)
+        DecryptFunction decryptFunction, int keyIndex, int keyGeneration)
     {
-        using var decryptor = new UniqueRef<IDecryptor>(new ExternalDecryptor(decryptFunction, keyIndex));
+        using var decryptor = new UniqueRef<IDecryptor>(new ExternalDecryptor(decryptFunction, keyIndex, keyGeneration));
 
         if (!decryptor.HasValue)
             return ResultFs.AllocationMemoryFailedInAesCtrCounterExtendedStorageA.Log();
@@ -159,9 +166,18 @@ public class AesCtrCounterExtendedStorage : IStorage
         Assert.SdkRequiresGreaterEqual(counterOffset, 0);
         Assert.SdkRequiresNotNull(in decryptor);
 
-        Result rc = _table.Initialize(allocator, in nodeStorage, in entryStorage, NodeSize, Unsafe.SizeOf<Entry>(),
-            entryCount);
-        if (rc.IsFailure()) return rc.Miss();
+        Result rc;
+
+        if (entryCount > 0)
+        {
+            rc = _table.Initialize(allocator, in nodeStorage, in entryStorage, NodeSize, Unsafe.SizeOf<Entry>(),
+                entryCount);
+            if (rc.IsFailure()) return rc.Miss();
+        }
+        else
+        {
+            _table.Initialize(NodeSize, 0);
+        }
 
         rc = dataStorage.GetSize(out long dataStorageSize);
         if (rc.IsFailure()) return rc.Miss();
@@ -279,20 +295,23 @@ public class AesCtrCounterExtendedStorage : IStorage
             long readSize = Math.Min(remainingSize, dataSize);
             Assert.SdkLessEqual(readSize, destination.Length);
 
-            // Create the counter for the first data block we're decrypting.
-            long counterOffset = _counterOffset + entryStartOffset + dataOffset;
-            var upperIv = new NcaAesCtrUpperIv
+            if (entry.EncryptionValue == Entry.Encryption.Encrypted)
             {
-                Generation = (uint)entry.Generation,
-                SecureValue = _secureValue
-            };
+                // Create the counter for the first data block we're decrypting.
+                long counterOffset = _counterOffset + entryStartOffset + dataOffset;
+                var upperIv = new NcaAesCtrUpperIv
+                {
+                    Generation = (uint)entry.Generation,
+                    SecureValue = _secureValue
+                };
 
-            Unsafe.SkipInit(out Array16<byte> counter);
-            AesCtrStorage.MakeIv(counter.Items, upperIv.Value, counterOffset);
+                Unsafe.SkipInit(out Array16<byte> counter);
+                AesCtrStorage.MakeIv(counter.Items, upperIv.Value, counterOffset);
 
-            // Decrypt the data from the current entry.
-            rc = _decryptor.Get.Decrypt(currentData.Slice(0, (int)dataSize), _key, counter);
-            if (rc.IsFailure()) return rc.Miss();
+                // Decrypt the data from the current entry.
+                rc = _decryptor.Get.Decrypt(currentData.Slice(0, (int)dataSize), _key, counter);
+                if (rc.IsFailure()) return rc.Miss();
+            }
 
             // Advance the current offsets.
             currentData = currentData.Slice((int)dataSize);
@@ -402,13 +421,15 @@ public class AesCtrCounterExtendedStorage : IStorage
     {
         private DecryptFunction _decryptFunction;
         private int _keyIndex;
+        private int _keyGeneration;
 
-        public ExternalDecryptor(DecryptFunction decryptFunction, int keyIndex)
+        public ExternalDecryptor(DecryptFunction decryptFunction, int keyIndex, int keyGeneration)
         {
             Assert.SdkRequiresNotNull(decryptFunction);
 
             _decryptFunction = decryptFunction;
             _keyIndex = keyIndex;
+            _keyGeneration = keyGeneration;
         }
 
         public void Dispose() { }
@@ -435,7 +456,7 @@ public class AesCtrCounterExtendedStorage : IStorage
                 Span<byte> dstBuffer = destination.Slice(currentOffset, currentSize);
                 Span<byte> workBuffer = pooledBuffer.GetBuffer().Slice(0, currentSize);
 
-                Result rc = _decryptFunction(workBuffer, _keyIndex, encryptedKey, counter, dstBuffer);
+                Result rc = _decryptFunction(workBuffer, _keyIndex, _keyGeneration, encryptedKey, counter, dstBuffer);
                 if (rc.IsFailure()) return rc.Miss();
 
                 workBuffer.CopyTo(dstBuffer);
