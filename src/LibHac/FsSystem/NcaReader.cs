@@ -8,13 +8,15 @@ using LibHac.Fs;
 
 namespace LibHac.FsSystem;
 
-public delegate Result GenerateKeyFunction(Span<byte> destKey, ReadOnlySpan<byte> sourceKey, int keyType, in NcaCryptoConfiguration config);
-public delegate Result DecryptAesCtrFunction(Span<byte> dest, int keyType, ReadOnlySpan<byte> encryptedKey, ReadOnlySpan<byte> iv, ReadOnlySpan<byte> source);
+public delegate void GenerateKeyFunction(Span<byte> destKey, ReadOnlySpan<byte> sourceKey, int keyType);
+public delegate Result DecryptAesCtrFunction(Span<byte> dest, int keyIndex, int keyGeneration, ReadOnlySpan<byte> encryptedKey, ReadOnlySpan<byte> iv, ReadOnlySpan<byte> source);
+public delegate Result CryptAesXtsFunction(Span<byte> dest, ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv, ReadOnlySpan<byte> source);
+public delegate bool VerifySign1Function(ReadOnlySpan<byte> signature, ReadOnlySpan<byte> data, bool isProd, byte generation);
 
 /// <summary>
 /// Handles reading information from an NCA file's header.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
 public class NcaReader : IDisposable
 {
     private const uint SdkAddonVersionMin = 0xB0000;
@@ -27,9 +29,10 @@ public class NcaReader : IDisposable
     private DecryptAesCtrFunction _decryptAesCtr;
     private DecryptAesCtrFunction _decryptAesCtrForExternalKey;
     private bool _isSoftwareAesPrioritized;
+    private bool _isAvailableSwKey;
     private NcaHeader.EncryptionType _headerEncryptionType;
     private GetDecompressorFunction _getDecompressorFunc;
-    private IHash256GeneratorFactory _hashGeneratorFactory;
+    private IHash256GeneratorFactorySelector _hashGeneratorFactorySelector;
 
     public void Dispose()
     {
@@ -44,23 +47,44 @@ public class NcaReader : IDisposable
         Assert.SdkRequiresNotNull(hashGeneratorFactorySelector);
         Assert.SdkRequiresNull(in _bodyStorage);
 
-        if (cryptoConfig.GenerateKey is null)
+        if (cryptoConfig.VerifySign1 is null)
             return ResultFs.InvalidArgument.Log();
 
         using var headerStorage = new UniqueRef<IStorage>();
 
-        // Generate the keys for decrypting the NCA header.
-        Unsafe.SkipInit(out Array2<Array16<byte>> commonDecryptionKeys);
-        for (int i = 0; i < NcaCryptoConfiguration.HeaderEncryptionKeyCount; i++)
+        if (cryptoConfig.IsAvailableSwKey)
         {
-            cryptoConfig.GenerateKey(commonDecryptionKeys[i].Items, cryptoConfig.HeaderEncryptedEncryptionKeys[i], 0x60,
-                in cryptoConfig);
-        }
+            if (cryptoConfig.GenerateKey is null)
+                return ResultFs.InvalidArgument.Log();
 
-        // Create an XTS storage to read the encrypted header.
-        Array16<byte> headerIv = default;
-        headerStorage.Reset(new AesXtsStorage(baseStorage.Get, commonDecryptionKeys[0], commonDecryptionKeys[1],
-            headerIv, NcaHeader.XtsBlockSize));
+            ReadOnlySpan<int> headerKeyTypes = stackalloc int[NcaCryptoConfiguration.HeaderEncryptionKeyCount]
+                { (int)KeyType.NcaHeaderKey1, (int)KeyType.NcaHeaderKey2 };
+
+            // Generate the keys for decrypting the NCA header.
+            Unsafe.SkipInit(out Array2<Array16<byte>> commonDecryptionKeys);
+            for (int i = 0; i < NcaCryptoConfiguration.HeaderEncryptionKeyCount; i++)
+            {
+                cryptoConfig.GenerateKey(commonDecryptionKeys[i].Items, cryptoConfig.HeaderEncryptedEncryptionKeys[i],
+                    headerKeyTypes[i]);
+            }
+
+            // Create an XTS storage to read the encrypted header.
+            Array16<byte> headerIv = default;
+            headerStorage.Reset(new AesXtsStorage(baseStorage.Get, commonDecryptionKeys[0], commonDecryptionKeys[1],
+                headerIv, NcaHeader.XtsBlockSize));
+        }
+        else
+        {
+            // Software key isn't available, so we need to be able to decrypt externally.
+            if (cryptoConfig.DecryptAesXtsForExternalKey is null)
+                return ResultFs.InvalidArgument.Log();
+
+            // Create the header storage.
+            Array16<byte> headerIv = default;
+            headerStorage.Reset(new AesXtsStorageExternal(baseStorage.Get, ReadOnlySpan<byte>.Empty,
+                ReadOnlySpan<byte>.Empty, headerIv, (uint)NcaHeader.XtsBlockSize, cryptoConfig.EncryptAesXtsForExternalKey,
+                cryptoConfig.DecryptAesXtsForExternalKey));
+        }
 
         if (!headerStorage.HasValue)
             return ResultFs.AllocationMemoryFailedInNcaReaderA.Log();
@@ -108,11 +132,9 @@ public class NcaReader : IDisposable
         int signMessageOffset = NcaHeader.HeaderSignSize * NcaHeader.HeaderSignCount;
         int signMessageSize = NcaHeader.Size - signMessageOffset;
         ReadOnlySpan<byte> signature = _header.Signature1;
-        ReadOnlySpan<byte> modulus = cryptoConfig.Header1SignKeyModuli[_header.Header1SignatureKeyGeneration];
-        ReadOnlySpan<byte> exponent = cryptoConfig.Header1SignKeyPublicExponent;
         ReadOnlySpan<byte> message = SpanHelpers.AsReadOnlyByteSpan(in _header).Slice(signMessageOffset, signMessageSize);
 
-        if (!Rsa.VerifyRsa2048PssSha256(signature, modulus, exponent, message))
+        if (!cryptoConfig.VerifySign1(signature, message, !cryptoConfig.IsDev, _header.Header1SignatureKeyGeneration))
             return ResultFs.NcaHeaderSignature1VerificationFailed.Log();
 
         // Validate the sdk version.
@@ -120,32 +142,40 @@ public class NcaReader : IDisposable
             return ResultFs.UnsupportedSdkVersion.Log();
 
         // Validate the key index.
-        if (_header.KeyAreaEncryptionKeyIndex >= NcaCryptoConfiguration.KeyAreaEncryptionKeyIndexCount)
+        if (_header.KeyAreaEncryptionKeyIndex >= NcaCryptoConfiguration.KeyAreaEncryptionKeyIndexCount &&
+            _header.KeyAreaEncryptionKeyIndex != NcaCryptoConfiguration.KeyAreaEncryptionKeyIndexZeroKey)
+        {
             return ResultFs.InvalidNcaKeyIndex.Log();
+        }
+
+        _hashGeneratorFactorySelector = hashGeneratorFactorySelector;
 
         // Get keys from the key area if the NCA doesn't have a rights ID.
         Array16<byte> zeroRightsId = default;
         if (CryptoUtil.IsSameBytes(zeroRightsId, _header.RightsId, NcaHeader.RightsIdSize))
         {
-            // If we don't have a rights ID we need to generate decryption keys.
-            int keyType = NcaKeyFunctions.GetKeyTypeValue(_header.KeyAreaEncryptionKeyIndex, _header.GetProperKeyGeneration());
-            ReadOnlySpan<byte> encryptedKeyCtr = _header.EncryptedKeys.ItemsRo.Slice((int)NcaHeader.DecryptionKey.AesCtr * Aes.KeySize128, Aes.KeySize128);
-            ReadOnlySpan<byte> keyCtrHw = _header.EncryptedKeys.ItemsRo.Slice((int)NcaHeader.DecryptionKey.AesCtrHw * Aes.KeySize128, Aes.KeySize128);
+            // If we don't have a rights ID we need to generate decryption keys if software keys are available.
+            if (cryptoConfig.IsAvailableSwKey)
+            {
+                int keyTypeValue = NcaKeyFunctions.GetKeyTypeValue(_header.KeyAreaEncryptionKeyIndex, _header.GetProperKeyGeneration());
+                ReadOnlySpan<byte> encryptedKeyCtr = _header.EncryptedKeys.ItemsRo.Slice((int)NcaHeader.DecryptionKey.AesCtr * Aes.KeySize128, Aes.KeySize128);
 
-            cryptoConfig.GenerateKey(_decryptionKeys[(int)NcaHeader.DecryptionKey.AesCtr].Items, encryptedKeyCtr, keyType, in cryptoConfig);
+                cryptoConfig.GenerateKey(_decryptionKeys[(int)NcaHeader.DecryptionKey.AesCtr].Items, encryptedKeyCtr, keyTypeValue);
+            }
 
             // Copy the plaintext hardware key.
+            ReadOnlySpan<byte> keyCtrHw = _header.EncryptedKeys.ItemsRo.Slice((int)NcaHeader.DecryptionKey.AesCtrHw * Aes.KeySize128, Aes.KeySize128);
             keyCtrHw.CopyTo(_decryptionKeys[(int)NcaHeader.DecryptionKey.AesCtrHw].Items);
         }
 
+        // Clear the external decryption key.
         _externalDataDecryptionKey.Items.Clear();
 
         // Copy the configuration to the NcaReader.
+        _isAvailableSwKey = cryptoConfig.IsAvailableSwKey;
         _decryptAesCtr = cryptoConfig.DecryptAesCtr;
         _decryptAesCtrForExternalKey = cryptoConfig.DecryptAesCtrForExternalKey;
         _getDecompressorFunc = compressionConfig.GetDecompressorFunc;
-        _hashGeneratorFactory = hashGeneratorFactorySelector.GetFactory();
-        Assert.SdkRequiresNotNull(_hashGeneratorFactory);
 
         _bodyStorage.SetByMove(ref baseStorage);
         _headerStorage.Set(ref headerStorage.Ref());
@@ -187,7 +217,7 @@ public class NcaReader : IDisposable
 
     public void GetHeaderSign2TargetHash(Span<byte> outBuffer)
     {
-        Assert.SdkRequiresNotNull(_hashGeneratorFactory);
+        Assert.SdkRequiresNotNull(_hashGeneratorFactorySelector);
         Assert.SdkRequiresEqual(IHash256Generator.HashSize, outBuffer.Length);
 
         int signTargetOffset = NcaHeader.HeaderSignSize * NcaHeader.HeaderSignCount;
@@ -195,7 +225,8 @@ public class NcaReader : IDisposable
         ReadOnlySpan<byte> signTarget =
             SpanHelpers.AsReadOnlyByteSpan(in _header).Slice(signTargetOffset, signTargetSize);
 
-        _hashGeneratorFactory.GenerateHash(outBuffer, signTarget);
+        IHash256GeneratorFactory factory = _hashGeneratorFactorySelector.GetFactory(HashAlgorithmType.Sha2);
+        factory.GenerateHash(outBuffer, signTarget);
     }
 
     public SharedRef<IStorage> GetSharedBodyStorage()
@@ -390,6 +421,11 @@ public class NcaReader : IDisposable
         _isSoftwareAesPrioritized = true;
     }
 
+    public bool IsAvailableSwKey()
+    {
+        return _isAvailableSwKey;
+    }
+
     public void SetExternalDecryptionKey(ReadOnlySpan<byte> key)
     {
         Assert.SdkRequiresEqual(_externalDataDecryptionKey.ItemsRo.Length, key.Length);
@@ -434,17 +470,17 @@ public class NcaReader : IDisposable
         return _getDecompressorFunc;
     }
 
-    public IHash256GeneratorFactory GetHashGeneratorFactory()
+    public IHash256GeneratorFactorySelector GetHashGeneratorFactorySelector()
     {
-        Assert.SdkRequiresNotNull(_hashGeneratorFactory);
-        return _hashGeneratorFactory;
+        Assert.SdkRequiresNotNull(_hashGeneratorFactorySelector);
+        return _hashGeneratorFactorySelector;
     }
 }
 
 /// <summary>
 /// Handles reading information from the <see cref="NcaFsHeader"/> of a file system inside an NCA file.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
 public class NcaFsHeaderReader
 {
     private NcaFsHeader _header;
@@ -468,7 +504,8 @@ public class NcaFsHeaderReader
         if (rc.IsFailure()) return rc.Miss();
 
         Unsafe.SkipInit(out Hash hash);
-        reader.GetHashGeneratorFactory().GenerateHash(hash.Value.Items, SpanHelpers.AsReadOnlyByteSpan(in _header));
+        IHash256GeneratorFactory generator = reader.GetHashGeneratorFactorySelector().GetFactory(HashAlgorithmType.Sha2);
+        generator.GenerateHash(hash.Value.Items, SpanHelpers.AsReadOnlyByteSpan(in _header));
 
         if (!CryptoUtil.IsSameBytes(reader.GetFsHeaderHash(index).Value, hash.Value, Unsafe.SizeOf<Hash>()))
         {
@@ -515,6 +552,34 @@ public class NcaFsHeaderReader
         return _header.EncryptionTypeValue;
     }
 
+    public NcaFsHeader.MetaDataHashType GetPatchMetaHashType()
+    {
+        Assert.SdkRequires(IsInitialized());
+        return _header.MetaDataHashTypeValue;
+    }
+
+    public NcaFsHeader.MetaDataHashType GetSparseMetaHashType()
+    {
+        Assert.SdkRequires(IsInitialized());
+        return _header.MetaDataHashTypeValue;
+    }
+
+    public Result GetHashTargetOffset(out long outOffset)
+    {
+        Assert.SdkRequires(IsInitialized());
+
+        Result rc = _header.GetHashTargetOffset(out outOffset);
+        if (rc.IsFailure()) return rc.Miss();
+
+        return Result.Success;
+    }
+
+    public bool IsSkipLayerHashEncryption()
+    {
+        Assert.SdkRequires(IsInitialized());
+        return _header.IsSkipLayerHashEncryption();
+    }
+
     public ref readonly NcaPatchInfo GetPatchInfo()
     {
         Assert.SdkRequires(IsInitialized());
@@ -549,6 +614,30 @@ public class NcaFsHeaderReader
     {
         Assert.SdkRequires(IsInitialized());
         return ref _header.CompressionInfo;
+    }
+
+    public bool ExistsPatchMetaHashLayer()
+    {
+        Assert.SdkRequires(IsInitialized());
+        return _header.MetaDataHashDataInfo.Size != 0 && GetPatchInfo().HasIndirectTable();
+    }
+
+    public bool ExistsSparseMetaHashLayer()
+    {
+        Assert.SdkRequires(IsInitialized());
+        return _header.MetaDataHashDataInfo.Size != 0 && ExistsSparseLayer();
+    }
+
+    public ref readonly NcaMetaDataHashDataInfo GetPatchMetaDataHashDataInfo()
+    {
+        Assert.SdkRequires(IsInitialized());
+        return ref _header.MetaDataHashDataInfo;
+    }
+
+    public ref readonly NcaMetaDataHashDataInfo GetSparseMetaDataHashDataInfo()
+    {
+        Assert.SdkRequires(IsInitialized());
+        return ref _header.MetaDataHashDataInfo;
     }
 
     public void GetRawData(Span<byte> outBuffer)

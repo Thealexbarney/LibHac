@@ -28,13 +28,15 @@ public class TypeLayoutTests
         Assert.Equal(0x002, GetOffset(in s, in s.FsTypeValue));
         Assert.Equal(0x003, GetOffset(in s, in s.HashTypeValue));
         Assert.Equal(0x004, GetOffset(in s, in s.EncryptionTypeValue));
-        Assert.Equal(0x005, GetOffset(in s, in s.Reserved));
+        Assert.Equal(0x005, GetOffset(in s, in s.MetaDataHashTypeValue));
+        Assert.Equal(0x006, GetOffset(in s, in s.Reserved));
         Assert.Equal(0x008, GetOffset(in s, in s.HashDataValue));
         Assert.Equal(0x100, GetOffset(in s, in s.PatchInfo));
         Assert.Equal(0x140, GetOffset(in s, in s.AesCtrUpperIv));
         Assert.Equal(0x148, GetOffset(in s, in s.SparseInfo));
         Assert.Equal(0x178, GetOffset(in s, in s.CompressionInfo));
-        Assert.Equal(0x1A0, GetOffset(in s, in s.Padding));
+        Assert.Equal(0x1A0, GetOffset(in s, in s.MetaDataHashDataInfo));
+        Assert.Equal(0x1D0, GetOffset(in s, in s.Padding));
     }
 
     [Fact]
@@ -99,7 +101,7 @@ public class TypeLayoutTests
     }
 
     [Fact]
-    public static void HierarchicalIntegrityVerificationLevelInformation_Layout()
+    public static void InfoLevelHash_HierarchicalIntegrityVerificationLevelInformation_Layout()
     {
         NcaFsHeader.HashData.IntegrityMetaInfo.InfoLevelHash.HierarchicalIntegrityVerificationLevelInformation s = default;
 
@@ -112,7 +114,7 @@ public class TypeLayoutTests
     }
 
     [Fact]
-    public static void SignatureSalt_Layout()
+    public static void InfoLevelHash_SignatureSalt_Layout()
     {
         NcaFsHeader.HashData.IntegrityMetaInfo.InfoLevelHash.SignatureSalt s = default;
 
@@ -162,6 +164,29 @@ public class TypeLayoutTests
         Assert.Equal(0x08, GetOffset(in s, in s.TableSize));
         Assert.Equal(0x10, GetOffset(in s, in s.TableHeader));
         Assert.Equal(0x20, GetOffset(in s, in s.Reserved));
+    }
+
+    [Fact]
+    public static void NcaMetaDataHashDataInfo_Layout()
+    {
+        NcaMetaDataHashDataInfo s = default;
+
+        Assert.Equal(0x30, Unsafe.SizeOf<NcaMetaDataHashDataInfo>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.Offset));
+        Assert.Equal(0x08, GetOffset(in s, in s.Size));
+        Assert.Equal(0x10, GetOffset(in s, in s.Hash));
+    }
+
+    [Fact]
+    public static void NcaMetaDataHashData_Layout()
+    {
+        NcaMetaDataHashData s = default;
+
+        Assert.Equal(0xE8, Unsafe.SizeOf<NcaMetaDataHashData>());
+
+        Assert.Equal(0, GetOffset(in s, in s.LayerInfoOffset));
+        Assert.Equal(8, GetOffset(in s, in s.IntegrityMetaInfo));
     }
 
     [Fact]
@@ -240,12 +265,6 @@ public class TypeLayoutTests
         Assert.Equal(NcaCryptoConfiguration.Aes128KeySize, s.HeaderEncryptionKeySource.ItemsRo.Length);
         Assert.Equal(NcaCryptoConfiguration.HeaderEncryptionKeyCount, s.HeaderEncryptedEncryptionKeys.ItemsRo.Length);
         Assert.Equal(NcaCryptoConfiguration.Aes128KeySize, s.HeaderEncryptedEncryptionKeys.ItemsRo[0].ItemsRo.Length);
-
-        Assert.Equal(NcaCryptoConfiguration.KeyAreaEncryptionKeyCount + 0, (int)KeyType.NcaHeaderKey);
-        Assert.Equal(NcaCryptoConfiguration.KeyAreaEncryptionKeyCount + 1, (int)KeyType.NcaExternalKey);
-        Assert.Equal(NcaCryptoConfiguration.KeyAreaEncryptionKeyCount + 2, (int)KeyType.SaveDataDeviceUniqueMac);
-        Assert.Equal(NcaCryptoConfiguration.KeyAreaEncryptionKeyCount + 3, (int)KeyType.SaveDataSeedUniqueMac);
-        Assert.Equal(NcaCryptoConfiguration.KeyAreaEncryptionKeyCount + 4, (int)KeyType.SaveDataTransferMac);
     }
 
     [Fact]
@@ -256,7 +275,8 @@ public class TypeLayoutTests
         Assert.Equal(0x10, Unsafe.SizeOf<AesCtrCounterExtendedStorage.Entry>());
 
         Assert.Equal(0x0, GetOffset(in s, in s.Offset));
-        Assert.Equal(0x8, GetOffset(in s, in s.Reserved));
+        Assert.Equal(0x8, GetOffset(in s, in s.EncryptionValue));
+        Assert.Equal(0x9, GetOffset(in s, in s.Reserved));
         Assert.Equal(0xC, GetOffset(in s, in s.Generation));
     }
 }

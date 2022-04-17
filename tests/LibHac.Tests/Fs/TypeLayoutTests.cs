@@ -476,7 +476,7 @@ public class TypeLayoutTests
     [StructLayout(LayoutKind.Sequential)]
     private struct Int64AlignmentTest
     {
-        public int A;
+        public byte A;
         public Int64 B;
     }
 

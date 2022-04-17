@@ -1,10 +1,16 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using LibHac.Common;
 using LibHac.Common.FixedArrays;
+using LibHac.Fs;
 
 namespace LibHac.FsSystem;
 
+/// <summary>
+/// The structure used as the header for an NCA file.
+/// </summary>
+/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
 public struct NcaHeader
 {
     public enum ContentType : byte
@@ -133,6 +139,19 @@ public struct NcaCompressionInfo
     public ulong Reserved;
 }
 
+public struct NcaMetaDataHashDataInfo
+{
+    public long Offset;
+    public long Size;
+    public Hash Hash;
+}
+
+public struct NcaMetaDataHashData
+{
+    public long LayerInfoOffset;
+    public NcaFsHeader.HashData.IntegrityMetaInfo IntegrityMetaInfo;
+}
+
 [StructLayout(LayoutKind.Explicit)]
 public struct NcaAesCtrUpperIv
 {
@@ -149,19 +168,25 @@ public struct NcaAesCtrUpperIv
     }
 }
 
+/// <summary>
+/// The structure used as the header for an NCA file system.
+/// </summary>
+/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
 public struct NcaFsHeader
 {
     public ushort Version;
     public FsType FsTypeValue;
     public HashType HashTypeValue;
     public EncryptionType EncryptionTypeValue;
-    public Array3<byte> Reserved;
+    public MetaDataHashType MetaDataHashTypeValue;
+    public Array2<byte> Reserved;
     public HashData HashDataValue;
     public NcaPatchInfo PatchInfo;
     public NcaAesCtrUpperIv AesCtrUpperIv;
     public NcaSparseInfo SparseInfo;
     public NcaCompressionInfo CompressionInfo;
-    public Array96<byte> Padding;
+    public NcaMetaDataHashDataInfo MetaDataHashDataInfo;
+    public Array48<byte> Padding;
 
     public enum FsType : byte
     {
@@ -175,7 +200,9 @@ public struct NcaFsHeader
         None = 1,
         AesXts = 2,
         AesCtr = 3,
-        AesCtrEx = 4
+        AesCtrEx = 4,
+        AesCtrSkipLayerHash = 5,
+        AesCtrExSkipLayerHash = 6
     }
 
     public enum HashType : byte
@@ -183,7 +210,16 @@ public struct NcaFsHeader
         Auto = 0,
         None = 1,
         HierarchicalSha256Hash = 2,
-        HierarchicalIntegrityHash = 3
+        HierarchicalIntegrityHash = 3,
+        AutoSha3 = 4,
+        HierarchicalSha3256Hash = 5,
+        HierarchicalIntegritySha3Hash = 6
+    }
+
+    public enum MetaDataHashType : byte
+    {
+        None = 0,
+        HierarchicalIntegrity = 1
     }
 
     public struct Region
@@ -234,5 +270,32 @@ public struct NcaFsHeader
                 }
             }
         }
+    }
+
+    public readonly Result GetHashTargetOffset(out long outOffset)
+    {
+        UnsafeHelpers.SkipParamInit(out outOffset);
+
+        if (HashTypeValue is HashType.HierarchicalIntegrityHash or HashType.HierarchicalIntegritySha3Hash)
+        {
+            ref readonly HashData.IntegrityMetaInfo.InfoLevelHash hashInfo = ref HashDataValue.IntegrityMeta.LevelHashInfo;
+            outOffset = hashInfo.Layers[hashInfo.MaxLayers - 2].Offset;
+        }
+        else if (HashTypeValue is HashType.HierarchicalSha256Hash or HashType.HierarchicalSha3256Hash)
+        {
+            ref readonly HashData.HierarchicalSha256Data hashInfo = ref HashDataValue.HierarchicalSha256;
+            outOffset = hashInfo.LayerRegions[hashInfo.LayerCount - 1].Offset;
+        }
+        else
+        {
+            return ResultFs.InvalidNcaFsHeader.Log();
+        }
+
+        return Result.Success;
+    }
+
+    public readonly bool IsSkipLayerHashEncryption()
+    {
+        return EncryptionTypeValue is EncryptionType.AesCtrSkipLayerHash or EncryptionType.AesCtrExSkipLayerHash;
     }
 }

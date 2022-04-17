@@ -8,21 +8,27 @@ using LibHac.FsSrv;
 
 namespace LibHac.FsSystem;
 
+/// <summary>
+/// Contains the configuration used for decrypting NCAs.
+/// </summary>
+/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
 public struct NcaCryptoConfiguration
 {
-    public static readonly int Rsa2048KeyModulusSize = Rsa.ModulusSize2048Pss;
-    public static readonly int Rsa2048KeyPublicExponentSize = Rsa.MaximumExponentSize2048Pss;
-    public static readonly int Rsa2048KeyPrivateExponentSize = Rsa2048KeyModulusSize;
+    public const int Rsa2048KeyModulusSize = Rsa.ModulusSize2048Pss;
+    public const int Rsa2048KeyPublicExponentSize = Rsa.MaximumExponentSize2048Pss;
+    public const int Rsa2048KeyPrivateExponentSize = Rsa2048KeyModulusSize;
 
-    public static readonly int Aes128KeySize = Aes.KeySize128;
+    public const int Aes128KeySize = Aes.KeySize128;
 
-    public static readonly int Header1SignatureKeyGenerationMax = 1;
+    public const int Header1SignatureKeyGenerationMax = 1;
 
-    public static readonly int KeyAreaEncryptionKeyIndexCount = 3;
-    public static readonly int HeaderEncryptionKeyCount = 2;
+    public const int KeyAreaEncryptionKeyIndexCount = 3;
+    public const int HeaderEncryptionKeyCount = 2;
 
-    public static readonly int KeyGenerationMax = 32;
-    public static readonly int KeyAreaEncryptionKeyCount = KeyAreaEncryptionKeyIndexCount * KeyGenerationMax;
+    public const byte KeyAreaEncryptionKeyIndexZeroKey = 0xFF;
+
+    public const int KeyGenerationMax = 32;
+    public const int KeyAreaEncryptionKeyCount = KeyAreaEncryptionKeyIndexCount * KeyGenerationMax;
 
     public Array2<Array256<byte>> Header1SignKeyModuli;
     public Array3<byte> Header1SignKeyPublicExponent;
@@ -30,9 +36,13 @@ public struct NcaCryptoConfiguration
     public Array16<byte> HeaderEncryptionKeySource;
     public Array2<Array16<byte>> HeaderEncryptedEncryptionKeys;
     public GenerateKeyFunction GenerateKey;
+    public CryptAesXtsFunction EncryptAesXtsForExternalKey;
+    public CryptAesXtsFunction DecryptAesXtsForExternalKey;
     public DecryptAesCtrFunction DecryptAesCtr;
     public DecryptAesCtrFunction DecryptAesCtrForExternalKey;
+    public VerifySign1Function VerifySign1;
     public bool IsDev;
+    public bool IsAvailableSwKey;
 }
 
 public struct NcaCompressionConfiguration
@@ -49,22 +59,30 @@ public static class NcaKeyFunctions
 
     public static int GetKeyTypeValue(byte keyIndex, byte keyGeneration)
     {
-        const int invalidKeyTypeValue = -1;
+        if (keyIndex == NcaCryptoConfiguration.KeyAreaEncryptionKeyIndexZeroKey)
+        {
+            return (int)KeyType.ZeroKey;
+        }
 
-        if (keyIndex >= NcaCryptoConfiguration.KeyAreaEncryptionKeyIndexCount)
-            return invalidKeyTypeValue;
+        if (keyIndex < NcaCryptoConfiguration.KeyAreaEncryptionKeyIndexCount)
+        {
+            return NcaCryptoConfiguration.KeyAreaEncryptionKeyIndexCount * keyGeneration + keyIndex;
+        }
 
-        return NcaCryptoConfiguration.KeyAreaEncryptionKeyIndexCount * keyGeneration + keyIndex;
+        return (int)KeyType.InvalidKey;
     }
 }
 
 public enum KeyType
 {
-    NcaHeaderKey = 0x60,
-    NcaExternalKey = 0x61,
-    SaveDataDeviceUniqueMac = 0x62,
-    SaveDataSeedUniqueMac = 0x63,
-    SaveDataTransferMac = 0x64
+    ZeroKey = -2,
+    InvalidKey = -1,
+    NcaHeaderKey1 = NcaCryptoConfiguration.KeyAreaEncryptionKeyCount + 0,
+    NcaHeaderKey2 = NcaCryptoConfiguration.KeyAreaEncryptionKeyCount + 1,
+    NcaExternalKey = NcaCryptoConfiguration.KeyAreaEncryptionKeyCount + 2,
+    SaveDataDeviceUniqueMac = NcaCryptoConfiguration.KeyAreaEncryptionKeyCount + 3,
+    SaveDataSeedUniqueMac = NcaCryptoConfiguration.KeyAreaEncryptionKeyCount + 4,
+    SaveDataTransferMac = NcaCryptoConfiguration.KeyAreaEncryptionKeyCount + 5
 }
 
 public class NcaFileSystemDriver : IDisposable
@@ -85,6 +103,8 @@ public class NcaFileSystemDriver : IDisposable
         public SharedRef<IStorage> FsDataStorage;
         public SharedRef<IStorage> CompressedStorageMetaStorage;
         public SharedRef<CompressedStorage> CompressedStorage;
+        public SharedRef<IStorage> PatchLayerInfoStorage;
+        public SharedRef<IStorage> SparseLayerInfoStorage;
 
         public void Dispose()
         {
@@ -100,6 +120,8 @@ public class NcaFileSystemDriver : IDisposable
             FsDataStorage.Destroy();
             CompressedStorageMetaStorage.Destroy();
             CompressedStorage.Destroy();
+            PatchLayerInfoStorage.Destroy();
+            SparseLayerInfoStorage.Destroy();
         }
     }
 
@@ -184,6 +206,14 @@ public class NcaFileSystemDriver : IDisposable
         throw new NotImplementedException();
     }
 
+    private Result CreateSparseStorageMetaStorageWithVerification(ref SharedRef<IStorage> outStorage,
+        ref SharedRef<IStorage> outLayerInfoStorage, ref SharedRef<IStorage> baseStorage, long offset,
+        in NcaAesCtrUpperIv upperIv, in NcaSparseInfo sparseInfo, in NcaMetaDataHashDataInfo metaDataHashDataInfo,
+        IHash256GeneratorFactory hashGeneratorFactory)
+    {
+        throw new NotImplementedException();
+    }
+
     private Result CreateSparseStorageCore(ref SharedRef<SparseStorage> outStorage, ref SharedRef<IStorage> baseStorage,
         long baseStorageSize, ref SharedRef<IStorage> sparseStorageMetaStorage, in NcaSparseInfo sparseInfo,
         bool hasExternalInfo)
@@ -198,8 +228,26 @@ public class NcaFileSystemDriver : IDisposable
         throw new NotImplementedException();
     }
 
+    private Result CreateSparseStorageWithVerification(ref SharedRef<IStorage> outStorage, out long outFsDataOffset,
+        out SharedRef<SparseStorage> outSparseStorage, ref SharedRef<IStorage> outSparseStorageMetaStorage,
+        ref SharedRef<IStorage> outLayerInfoStorage, int index, in NcaAesCtrUpperIv upperIv,
+        in NcaSparseInfo sparseInfo, in NcaMetaDataHashDataInfo metaDataHashDataInfo,
+        NcaFsHeader.MetaDataHashType metaDataHashType)
+    {
+        throw new NotImplementedException();
+    }
+
+    private Result CreatePatchMetaStorage(ref SharedRef<IStorage> outAesCtrExMetaStorage,
+        ref SharedRef<IStorage> outIndirectMetaStorage, ref SharedRef<IStorage> outLayerInfoStorage,
+        ref SharedRef<IStorage> baseStorage, long offset, in NcaAesCtrUpperIv upperIv, in NcaPatchInfo patchInfo,
+        in NcaMetaDataHashDataInfo metaDataHashDataInfo, IHash256GeneratorFactory hashGeneratorFactory)
+    {
+        throw new NotImplementedException();
+    }
+
     private Result CreateAesCtrExStorageMetaStorage(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IStorage> baseStorage, long offset, in NcaAesCtrUpperIv upperIv, in NcaPatchInfo patchInfo)
+        ref SharedRef<IStorage> baseStorage, long offset, NcaFsHeader.EncryptionType encryptionType,
+        in NcaAesCtrUpperIv upperIv, in NcaPatchInfo patchInfo)
     {
         throw new NotImplementedException();
     }
@@ -227,13 +275,29 @@ public class NcaFileSystemDriver : IDisposable
     }
 
     private Result CreateSha256Storage(ref SharedRef<IStorage> outStorage, ref SharedRef<IStorage> baseStorage,
-        in NcaFsHeader.HashData.HierarchicalSha256Data sha256Data)
+        in NcaFsHeader.HashData.HierarchicalSha256Data sha256Data, IHash256GeneratorFactory hashGeneratorFactory)
     {
         throw new NotImplementedException();
     }
 
-    private Result HierarchicalSha256Data(ref SharedRef<IStorage> outStorage, ref SharedRef<IStorage> baseStorage,
-        in NcaFsHeader.HashData.IntegrityMetaInfo metaInfo)
+    private Result CreateIntegrityVerificationStorage(ref SharedRef<IStorage> outStorage,
+        ref SharedRef<IStorage> baseStorage, in NcaFsHeader.HashData.IntegrityMetaInfo metaInfo,
+        IHash256GeneratorFactory hashGeneratorFactory)
+    {
+        throw new NotImplementedException();
+    }
+
+    private Result CreateIntegrityVerificationStorageImpl(ref SharedRef<IStorage> outStorage,
+        ref SharedRef<IStorage> baseStorage, in NcaFsHeader.HashData.IntegrityMetaInfo metaInfo, long layerInfoOffset,
+        int maxDataCacheEntries, int maxHashCacheEntries, sbyte bufferLevel,
+        IHash256GeneratorFactory hashGeneratorFactory)
+    {
+        throw new NotImplementedException();
+    }
+
+    private Result CreateIntegrityVerificationStorageForMeta(ref SharedRef<IStorage> outStorage,
+        ref SharedRef<IStorage> outLayerInfoStorage, ref SharedRef<IStorage> baseStorage, long offset,
+        in NcaMetaDataHashDataInfo metaDataHashDataInfo, IHash256GeneratorFactory hashGeneratorFactory)
     {
         throw new NotImplementedException();
     }
@@ -249,6 +313,12 @@ public class NcaFileSystemDriver : IDisposable
     public Result CreateCompressedStorage(ref SharedRef<IStorage> outStorage,
         ref SharedRef<CompressedStorage> outCompressedStorage, ref SharedRef<IStorage> outMetaStorage,
         ref SharedRef<IStorage> baseStorage, in NcaCompressionInfo compressionInfo)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result CreateRegionSwitchStorage(ref SharedRef<IStorage> outStorage, NcaFsHeaderReader headerReader,
+        ref SharedRef<IStorage> insideRegionStorage, ref SharedRef<IStorage> outsideRegionStorage)
     {
         throw new NotImplementedException();
     }
