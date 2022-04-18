@@ -1817,13 +1817,13 @@ public static class ResultFs
                 /// <summary>Error code: 2002-6318; Inner value: 0x315c02</summary>
                 public static Result.Base UnsupportedSetSizeForIntegrityVerificationStorage => new Result.Base(ModuleFs, 6318);
                 /// <summary>Error code: 2002-6319; Inner value: 0x315e02</summary>
-                public static Result.Base UnsupportedOperateRangeForNonSaveDataIntegrityVerificationStorage => new Result.Base(ModuleFs, 6319);
+                public static Result.Base UnsupportedOperateRangeForWritableIntegrityVerificationStorage => new Result.Base(ModuleFs, 6319);
                 /// <summary>Error code: 2002-6320; Inner value: 0x316002</summary>
                 public static Result.Base UnsupportedOperateRangeForIntegrityVerificationStorage => new Result.Base(ModuleFs, 6320);
                 /// <summary>Error code: 2002-6321; Inner value: 0x316202</summary>
                 public static Result.Base UnsupportedSetSizeForBlockCacheBufferedStorage => new Result.Base(ModuleFs, 6321);
                 /// <summary>Error code: 2002-6322; Inner value: 0x316402</summary>
-                public static Result.Base UnsupportedOperateRangeForNonSaveDataBlockCacheBufferedStorage => new Result.Base(ModuleFs, 6322);
+                public static Result.Base UnsupportedOperateRangeForWritableBlockCacheBufferedStorage => new Result.Base(ModuleFs, 6322);
                 /// <summary>Error code: 2002-6323; Inner value: 0x316602</summary>
                 public static Result.Base UnsupportedOperateRangeForBlockCacheBufferedStorage => new Result.Base(ModuleFs, 6323);
                 /// <summary>Error code: 2002-6324; Inner value: 0x316802</summary>

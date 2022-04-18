@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Runtime.InteropServices;
 using LibHac.Diag;
 using LibHac.FsSrv;
 using LibHac.Os;
@@ -114,6 +115,12 @@ public struct PooledBuffer : IDisposable
     {
         Assert.SdkRequiresNotNull(_array);
         return _array.AsSpan(0, _length);
+    }
+
+    public Span<T> GetBuffer<T>() where T : unmanaged
+    {
+        Assert.SdkRequiresNotNull(_array);
+        return MemoryMarshal.Cast<byte, T>(_array.AsSpan(0, _length));
     }
 
     public int GetSize()

@@ -2,8 +2,6 @@
 
 namespace LibHac.FsSrv;
 
-public delegate Result RandomDataGenerator(Span<byte> buffer);
-
 public delegate Result SaveTransferAesKeyGenerator(Span<byte> key,
     SaveDataTransferCryptoConfiguration.KeyIndex index, ReadOnlySpan<byte> keySource, int keyGeneration);
 

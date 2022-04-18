@@ -1,5 +1,6 @@
 ﻿using System;
 using LibHac.Common.FixedArrays;
+using LibHac.FsSystem;
 
 namespace LibHac.FsSrv;
 
