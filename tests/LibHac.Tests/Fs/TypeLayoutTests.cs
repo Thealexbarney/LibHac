@@ -213,7 +213,10 @@ public class TypeLayoutTests
         Assert.Equal(0x08, GetOffset(in s, in s.FatFsError));
         Assert.Equal(0x28, GetOffset(in s, in s.RecoveredByInvalidateCacheCount));
         Assert.Equal(0x2C, GetOffset(in s, in s.SaveDataIndexCount));
-        Assert.Equal(0x30, GetOffset(in s, in s.Reserved));
+        Assert.Equal(0x30, GetOffset(in s, in s.BisSystemFatReportInfo));
+        Assert.Equal(0x34, GetOffset(in s, in s.BisUserFatReport));
+        Assert.Equal(0x38, GetOffset(in s, in s.SdCardFatReport));
+        Assert.Equal(0x3C, GetOffset(in s, in s.Reserved));
     }
 
     [Fact]

@@ -1,5 +1,6 @@
 ﻿using LibHac.Diag;
 using LibHac.Fs;
+using LibHac.FsSrv.FsCreator;
 using LibHac.FsSystem;
 using LibHac.Os;
 
@@ -10,7 +11,7 @@ namespace LibHac.FsSrv;
 /// </summary>
 /// <remarks><para>This struct handles forwarding calls to the <see cref="StatusReportServiceImpl"/> object.
 /// No permissions are needed to call any of this struct's functions.</para>
-/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para></remarks>
+/// <para>Based on FS 14.1.0 (nnSdk 14.3.0)</para></remarks>
 public readonly struct StatusReportService
 {
     private readonly StatusReportServiceImpl _serviceImpl;
@@ -40,7 +41,7 @@ public readonly struct StatusReportService
 /// <summary>
 /// Manages getting and resetting various status reports and statistics about parts of the FS service.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
 public class StatusReportServiceImpl
 {
     private Configuration _config;
@@ -56,7 +57,7 @@ public class StatusReportServiceImpl
     {
         public NcaFileSystemServiceImpl NcaFileSystemServiceImpl;
         public SaveDataFileSystemServiceImpl SaveDataFileSystemServiceImpl;
-        // Missing: FatFileSystemCreator (Not an IFatFileSystemCreator)
+        public FatFileSystemCreator FatFileSystemCreator;
         public MemoryReport BufferManagerMemoryReport;
         public MemoryReport ExpHeapMemoryReport;
         public MemoryReport BufferPoolMemoryReport;
@@ -79,7 +80,12 @@ public class StatusReportServiceImpl
             out errorInfo.UnrecoverableDataCorruptionByRemountCount,
             out errorInfo.RecoveredByInvalidateCacheCount);
 
-        // Missing: GetFatInfo
+        if (_config.FatFileSystemCreator is not null)
+        {
+            _config.FatFileSystemCreator.GetAndClearFatFsError(out errorInfo.FatFsError);
+            _config.FatFileSystemCreator.GetAndClearFatReportInfo(out errorInfo.BisSystemFatReportInfo,
+                out errorInfo.BisUserFatReport, out errorInfo.SdCardFatReport);
+        }
 
         Assert.SdkRequiresNotNull(_config.SaveDataFileSystemServiceImpl);
 

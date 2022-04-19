@@ -10,7 +10,10 @@ public struct FileSystemProxyErrorInfo
     public FatError FatFsError;
     public int RecoveredByInvalidateCacheCount;
     public int SaveDataIndexCount;
-    public Array80<byte> Reserved;
+    public FatReportInfo BisSystemFatReportInfo;
+    public FatReportInfo BisUserFatReport;
+    public FatReportInfo SdCardFatReport;
+    public Array68<byte> Reserved;
 }
 
 public struct StorageErrorInfo
