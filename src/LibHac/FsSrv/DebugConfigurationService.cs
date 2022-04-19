@@ -11,7 +11,7 @@ namespace LibHac.FsSrv;
 /// <summary>
 /// Handles debug configuration calls for <see cref="FileSystemProxyImpl"/>.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
 public struct DebugConfigurationService
 {
     private DebugConfigurationServiceImpl _serviceImpl;
@@ -63,7 +63,7 @@ public struct DebugConfigurationService
 /// <summary>
 /// Manages a key-value list of debug settings.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
 public class DebugConfigurationServiceImpl : IDisposable
 {
     private Configuration _config;
