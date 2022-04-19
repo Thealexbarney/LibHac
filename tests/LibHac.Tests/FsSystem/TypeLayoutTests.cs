@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using LibHac.FsSystem;
 using Xunit;
 using static LibHac.Tests.Common.Layout;
@@ -278,5 +279,79 @@ public class TypeLayoutTests
         Assert.Equal(0x8, GetOffset(in s, in s.EncryptionValue));
         Assert.Equal(0x9, GetOffset(in s, in s.Reserved));
         Assert.Equal(0xC, GetOffset(in s, in s.Generation));
+    }
+
+    [Fact]
+    public static void HierarchicalIntegrityVerificationLevelInformation_Layout()
+    {
+        HierarchicalIntegrityVerificationLevelInformation s = default;
+
+        Assert.Equal(0x18, Unsafe.SizeOf<HierarchicalIntegrityVerificationLevelInformation>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.Offset));
+        Assert.Equal(0x08, GetOffset(in s, in s.Size));
+        Assert.Equal(0x10, GetOffset(in s, in s.BlockOrder));
+        Assert.Equal(0x14, GetOffset(in s, in s.Reserved));
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct HierarchicalIntegrityVerificationLevelInformationAlignmentTest
+    {
+        public byte A;
+        public HierarchicalIntegrityVerificationLevelInformation B;
+    }
+
+    [Fact]
+    public static void HierarchicalIntegrityVerificationLevelInformation_Alignment()
+    {
+        var s = new HierarchicalIntegrityVerificationLevelInformationAlignmentTest();
+
+        Assert.Equal(0x1C, Unsafe.SizeOf<HierarchicalIntegrityVerificationLevelInformationAlignmentTest>());
+
+        Assert.Equal(0, GetOffset(in s, in s.A));
+        Assert.Equal(4, GetOffset(in s, in s.B));
+    }
+
+    [Fact]
+    public static void HierarchicalIntegrityVerificationInformation_Layout()
+    {
+        HierarchicalIntegrityVerificationInformation s = default;
+
+        Assert.Equal(0xB4, Unsafe.SizeOf<HierarchicalIntegrityVerificationInformation>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.MaxLayers));
+        Assert.Equal(0x04, GetOffset(in s, in s.Layers));
+        Assert.Equal(0x94, GetOffset(in s, in s.HashSalt));
+
+        Assert.Equal(Constants.IntegrityMaxLayerCount - 1, s.Layers.ItemsRo.Length);
+    }
+
+    [Fact]
+    public static void HierarchicalIntegrityVerificationMetaInformation_Layout()
+    {
+        HierarchicalIntegrityVerificationMetaInformation s = default;
+
+        Assert.Equal(0xC0, Unsafe.SizeOf<HierarchicalIntegrityVerificationMetaInformation>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.Magic));
+        Assert.Equal(0x04, GetOffset(in s, in s.Version));
+        Assert.Equal(0x08, GetOffset(in s, in s.MasterHashSize));
+        Assert.Equal(0x0C, GetOffset(in s, in s.LevelHashInfo));
+    }
+
+    [Fact]
+    public static void HierarchicalIntegrityVerificationSizeSet_Layout()
+    {
+        HierarchicalIntegrityVerificationSizeSet s = default;
+
+        Assert.Equal(Constants.IntegrityMaxLayerCount - 2, s.LayeredHashSizes.ItemsRo.Length);
+    }
+
+    [Fact]
+    public static void HierarchicalIntegrityVerificationStorageControlArea_InputParam_Layout()
+    {
+        HierarchicalIntegrityVerificationStorageControlArea.InputParam s = default;
+
+        Assert.Equal(Constants.IntegrityMaxLayerCount - 1, s.LevelBlockSizes.ItemsRo.Length);
     }
 }

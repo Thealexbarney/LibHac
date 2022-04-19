@@ -59,8 +59,8 @@ public class BlockCacheBufferedStorage : IStorage
     private int _shiftBytesVerificationBlock;
     private int _flags;
     private int _bufferLevel;
-    private StorageType _storageType;
     private BlockCacheManager<CacheEntry, AccessRange> _cacheManager;
+    private bool _isWritable;
 
     public BlockCacheBufferedStorage()
     {
@@ -93,7 +93,7 @@ public class BlockCacheBufferedStorage : IStorage
 
     public Result Initialize(IBufferManager bufferManager, SdkRecursiveMutex mutex, IStorage data, long dataSize,
         int sizeBytesVerificationBlock, int maxCacheEntries, bool useRealDataCache, sbyte bufferLevel,
-        bool useKeepBurstMode, StorageType storageType)
+        bool useKeepBurstMode, bool isWritable)
     {
         Assert.SdkNotNull(data);
         Assert.SdkNotNull(mutex);
@@ -111,7 +111,7 @@ public class BlockCacheBufferedStorage : IStorage
         _lastResult = Result.Success;
         _flags = 0;
         _bufferLevel = bufferLevel;
-        _storageType = storageType;
+        _isWritable = isWritable;
         _shiftBytesVerificationBlock = (int)BitmapUtils.ILog2((uint)sizeBytesVerificationBlock);
 
         Assert.SdkEqual(1 << _shiftBytesVerificationBlock, _sizeBytesVerificationBlock);
