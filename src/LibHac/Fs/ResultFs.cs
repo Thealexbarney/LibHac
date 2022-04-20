@@ -1952,6 +1952,12 @@ public static class ResultFs
                 public static Result.Base UnsupportedWriteForCompressedStorage => new Result.Base(ModuleFs, 6387);
                 /// <summary>Error code: 2002-6388; Inner value: 0x31e802</summary>
                 public static Result.Base UnsupportedOperateRangeForCompressedStorage => new Result.Base(ModuleFs, 6388);
+                /// <summary>Error code: 2002-6395; Inner value: 0x31f602</summary>
+                public static Result.Base UnsupportedRollbackOnlyModifiedForApplicationTemporaryFileSystem => new Result.Base(ModuleFs, 6395);
+                /// <summary>Error code: 2002-6396; Inner value: 0x31f802</summary>
+                public static Result.Base UnsupportedRollbackOnlyModifiedForDirectorySaveDataFileSystem => new Result.Base(ModuleFs, 6396);
+                /// <summary>Error code: 2002-6397; Inner value: 0x31fa02</summary>
+                public static Result.Base UnsupportedOperateRangeForRegionSwitchStorage => new Result.Base(ModuleFs, 6397);
 
             /// <summary>Error code: 2002-6400; Range: 6400-6449; Inner value: 0x320002</summary>
             public static Result.Base PermissionDenied { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6400, 6449); }

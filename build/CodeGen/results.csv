@@ -1064,6 +1064,9 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,6386,,,,UnsupportedSetSizeForZeroBitmapHashStorageFile,
 2,6387,,,,UnsupportedWriteForCompressedStorage,
 2,6388,,,,UnsupportedOperateRangeForCompressedStorage,
+2,6395,,,,UnsupportedRollbackOnlyModifiedForApplicationTemporaryFileSystem,
+2,6396,,,,UnsupportedRollbackOnlyModifiedForDirectorySaveDataFileSystem,
+2,6397,,,,UnsupportedOperateRangeForRegionSwitchStorage,
 
 2,6400,6449,,,PermissionDenied,
 2,6403,,,,PermissionDeniedForCreateHostFileSystem,Returned when opening a host FS on a retail device.
