@@ -12,5 +12,5 @@ public interface ISaveDataExtraDataAccessor : IDisposable
     Result WriteExtraData(in SaveDataExtraData extraData);
     Result CommitExtraData(bool updateTimeStamp);
     Result ReadExtraData(out SaveDataExtraData extraData);
-    void RegisterCacheObserver(ISaveDataExtraDataAccessorCacheObserver observer, SaveDataSpaceId spaceId, ulong saveDataId);
+    void RegisterCacheObserver(ISaveDataExtraDataAccessorObserver observer, SaveDataSpaceId spaceId, ulong saveDataId);
 }

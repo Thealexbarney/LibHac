@@ -10,13 +10,13 @@ namespace LibHac.FsSrv.Impl;
 /// <summary>
 /// Holds the <see cref="ISaveDataExtraDataAccessor"/>s for opened save data file systems.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
-public class SaveDataExtraDataAccessorCacheManager : ISaveDataExtraDataAccessorCacheObserver
+/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+public class SaveDataExtraDataAccessorCacheManager : ISaveDataExtraDataAccessorObserver
 {
     /// <summary>
     /// Holds a single cached extra data accessor identified by its save data ID and save data space ID.
     /// </summary>
-    /// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+    /// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
     [NonCopyable]
     private struct Cache : IDisposable
     {
@@ -77,13 +77,14 @@ public class SaveDataExtraDataAccessorCacheManager : ISaveDataExtraDataAccessorC
     public Result Register(in SharedRef<ISaveDataExtraDataAccessor> accessor, SaveDataSpaceId spaceId,
         ulong saveDataId)
     {
+        accessor.Get.RegisterCacheObserver(this, spaceId, saveDataId);
+
         var node = new LinkedListNode<Cache>(new Cache(in accessor, spaceId, saveDataId));
 
-        using (ScopedLock.Lock(ref _mutex))
-        {
-            UnregisterImpl(spaceId, saveDataId);
-            _accessorList.AddLast(node);
-        }
+        using ScopedLock<SdkRecursiveMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
+
+        UnregisterImpl(spaceId, saveDataId);
+        _accessorList.AddLast(node);
 
         return Result.Success;
     }
@@ -134,7 +135,7 @@ public class SaveDataExtraDataAccessorCacheManager : ISaveDataExtraDataAccessorC
         if (!accessor.HasValue)
             return ResultFs.TargetNotFound.Log();
 
-        outAccessor.Reset(new SaveDataExtraDataResultConvertAccessor(ref accessor.Ref()));
+        outAccessor.SetByMove(ref accessor.Ref());
         return Result.Success;
     }
 

@@ -2,7 +2,6 @@
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
-using LibHac.FsSystem;
 
 namespace LibHac.FsSrv.Impl;
 
@@ -200,49 +199,5 @@ public class SaveDataResultConvertFileSystem : IResultConvertFileSystem
     protected override Result ConvertResult(Result result)
     {
         return SaveDataResultConvert.ConvertSaveFsDriverPrivateResult(result);
-    }
-}
-
-/// <summary>
-/// Wraps an <see cref="ISaveDataExtraDataAccessor"/>, converting its returned <see cref="Result"/>s
-/// to save-data-specific <see cref="Result"/>s.
-/// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
-public class SaveDataExtraDataResultConvertAccessor : ISaveDataExtraDataAccessor
-{
-    private SharedRef<ISaveDataExtraDataAccessor> _accessor;
-
-    public SaveDataExtraDataResultConvertAccessor(ref SharedRef<ISaveDataExtraDataAccessor> accessor)
-    {
-        _accessor = SharedRef<ISaveDataExtraDataAccessor>.CreateMove(ref accessor);
-    }
-
-    public void Dispose()
-    {
-        _accessor.Destroy();
-    }
-
-    public Result WriteExtraData(in SaveDataExtraData extraData)
-    {
-        Result rc = _accessor.Get.WriteExtraData(in extraData);
-        return SaveDataResultConvert.ConvertSaveFsDriverPrivateResult(rc);
-    }
-
-    public Result CommitExtraData(bool updateTimeStamp)
-    {
-        Result rc = _accessor.Get.CommitExtraData(updateTimeStamp);
-        return SaveDataResultConvert.ConvertSaveFsDriverPrivateResult(rc);
-    }
-
-    public Result ReadExtraData(out SaveDataExtraData extraData)
-    {
-        Result rc = _accessor.Get.ReadExtraData(out extraData);
-        return SaveDataResultConvert.ConvertSaveFsDriverPrivateResult(rc);
-    }
-
-    public void RegisterCacheObserver(ISaveDataExtraDataAccessorCacheObserver observer, SaveDataSpaceId spaceId,
-        ulong saveDataId)
-    {
-        _accessor.Get.RegisterCacheObserver(observer, spaceId, saveDataId);
     }
 }

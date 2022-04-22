@@ -50,7 +50,7 @@ public class DirectorySaveDataFileSystem : IFileSystem, ISaveDataExtraDataAccess
     private RandomDataGenerator _randomGenerator;
 
     // Additions to support caching
-    private ISaveDataExtraDataAccessorCacheObserver _cacheObserver;
+    private ISaveDataExtraDataAccessorObserver _cacheObserver;
     private SaveDataSpaceId _spaceId;
     private ulong _saveDataId;
 
@@ -1056,7 +1056,7 @@ public class DirectorySaveDataFileSystem : IFileSystem, ISaveDataExtraDataAccess
         return Result.Success;
     }
 
-    public void RegisterCacheObserver(ISaveDataExtraDataAccessorCacheObserver observer, SaveDataSpaceId spaceId,
+    public void RegisterCacheObserver(ISaveDataExtraDataAccessorObserver observer, SaveDataSpaceId spaceId,
         ulong saveDataId)
     {
         _cacheObserver = observer;

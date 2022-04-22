@@ -20,7 +20,7 @@ public class SaveDataFileSystemServiceImpl
     private Configuration _config;
     private EncryptionSeed _encryptionSeed;
 
-    private SaveDataFileSystemCacheManager _saveDataFsCacheManager;
+    private FsSystem.SaveDataFileSystemCacheManager _saveDataFsCacheManager;
     private SaveDataExtraDataAccessorCacheManager _extraDataCacheManager;
     // Save data porter manager
     private bool _isSdCardAccessible;
@@ -47,7 +47,7 @@ public class SaveDataFileSystemServiceImpl
     public SaveDataFileSystemServiceImpl(in Configuration configuration)
     {
         _config = configuration;
-        _saveDataFsCacheManager = new SaveDataFileSystemCacheManager();
+        _saveDataFsCacheManager = new FsSystem.SaveDataFileSystemCacheManager();
         _extraDataCacheManager = new SaveDataExtraDataAccessorCacheManager();
 
         _timeStampGetter = new TimeStampGetter(this);
