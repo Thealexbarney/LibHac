@@ -12,7 +12,7 @@ public abstract class ISaveDataFileSystem : IFileSystem, ICacheableSaveDataFileS
     public abstract Result WriteExtraData(in SaveDataExtraData extraData);
     public abstract Result CommitExtraData(bool updateTimeStamp);
     public abstract Result ReadExtraData(out SaveDataExtraData extraData);
-    public abstract void RegisterCacheObserver(ISaveDataExtraDataAccessorObserver observer, SaveDataSpaceId spaceId, ulong saveDataId);
+    public abstract void RegisterExtraDataAccessorObserver(ISaveDataExtraDataAccessorObserver observer, SaveDataSpaceId spaceId, ulong saveDataId);
 }
 
 public interface ICacheableSaveDataFileSystem

@@ -48,8 +48,8 @@ public class DirectorySaveDataFileSystemTests : CommittableIFileSystemTests
         FileSystemClient fsClient)
     {
         var obj = new DirectorySaveDataFileSystem(baseFileSystem, fsClient);
-        Result rc = obj.Initialize(timeStampGetter, randomGenerator, isJournalingSupported, isMultiCommitSupported,
-            isJournalingEnabled);
+        Result rc = obj.Initialize(isJournalingSupported, isMultiCommitSupported, isJournalingEnabled, timeStampGetter,
+            randomGenerator);
 
         if (rc.IsSuccess())
         {
@@ -521,7 +521,7 @@ public class DirectorySaveDataFileSystemTests : CommittableIFileSystemTests
 
         private int _index;
 
-        public Result GenerateRandom(Span<byte> output)
+        public void GenerateRandom(Span<byte> output)
         {
             if (output.Length != 8)
                 throw new ArgumentException();
@@ -529,7 +529,6 @@ public class DirectorySaveDataFileSystemTests : CommittableIFileSystemTests
             Unsafe.As<byte, long>(ref MemoryMarshal.GetReference(output)) = Values[_index];
 
             _index = (_index + 1) % Values.Length;
-            return Result.Success;
         }
     }
 

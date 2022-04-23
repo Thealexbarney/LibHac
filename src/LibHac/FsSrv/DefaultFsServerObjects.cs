@@ -2,6 +2,7 @@
 using LibHac.Common.Keys;
 using LibHac.FsSrv.FsCreator;
 using LibHac.FsSrv.Sf;
+using LibHac.FsSystem;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 
 namespace LibHac.FsSrv;
@@ -14,7 +15,7 @@ public class DefaultFsServerObjects
     public EmulatedSdCard SdCard { get; set; }
 
     public static DefaultFsServerObjects GetDefaultEmulatedCreators(IFileSystem rootFileSystem, KeySet keySet,
-        FileSystemServer fsServer)
+        FileSystemServer fsServer, RandomDataGenerator randomGenerator)
     {
         var creators = new FileSystemCreatorInterfaces();
         var gameCard = new EmulatedGameCard(keySet);
@@ -31,7 +32,7 @@ public class DefaultFsServerObjects
         creators.StorageOnNcaCreator = new StorageOnNcaCreator(keySet);
         creators.TargetManagerFileSystemCreator = new TargetManagerFileSystemCreator();
         creators.SubDirectoryFileSystemCreator = new SubDirectoryFileSystemCreator();
-        creators.SaveDataFileSystemCreator = new SaveDataFileSystemCreator(fsServer, keySet, null, null);
+        creators.SaveDataFileSystemCreator = new SaveDataFileSystemCreator(fsServer, keySet, null, randomGenerator);
         creators.GameCardStorageCreator = gcStorageCreator;
         creators.GameCardFileSystemCreator = new EmulatedGameCardFsCreator(gcStorageCreator, gameCard);
         creators.EncryptedFileSystemCreator = new EncryptedFileSystemCreator(keySet);

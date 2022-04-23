@@ -2,6 +2,7 @@
 using LibHac.Common.Keys;
 using LibHac.Fs.Fsa;
 using LibHac.FsSrv;
+using LibHac.FsSystem;
 using LibHac.Tools.Fs;
 
 namespace LibHac.Tests;
@@ -18,12 +19,16 @@ public static class HorizonFactory
         HorizonClient fsServerClient = horizon.CreatePrivilegedHorizonClient();
         var fsServer = new FileSystemServer(fsServerClient);
 
-        var defaultObjects = DefaultFsServerObjects.GetDefaultEmulatedCreators(rootFs, keySet, fsServer);
+        var random = new Random(12345);
+        RandomDataGenerator randomGenerator = buffer => random.NextBytes(buffer);
+
+        var defaultObjects = DefaultFsServerObjects.GetDefaultEmulatedCreators(rootFs, keySet, fsServer, randomGenerator);
 
         var config = new FileSystemServerConfig();
         config.FsCreators = defaultObjects.FsCreators;
         config.DeviceOperator = defaultObjects.DeviceOperator;
         config.ExternalKeySet = new ExternalKeySet();
+        config.RandomGenerator = randomGenerator;
 
         FileSystemServerInitializer.InitializeWithConfig(fsServerClient, fsServer, config);
 

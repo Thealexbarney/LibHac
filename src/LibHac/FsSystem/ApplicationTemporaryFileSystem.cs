@@ -83,7 +83,8 @@ public class ApplicationTemporaryFileSystem : IFileSystem, ISaveDataExtraDataAcc
         throw new NotImplementedException();
     }
 
-    public void RegisterCacheObserver(ISaveDataExtraDataAccessorObserver observer, SaveDataSpaceId spaceId, ulong saveDataId)
+    public void RegisterExtraDataAccessorObserver(ISaveDataExtraDataAccessorObserver observer, SaveDataSpaceId spaceId,
+        ulong saveDataId)
     {
         throw new NotImplementedException();
     }

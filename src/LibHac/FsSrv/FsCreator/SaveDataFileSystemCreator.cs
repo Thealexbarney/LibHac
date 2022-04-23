@@ -78,8 +78,8 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
             using var saveDirFs = new SharedRef<DirectorySaveDataFileSystem>(
                 new DirectorySaveDataFileSystem(ref tempFs.Ref(), _fsServer.Hos.Fs));
 
-            rc = saveDirFs.Get.Initialize(timeStampGetter, _randomGenerator, isJournalingSupported,
-                isMultiCommitSupported, !openReadOnly);
+            rc = saveDirFs.Get.Initialize(isJournalingSupported, isMultiCommitSupported, !openReadOnly,
+                timeStampGetter, _randomGenerator);
             if (rc.IsFailure()) return rc;
 
             outFileSystem.SetByCopy(in saveDirFs);

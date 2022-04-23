@@ -77,7 +77,7 @@ public class SaveDataExtraDataAccessorCacheManager : ISaveDataExtraDataAccessorO
     public Result Register(in SharedRef<ISaveDataExtraDataAccessor> accessor, SaveDataSpaceId spaceId,
         ulong saveDataId)
     {
-        accessor.Get.RegisterCacheObserver(this, spaceId, saveDataId);
+        accessor.Get.RegisterExtraDataAccessorObserver(this, spaceId, saveDataId);
 
         var node = new LinkedListNode<Cache>(new Cache(in accessor, spaceId, saveDataId));
 

@@ -170,7 +170,7 @@ public class SaveDataFileSystemServiceImpl
             // Cache the extra data accessor if needed
             if (cacheExtraData && extraDataAccessor.HasValue)
             {
-                extraDataAccessor.Get.RegisterCacheObserver(_extraDataCacheManager, spaceId, saveDataId);
+                extraDataAccessor.Get.RegisterExtraDataAccessorObserver(_extraDataCacheManager, spaceId, saveDataId);
 
                 rc = _extraDataCacheManager.Register(in extraDataAccessor, spaceId, saveDataId);
                 if (rc.IsFailure()) return rc.Miss();
@@ -359,7 +359,7 @@ public class SaveDataFileSystemServiceImpl
                 extraData.TimeStamp = 0;
 
             extraData.CommitId = 0;
-            _config.GenerateRandomData(SpanHelpers.AsByteSpan(ref extraData.CommitId)).IgnoreResult();
+            _config.GenerateRandomData(SpanHelpers.AsByteSpan(ref extraData.CommitId));
 
             extraData.Flags = creationInfo.Flags;
             extraData.DataSize = creationInfo.Size;
