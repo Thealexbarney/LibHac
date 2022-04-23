@@ -16,4 +16,17 @@ public class Layout
 
         return offset;
     }
+
+    public static int AlignOf<T>() where T : unmanaged
+    {
+        return Unsafe.SizeOf<AlignOfHelper<T>>() - Unsafe.SizeOf<T>();
+    }
+
+    private readonly struct AlignOfHelper<T> where T : unmanaged
+    {
+#pragma warning disable CS0169 // Field is never used
+        private readonly byte _padding;
+        private readonly T _value;
+#pragma warning restore CS0169
+    }
 }

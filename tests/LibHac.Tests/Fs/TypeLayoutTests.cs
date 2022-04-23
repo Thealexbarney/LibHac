@@ -1,5 +1,4 @@
 ﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using LibHac.Fs;
 using LibHac.Fs.Impl;
 using Xunit;
@@ -476,21 +475,10 @@ public class TypeLayoutTests
         Assert.Equal(0, GetOffset(in s, in s.Value));
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct Int64AlignmentTest
-    {
-        public byte A;
-        public Int64 B;
-    }
-
     [Fact]
-    public static void Int64Test_Layout()
+    public static void Int64_Layout()
     {
-        var s = new Int64AlignmentTest();
-
-        Assert.Equal(12, Unsafe.SizeOf<Int64AlignmentTest>());
-
-        Assert.Equal(0, GetOffset(in s, in s.A));
-        Assert.Equal(4, GetOffset(in s, in s.B));
+        Assert.Equal(8, Unsafe.SizeOf<Int64>());
+        Assert.Equal(4, AlignOf<Int64>());
     }
 }
