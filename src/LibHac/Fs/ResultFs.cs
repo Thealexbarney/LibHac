@@ -1210,6 +1210,8 @@ public static class ResultFs
                 public static Result.Base UnsupportedSaveDataVersion => new Result.Base(ModuleFs, 4302);
                 /// <summary>Error code: 2002-4303; Inner value: 0x219e02</summary>
                 public static Result.Base InvalidSaveDataEntryType => new Result.Base(ModuleFs, 4303);
+                /// <summary>Error code: 2002-4304; Inner value: 0x21a002</summary>
+                public static Result.Base ReconstructibleSaveDataCorrupted => new Result.Base(ModuleFs, 4304);
 
                 /// <summary>Error code: 2002-4311; Range: 4311-4319; Inner value: 0x21ae02</summary>
                 public static Result.Base SaveDataFileSystemCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 4311, 4319); }

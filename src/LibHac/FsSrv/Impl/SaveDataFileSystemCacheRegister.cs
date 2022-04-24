@@ -7,7 +7,7 @@ namespace LibHac.FsSrv.Impl;
 
 /// <summary>
 /// Wraps an <see cref="ISaveDataFileSystem"/>.
-/// Upon disposal the base file system is returned to the provided <see cref="ISaveDataFileSystemCacheManager"/>.
+/// Upon disposal the base file system is returned to the provided <see cref="SaveDataFileSystemCacheManager"/>.
 /// </summary>
 /// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
 public class SaveDataFileSystemCacheRegister : IFileSystem

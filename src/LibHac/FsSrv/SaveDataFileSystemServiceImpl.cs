@@ -20,7 +20,7 @@ public class SaveDataFileSystemServiceImpl
     private Configuration _config;
     private EncryptionSeed _encryptionSeed;
 
-    private FsSystem.SaveDataFileSystemCacheManager _saveDataFsCacheManager;
+    private SaveDataFileSystemCacheManager _saveDataFsCacheManager;
     private SaveDataExtraDataAccessorCacheManager _extraDataCacheManager;
     // Save data porter manager
     private bool _isSdCardAccessible;
@@ -47,7 +47,7 @@ public class SaveDataFileSystemServiceImpl
     public SaveDataFileSystemServiceImpl(in Configuration configuration)
     {
         _config = configuration;
-        _saveDataFsCacheManager = new FsSystem.SaveDataFileSystemCacheManager();
+        _saveDataFsCacheManager = new SaveDataFileSystemCacheManager();
         _extraDataCacheManager = new SaveDataExtraDataAccessorCacheManager();
 
         _timeStampGetter = new TimeStampGetter(this);
@@ -116,6 +116,7 @@ public class SaveDataFileSystemServiceImpl
         }
     }
 
+    // 14.3.0
     public Result OpenSaveDataFileSystem(ref SharedRef<IFileSystem> outFileSystem, SaveDataSpaceId spaceId,
         ulong saveDataId, in Path saveDataRootPath, bool openReadOnly, SaveDataType type, bool cacheExtraData)
     {
@@ -124,66 +125,65 @@ public class SaveDataFileSystemServiceImpl
         Result rc = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref(), spaceId, in saveDataRootPath, true);
         if (rc.IsFailure()) return rc.Miss();
 
-        bool allowDirectorySaveData = IsAllowedDirectorySaveData2(spaceId, in saveDataRootPath);
+        bool isEmulatedOnHost = IsAllowedDirectorySaveData(spaceId, in saveDataRootPath);
 
-        // Note: When directory save data is allowed, Nintendo creates the save directory if it doesn't exist.
-        // This bypasses normal save data creation, leaving the save with empty extra data.
-        // Instead, we return that the save doesn't exist if the directory is missing.
-
-        using var saveDataFs = new SharedRef<IFileSystem>();
-        using var cachedFs = new SharedRef<SaveDataFileSystemHolder>();
-
-        // Note: Nintendo doesn't cache directory save data
-        // if (!allowDirectorySaveData)
+        if (isEmulatedOnHost)
         {
-            // Check if we have the requested file system cached
-            if (_saveDataFsCacheManager.GetCache(ref cachedFs.Ref(), spaceId, saveDataId))
-            {
-                using var registerBase = new SharedRef<IFileSystem>(
-                    new SaveDataFileSystemCacheRegisterBase<SaveDataFileSystemHolder>(ref cachedFs.Ref(),
-                        _saveDataFsCacheManager));
-
-                using var resultConvertFs = new SharedRef<SaveDataResultConvertFileSystem>(
-                    new SaveDataResultConvertFileSystem(ref registerBase.Ref()));
-
-                saveDataFs.SetByMove(ref resultConvertFs.Ref());
-            }
-        }
-
-        // Create a new file system if it's not in the cache
-        if (!saveDataFs.HasValue)
-        {
-            using UniqueLockRef<SdkRecursiveMutexType> scopedLock = _extraDataCacheManager.GetScopedLock();
-            using var extraDataAccessor = new SharedRef<ISaveDataExtraDataAccessor>();
-
-            bool openShared = SaveDataProperties.IsSharedOpenNeeded(type);
-            bool isMultiCommitSupported = SaveDataProperties.IsMultiCommitSupported(type);
-            bool isJournalingSupported = SaveDataProperties.IsJournalingSupported(type);
-            bool useDeviceUniqueMac = IsDeviceUniqueMac(spaceId);
-
-            rc = _config.SaveFsCreator.Create(ref saveDataFs.Ref(), ref extraDataAccessor.Ref(),
-                _saveDataFsCacheManager, ref fileSystem.Ref(), spaceId, saveDataId, allowDirectorySaveData,
-                useDeviceUniqueMac, isJournalingSupported, isMultiCommitSupported, openReadOnly, openShared,
-                _timeStampGetter);
+            // Create the save data directory on the host if needed.
+            Unsafe.SkipInit(out Array18<byte> saveDirectoryNameBuffer);
+            using var saveDirectoryName = new Path();
+            rc = PathFunctions.SetUpFixedPathSaveId(ref saveDirectoryName.Ref(), saveDirectoryNameBuffer.Items, saveDataId);
             if (rc.IsFailure()) return rc.Miss();
 
-            // Cache the extra data accessor if needed
-            if (cacheExtraData && extraDataAccessor.HasValue)
+            rc = FsSystem.Utility.EnsureDirectory(fileSystem.Get, in saveDirectoryName);
+            if (rc.IsFailure()) return rc.Miss();
+        }
+
+        using var saveDataFs = new SharedRef<ISaveDataFileSystem>();
+
+        using (_saveDataFsCacheManager.GetScopedLock())
+        using (_extraDataCacheManager.GetScopedLock())
+        {
+            if (isEmulatedOnHost || !_saveDataFsCacheManager.GetCache(ref saveDataFs.Ref(), spaceId, saveDataId))
             {
-                extraDataAccessor.Get.RegisterExtraDataAccessorObserver(_extraDataCacheManager, spaceId, saveDataId);
+                bool isDeviceUniqueMac = IsDeviceUniqueMac(spaceId);
+                bool isJournalingSupported = SaveDataProperties.IsJournalingSupported(type);
+                bool isMultiCommitSupported = SaveDataProperties.IsMultiCommitSupported(type);
+                bool openShared = SaveDataProperties.IsSharedOpenNeeded(type);
+                bool isReconstructible = SaveDataProperties.IsReconstructible(type, spaceId);
+
+                rc = _config.SaveFsCreator.Create(ref saveDataFs.Ref(), ref fileSystem.Ref(), spaceId, saveDataId,
+                    isEmulatedOnHost, isDeviceUniqueMac, isJournalingSupported, isMultiCommitSupported,
+                    openReadOnly, openShared, _timeStampGetter, isReconstructible);
+                if (rc.IsFailure()) return rc.Miss();
+            }
+
+            if (!isEmulatedOnHost && cacheExtraData)
+            {
+                using SharedRef<ISaveDataExtraDataAccessor> extraDataAccessor =
+                    SharedRef<ISaveDataExtraDataAccessor>.CreateCopy(in saveDataFs);
 
                 rc = _extraDataCacheManager.Register(in extraDataAccessor, spaceId, saveDataId);
                 if (rc.IsFailure()) return rc.Miss();
             }
         }
 
+        using var registerFs = new SharedRef<SaveDataFileSystemCacheRegister>(
+            new SaveDataFileSystemCacheRegister(ref saveDataFs.Ref(), _saveDataFsCacheManager, spaceId, saveDataId));
+
         if (openReadOnly)
         {
-            outFileSystem.Reset(new ReadOnlyFileSystem(ref saveDataFs.Ref()));
+            using SharedRef<IFileSystem> tempFs = SharedRef<IFileSystem>.CreateMove(ref registerFs.Ref());
+            using var readOnlyFileSystem = new SharedRef<ReadOnlyFileSystem>(new ReadOnlyFileSystem(ref tempFs.Ref()));
+
+            if (!readOnlyFileSystem.HasValue)
+                return ResultFs.AllocationMemoryFailedInSaveDataFileSystemServiceImplB.Log();
+
+            outFileSystem.SetByMove(ref readOnlyFileSystem.Ref());
         }
         else
         {
-            outFileSystem.SetByMove(ref saveDataFs.Ref());
+            outFileSystem.SetByMove(ref registerFs.Ref());
         }
 
         return Result.Success;
@@ -339,15 +339,15 @@ public class SaveDataFileSystemServiceImpl
             rc = FsSystem.Utility.EnsureDirectory(fileSystem.Get, in saveImageName);
             if (rc.IsFailure()) return rc.Miss();
 
-            using var saveFileSystem = new SharedRef<IFileSystem>();
-            using var extraDataAccessor = new SharedRef<ISaveDataExtraDataAccessor>();
+            using var saveFileSystem = new SharedRef<ISaveDataFileSystem>();
 
             bool isJournalingSupported = SaveDataProperties.IsJournalingSupported(attribute.Type);
+            bool isReconstructible = SaveDataProperties.IsReconstructible(attribute.Type, creationInfo.SpaceId);
 
-            rc = _config.SaveFsCreator.Create(ref saveFileSystem.Ref(), ref extraDataAccessor.Ref(),
-                _saveDataFsCacheManager, ref fileSystem.Ref(), creationInfo.SpaceId, saveDataId,
-                allowDirectorySaveData: true, useDeviceUniqueMac: false, isJournalingSupported,
-                isMultiCommitSupported: false, openReadOnly: false, openShared: false, _timeStampGetter);
+            rc = _config.SaveFsCreator.Create(ref saveFileSystem.Ref(), ref fileSystem.Ref(), creationInfo.SpaceId,
+                saveDataId, allowDirectorySaveData: true, isDeviceUniqueMac: false, isJournalingSupported,
+                isMultiCommitSupported: false, openReadOnly: false, openShared: false, _timeStampGetter,
+                isReconstructible);
             if (rc.IsFailure()) return rc.Miss();
 
             var extraData = new SaveDataExtraData();
@@ -365,10 +365,10 @@ public class SaveDataFileSystemServiceImpl
             extraData.DataSize = creationInfo.Size;
             extraData.JournalSize = creationInfo.JournalSize;
 
-            rc = extraDataAccessor.Get.WriteExtraData(in extraData);
+            rc = saveFileSystem.Get.WriteExtraData(in extraData);
             if (rc.IsFailure()) return rc.Miss();
 
-            rc = extraDataAccessor.Get.CommitExtraData(true);
+            rc = saveFileSystem.Get.CommitExtraData(true);
             if (rc.IsFailure()) return rc.Miss();
         }
         else
@@ -552,8 +552,8 @@ public class SaveDataFileSystemServiceImpl
             using (var tmFileSystem = new SharedRef<IFileSystem>())
             {
                 // Ensure the target save data directory exists
-                rc = _config.TargetManagerFsCreator.Create(ref tmFileSystem.Ref(), in saveDataRootPath, false, true,
-                    ResultFs.SaveDataRootPathUnavailable.Value);
+                rc = _config.TargetManagerFsCreator.Create(ref tmFileSystem.Ref(), in saveDataRootPath,
+                    openCaseSensitive: false, ensureRootPathExists: true, ResultFs.SaveDataRootPathUnavailable.Value);
                 if (rc.IsFailure()) return rc.Miss();
             }
 
@@ -564,8 +564,8 @@ public class SaveDataFileSystemServiceImpl
             rc = _config.TargetManagerFsCreator.NormalizeCaseOfPath(out bool isTargetFsCaseSensitive, ref path.Ref());
             if (rc.IsFailure()) return rc.Miss();
 
-            rc = _config.TargetManagerFsCreator.Create(ref outFileSystem, in path, isTargetFsCaseSensitive, false,
-                ResultFs.SaveDataRootPathUnavailable.Value);
+            rc = _config.TargetManagerFsCreator.Create(ref outFileSystem, in path, isTargetFsCaseSensitive,
+                ensureRootPathExists: false, ResultFs.SaveDataRootPathUnavailable.Value);
             if (rc.IsFailure()) return rc.Miss();
 
             return Result.Success;
@@ -696,18 +696,12 @@ public class SaveDataFileSystemServiceImpl
         throw new NotImplementedException();
     }
 
+    /// <summary>
+    /// Checks if a save is to be stored on a host device.
+    /// </summary>
     public bool IsAllowedDirectorySaveData(SaveDataSpaceId spaceId, in Path saveDataRootPath)
     {
         return spaceId == SaveDataSpaceId.User && IsSaveEmulated(in saveDataRootPath);
-    }
-
-    // Todo: remove once file save data is supported
-    // Used to always allow directory save data in OpenSaveDataFileSystem
-    public bool IsAllowedDirectorySaveData2(SaveDataSpaceId spaceId, in Path saveDataRootPath)
-    {
-        // Todo: remove "|| true" once file save data is supported
-        // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-        return spaceId == SaveDataSpaceId.User && IsSaveEmulated(in saveDataRootPath) || true;
     }
 
     public bool IsDeviceUniqueMac(SaveDataSpaceId spaceId)

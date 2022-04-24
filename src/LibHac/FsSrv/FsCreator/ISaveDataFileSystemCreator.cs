@@ -10,12 +10,10 @@ public interface ISaveDataFileSystemCreator
 {
     Result CreateFile(out IFile file, IFileSystem sourceFileSystem, ulong saveDataId, OpenMode openMode);
 
-    Result Create(ref SharedRef<IFileSystem> outFileSystem,
-        ref SharedRef<ISaveDataExtraDataAccessor> outExtraDataAccessor,
-        ISaveDataFileSystemCacheManager cacheManager, ref SharedRef<IFileSystem> baseFileSystem,
-        SaveDataSpaceId spaceId, ulong saveDataId, bool allowDirectorySaveData, bool useDeviceUniqueMac,
+    Result Create(ref SharedRef<ISaveDataFileSystem> outFileSystem, ref SharedRef<IFileSystem> baseFileSystem,
+        SaveDataSpaceId spaceId, ulong saveDataId, bool allowDirectorySaveData, bool isDeviceUniqueMac,
         bool isJournalingSupported, bool isMultiCommitSupported, bool openReadOnly, bool openShared,
-        ISaveDataCommitTimeStampGetter timeStampGetter);
+        ISaveDataCommitTimeStampGetter timeStampGetter, bool isReconstructible);
 
     Result CreateExtraDataAccessor(ref SharedRef<ISaveDataExtraDataAccessor> outExtraDataAccessor,
         ref SharedRef<IFileSystem> baseFileSystem);

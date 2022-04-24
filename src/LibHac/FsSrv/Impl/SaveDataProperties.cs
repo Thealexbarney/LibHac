@@ -8,6 +8,20 @@ public static class SaveDataProperties
     public const long DefaultSaveDataBlockSize = 0x4000;
     public const long BcatSaveDataJournalSize = 0x200000;
 
+    public static bool IsJournalingSupported(SaveDataFormatType type)
+    {
+        switch (type)
+        {
+            case SaveDataFormatType.Normal:
+                return true;
+            case SaveDataFormatType.NoJournal:
+                return false;
+            default:
+                Abort.UnexpectedDefault();
+                return default;
+        }
+    }
+
     public static bool IsJournalingSupported(SaveDataType type)
     {
         switch (type)
@@ -67,7 +81,6 @@ public static class SaveDataProperties
         switch (type)
         {
             case SaveDataType.System:
-            case SaveDataType.SystemBcat:
                 return true;
             case SaveDataType.Account:
             case SaveDataType.Bcat:
@@ -86,7 +99,6 @@ public static class SaveDataProperties
         switch (type)
         {
             case SaveDataType.System:
-            case SaveDataType.SystemBcat:
                 return true;
             case SaveDataType.Account:
             case SaveDataType.Bcat:
@@ -94,6 +106,38 @@ public static class SaveDataProperties
             case SaveDataType.Temporary:
             case SaveDataType.Cache:
                 return false;
+            default:
+                Abort.UnexpectedDefault();
+                return default;
+        }
+    }
+
+    public static bool IsReconstructible(SaveDataType type, SaveDataSpaceId spaceId)
+    {
+        switch (spaceId)
+        {
+            case SaveDataSpaceId.System:
+            case SaveDataSpaceId.User:
+            case SaveDataSpaceId.ProperSystem:
+            case SaveDataSpaceId.SafeMode:
+                switch (type)
+                {
+                    case SaveDataType.System:
+                    case SaveDataType.Account:
+                    case SaveDataType.Device:
+                        return false;
+                    case SaveDataType.Bcat:
+                    case SaveDataType.Temporary:
+                    case SaveDataType.Cache:
+                        return true;
+                    default:
+                        Abort.UnexpectedDefault();
+                        return default;
+                }
+            case SaveDataSpaceId.SdSystem:
+            case SaveDataSpaceId.Temporary:
+            case SaveDataSpaceId.SdUser:
+                return true;
             default:
                 Abort.UnexpectedDefault();
                 return default;

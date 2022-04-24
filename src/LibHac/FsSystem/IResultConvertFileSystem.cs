@@ -3,61 +3,62 @@ using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 
-namespace LibHac.FsSrv.Impl;
+namespace LibHac.FsSystem;
 
 // ReSharper disable once InconsistentNaming
 /// <summary>
 /// Wraps an <see cref="IFile"/>, converting its returned <see cref="Result"/>s to different
 /// <see cref="Result"/>s based on the <see cref="ConvertResult"/> function.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
 public abstract class IResultConvertFile : IFile
 {
-    protected UniqueRef<IFile> BaseFile;
+    private UniqueRef<IFile> _baseFile;
 
     protected IResultConvertFile(ref UniqueRef<IFile> baseFile)
     {
-        BaseFile = new UniqueRef<IFile>(ref baseFile);
+        _baseFile = new UniqueRef<IFile>(ref baseFile);
     }
 
     public override void Dispose()
     {
-        BaseFile.Destroy();
+        _baseFile.Destroy();
+
         base.Dispose();
     }
 
+    protected abstract Result ConvertResult(Result result);
+
     protected override Result DoRead(out long bytesRead, long offset, Span<byte> destination, in ReadOption option)
     {
-        return ConvertResult(BaseFile.Get.Read(out bytesRead, offset, destination, option));
+        return ConvertResult(_baseFile.Get.Read(out bytesRead, offset, destination, in option)).Ret();
     }
 
     protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
     {
-        return ConvertResult(BaseFile.Get.Write(offset, source, option));
+        return ConvertResult(_baseFile.Get.Write(offset, source, in option)).Ret();
     }
 
     protected override Result DoFlush()
     {
-        return ConvertResult(BaseFile.Get.Flush());
+        return ConvertResult(_baseFile.Get.Flush()).Ret();
     }
 
     protected override Result DoSetSize(long size)
     {
-        return ConvertResult(BaseFile.Get.SetSize(size));
+        return ConvertResult(_baseFile.Get.SetSize(size)).Ret();
     }
 
     protected override Result DoGetSize(out long size)
     {
-        return ConvertResult(BaseFile.Get.GetSize(out size));
+        return ConvertResult(_baseFile.Get.GetSize(out size)).Ret();
     }
 
     protected override Result DoOperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
         ReadOnlySpan<byte> inBuffer)
     {
-        return ConvertResult(BaseFile.Get.OperateRange(outBuffer, operationId, offset, size, inBuffer));
+        return ConvertResult(_baseFile.Get.OperateRange(outBuffer, operationId, offset, size, inBuffer)).Ret();
     }
-
-    protected abstract Result ConvertResult(Result result);
 }
 
 // ReSharper disable once InconsistentNaming
@@ -65,33 +66,34 @@ public abstract class IResultConvertFile : IFile
 /// Wraps an <see cref="IDirectory"/>, converting its returned <see cref="Result"/>s to different
 /// <see cref="Result"/>s based on the <see cref="ConvertResult"/> function.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
 public abstract class IResultConvertDirectory : IDirectory
 {
-    protected UniqueRef<IDirectory> BaseDirectory;
+    private UniqueRef<IDirectory> _baseDirectory;
 
     protected IResultConvertDirectory(ref UniqueRef<IDirectory> baseDirectory)
     {
-        BaseDirectory = new UniqueRef<IDirectory>(ref baseDirectory);
+        _baseDirectory = new UniqueRef<IDirectory>(ref baseDirectory);
     }
 
     public override void Dispose()
     {
-        BaseDirectory.Destroy();
+        _baseDirectory.Destroy();
+
         base.Dispose();
     }
 
+    protected abstract Result ConvertResult(Result result);
+
     protected override Result DoRead(out long entriesRead, Span<DirectoryEntry> entryBuffer)
     {
-        return ConvertResult(BaseDirectory.Get.Read(out entriesRead, entryBuffer));
+        return ConvertResult(_baseDirectory.Get.Read(out entriesRead, entryBuffer)).Ret();
     }
 
     protected override Result DoGetEntryCount(out long entryCount)
     {
-        return ConvertResult(BaseDirectory.Get.GetEntryCount(out entryCount));
+        return ConvertResult(_baseDirectory.Get.GetEntryCount(out entryCount)).Ret();
     }
-
-    protected abstract Result ConvertResult(Result result);
 }
 
 // ReSharper disable once InconsistentNaming
@@ -99,114 +101,110 @@ public abstract class IResultConvertDirectory : IDirectory
 /// Wraps an <see cref="IFileSystem"/>, converting its returned <see cref="Result"/>s to different
 /// <see cref="Result"/>s based on the <see cref="ConvertResult"/> function.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
-public abstract class IResultConvertFileSystem : IFileSystem
+/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+public abstract class IResultConvertFileSystem<T> : ISaveDataFileSystem where T : IFileSystem
 {
-    protected SharedRef<IFileSystem> BaseFileSystem;
+    private SharedRef<T> _baseFileSystem;
 
-    protected IResultConvertFileSystem(ref SharedRef<IFileSystem> baseFileSystem)
+    protected IResultConvertFileSystem(ref SharedRef<T> baseFileSystem)
     {
-        BaseFileSystem = SharedRef<IFileSystem>.CreateMove(ref baseFileSystem);
+        _baseFileSystem = SharedRef<T>.CreateMove(ref baseFileSystem);
     }
 
     public override void Dispose()
     {
-        BaseFileSystem.Destroy();
+        _baseFileSystem.Destroy();
+
         base.Dispose();
     }
 
+    protected T GetFileSystem() => _baseFileSystem.Get;
+
+    protected abstract Result ConvertResult(Result result);
+
     protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
     {
-        return ConvertResult(BaseFileSystem.Get.CreateFile(path, size, option));
+        return ConvertResult(_baseFileSystem.Get.CreateFile(in path, size)).Ret();
     }
 
     protected override Result DoDeleteFile(in Path path)
     {
-        return ConvertResult(BaseFileSystem.Get.DeleteFile(path));
+        return ConvertResult(_baseFileSystem.Get.DeleteFile(in path)).Ret();
     }
 
     protected override Result DoCreateDirectory(in Path path)
     {
-        return ConvertResult(BaseFileSystem.Get.CreateDirectory(path));
+        return ConvertResult(_baseFileSystem.Get.CreateDirectory(in path)).Ret();
     }
 
     protected override Result DoDeleteDirectory(in Path path)
     {
-        return ConvertResult(BaseFileSystem.Get.DeleteDirectory(path));
+        return ConvertResult(_baseFileSystem.Get.DeleteDirectory(in path)).Ret();
     }
 
     protected override Result DoDeleteDirectoryRecursively(in Path path)
     {
-        return ConvertResult(BaseFileSystem.Get.DeleteDirectoryRecursively(path));
+        return ConvertResult(_baseFileSystem.Get.DeleteDirectoryRecursively(in path)).Ret();
     }
 
     protected override Result DoCleanDirectoryRecursively(in Path path)
     {
-        return ConvertResult(BaseFileSystem.Get.CleanDirectoryRecursively(path));
+        return ConvertResult(_baseFileSystem.Get.CleanDirectoryRecursively(in path)).Ret();
     }
 
     protected override Result DoRenameFile(in Path currentPath, in Path newPath)
     {
-        return ConvertResult(BaseFileSystem.Get.RenameFile(currentPath, newPath));
+        return ConvertResult(_baseFileSystem.Get.RenameFile(in currentPath, in newPath)).Ret();
     }
 
     protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
     {
-        return ConvertResult(BaseFileSystem.Get.RenameDirectory(currentPath, newPath));
+        return ConvertResult(_baseFileSystem.Get.RenameDirectory(in currentPath, in newPath)).Ret();
     }
 
     protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
     {
-        return ConvertResult(BaseFileSystem.Get.GetEntryType(out entryType, path));
+        return ConvertResult(_baseFileSystem.Get.GetEntryType(out entryType, in path)).Ret();
     }
-
-    // Note: The original code uses templates to determine which type of IFile/IDirectory to return. To make things
-    // easier in C# these two functions have been made abstract functions.
-    protected abstract override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode);
-
-    protected abstract override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
-        OpenDirectoryMode mode);
 
     protected override Result DoCommit()
     {
-        return ConvertResult(BaseFileSystem.Get.Commit());
+        return ConvertResult(_baseFileSystem.Get.Commit()).Ret();
     }
 
     protected override Result DoCommitProvisionally(long counter)
     {
-        return ConvertResult(BaseFileSystem.Get.CommitProvisionally(counter));
+        return ConvertResult(_baseFileSystem.Get.CommitProvisionally(counter)).Ret();
     }
 
     protected override Result DoRollback()
     {
-        return ConvertResult(BaseFileSystem.Get.Rollback());
+        return ConvertResult(_baseFileSystem.Get.Rollback()).Ret();
     }
 
     protected override Result DoFlush()
     {
-        return ConvertResult(BaseFileSystem.Get.Flush());
+        return ConvertResult(_baseFileSystem.Get.Flush()).Ret();
     }
 
     protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
     {
-        return ConvertResult(BaseFileSystem.Get.GetFileTimeStampRaw(out timeStamp, path));
+        return ConvertResult(_baseFileSystem.Get.GetFileTimeStampRaw(out timeStamp, in path)).Ret();
     }
 
     protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
         in Path path)
     {
-        return ConvertResult(BaseFileSystem.Get.QueryEntry(outBuffer, inBuffer, queryId, path));
+        return ConvertResult(_baseFileSystem.Get.QueryEntry(outBuffer, inBuffer, queryId, in path)).Ret();
     }
 
     protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
     {
-        return ConvertResult(BaseFileSystem.Get.GetFreeSpaceSize(out freeSpace, path));
+        return ConvertResult(_baseFileSystem.Get.GetFreeSpaceSize(out freeSpace, in path)).Ret();
     }
 
     protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
     {
-        return ConvertResult(BaseFileSystem.Get.GetTotalSpaceSize(out totalSpace, path));
+        return ConvertResult(_baseFileSystem.Get.GetTotalSpaceSize(out totalSpace, in path)).Ret();
     }
-
-    protected abstract Result ConvertResult(Result result);
 }
