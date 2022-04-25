@@ -46,18 +46,6 @@ public enum GameCardPartitionRaw
     RootWriteOnly = 2
 }
 
-public enum SaveDataSpaceId : byte
-{
-    System = 0,
-    User = 1,
-    SdSystem = 2,
-    Temporary = 3,
-    SdUser = 4,
-    ProperSystem = 100,
-    SafeMode = 101,
-    BisAuto = 127
-}
-
 public enum CustomStorageId
 {
     System = 0,
@@ -86,22 +74,6 @@ public enum FileSystemProxyType
     RegisteredUpdate = 8
 }
 
-public enum SaveDataMetaType : byte
-{
-    None = 0,
-    Thumbnail = 1,
-    ExtensionContext = 2
-}
-
-public enum SaveDataState : byte
-{
-    Normal = 0,
-    Processing = 1,
-    State2 = 2,
-    MarkedForDeletion = 3,
-    Extending = 4,
-    ImportSuspended = 5
-}
 
 public enum ImageDirectoryId
 {
@@ -151,48 +123,6 @@ public enum OperationId
     QueryLazyLoadCompletionRate = 5,
     SetLazyLoadPriority = 6,
     ReadyLazyLoadFile = 10001
-}
-
-public enum SaveDataType : byte
-{
-    System = 0,
-    Account = 1,
-    Bcat = 2,
-    Device = 3,
-    Temporary = 4,
-    Cache = 5,
-    SystemBcat = 6
-}
-
-public enum SaveDataRank : byte
-{
-    Primary = 0,
-    Secondary = 1
-}
-
-public enum SaveDataFormatType : byte
-{
-    Normal = 0,
-    NoJournal = 1
-}
-
-[Flags]
-public enum SaveDataFlags
-{
-    None = 0,
-    KeepAfterResettingSystemSaveData = 1 << 0,
-    KeepAfterRefurbishment = 1 << 1,
-    KeepAfterResettingSystemSaveDataWithoutUserSaveData = 1 << 2,
-    NeedsSecureDelete = 1 << 3,
-    Restore = 1 << 4
-}
-
-[Flags]
-public enum CommitOptionFlag
-{
-    None = 0,
-    ClearRestoreFlag = 1,
-    SetRestoreFlag = 2
 }
 
 public enum CacheStorageTargetMedia
@@ -293,11 +223,4 @@ public enum SdmmcPort
     Mmc = 0,
     SdCard = 1,
     GcAsic = 2
-}
-
-public enum StorageType
-{
-    SaveData = 0,
-    RomFs = 1,
-    Authoring = 2
 }

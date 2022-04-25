@@ -42,6 +42,32 @@ public class TypeLayoutTests
     }
 
     [Fact]
+    public static void SaveDataCreationInfo2_Layout()
+    {
+        var s = new SaveDataCreationInfo2();
+
+        Assert.Equal(0x200, Unsafe.SizeOf<SaveDataCreationInfo2>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.Version));
+        Assert.Equal(0x08, GetOffset(in s, in s.Attribute));
+        Assert.Equal(0x48, GetOffset(in s, in s.Size));
+        Assert.Equal(0x50, GetOffset(in s, in s.JournalSize));
+        Assert.Equal(0x58, GetOffset(in s, in s.BlockSize));
+        Assert.Equal(0x60, GetOffset(in s, in s.OwnerId));
+        Assert.Equal(0x68, GetOffset(in s, in s.Flags));
+        Assert.Equal(0x6C, GetOffset(in s, in s.SpaceId));
+        Assert.Equal(0x6D, GetOffset(in s, in s.FormatType));
+        Assert.Equal(0x6E, GetOffset(in s, in s.Reserved1));
+        Assert.Equal(0x70, GetOffset(in s, in s.IsHashSaltEnabled));
+        Assert.Equal(0x71, GetOffset(in s, in s.Reserved2));
+        Assert.Equal(0x74, GetOffset(in s, in s.HashSalt));
+        Assert.Equal(0x94, GetOffset(in s, in s.MetaType));
+        Assert.Equal(0x95, GetOffset(in s, in s.Reserved3));
+        Assert.Equal(0x98, GetOffset(in s, in s.MetaSize));
+        Assert.Equal(0x9C, GetOffset(in s, in s.Reserved4));
+    }
+
+    [Fact]
     public static void SaveDataFilter_Layout()
     {
         var s = new SaveDataFilter();

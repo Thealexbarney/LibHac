@@ -5,7 +5,126 @@ using LibHac.FsSrv.Impl;
 using LibHac.Ncm;
 using LibHac.Util;
 
+// ReSharper disable once CheckNamespace
 namespace LibHac.Fs;
+
+public enum SaveDataSpaceId : byte
+{
+    System = 0,
+    User = 1,
+    SdSystem = 2,
+    Temporary = 3,
+    SdUser = 4,
+    ProperSystem = 100,
+    SafeMode = 101,
+    BisAuto = 127
+}
+
+public enum SaveDataType : byte
+{
+    System = 0,
+    Account = 1,
+    Bcat = 2,
+    Device = 3,
+    Temporary = 4,
+    Cache = 5,
+    SystemBcat = 6
+}
+
+public enum SaveDataRank : byte
+{
+    Primary = 0,
+    Secondary = 1
+}
+
+public enum SaveDataFormatType : byte
+{
+    Normal = 0,
+    NoJournal = 1
+}
+
+[Flags]
+public enum SaveDataFlags
+{
+    None = 0,
+    KeepAfterResettingSystemSaveData = 1 << 0,
+    KeepAfterRefurbishment = 1 << 1,
+    KeepAfterResettingSystemSaveDataWithoutUserSaveData = 1 << 2,
+    NeedsSecureDelete = 1 << 3,
+    Restore = 1 << 4
+}
+
+public enum SaveDataState : byte
+{
+    Normal = 0,
+    Processing = 1,
+    State2 = 2,
+    MarkedForDeletion = 3,
+    Extending = 4,
+    ImportSuspended = 5
+}
+
+public struct SaveDataMetaInfo
+{
+    public int Size;
+    public SaveDataMetaType Type;
+    public Array11<byte> Reserved;
+}
+
+public enum SaveDataMetaType : byte
+{
+    None = 0,
+    Thumbnail = 1,
+    ExtensionContext = 2
+}
+
+public struct SaveDataInfo
+{
+    public ulong SaveDataId;
+    public SaveDataSpaceId SpaceId;
+    public SaveDataType Type;
+    public UserId UserId;
+    public ulong StaticSaveDataId;
+    public ProgramId ProgramId;
+    public long Size;
+    public ushort Index;
+    public SaveDataRank Rank;
+    public SaveDataState State;
+    public Array36<byte> Reserved;
+}
+
+public struct SaveDataExtraData
+{
+    public SaveDataAttribute Attribute;
+    public ulong OwnerId;
+    public long TimeStamp;
+    public SaveDataFlags Flags;
+    public long DataSize;
+    public long JournalSize;
+    public long CommitId;
+    public Array400<byte> Reserved;
+}
+
+public struct CommitOption
+{
+    public CommitOptionFlag Flags;
+}
+
+[Flags]
+public enum CommitOptionFlag
+{
+    None = 0,
+    ClearRestoreFlag = 1,
+    SetRestoreFlag = 2
+}
+
+public struct HashSalt
+{
+    private Array32<byte> _value;
+
+    public Span<byte> Hash => _value.Items;
+    public readonly ReadOnlySpan<byte> HashRo => _value.ItemsRo;
+}
 
 public struct SaveDataAttribute : IEquatable<SaveDataAttribute>, IComparable<SaveDataAttribute>
 {
@@ -60,8 +179,8 @@ public struct SaveDataAttribute : IEquatable<SaveDataAttribute>, IComparable<Sav
                Type == other.Type &&
                UserId.Equals(other.UserId) &&
                StaticSaveDataId == other.StaticSaveDataId &&
-               Rank == other.Rank &&
-               Index == other.Index;
+               Index == other.Index &&
+               Rank == other.Rank;
     }
 
     public static bool operator ==(SaveDataAttribute left, SaveDataAttribute right) => left.Equals(right);
@@ -84,9 +203,9 @@ public struct SaveDataAttribute : IEquatable<SaveDataAttribute>, IComparable<Sav
         if (userIdComparison != 0) return userIdComparison;
         int saveDataIdComparison = StaticSaveDataId.CompareTo(other.StaticSaveDataId);
         if (saveDataIdComparison != 0) return saveDataIdComparison;
-        int rankComparison = ((int)Rank).CompareTo((int)other.Rank);
-        if (rankComparison != 0) return rankComparison;
-        return Index.CompareTo(other.Index);
+        int indexComparison = Index.CompareTo(other.Index);
+        if (indexComparison != 0) return indexComparison;
+        return ((int)Rank).CompareTo((int)other.Rank);
     }
 }
 
@@ -114,6 +233,53 @@ public struct SaveDataCreationInfo
         tempCreationInfo.Flags = flags;
         tempCreationInfo.SpaceId = spaceId;
         tempCreationInfo.IsPseudoSaveData = false;
+
+        if (!SaveDataTypesValidity.IsValid(in tempCreationInfo))
+            return ResultFs.InvalidArgument.Log();
+
+        creationInfo = tempCreationInfo;
+        return Result.Success;
+    }
+}
+
+public struct SaveDataCreationInfo2
+{
+    internal const uint SaveDataCreationInfo2Version = 0x00010000;
+
+    public uint Version;
+    public SaveDataAttribute Attribute;
+    public long Size;
+    public long JournalSize;
+    public long BlockSize;
+    public ulong OwnerId;
+    public SaveDataFlags Flags;
+    public SaveDataSpaceId SpaceId;
+    public SaveDataFormatType FormatType;
+    public Array2<byte> Reserved1;
+    public bool IsHashSaltEnabled;
+    public Array3<byte> Reserved2;
+    public HashSalt HashSalt;
+    public SaveDataMetaType MetaType;
+    public Array3<byte> Reserved3;
+    public int MetaSize;
+    public Array356<byte> Reserved4;
+
+    public static Result Make(out SaveDataCreationInfo2 creationInfo, in SaveDataAttribute attribute, long size,
+        long journalSize, long blockSize, ulong ownerId, SaveDataFlags flags, SaveDataSpaceId spaceId,
+        SaveDataFormatType formatType)
+    {
+        UnsafeHelpers.SkipParamInit(out creationInfo);
+        SaveDataCreationInfo2 tempCreationInfo = default;
+
+        tempCreationInfo.Version = SaveDataCreationInfo2Version;
+        tempCreationInfo.Attribute = attribute;
+        tempCreationInfo.Size = size;
+        tempCreationInfo.JournalSize = journalSize;
+        tempCreationInfo.BlockSize = blockSize;
+        tempCreationInfo.OwnerId = ownerId;
+        tempCreationInfo.Flags = flags;
+        tempCreationInfo.SpaceId = spaceId;
+        tempCreationInfo.FormatType = formatType;
 
         if (!SaveDataTypesValidity.IsValid(in tempCreationInfo))
             return ResultFs.InvalidArgument.Log();
@@ -201,64 +367,45 @@ public struct SaveDataFilter
     }
 }
 
-public struct HashSalt
-{
-    private Array32<byte> _value;
-
-    public Span<byte> Hash => _value.Items;
-    public readonly ReadOnlySpan<byte> HashRo => _value.ItemsRo;
-}
-
-public struct SaveDataMetaInfo
-{
-    public int Size;
-    public SaveDataMetaType Type;
-    public Array11<byte> Reserved;
-}
-
-public struct SaveDataInfo
-{
-    public ulong SaveDataId;
-    public SaveDataSpaceId SpaceId;
-    public SaveDataType Type;
-    public UserId UserId;
-    public ulong StaticSaveDataId;
-    public ProgramId ProgramId;
-    public long Size;
-    public ushort Index;
-    public SaveDataRank Rank;
-    public SaveDataState State;
-    public Array36<byte> Reserved;
-}
-
-public struct SaveDataExtraData
-{
-    public SaveDataAttribute Attribute;
-    public ulong OwnerId;
-    public long TimeStamp;
-    public SaveDataFlags Flags;
-    public long DataSize;
-    public long JournalSize;
-    public long CommitId;
-    public Array400<byte> Reserved;
-}
-
-public struct CommitOption
-{
-    public CommitOptionFlag Flags;
-}
-
 internal static class SaveDataTypesValidity
 {
     public static bool IsValid(in SaveDataAttribute attribute)
     {
-        return IsValid(in attribute.Type) && IsValid(in attribute.Rank);
+        return IsValid(in attribute.Type)&& IsValid(in attribute.Rank);
     }
 
     public static bool IsValid(in SaveDataCreationInfo creationInfo)
     {
-        return creationInfo.Size >= 0 && creationInfo.JournalSize >= 0 && creationInfo.BlockSize >= 0 &&
-               IsValid(in creationInfo.SpaceId);
+        return creationInfo.Size >= 0
+               && creationInfo.JournalSize >= 0
+               && creationInfo.BlockSize >= 0
+               && IsValid(in creationInfo.SpaceId);
+    }
+
+    public static bool IsValid(in SaveDataCreationInfo2 creationInfo)
+    {
+        foreach (byte b in creationInfo.Reserved1.ItemsRo)
+            if (b != 0) return false;
+
+        foreach (byte b in creationInfo.Reserved2.ItemsRo)
+            if (b != 0) return false;
+
+        foreach (byte b in creationInfo.Reserved3.ItemsRo)
+            if (b != 0) return false;
+
+        foreach (byte b in creationInfo.Reserved4.ItemsRo)
+            if (b != 0) return false;
+
+        foreach (byte b in creationInfo.Attribute.Reserved.ItemsRo)
+            if (b != 0) return false;
+
+        return IsValid(in creationInfo.Attribute)
+               && creationInfo.Size >= 0
+               && creationInfo.JournalSize >= 0
+               && creationInfo.BlockSize >= 0
+               && IsValid(in creationInfo.SpaceId)
+               && IsValid(in creationInfo.FormatType)
+               && IsValid(in creationInfo.MetaType);
     }
 
     public static bool IsValid(in SaveDataMetaInfo metaInfo)
@@ -277,6 +424,11 @@ internal static class SaveDataTypesValidity
         return (uint)type <= (uint)SaveDataType.Cache;
     }
 
+    public static bool IsValid(in SaveDataFormatType type)
+    {
+        return (uint)type <= (uint)SaveDataFormatType.NoJournal;
+    }
+
     public static bool IsValid(in SaveDataRank rank)
     {
         return (uint)rank <= (uint)SaveDataRank.Secondary;
@@ -284,8 +436,9 @@ internal static class SaveDataTypesValidity
 
     public static bool IsValid(in SaveDataSpaceId spaceId)
     {
-        return (uint)spaceId <= (uint)SaveDataSpaceId.SdUser || spaceId == SaveDataSpaceId.ProperSystem ||
-               spaceId == SaveDataSpaceId.SafeMode;
+        return (uint)spaceId <= (uint)SaveDataSpaceId.SdUser
+               || spaceId == SaveDataSpaceId.ProperSystem
+               || spaceId == SaveDataSpaceId.SafeMode;
     }
 
     public static bool IsValid(in SaveDataMetaType metaType)
