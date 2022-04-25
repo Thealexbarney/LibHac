@@ -63,13 +63,6 @@ public static class FileSystemServerInitializer
     private static FileSystemProxyConfiguration InitializeFileSystemProxy(FileSystemServer server,
         FileSystemServerConfig config)
     {
-        var random = new Random();
-        RandomDataGenerator randomGenerator = buffer =>
-        {
-            random.NextBytes(buffer);
-            return Result.Success;
-        };
-
         var bufferManager = new FileSystemBufferManager();
         Memory<byte> heapBuffer = GC.AllocateArray<byte>(BufferManagerHeapSize, true);
         bufferManager.Initialize(BufferManagerCacheSize, heapBuffer, BufferManagerBlockSize);
@@ -141,7 +134,7 @@ public static class FileSystemServerInitializer
         saveFsServiceConfig.EncryptedFsCreator = config.FsCreators.EncryptedFileSystemCreator;
         saveFsServiceConfig.ProgramRegistryService = programRegistryService;
         saveFsServiceConfig.BufferManager = bufferManager;
-        saveFsServiceConfig.GenerateRandomData = randomGenerator;
+        saveFsServiceConfig.GenerateRandomData = config.RandomGenerator;
         saveFsServiceConfig.IsPseudoSaveData = () => true;
         saveFsServiceConfig.MaxSaveFsCacheCount = 1;
         saveFsServiceConfig.SaveIndexerManager = saveDataIndexerManager;
@@ -278,4 +271,9 @@ public class FileSystemServerConfig
     /// If null, an empty set will be created.
     /// </summary>
     public ExternalKeySet ExternalKeySet { get; set; }
+
+    /// <summary>
+    /// Used for generating random data for save data.
+    /// </summary>
+    public RandomDataGenerator RandomGenerator { get; set; }
 }

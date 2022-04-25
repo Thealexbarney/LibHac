@@ -170,6 +170,12 @@ public enum SaveDataRank : byte
     Secondary = 1
 }
 
+public enum SaveDataFormatType : byte
+{
+    Normal = 0,
+    NoJournal = 1
+}
+
 [Flags]
 public enum SaveDataFlags
 {

@@ -1,5 +1,4 @@
 ﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using LibHac.FsSystem;
 using Xunit;
 using static LibHac.Tests.Common.Layout;
@@ -287,29 +286,12 @@ public class TypeLayoutTests
         HierarchicalIntegrityVerificationLevelInformation s = default;
 
         Assert.Equal(0x18, Unsafe.SizeOf<HierarchicalIntegrityVerificationLevelInformation>());
+        Assert.Equal(0x04, AlignOf<HierarchicalIntegrityVerificationLevelInformation>());
 
         Assert.Equal(0x00, GetOffset(in s, in s.Offset));
         Assert.Equal(0x08, GetOffset(in s, in s.Size));
         Assert.Equal(0x10, GetOffset(in s, in s.BlockOrder));
         Assert.Equal(0x14, GetOffset(in s, in s.Reserved));
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct HierarchicalIntegrityVerificationLevelInformationAlignmentTest
-    {
-        public byte A;
-        public HierarchicalIntegrityVerificationLevelInformation B;
-    }
-
-    [Fact]
-    public static void HierarchicalIntegrityVerificationLevelInformation_Alignment()
-    {
-        var s = new HierarchicalIntegrityVerificationLevelInformationAlignmentTest();
-
-        Assert.Equal(0x1C, Unsafe.SizeOf<HierarchicalIntegrityVerificationLevelInformationAlignmentTest>());
-
-        Assert.Equal(0, GetOffset(in s, in s.A));
-        Assert.Equal(4, GetOffset(in s, in s.B));
     }
 
     [Fact]

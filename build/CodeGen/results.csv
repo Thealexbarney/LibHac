@@ -672,6 +672,7 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,4301,4499,,,SaveDataCorrupted,
 2,4302,,,,UnsupportedSaveDataVersion,
 2,4303,,,,InvalidSaveDataEntryType,
+2,4304,,,,ReconstructibleSaveDataCorrupted,
 
 2,4311,4319,,,SaveDataFileSystemCorrupted,
 2,4312,,,,InvalidJournalIntegritySaveDataHashSize,

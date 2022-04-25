@@ -1,27 +1,23 @@
-﻿using LibHac.Common;
+﻿using System;
+using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
+using LibHac.FsSystem;
 using LibHac.Os;
 
-namespace LibHac.FsSystem;
+namespace LibHac.FsSrv.Impl;
 
 /// <summary>
 /// Manages a list of cached save data file systems. Each file system is registered and retrieved
 /// based on its save data ID and save data space ID.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
-public class SaveDataFileSystemCacheManager : ISaveDataFileSystemCacheManager
+/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+public class SaveDataFileSystemCacheManager : IDisposable
 {
-    /// <summary>
-    /// Holds a single cached file system identified by its save data ID and save data space ID.
-    /// </summary>
-    /// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
     [NonCopyable]
     private struct Cache
     {
-        // Note: Nintendo only supports caching SaveDataFileSystem. We support DirectorySaveDataFileSystem too,
-        // so we use a wrapper class to simplify the logic here.
-        private SharedRef<SaveDataFileSystemHolder> _fileSystem;
+        private SharedRef<ISaveDataFileSystem> _fileSystem;
         private ulong _saveDataId;
         private SaveDataSpaceId _spaceId;
 
@@ -35,17 +31,16 @@ public class SaveDataFileSystemCacheManager : ISaveDataFileSystemCacheManager
             return _fileSystem.HasValue && _spaceId == spaceId && _saveDataId == saveDataId;
         }
 
-        public SharedRef<SaveDataFileSystemHolder> Move()
+        public SharedRef<ISaveDataFileSystem> Move()
         {
-            return SharedRef<SaveDataFileSystemHolder>.CreateMove(ref _fileSystem);
+            return SharedRef<ISaveDataFileSystem>.CreateMove(ref _fileSystem);
         }
 
-        public void Register(ref SharedRef<SaveDataFileSystemHolder> fileSystem)
+        public void Register(ref SharedRef<ISaveDataFileSystem> fileSystem, SaveDataSpaceId spaceId, ulong saveDataId)
         {
-            _spaceId = fileSystem.Get.GetSaveDataSpaceId();
-            _saveDataId = fileSystem.Get.GetSaveDataId();
-
             _fileSystem.SetByMove(ref fileSystem);
+            _spaceId = spaceId;
+            _saveDataId = saveDataId;
         }
 
         public void Unregister()
@@ -95,8 +90,12 @@ public class SaveDataFileSystemCacheManager : ISaveDataFileSystemCacheManager
         return Result.Success;
     }
 
-    public bool GetCache(ref SharedRef<SaveDataFileSystemHolder> outFileSystem, SaveDataSpaceId spaceId,
-        ulong saveDataId)
+    public UniqueLockRef<SdkRecursiveMutexType> GetScopedLock()
+    {
+        return new UniqueLockRef<SdkRecursiveMutexType>(ref _mutex);
+    }
+
+    public bool GetCache(ref SharedRef<ISaveDataFileSystem> outFileSystem, SaveDataSpaceId spaceId, ulong saveDataId)
     {
         Assert.SdkRequiresGreaterEqual(_maxCachedFileSystemCount, 0);
 
@@ -106,7 +105,7 @@ public class SaveDataFileSystemCacheManager : ISaveDataFileSystemCacheManager
         {
             if (_cachedFileSystems[i].IsCached(spaceId, saveDataId))
             {
-                using SharedRef<SaveDataFileSystemHolder> cachedFs = _cachedFileSystems[i].Move();
+                using SharedRef<ISaveDataFileSystem> cachedFs = _cachedFileSystems[i].Move();
                 outFileSystem.SetByMove(ref cachedFs.Ref());
 
                 return true;
@@ -116,36 +115,36 @@ public class SaveDataFileSystemCacheManager : ISaveDataFileSystemCacheManager
         return false;
     }
 
-    public void Register(ref SharedRef<ApplicationTemporaryFileSystem> fileSystem)
+    public void Register(ref SharedRef<ISaveDataFileSystem> fileSystem, SaveDataSpaceId spaceId, ulong saveDataId)
     {
-        // Don't cache temporary save data
-        using ScopedLock<SdkRecursiveMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
-        fileSystem.Reset();
-    }
+        Assert.SdkRequiresNotNull(in fileSystem);
 
-    public void Register(ref SharedRef<SaveDataFileSystemHolder> fileSystem)
-    {
         if (_maxCachedFileSystemCount <= 0)
             return;
 
         Assert.SdkRequiresGreaterEqual(_nextCacheIndex, 0);
         Assert.SdkRequiresGreater(_maxCachedFileSystemCount, _nextCacheIndex);
 
-        if (fileSystem.Get.GetSaveDataSpaceId() == SaveDataSpaceId.SdSystem)
+        if (!fileSystem.Get.IsSaveDataFileSystemCacheEnabled())
         {
-            // Don't cache system save data
+            using ScopedLock<SdkRecursiveMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
+            fileSystem.Reset();
+        }
+        else if (spaceId == SaveDataSpaceId.SdSystem)
+        {
             using ScopedLock<SdkRecursiveMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
             fileSystem.Reset();
         }
         else
         {
             Result rc = fileSystem.Get.RollbackOnlyModified();
-            if (rc.IsFailure()) return;
+            if (rc.IsSuccess())
+            {
+                using ScopedLock<SdkRecursiveMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-            using ScopedLock<SdkRecursiveMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
-
-            _cachedFileSystems[_nextCacheIndex].Register(ref fileSystem);
-            _nextCacheIndex = (_nextCacheIndex + 1) % _maxCachedFileSystemCount;
+                _cachedFileSystems[_nextCacheIndex].Register(ref fileSystem, spaceId, saveDataId);
+                _nextCacheIndex = (_nextCacheIndex + 1) % _maxCachedFileSystemCount;
+            }
         }
     }
 
@@ -162,10 +161,5 @@ public class SaveDataFileSystemCacheManager : ISaveDataFileSystemCacheManager
                 _cachedFileSystems[i].Unregister();
             }
         }
-    }
-
-    public UniqueLockRef<SdkRecursiveMutexType> GetScopedLock()
-    {
-        return new UniqueLockRef<SdkRecursiveMutexType>(ref _mutex);
     }
 }

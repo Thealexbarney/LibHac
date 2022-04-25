@@ -2,4 +2,4 @@
 
 namespace LibHac.FsSystem;
 
-public delegate Result RandomDataGenerator(Span<byte> buffer);
+public delegate void RandomDataGenerator(Span<byte> buffer);
