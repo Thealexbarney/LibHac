@@ -15,13 +15,13 @@ using Utility = LibHac.FsSrv.Impl.Utility;
 
 namespace LibHac.FsSrv;
 
-public class SaveDataFileSystemServiceImpl
+public class SaveDataFileSystemServiceImpl : IDisposable
 {
     private Configuration _config;
     private EncryptionSeed _encryptionSeed;
 
-    private SaveDataFileSystemCacheManager _saveDataFsCacheManager;
-    private SaveDataExtraDataAccessorCacheManager _extraDataCacheManager;
+    private SaveDataFileSystemCacheManager _saveFileSystemCacheManager;
+    private SaveDataExtraDataAccessorCacheManager _saveExtraDataCacheManager;
     // Save data porter manager
     private bool _isSdCardAccessible;
     private TimeStampGetter _timeStampGetter;
@@ -40,20 +40,8 @@ public class SaveDataFileSystemServiceImpl
 
         public Result Get(out long timeStamp)
         {
-            return _saveService.GetSaveDataCommitTimeStamp(out timeStamp);
+            return _saveService.GetSaveDataCommitTimeStamp(out timeStamp).Ret();
         }
-    }
-
-    public SaveDataFileSystemServiceImpl(in Configuration configuration)
-    {
-        _config = configuration;
-        _saveDataFsCacheManager = new SaveDataFileSystemCacheManager();
-        _extraDataCacheManager = new SaveDataExtraDataAccessorCacheManager();
-
-        _timeStampGetter = new TimeStampGetter(this);
-
-        Result rc = _saveDataFsCacheManager.Initialize(_config.MaxSaveFsCacheCount);
-        Abort.DoAbortUnless(rc.IsSuccess());
     }
 
     public struct Configuration
@@ -68,7 +56,7 @@ public class SaveDataFileSystemServiceImpl
         public IBufferManager BufferManager;
         public RandomDataGenerator GenerateRandomData;
         public SaveDataTransferCryptoConfiguration SaveTransferCryptoConfig;
-        public int MaxSaveFsCacheCount;
+        public int SaveDataFileSystemCacheCount;
         public Func<bool> IsPseudoSaveData;
         public ISaveDataIndexerManager SaveIndexerManager;
 
@@ -76,10 +64,36 @@ public class SaveDataFileSystemServiceImpl
         public FileSystemServer FsServer;
     }
 
-    internal Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
+    private static bool IsDeviceUniqueMac(SaveDataSpaceId spaceId)
     {
-        var registry = new ProgramRegistryImpl(_config.FsServer);
-        return registry.GetProgramInfo(out programInfo, processId);
+        return spaceId == SaveDataSpaceId.System ||
+               spaceId == SaveDataSpaceId.User ||
+               spaceId == SaveDataSpaceId.Temporary ||
+               spaceId == SaveDataSpaceId.ProperSystem ||
+               spaceId == SaveDataSpaceId.SafeMode;
+    }
+
+    private static Result WipeData(IFileSystem fileSystem, in Path filePath, RandomDataGenerator random)
+    {
+        throw new NotImplementedException();
+    }
+
+    public SaveDataFileSystemServiceImpl(in Configuration configuration)
+    {
+        _config = configuration;
+        _saveFileSystemCacheManager = new SaveDataFileSystemCacheManager();
+        _saveExtraDataCacheManager = new SaveDataExtraDataAccessorCacheManager();
+
+        _timeStampGetter = new TimeStampGetter(this);
+
+        Result rc = _saveFileSystemCacheManager.Initialize(_config.SaveDataFileSystemCacheCount);
+        Abort.DoAbortUnless(rc.IsSuccess());
+    }
+
+    public void Dispose()
+    {
+        _saveFileSystemCacheManager.Dispose();
+        _saveExtraDataCacheManager.Dispose();
     }
 
     public Result DoesSaveDataEntityExist(out bool exists, SaveDataSpaceId spaceId, ulong saveDataId)
@@ -116,7 +130,12 @@ public class SaveDataFileSystemServiceImpl
         }
     }
 
-    // 14.3.0
+    public Result OpenSaveDataFile(ref SharedRef<IFile> outFile, SaveDataSpaceId spaceId, ulong saveDataId,
+        OpenMode openMode)
+    {
+        throw new NotImplementedException();
+    }
+
     public Result OpenSaveDataFileSystem(ref SharedRef<IFileSystem> outFileSystem, SaveDataSpaceId spaceId,
         ulong saveDataId, in Path saveDataRootPath, bool openReadOnly, SaveDataType type, bool cacheExtraData)
     {
@@ -141,10 +160,10 @@ public class SaveDataFileSystemServiceImpl
 
         using var saveDataFs = new SharedRef<ISaveDataFileSystem>();
 
-        using (_saveDataFsCacheManager.GetScopedLock())
-        using (_extraDataCacheManager.GetScopedLock())
+        using (_saveFileSystemCacheManager.GetScopedLock())
+        using (_saveExtraDataCacheManager.GetScopedLock())
         {
-            if (isEmulatedOnHost || !_saveDataFsCacheManager.GetCache(ref saveDataFs.Ref(), spaceId, saveDataId))
+            if (isEmulatedOnHost || !_saveFileSystemCacheManager.GetCache(ref saveDataFs.Ref(), spaceId, saveDataId))
             {
                 bool isDeviceUniqueMac = IsDeviceUniqueMac(spaceId);
                 bool isJournalingSupported = SaveDataProperties.IsJournalingSupported(type);
@@ -163,13 +182,13 @@ public class SaveDataFileSystemServiceImpl
                 using SharedRef<ISaveDataExtraDataAccessor> extraDataAccessor =
                     SharedRef<ISaveDataExtraDataAccessor>.CreateCopy(in saveDataFs);
 
-                rc = _extraDataCacheManager.Register(in extraDataAccessor, spaceId, saveDataId);
+                rc = _saveExtraDataCacheManager.Register(in extraDataAccessor, spaceId, saveDataId);
                 if (rc.IsFailure()) return rc.Miss();
             }
         }
 
         using var registerFs = new SharedRef<SaveDataFileSystemCacheRegister>(
-            new SaveDataFileSystemCacheRegister(ref saveDataFs.Ref(), _saveDataFsCacheManager, spaceId, saveDataId));
+            new SaveDataFileSystemCacheRegister(ref saveDataFs.Ref(), _saveFileSystemCacheManager, spaceId, saveDataId));
 
         if (openReadOnly)
         {
@@ -203,9 +222,59 @@ public class SaveDataFileSystemServiceImpl
     }
 
     public Result OpenSaveDataInternalStorageFileSystem(ref SharedRef<IFileSystem> outFileSystem,
-        SaveDataSpaceId spaceId, ulong saveDataId, in Path saveDataRootPath, bool useSecondMacKey)
+        SaveDataSpaceId spaceId, ulong saveDataId, in Path saveDataRootPath, bool useSecondMacKey,
+        bool isReconstructible)
     {
         throw new NotImplementedException();
+    }
+
+    public Result ExtendSaveDataFileSystemCore(out long extendedTotalSize, ulong saveDataId, SaveDataSpaceId spaceId,
+        SaveDataType type, long dataSize, long journalSize, in Path saveDataRootPath, bool isExtensionStart)
+    {
+        throw new NotImplementedException();
+    }
+
+    private Result OpenSaveDataImageFile(ref UniqueRef<IFile> outFile, SaveDataSpaceId spaceId, ulong saveDataId,
+        in Path saveDataRootPath)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result StartExtendSaveDataFileSystem(out long extendedTotalSize, ulong saveDataId, SaveDataSpaceId spaceId,
+        SaveDataType type, long dataSize, long journalSize, in Path saveDataRootPath)
+    {
+        return ExtendSaveDataFileSystemCore(out extendedTotalSize, saveDataId, spaceId, type, dataSize, journalSize,
+            in saveDataRootPath, isExtensionStart: true);
+    }
+
+    public Result ResumeExtendSaveDataFileSystem(out long extendedTotalSize, ulong saveDataId, SaveDataSpaceId spaceId,
+        SaveDataType type, in Path saveDataRootPath)
+    {
+        return ExtendSaveDataFileSystemCore(out extendedTotalSize, saveDataId, spaceId, type, dataSize: 0,
+            journalSize: 0, in saveDataRootPath, isExtensionStart: false);
+    }
+
+    public Result FinishExtendSaveDataFileSystem(ulong saveDataId, SaveDataSpaceId spaceId)
+    {
+        Result rc = DeleteSaveDataMeta(saveDataId, spaceId, SaveDataMetaType.ExtensionContext);
+        if (rc.IsFailure() && !ResultFs.PathNotFound.Includes(rc))
+            return rc.Miss();
+
+        return Result.Success;
+    }
+
+    public void RevertExtendSaveDataFileSystem(ulong saveDataId, SaveDataSpaceId spaceId, long originalSize,
+        in Path saveDataRootPath)
+    {
+        using var saveDataFile = new UniqueRef<IFile>();
+        Result rc = OpenSaveDataImageFile(ref saveDataFile.Ref(), spaceId, saveDataId, in saveDataRootPath);
+
+        if (rc.IsSuccess())
+        {
+            saveDataFile.Get.SetSize(originalSize).IgnoreResult();
+        }
+
+        FinishExtendSaveDataFileSystem(saveDataId, spaceId).IgnoreResult();
     }
 
     public Result QuerySaveDataTotalSize(out long totalSize, int blockSize, long dataSize, long journalSize)
@@ -316,6 +385,82 @@ public class SaveDataFileSystemServiceImpl
         return Result.Success;
     }
 
+    public Result CreateSaveDataFileSystem(ulong saveDataId, in SaveDataCreationInfo2 creationInfo,
+        in Path saveDataRootPath, bool skipFormat)
+    {
+        Unsafe.SkipInit(out Array18<byte> saveImageNameBuffer);
+
+        long dataSize = creationInfo.Size;
+        long journalSize = creationInfo.JournalSize;
+        ulong ownerId = creationInfo.OwnerId;
+        SaveDataSpaceId spaceId = creationInfo.SpaceId;
+        SaveDataFlags flags = creationInfo.Flags;
+
+        using var fileSystem = new SharedRef<IFileSystem>();
+
+        Result rc = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref(), creationInfo.SpaceId, in saveDataRootPath,
+            allowEmulatedSave: false);
+        if (rc.IsFailure()) return rc.Miss();
+
+        using var saveImageName = new Path();
+        rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer.Items, saveDataId);
+        if (rc.IsFailure()) return rc.Miss();
+
+        bool isPseudoSaveFs = _config.IsPseudoSaveData();
+        bool isCreationSuccessful = false;
+
+        try
+        {
+            if (isPseudoSaveFs)
+            {
+                rc = FsSystem.Utility.EnsureDirectory(fileSystem.Get, in saveImageName);
+                if (rc.IsFailure()) return rc.Miss();
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+
+            SaveDataExtraData extraData = default;
+            extraData.Attribute = creationInfo.Attribute;
+            extraData.OwnerId = ownerId;
+
+            rc = GetSaveDataCommitTimeStamp(out extraData.TimeStamp);
+            if (rc.IsFailure())
+                extraData.TimeStamp = 0;
+
+            extraData.CommitId = 0;
+            _config.GenerateRandomData(SpanHelpers.AsByteSpan(ref extraData.CommitId));
+
+            extraData.Flags = flags;
+            extraData.DataSize = dataSize;
+            extraData.JournalSize = journalSize;
+            extraData.FormatType = creationInfo.FormatType;
+
+            rc = WriteSaveDataFileSystemExtraData(spaceId, saveDataId, in extraData, in saveDataRootPath,
+                creationInfo.Attribute.Type, updateTimeStamp: true);
+            if (rc.IsFailure()) return rc.Miss();
+
+            isCreationSuccessful = true;
+            return Result.Success;
+        }
+        finally
+        {
+            // Delete any created save if something goes wrong.
+            if (!isCreationSuccessful)
+            {
+                if (isPseudoSaveFs)
+                {
+                    fileSystem.Get.DeleteDirectoryRecursively(in saveImageName).IgnoreResult();
+                }
+                else
+                {
+                    fileSystem.Get.DeleteFile(in saveImageName).IgnoreResult();
+                }
+            }
+        }
+    }
+
     public Result CreateSaveDataFileSystem(ulong saveDataId, in SaveDataAttribute attribute,
         in SaveDataCreationInfo creationInfo, in Path saveDataRootPath, in Optional<HashSalt> hashSalt,
         bool skipFormat)
@@ -379,11 +524,6 @@ public class SaveDataFileSystemServiceImpl
         return Result.Success;
     }
 
-    private Result WipeData(IFileSystem fileSystem, in Path filePath, RandomDataGenerator random)
-    {
-        throw new NotImplementedException();
-    }
-
     public Result DeleteSaveDataFileSystem(SaveDataSpaceId spaceId, ulong saveDataId, bool wipeSaveFile,
         in Path saveDataRootPath)
     {
@@ -391,7 +531,7 @@ public class SaveDataFileSystemServiceImpl
 
         using var fileSystem = new SharedRef<IFileSystem>();
 
-        _saveDataFsCacheManager.Unregister(spaceId, saveDataId);
+        _saveFileSystemCacheManager.Unregister(spaceId, saveDataId);
 
         // Open the directory containing the save data
         Result rc = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref(), spaceId, in saveDataRootPath, false);
@@ -433,13 +573,13 @@ public class SaveDataFileSystemServiceImpl
         // Nintendo returns blank extra data for directory save data.
         // We've extended directory save data to store extra data so we don't need to do that.
 
-        using UniqueLockRef<SdkRecursiveMutexType> scopedLockFsCache = _saveDataFsCacheManager.GetScopedLock();
-        using UniqueLockRef<SdkRecursiveMutexType> scopedLockExtraDataCache = _extraDataCacheManager.GetScopedLock();
+        using UniqueLockRef<SdkRecursiveMutexType> scopedLockFsCache = _saveFileSystemCacheManager.GetScopedLock();
+        using UniqueLockRef<SdkRecursiveMutexType> scopedLockExtraDataCache = _saveExtraDataCacheManager.GetScopedLock();
 
         using var extraDataAccessor = new SharedRef<ISaveDataExtraDataAccessor>();
 
         // Try to grab an extra data accessor for the requested save from the cache.
-        Result rc = _extraDataCacheManager.GetCache(ref extraDataAccessor.Ref(), spaceId, saveDataId);
+        Result rc = _saveExtraDataCacheManager.GetCache(ref extraDataAccessor.Ref(), spaceId, saveDataId);
 
         if (rc.IsSuccess())
         {
@@ -456,7 +596,7 @@ public class SaveDataFileSystemServiceImpl
         if (rc.IsFailure()) return rc.Miss();
 
         // Try to grab an accessor from the cache again.
-        rc = _extraDataCacheManager.GetCache(ref extraDataAccessor.Ref(), spaceId, saveDataId);
+        rc = _saveExtraDataCacheManager.GetCache(ref extraDataAccessor.Ref(), spaceId, saveDataId);
 
         if (rc.IsFailure())
         {
@@ -478,13 +618,13 @@ public class SaveDataFileSystemServiceImpl
         // Nintendo does nothing when writing directory save data extra data.
         // We've extended directory save data to store extra data so we don't return early.
 
-        using UniqueLockRef<SdkRecursiveMutexType> scopedLockFsCache = _saveDataFsCacheManager.GetScopedLock();
-        using UniqueLockRef<SdkRecursiveMutexType> scopedLockExtraDataCache = _extraDataCacheManager.GetScopedLock();
+        using UniqueLockRef<SdkRecursiveMutexType> scopedLockFsCache = _saveFileSystemCacheManager.GetScopedLock();
+        using UniqueLockRef<SdkRecursiveMutexType> scopedLockExtraDataCache = _saveExtraDataCacheManager.GetScopedLock();
 
         using var extraDataAccessor = new SharedRef<ISaveDataExtraDataAccessor>();
 
         // Try to grab an extra data accessor for the requested save from the cache.
-        Result rc = _extraDataCacheManager.GetCache(ref extraDataAccessor.Ref(), spaceId, saveDataId);
+        Result rc = _saveExtraDataCacheManager.GetCache(ref extraDataAccessor.Ref(), spaceId, saveDataId);
 
         if (rc.IsFailure())
         {
@@ -498,7 +638,7 @@ public class SaveDataFileSystemServiceImpl
             if (rc.IsFailure()) return rc.Miss();
 
             // Try to grab an accessor from the cache again.
-            rc = _extraDataCacheManager.GetCache(ref extraDataAccessor.Ref(), spaceId, saveDataId);
+            rc = _saveExtraDataCacheManager.GetCache(ref extraDataAccessor.Ref(), spaceId, saveDataId);
 
             if (rc.IsFailure())
             {
@@ -593,12 +733,6 @@ public class SaveDataFileSystemServiceImpl
     }
 
     public Result OpenSaveDataDirectoryFileSystemImpl(ref SharedRef<IFileSystem> outFileSystem,
-        SaveDataSpaceId spaceId, in Path basePath)
-    {
-        return OpenSaveDataDirectoryFileSystemImpl(ref outFileSystem, spaceId, in basePath, true);
-    }
-
-    public Result OpenSaveDataDirectoryFileSystemImpl(ref SharedRef<IFileSystem> outFileSystem,
         SaveDataSpaceId spaceId, in Path basePath, bool createIfMissing)
     {
         using var baseFileSystem = new SharedRef<IFileSystem>();
@@ -680,15 +814,10 @@ public class SaveDataFileSystemServiceImpl
         }
     }
 
-    public Result SetSdCardEncryptionSeed(in EncryptionSeed seed)
+    public Result OpenSaveDataDirectoryFileSystemImpl(ref SharedRef<IFileSystem> outFileSystem,
+        SaveDataSpaceId spaceId, in Path basePath)
     {
-        _encryptionSeed = seed;
-
-        _config.SaveFsCreator.SetSdCardEncryptionSeed(seed.Value);
-        _config.SaveIndexerManager.InvalidateIndexer(SaveDataSpaceId.SdSystem);
-        _config.SaveIndexerManager.InvalidateIndexer(SaveDataSpaceId.SdUser);
-
-        return Result.Success;
+        return OpenSaveDataDirectoryFileSystemImpl(ref outFileSystem, spaceId, in basePath, true);
     }
 
     public Result IsProvisionallyCommittedSaveData(out bool isProvisionallyCommitted, in SaveDataInfo saveInfo)
@@ -704,13 +833,15 @@ public class SaveDataFileSystemServiceImpl
         return spaceId == SaveDataSpaceId.User && IsSaveEmulated(in saveDataRootPath);
     }
 
-    public bool IsDeviceUniqueMac(SaveDataSpaceId spaceId)
+    public Result SetSdCardEncryptionSeed(in EncryptionSeed seed)
     {
-        return spaceId == SaveDataSpaceId.System ||
-               spaceId == SaveDataSpaceId.User ||
-               spaceId == SaveDataSpaceId.Temporary ||
-               spaceId == SaveDataSpaceId.ProperSystem ||
-               spaceId == SaveDataSpaceId.SafeMode;
+        _encryptionSeed = seed;
+
+        _config.SaveFsCreator.SetSdCardEncryptionSeed(seed.Value);
+        _config.SaveIndexerManager.InvalidateIndexer(SaveDataSpaceId.SdSystem);
+        _config.SaveIndexerManager.InvalidateIndexer(SaveDataSpaceId.SdUser);
+
+        return Result.Success;
     }
 
     public void SetSdCardAccessibility(bool isAccessible)
@@ -753,6 +884,11 @@ public class SaveDataFileSystemServiceImpl
         return programId;
     }
 
+    public SaveDataTransferCryptoConfiguration GetSaveDataTransferCryptoConfiguration()
+    {
+        throw new NotImplementedException();
+    }
+
     public Result GetSaveDataIndexCount(out int count)
     {
         UnsafeHelpers.SkipParamInit(out count);
@@ -766,10 +902,10 @@ public class SaveDataFileSystemServiceImpl
         return Result.Success;
     }
 
-    public Result OpenSaveDataIndexerAccessor(ref UniqueRef<SaveDataIndexerAccessor> outAccessor, out bool neededInit,
-        SaveDataSpaceId spaceId)
+    public Result OpenSaveDataIndexerAccessor(ref UniqueRef<SaveDataIndexerAccessor> outAccessor,
+        out bool isInitialOpen, SaveDataSpaceId spaceId)
     {
-        return _config.SaveIndexerManager.OpenSaveDataIndexerAccessor(ref outAccessor, out neededInit, spaceId);
+        return _config.SaveIndexerManager.OpenSaveDataIndexerAccessor(ref outAccessor, out isInitialOpen, spaceId);
     }
 
     public void ResetTemporaryStorageIndexer()

@@ -122,14 +122,14 @@ internal class SaveDataIndexerManager : ISaveDataIndexerManager, IDisposable
     /// The accessor must be disposed after use.
     /// </remarks>
     /// <param name="outAccessor">If the method returns successfully, contains the created accessor.</param>
-    /// <param name="neededInit">If the method returns successfully, contains <see langword="true"/>
-    /// if the indexer needed to be initialized.</param>
+    /// <param name="isInitialOpen">If the method returns successfully, contains <see langword="true"/>
+    /// if the indexer needed to be initialized because this was the first time it was opened.</param>
     /// <param name="spaceId">The <see cref="SaveDataSpaceId"/> of the indexer to open.</param>
     /// <returns>The <see cref="Result"/> of the operation.</returns>
     public Result OpenSaveDataIndexerAccessor(ref UniqueRef<SaveDataIndexerAccessor> outAccessor,
-        out bool neededInit, SaveDataSpaceId spaceId)
+        out bool isInitialOpen, SaveDataSpaceId spaceId)
     {
-        UnsafeHelpers.SkipParamInit(out neededInit);
+        UnsafeHelpers.SkipParamInit(out isInitialOpen);
 
         if (_isBisUserRedirectionEnabled && spaceId == SaveDataSpaceId.User)
         {
@@ -226,7 +226,7 @@ internal class SaveDataIndexerManager : ISaveDataIndexerManager, IDisposable
         }
 
         outAccessor.Reset(new SaveDataIndexerAccessor(indexer, ref indexerLock.Ref()));
-        neededInit = wasIndexerInitialized;
+        isInitialOpen = wasIndexerInitialized;
         return Result.Success;
     }
 

@@ -13,7 +13,7 @@ namespace LibHac.FsSrv.Sf;
 /// <summary>
 /// The interface most programs use to interact with the FS service.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
 public interface IFileSystemProxy : IDisposable
 {
     Result SetCurrentProcess(ulong processId);
@@ -42,6 +42,7 @@ public interface IFileSystemProxy : IDisposable
     Result GetCacheStorageSize(out long dataSize, out long journalSize, ushort index);
     Result CreateSaveDataFileSystemWithHashSalt(in SaveDataAttribute attribute, in SaveDataCreationInfo creationInfo, in SaveDataMetaInfo metaInfo, in HashSalt hashSalt);
     Result OpenHostFileSystemWithOption(ref SharedRef<IFileSystemSf> outFileSystem, in FspPath path, MountHostOption option);
+    Result CreateSaveDataFileSystemWithCreationInfo2(in SaveDataCreationInfo2 creationInfo);
     Result OpenSaveDataFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, SaveDataSpaceId spaceId, in SaveDataAttribute attribute);
     Result OpenSaveDataFileSystemBySystemSaveDataId(ref SharedRef<IFileSystemSf> outFileSystem, SaveDataSpaceId spaceId, in SaveDataAttribute attribute);
     Result OpenReadOnlySaveDataFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, SaveDataSpaceId spaceId, in SaveDataAttribute attribute);

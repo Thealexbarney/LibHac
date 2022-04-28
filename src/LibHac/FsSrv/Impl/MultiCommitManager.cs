@@ -46,7 +46,7 @@ internal class MultiCommitManager : IMultiCommitManager
 {
     private const int MaxFileSystemCount = 10;
 
-    public const ulong ProgramId = 0x0100000000000000;
+    public const ulong ProgramId = 0;
     public const ulong SaveDataId = 0x8000000000000001;
     private const long SaveDataSize = 0xC000;
     private const long SaveJournalSize = 0xC000;

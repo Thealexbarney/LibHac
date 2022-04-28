@@ -43,4 +43,7 @@ public static class Log
 
         diag.LogImpl(in metaData, message);
     }
+
+    /// <summary>"<c>$</c>"</summary>
+    public static ReadOnlySpan<byte> EmptyModuleName => new[] { (byte)'$' }; // "$"
 }

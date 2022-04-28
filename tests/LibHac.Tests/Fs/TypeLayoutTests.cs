@@ -136,6 +136,7 @@ public class TypeLayoutTests
         Assert.Equal(0x40, GetOffset(in s, in s.OwnerId));
         Assert.Equal(0x48, GetOffset(in s, in s.TimeStamp));
         Assert.Equal(0x50, GetOffset(in s, in s.Flags));
+        Assert.Equal(0x54, GetOffset(in s, in s.FormatType));
         Assert.Equal(0x58, GetOffset(in s, in s.DataSize));
         Assert.Equal(0x60, GetOffset(in s, in s.JournalSize));
         Assert.Equal(0x68, GetOffset(in s, in s.CommitId));

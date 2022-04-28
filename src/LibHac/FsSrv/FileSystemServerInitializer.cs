@@ -136,7 +136,7 @@ public static class FileSystemServerInitializer
         saveFsServiceConfig.BufferManager = bufferManager;
         saveFsServiceConfig.GenerateRandomData = config.RandomGenerator;
         saveFsServiceConfig.IsPseudoSaveData = () => true;
-        saveFsServiceConfig.MaxSaveFsCacheCount = 1;
+        saveFsServiceConfig.SaveDataFileSystemCacheCount = 1;
         saveFsServiceConfig.SaveIndexerManager = saveDataIndexerManager;
         saveFsServiceConfig.FsServer = server;
 

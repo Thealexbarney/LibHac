@@ -94,8 +94,16 @@ public ref struct Path
     [DebuggerDisplay("{" + nameof(ToString) + "(),nq}")]
     public struct Stored : IDisposable
     {
+        private static readonly byte[] EmptyBuffer = { 0 };
+
         private byte[] _buffer;
         private int _length;
+
+        public Stored()
+        {
+            _buffer = EmptyBuffer;
+            _length = 0;
+        }
 
         public void Dispose()
         {
@@ -160,7 +168,8 @@ public ref struct Path
             byte[] oldBuffer = _buffer;
             _buffer = buffer;
 
-            if (oldBuffer is not null)
+            // Check if the buffer is longer than 1 so we don't try to return EmptyBuffer to the pool.
+            if (oldBuffer?.Length > 1)
                 ArrayPool<byte>.Shared.Return(oldBuffer);
 
             return Result.Success;

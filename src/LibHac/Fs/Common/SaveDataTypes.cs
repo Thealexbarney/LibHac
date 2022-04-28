@@ -16,8 +16,7 @@ public enum SaveDataSpaceId : byte
     Temporary = 3,
     SdUser = 4,
     ProperSystem = 100,
-    SafeMode = 101,
-    BisAuto = 127
+    SafeMode = 101
 }
 
 public enum SaveDataType : byte
@@ -99,6 +98,7 @@ public struct SaveDataExtraData
     public ulong OwnerId;
     public long TimeStamp;
     public SaveDataFlags Flags;
+    public SaveDataFormatType FormatType;
     public long DataSize;
     public long JournalSize;
     public long CommitId;
@@ -371,7 +371,7 @@ internal static class SaveDataTypesValidity
 {
     public static bool IsValid(in SaveDataAttribute attribute)
     {
-        return IsValid(in attribute.Type)&& IsValid(in attribute.Rank);
+        return IsValid(in attribute.Type) && IsValid(in attribute.Rank);
     }
 
     public static bool IsValid(in SaveDataCreationInfo creationInfo)

@@ -352,6 +352,14 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
         return saveFsService.CreateSaveDataFileSystemBySystemSaveDataId(in attribute, in creationInfo);
     }
 
+    public Result CreateSaveDataFileSystemWithCreationInfo2(in SaveDataCreationInfo2 creationInfo)
+    {
+        Result rc = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
+        if (rc.IsFailure()) return rc;
+
+        return saveFsService.CreateSaveDataFileSystemWithCreationInfo2(in creationInfo);
+    }
+
     public Result ExtendSaveDataFileSystem(SaveDataSpaceId spaceId, ulong saveDataId, long dataSize,
         long journalSize)
     {

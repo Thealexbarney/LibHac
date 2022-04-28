@@ -4,8 +4,9 @@ namespace LibHac.Fs.Impl;
 
 internal readonly struct SaveDataMetaPolicy
 {
+    internal const int ThumbnailFileSize = 0x40060;
+
     private readonly SaveDataType _type;
-    private const int ThumbnailFileSize = 0x40060;
 
     public SaveDataMetaPolicy(SaveDataType saveType)
     {
