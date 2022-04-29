@@ -7,7 +7,11 @@ namespace LibHac.Fs.Shim;
 
 public enum DebugOptionKey : uint
 {
-    SaveDataEncryption = 0x20454453 // "SDE "
+    SaveDataEncryption = 0x20454453, // "SDE "
+    SaveDataJournalMetaVerification = 0x20454453, // "JMV "
+    SaveDataRemapMetaVerification = 0x20454453, // "RMV "
+    SaveDataHashAlgorithm = 0x20454453, // "SDHA"
+    SaveDataHashSalt = 0x20454453 // "SDHS"
 }
 
 /// <summary>

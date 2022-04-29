@@ -1964,7 +1964,7 @@ public static class ResultFs
             /// <summary>Error code: 2002-6400; Range: 6400-6449; Inner value: 0x320002</summary>
             public static Result.Base PermissionDenied { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6400, 6449); }
                 /// <summary>Returned when opening a host FS on a retail device.<br/>Error code: 2002-6403; Inner value: 0x320602</summary>
-                public static Result.Base PermissionDeniedForCreateHostFileSystem => new Result.Base(ModuleFs, 6403);
+                public static Result.Base HostFileSystemOperationDisabled => new Result.Base(ModuleFs, 6403);
 
             /// <summary>Error code: 2002-6450; Inner value: 0x326402</summary>
             public static Result.Base PortAcceptableCountLimited => new Result.Base(ModuleFs, 6450);

@@ -307,7 +307,7 @@ public class SaveDataManagement
 
         Span<ProgramIndexMapInfo> mapInfo = stackalloc ProgramIndexMapInfo[5];
 
-        var mainProgramId = new ProgramId(0x123456);
+        var mainProgramId = new Ncm.ApplicationId(0x123456);
         var programId = new ProgramId(mainProgramId.Value + 2);
 
         for (int i = 0; i < mapInfo.Length; i++)

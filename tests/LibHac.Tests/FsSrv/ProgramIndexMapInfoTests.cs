@@ -34,7 +34,7 @@ public class ProgramIndexMapInfoTests
 
         for (int i = 0; i < map.Length; i++)
         {
-            map[i].MainProgramId = new ProgramId(1);
+            map[i].MainProgramId = new Ncm.ApplicationId(1);
             map[i].ProgramId = new ProgramId((ulong)(i + 1));
             map[i].ProgramIndex = (byte)i;
         }
@@ -60,7 +60,7 @@ public class ProgramIndexMapInfoTests
 
         for (int i = 0; i < map.Length; i++)
         {
-            map[i].MainProgramId = new ProgramId((ulong)idCreator(0));
+            map[i].MainProgramId = new Ncm.ApplicationId((ulong)idCreator(0));
             map[i].ProgramId = new ProgramId((ulong)idCreator(i));
             map[i].ProgramIndex = (byte)i;
         }

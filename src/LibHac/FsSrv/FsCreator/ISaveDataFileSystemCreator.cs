@@ -18,5 +18,8 @@ public interface ISaveDataFileSystemCreator
     Result CreateExtraDataAccessor(ref SharedRef<ISaveDataExtraDataAccessor> outExtraDataAccessor,
         ref SharedRef<IFileSystem> baseFileSystem);
 
-    void SetSdCardEncryptionSeed(ReadOnlySpan<byte> seed);
+    Result IsDataEncrypted(out bool isEncrypted, ref SharedRef<IFileSystem> baseFileSystem, ulong saveDataId,
+        IBufferManager bufferManager, bool isDeviceUniqueMac, bool isReconstructible);
+
+    void SetMacGenerationSeed(ReadOnlySpan<byte> seed);
 }

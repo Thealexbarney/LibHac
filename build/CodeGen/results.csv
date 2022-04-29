@@ -1070,7 +1070,7 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,6397,,,,UnsupportedOperateRangeForRegionSwitchStorage,
 
 2,6400,6449,,,PermissionDenied,
-2,6403,,,,PermissionDeniedForCreateHostFileSystem,Returned when opening a host FS on a retail device.
+2,6403,,,,HostFileSystemOperationDisabled,Returned when opening a host FS on a retail device.
 
 2,6450,,,,PortAcceptableCountLimited,
 2,6452,,,,NcaExternalKeyInconsistent,

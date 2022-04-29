@@ -138,6 +138,7 @@ public static class FileSystemServerInitializer
         saveFsServiceConfig.IsPseudoSaveData = () => true;
         saveFsServiceConfig.SaveDataFileSystemCacheCount = 1;
         saveFsServiceConfig.SaveIndexerManager = saveDataIndexerManager;
+        saveFsServiceConfig.DebugConfigService = debugConfigurationService;
         saveFsServiceConfig.FsServer = server;
 
         var saveFsService = new SaveDataFileSystemServiceImpl(in saveFsServiceConfig);

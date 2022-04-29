@@ -120,7 +120,13 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
         throw new NotImplementedException();
     }
 
-    public void SetSdCardEncryptionSeed(ReadOnlySpan<byte> seed)
+    public Result IsDataEncrypted(out bool isEncrypted, ref SharedRef<IFileSystem> baseFileSystem, ulong saveDataId,
+        IBufferManager bufferManager, bool isDeviceUniqueMac, bool isReconstructible)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void SetMacGenerationSeed(ReadOnlySpan<byte> seed)
     {
         throw new NotImplementedException();
     }
