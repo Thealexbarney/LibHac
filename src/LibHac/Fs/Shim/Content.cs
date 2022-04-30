@@ -16,7 +16,7 @@ namespace LibHac.Fs.Shim;
 /// <summary>
 /// Contains functions for mounting content file systems.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0</remarks>
 [SkipLocalsInit]
 public static class Content
 {

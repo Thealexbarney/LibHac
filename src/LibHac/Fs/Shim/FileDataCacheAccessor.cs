@@ -1,12 +1,13 @@
 ﻿using System;
 using LibHac.Fs.Fsa;
 
+// ReSharper disable once CheckNamespace
 namespace LibHac.Fs.Impl;
 
 /// <summary>
 /// Provides access to an <see cref="IFileDataCache"/>.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0</remarks>
 internal class FileDataCacheAccessor
 {
     private readonly IFileDataCache _cache;

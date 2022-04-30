@@ -14,6 +14,11 @@ using static LibHac.Fs.SaveData;
 // ReSharper disable once CheckNamespace
 namespace LibHac.Fs
 {
+    /// <summary>
+    /// An adapter for interacting with an <see cref="FsSrv.Sf.ISaveDataTransferManagerWithDivision"/>
+    /// IPC service object.
+    /// </summary>
+    /// <remarks>Based on nnSdk 14.3.0</remarks>
     public class SaveDataTransferManagerVersion2 : IDisposable
     {
         private SharedRef<ISaveDataTransferManagerWithDivision> _baseInterface;
@@ -253,6 +258,11 @@ namespace LibHac.Fs
         }
     }
 
+    /// <summary>
+    /// An adapter that automatically closes a given <see cref="FsSrv.Sf.ISaveDataTransferProhibiter"/>
+    /// IPC service object when disposed.
+    /// </summary>
+    /// <remarks>Based on nnSdk 14.3.0</remarks>
     public class SaveDataTransferProhibiterForCloudBackUp : IDisposable
     {
         private SharedRef<ISaveDataTransferProhibiter> _prohibiter;
@@ -271,6 +281,10 @@ namespace LibHac.Fs
 
 namespace LibHac.Fs.Shim
 {
+    /// <summary>
+    /// Contains functions used when doing save data cloud backup.
+    /// </summary>
+    /// <remarks>Based on nnSdk 14.3.0</remarks>
     public static class SaveDataTransferVersion2Shim
     {
         public static Result OpenSaveDataTransferProhibiterForCloudBackUp(this FileSystemClientImpl fs,

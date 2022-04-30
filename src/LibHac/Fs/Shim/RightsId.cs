@@ -8,7 +8,7 @@ namespace LibHac.Fs.Shim;
 /// <summary>
 /// Contains functions for working with rights IDs and external keys for NCA encryption.
 /// </summary>
-/// <remarks>Based on nnSdk 13.4.0</remarks>
+/// <remarks>Based on nnSdk 14.3.0</remarks>
 public static class RightsIdShim
 {
     public static Result GetRightsId(this FileSystemClient fs, out RightsId rightsId, ProgramId programId,

@@ -16,7 +16,7 @@ namespace LibHac.Fs.Shim;
 /// <summary>
 /// Contains functions for mounting system save data file systems.
 /// </summary>
-/// <remarks>Based on nnSdk 13.4.0</remarks>
+/// <remarks>Based on nnSdk 14.3.0</remarks>
 [SkipLocalsInit]
 public static class SystemSaveData
 {

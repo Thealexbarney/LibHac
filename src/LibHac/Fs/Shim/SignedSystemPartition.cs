@@ -9,7 +9,7 @@ namespace LibHac.Fs.Shim;
 /// <summary>
 /// Contains functions for checking if a mounted file system was created from a signed system partition.
 /// </summary>
-/// <remarks>Based on nnSdk 13.4.0</remarks>
+/// <remarks>Based on nnSdk 14.3.0</remarks>
 public static class SignedSystemPartition
 {
     public static bool IsValidSignedSystemPartitionOnSdCard(this FileSystemClient fs, U8Span path)

@@ -14,6 +14,10 @@ using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.Fs.Shim;
 
+/// <summary>
+/// Contains functions used for mounting and interacting with the game card.
+/// </summary>
+/// <remarks>Based on nnSdk 14.3.0</remarks>
 [SkipLocalsInit]
 public static class GameCard
 {
@@ -32,13 +36,13 @@ public static class GameCard
 
     private class GameCardCommonMountNameGenerator : ICommonMountNameGenerator
     {
-        private GameCardHandle Handle { get; }
-        private GameCardPartition PartitionId { get; }
+        private readonly GameCardHandle _handle;
+        private readonly GameCardPartition _partitionId;
 
         public GameCardCommonMountNameGenerator(GameCardHandle handle, GameCardPartition partitionId)
         {
-            Handle = handle;
-            PartitionId = partitionId;
+            _handle = handle;
+            _partitionId = partitionId;
         }
 
         public void Dispose() { }
@@ -50,7 +54,7 @@ public static class GameCard
             // Determine how much space we need.
             int requiredNameBufferSize =
                 StringUtils.GetLength(CommonMountNames.GameCardFileSystemMountName, PathTool.MountNameLengthMax) +
-                StringUtils.GetLength(GetGameCardMountNameSuffix(PartitionId), PathTool.MountNameLengthMax) +
+                StringUtils.GetLength(GetGameCardMountNameSuffix(_partitionId), PathTool.MountNameLengthMax) +
                 handleDigitCount + 2;
 
             Assert.SdkRequiresGreaterEqual(nameBuffer.Length, requiredNameBufferSize);
@@ -58,8 +62,8 @@ public static class GameCard
             // Generate the name.
             var sb = new U8StringBuilder(nameBuffer);
             sb.Append(CommonMountNames.GameCardFileSystemMountName)
-                .Append(GetGameCardMountNameSuffix(PartitionId))
-                .AppendFormat(Handle.Value, 'x', (byte)handleDigitCount)
+                .Append(GetGameCardMountNameSuffix(_partitionId))
+                .AppendFormat(_handle.Value, 'x', (byte)handleDigitCount)
                 .Append(StringTraits.DriveSeparator);
 
             Assert.SdkEqual(sb.Length, requiredNameBufferSize - 1);

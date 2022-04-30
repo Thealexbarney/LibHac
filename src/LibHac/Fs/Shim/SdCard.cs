@@ -12,6 +12,10 @@ using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 
 namespace LibHac.Fs.Shim;
 
+/// <summary>
+/// Contains functions used for mounting and interacting with the SD card.
+/// </summary>
+/// <remarks>Based on nnSdk 14.3.0</remarks>
 [SkipLocalsInit]
 public static class SdCard
 {

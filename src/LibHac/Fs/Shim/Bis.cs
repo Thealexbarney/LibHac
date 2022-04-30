@@ -19,7 +19,7 @@ namespace LibHac.Fs.Shim;
 /// Contains functions for mounting built-in-storage partition file systems
 /// and opening the raw partitions as <see cref="IStorage"/>s.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0</remarks>
 [SkipLocalsInit]
 public static class Bis
 {

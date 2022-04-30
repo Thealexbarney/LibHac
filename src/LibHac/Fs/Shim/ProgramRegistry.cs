@@ -12,7 +12,7 @@ namespace LibHac.Fs.Shim;
 /// Contains functions for registering and unregistering currently running
 /// processes and their permissions in the FS program registry.
 /// </summary>
-/// <remarks>Based on nnSdk 13.4.0</remarks>
+/// <remarks>Based on nnSdk 14.3.0</remarks>
 public static class ProgramRegistry
 {
     /// <inheritdoc cref="ProgramRegistryImpl.RegisterProgram"/>

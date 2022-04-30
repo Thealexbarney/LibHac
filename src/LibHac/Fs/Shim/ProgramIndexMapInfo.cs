@@ -9,7 +9,7 @@ namespace LibHac.Fs.Shim;
 /// Contains functions for registering multi-program application
 /// information of the currently running application with FS.
 /// </summary>
-/// <remarks>Based on nnSdk 13.4.0</remarks>
+/// <remarks>Based on nnSdk 14.3.0</remarks>
 public static class ProgramIndexMapInfoShim
 {
     /// <summary>

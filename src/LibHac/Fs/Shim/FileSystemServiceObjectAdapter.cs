@@ -21,7 +21,7 @@ namespace LibHac.Fs.Impl;
 /// An adapter for using an <see cref="IFileSf"/> service object as an <see cref="IFile"/>. Used
 /// when receiving a Horizon IPC file object so it can be used as an <see cref="IFile"/> locally.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0</remarks>
 internal class FileServiceObjectAdapter : IFile
 {
     private SharedRef<IFileSf> _baseFile;
@@ -87,7 +87,7 @@ internal class FileServiceObjectAdapter : IFile
 /// An adapter for using an <see cref="IDirectorySf"/> service object as an <see cref="IDirectory"/>. Used
 /// when receiving a Horizon IPC directory object so it can be used as an <see cref="IDirectory"/> locally.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0</remarks>
 internal class DirectoryServiceObjectAdapter : IDirectory
 {
     private SharedRef<IDirectorySf> _baseDirectory;
@@ -119,7 +119,7 @@ internal class DirectoryServiceObjectAdapter : IDirectory
 /// An adapter for using an <see cref="IFileSystemSf"/> service object as an <see cref="IFileSystem"/>. Used
 /// when receiving a Horizon IPC file system object so it can be used as an <see cref="IFileSystem"/> locally.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0</remarks>
 internal class FileSystemServiceObjectAdapter : IFileSystem, IMultiCommitTarget
 {
     private SharedRef<IFileSystemSf> _baseFs;

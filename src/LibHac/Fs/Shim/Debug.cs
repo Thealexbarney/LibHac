@@ -17,7 +17,7 @@ public enum DebugOptionKey : uint
 /// <summary>
 /// Contains debug-related functions for the FS service.
 /// </summary>
-/// <remarks>Based on nnSdk 13.4.0</remarks>
+/// <remarks>Based on nnSdk 14.3.0</remarks>
 public static class DebugShim
 {
     public static Result CreatePaddingFile(this FileSystemClient fs, long size)

@@ -10,11 +10,17 @@ namespace LibHac.Fs.Impl
     /// <summary>
     /// Handles getting scoped read access to the global file data cache.
     /// </summary>
-    /// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+    /// <remarks>Based on nnSdk 14.3.0</remarks>
     internal struct GlobalFileDataCacheAccessorReadableScopedPointer : IDisposable
     {
         private FileDataCacheAccessor _accessor;
         private ReaderWriterLock _lock;
+
+        public GlobalFileDataCacheAccessorReadableScopedPointer()
+        {
+            _accessor = null;
+            _lock = null;
+        }
 
         public void Dispose()
         {
@@ -36,6 +42,10 @@ namespace LibHac.Fs.Impl
 
 namespace LibHac.Fs.Shim
 {
+    /// <summary>
+    /// Contains functions for configuring the global file data cache.
+    /// </summary>
+    /// <remarks>Based on nnSdk 14.3.0</remarks>
     public static class FileDataCacheShim
     {
         internal struct Globals : IDisposable

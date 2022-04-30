@@ -12,7 +12,7 @@ namespace LibHac.Fs.Impl;
 /// An adapter for interacting with an <see cref="FsSrv.Sf.ISaveDataChunkIterator"/>
 /// IPC service object via the non-IPC <see cref="ISaveDataChunkIterator"/> interface.
 /// </summary>
-/// <remarks>Based on nnSdk 13.4.0</remarks>
+/// <remarks>Based on nnSdk 14.3.0</remarks>
 public class SaveDataChunkIterator : ISaveDataChunkIterator
 {
     private SharedRef<FsSrv.Sf.ISaveDataChunkIterator> _baseInterface;
@@ -61,7 +61,7 @@ public class SaveDataChunkIterator : ISaveDataChunkIterator
 /// An adapter for interacting with an <see cref="FsSrv.Sf.ISaveDataChunkExporter"/>
 /// IPC service object via the non-IPC <see cref="ISaveDataChunkExporter"/> interface.
 /// </summary>
-/// <remarks>Based on nnSdk 13.4.0</remarks>
+/// <remarks>Based on nnSdk 14.3.0</remarks>
 public class SaveDataChunkExporter : ISaveDataChunkExporter
 {
     private SharedRef<FsSrv.Sf.ISaveDataChunkExporter> _baseInterface;
@@ -108,7 +108,7 @@ public class SaveDataChunkExporter : ISaveDataChunkExporter
 /// An adapter for interacting with an <see cref="FsSrv.Sf.ISaveDataChunkImporter"/>
 /// IPC service object via the non-IPC <see cref="ISaveDataChunkImporter"/> interface.
 /// </summary>
-/// <remarks>Based on nnSdk 13.4.0</remarks>
+/// <remarks>Based on nnSdk 14.3.0</remarks>
 public class SaveDataChunkImporter : ISaveDataChunkImporter
 {
     private SharedRef<FsSrv.Sf.ISaveDataChunkImporter> _baseInterface;
@@ -141,7 +141,7 @@ public class SaveDataChunkImporter : ISaveDataChunkImporter
 /// An adapter for interacting with an <see cref="FsSrv.Sf.ISaveDataDivisionExporter"/>
 /// IPC service object via the non-IPC <see cref="ISaveDataDivisionExporter"/> interface.
 /// </summary>
-/// <remarks>Based on nnSdk 13.4.0</remarks>
+/// <remarks>Based on nnSdk 14.3.0</remarks>
 public class SaveDataExporterVersion2 : ISaveDataDivisionExporter
 {
     private SharedRef<FsSrv.Sf.ISaveDataDivisionExporter> _baseInterface;
@@ -320,7 +320,7 @@ public class SaveDataExporterVersion2 : ISaveDataDivisionExporter
 /// An adapter for interacting with an <see cref="FsSrv.Sf.ISaveDataDivisionImporter"/>
 /// IPC service object via the non-IPC <see cref="ISaveDataDivisionImporter"/> interface.
 /// </summary>
-/// <remarks>Based on nnSdk 13.4.0</remarks>
+/// <remarks>Based on nnSdk 14.3.0</remarks>
 public class SaveDataImporterVersion2 : ISaveDataDivisionImporter
 {
     private SharedRef<FsSrv.Sf.ISaveDataDivisionImporter> _baseInterface;
