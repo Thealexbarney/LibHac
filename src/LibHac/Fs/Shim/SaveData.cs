@@ -6,7 +6,7 @@ using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
 using LibHac.Os;
-
+using LibHac.Util;
 using static LibHac.Fs.Impl.AccessLogStrings;
 using static LibHac.Fs.SaveData;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
@@ -17,12 +17,12 @@ namespace LibHac.Fs.Shim;
 /// <summary>
 /// Contains functions for mounting save data and checking if save data already exists or not.
 /// </summary>
-/// <remarks>Based on nnSdk 13.4.0</remarks>
+/// <remarks>Based on nnSdk 14.3.0</remarks>
 [SkipLocalsInit]
 public static class SaveData
 {
-    private const long SaveDataSizeForDebug = 0x2000000;
-    private const long SaveDataJournalSizeForDebug = 0x2000000;
+    private const long SaveDataTotalSizeMax = 0xFA000000;
+    private const int SaveDataBlockSize = 0x4000;
 
     private static Result OpenSaveDataInternalStorageFileSystemImpl(FileSystemClient fs,
         ref UniqueRef<IFileSystem> outFileSystem, SaveDataSpaceId spaceId, ulong saveDataId)
@@ -38,6 +38,39 @@ public static class SaveData
             new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
 
         outFileSystem.Set(ref fileSystemAdapter.Ref());
+
+        return Result.Success;
+    }
+
+    private static Result ExtendSaveDataIfNeeded(FileSystemClient fs, UserId userId, long saveDataSize,
+        long saveDataJournalSize)
+    {
+        // Find the save data for the current program.
+        Result rc = SaveDataFilter.Make(out SaveDataFilter filter, InvalidProgramId.Value, SaveDataType.Account, userId,
+            InvalidSystemSaveDataId, index: 0, SaveDataRank.Primary);
+        if (rc.IsFailure()) return rc.Miss();
+
+        rc = fs.Impl.FindSaveDataWithFilter(out SaveDataInfo info, SaveDataSpaceId.User, in filter);
+        if (rc.IsFailure()) return rc.Miss();
+
+        SaveDataSpaceId spaceId = info.SpaceId;
+        ulong saveDataId = info.SaveDataId;
+
+        // Get the current save data's sizes.
+        rc = fs.Impl.GetSaveDataAvailableSize(out long availableSize, spaceId, saveDataId);
+        if (rc.IsFailure()) return rc.Miss();
+
+        rc = fs.Impl.GetSaveDataJournalSize(out long journalSize, spaceId, saveDataId);
+        if (rc.IsFailure()) return rc.Miss();
+
+        // Extend the save data if it's not large enough.
+        if (availableSize < saveDataSize || journalSize < saveDataJournalSize)
+        {
+            long newSaveDataSize = Math.Max(saveDataSize, availableSize);
+            long newJournalSize = Math.Max(saveDataJournalSize, journalSize);
+            rc = fs.Impl.ExtendSaveData(spaceId, saveDataId, newSaveDataSize, newJournalSize);
+            if (rc.IsFailure()) return rc.Miss();
+        }
 
         return Result.Success;
     }
@@ -84,16 +117,26 @@ public static class SaveData
         return Result.Success;
     }
 
-    public static Result EnsureSaveDataForDebug(this FileSystemClientImpl fs, UserId userId)
+    public static Result EnsureSaveDataImpl(this FileSystemClientImpl fs, UserId userId, long saveDataSize,
+        long saveDataJournalSize, bool extendIfNeeded)
     {
+        if (!Alignment.IsAlignedPow2(saveDataSize, SaveDataBlockSize))
+            return ResultFs.InvalidSize.Log();
+
+        if (!Alignment.IsAlignedPow2(saveDataJournalSize, SaveDataBlockSize))
+            return ResultFs.InvalidSize.Log();
+
+        if (saveDataSize + saveDataJournalSize > SaveDataTotalSizeMax)
+            return ResultFs.InvalidSize.Log();
+
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
 
-        Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, ProgramId.InvalidId, SaveDataType.Account,
-            InvalidUserId, InvalidSystemSaveDataId);
+        Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, InvalidProgramId, SaveDataType.Account,
+            userId, InvalidSystemSaveDataId);
         if (rc.IsFailure()) return rc;
 
-        rc = SaveDataCreationInfo.Make(out SaveDataCreationInfo creationInfo, SaveDataSizeForDebug,
-            SaveDataJournalSizeForDebug, default, SaveDataFlags.None, SaveDataSpaceId.User);
+        rc = SaveDataCreationInfo.Make(out SaveDataCreationInfo creationInfo, saveDataSize, saveDataJournalSize,
+            ownerId: 0, SaveDataFlags.None, SaveDataSpaceId.User);
         if (rc.IsFailure()) return rc.Miss();
 
         var metaInfo = new SaveDataMetaInfo
@@ -106,17 +149,25 @@ public static class SaveData
 
         if (rc.IsFailure())
         {
-            // Return successfully if the save data already exists
+            // Ensure the save is large enough if it already exists
             if (ResultFs.PathAlreadyExists.Includes(rc))
-                rc.Catch();
+            {
+                if (extendIfNeeded)
+                {
+                    rc = ExtendSaveDataIfNeeded(fs.Fs, userId, saveDataSize, saveDataJournalSize);
+                    if (rc.IsFailure()) return rc.Miss();
+                }
+            }
             else
+            {
                 return rc.Miss();
+            }
         }
 
         return Result.Success;
     }
 
-    public static Result MountSaveData(this FileSystemClientImpl fs, U8Span mountName, UserId userId)
+    public static Result MountSaveDataImpl(this FileSystemClientImpl fs, U8Span mountName, UserId userId)
     {
         return MountSaveDataImpl(fs, mountName, SaveDataSpaceId.User, ProgramId.InvalidId, userId,
             SaveDataType.Account, openReadOnly: false, index: 0);
@@ -130,7 +181,7 @@ public static class SaveData
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = MountSaveData(fs.Impl, mountName, InvalidUserId);
+            rc = MountSaveDataImpl(fs.Impl, mountName, InvalidUserId);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
@@ -141,7 +192,7 @@ public static class SaveData
         }
         else
         {
-            rc = MountSaveData(fs.Impl, mountName, InvalidUserId);
+            rc = MountSaveDataImpl(fs.Impl, mountName, InvalidUserId);
         }
 
         fs.Impl.AbortIfNeeded(rc);
@@ -150,7 +201,7 @@ public static class SaveData
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
             fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
 
-        return rc;
+        return Result.Success;
     }
 
     public static Result MountSaveData(this FileSystemClient fs, U8Span mountName, Ncm.ApplicationId applicationId,
@@ -185,7 +236,7 @@ public static class SaveData
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
             fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
 
-        return rc;
+        return Result.Success;
     }
 
     public static Result MountSaveDataReadOnly(this FileSystemClient fs, U8Span mountName,
@@ -220,7 +271,7 @@ public static class SaveData
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
             fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
 
-        return rc;
+        return Result.Success;
     }
 
     public static Result IsSaveDataExisting(this FileSystemClientImpl fs, out bool exists, UserId userId)
@@ -292,7 +343,7 @@ public static class SaveData
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
             fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
 
-        return rc;
+        return Result.Success;
     }
 
     public static Result MountCacheStorage(this FileSystemClient fs, U8Span mountName)
@@ -324,7 +375,7 @@ public static class SaveData
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
             fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
 
-        return rc;
+        return Result.Success;
     }
 
     public static Result MountCacheStorage(this FileSystemClient fs, U8Span mountName, int index)
@@ -358,7 +409,7 @@ public static class SaveData
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
             fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
 
-        return rc;
+        return Result.Success;
     }
 
     public static Result MountCacheStorage(this FileSystemClient fs, U8Span mountName, Ncm.ApplicationId applicationId)
@@ -391,7 +442,7 @@ public static class SaveData
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
             fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
 
-        return rc;
+        return Result.Success;
     }
 
     public static Result MountCacheStorage(this FileSystemClient fs, U8Span mountName, Ncm.ApplicationId applicationId,
@@ -426,7 +477,7 @@ public static class SaveData
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
             fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
 
-        return rc;
+        return Result.Success;
     }
 
     public static Result OpenSaveDataInternalStorageFileSystem(this FileSystemClient fs,

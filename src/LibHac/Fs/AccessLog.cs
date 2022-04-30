@@ -241,6 +241,16 @@ namespace LibHac.Fs.Impl
             }
         }
 
+        public ReadOnlySpan<byte> ToString(SaveDataFormatType value)
+        {
+            switch (value)
+            {
+                case SaveDataFormatType.Normal: return new[] { (byte)'N', (byte)'o', (byte)'r', (byte)'m', (byte)'a', (byte)'l' };
+                case SaveDataFormatType.NoJournal: return new[] { (byte)'N', (byte)'o', (byte)'J', (byte)'o', (byte)'u', (byte)'r', (byte)'n', (byte)'a', (byte)'l' };
+                default: return ToValueString((int)value);
+            }
+        }
+
         public ReadOnlySpan<byte> ToString(ContentType value)
         {
             switch (value)
@@ -1081,6 +1091,16 @@ namespace LibHac.Fs.Impl
                 (byte)',', (byte)' ', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'d', (byte)'a',
                 (byte)'t', (byte)'a', (byte)'s', (byte)'p', (byte)'a', (byte)'c', (byte)'e', (byte)'i',
                 (byte)'d', (byte)':', (byte)' '
+            };
+
+        /// <summary>"<c>, save_data_format_type: </c>"</summary>
+        public static ReadOnlySpan<byte> LogSaveDataFormatType => // ", save_data_format_type: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'_', (byte)'d',
+                (byte)'a', (byte)'t', (byte)'a', (byte)'_', (byte)'f', (byte)'o', (byte)'r', (byte)'m',
+                (byte)'a', (byte)'t', (byte)'_', (byte)'t', (byte)'y', (byte)'p', (byte)'e', (byte)':',
+                (byte)' '
             };
 
         /// <summary>"<c>, save_data_time_stamp: </c>"</summary>

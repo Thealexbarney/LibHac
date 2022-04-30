@@ -21,7 +21,7 @@ namespace LibHac.Fs
     /// <summary>
     /// Allows iterating through the <see cref="SaveDataInfo"/> of a list of save data.
     /// </summary>
-    /// <remarks>Based on nnSdk 13.4.0</remarks>
+    /// <remarks>Based on nnSdk 14.3.0</remarks>
     public class SaveDataIterator : IDisposable
     {
         private readonly FileSystemClient _fsClient;
@@ -81,10 +81,12 @@ namespace LibHac.Fs.Shim
     /// <summary>
     /// Contains functions for creating, deleting, and otherwise managing save data.
     /// </summary>
-    /// <remarks>Based on nnSdk 13.4.0</remarks>
+    /// <remarks>Based on nnSdk 14.3.0</remarks>
     [SkipLocalsInit]
     public static class SaveDataManagement
     {
+        private const int SaveDataBlockSize = 0x4000;
+
         private class CacheStorageListCache : IDisposable
         {
             public readonly struct CacheEntry
@@ -988,6 +990,65 @@ namespace LibHac.Fs.Shim
             ulong ownerId, long size, long journalSize, SaveDataFlags flags)
         {
             return CreateSystemSaveData(fs, spaceId, saveDataId, InvalidUserId, ownerId, size, journalSize, flags);
+        }
+
+        public static Result CreateSystemSaveData(this FileSystemClientImpl fs, SaveDataSpaceId spaceId,
+            ulong saveDataId, UserId userId, ulong ownerId, long size, long journalSize, SaveDataFlags flags,
+            SaveDataFormatType formatType)
+        {
+            if (formatType == SaveDataFormatType.NoJournal && journalSize != 0)
+                return ResultFs.InvalidArgument.Log();
+
+            using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
+
+            Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, InvalidProgramId, SaveDataType.System,
+                userId, saveDataId);
+            if (rc.IsFailure()) return rc.Miss();
+
+            rc = SaveDataCreationInfo2.Make(out SaveDataCreationInfo2 creationInfo, in attribute, size, journalSize,
+                SaveDataBlockSize, ownerId, flags, spaceId, formatType);
+            if (rc.IsFailure()) return rc.Miss();
+
+            creationInfo.MetaType = SaveDataMetaType.None;
+            creationInfo.MetaSize = 0;
+
+            return fileSystemProxy.Get.CreateSaveDataFileSystemWithCreationInfo2(in creationInfo).Ret();
+        }
+
+        public static Result CreateSystemSaveData(this FileSystemClient fs, SaveDataSpaceId spaceId, ulong saveDataId,
+            ulong ownerId, long size, long journalSize, SaveDataFlags flags, SaveDataFormatType formatType)
+        {
+            Result rc;
+            Span<byte> logBuffer = stackalloc byte[0x180];
+
+            if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System) && fs.Impl.IsEnabledHandleAccessLog(null))
+            {
+                Tick start = fs.Hos.Os.GetSystemTick();
+                rc = CreateSystemSaveData(fs.Impl, spaceId, saveDataId, InvalidUserId, ownerId, size, journalSize,
+                    flags, formatType);
+                Tick end = fs.Hos.Os.GetSystemTick();
+
+                var idString = new IdString();
+                var sb = new U8StringBuilder(logBuffer, true);
+                sb.Append(LogSaveDataSpaceId).Append(idString.ToString(spaceId))
+                    .Append(LogSaveDataId).AppendFormat(saveDataId, 'X')
+                    .Append(LogUserId).AppendFormat(InvalidUserId.Id.High, 'X', 16).AppendFormat(InvalidUserId.Id.Low, 'X', 16)
+                    .Append(LogSaveDataOwnerId).AppendFormat(ownerId, 'X')
+                    .Append(LogSaveDataSize).AppendFormat(size, 'd')
+                    .Append(LogSaveDataJournalSize).AppendFormat(journalSize, 'd')
+                    .Append(LogSaveDataFlags).AppendFormat((int)flags, 'X', 8)
+                    .Append(LogSaveDataFormatType).Append(idString.ToString(formatType));
+
+                fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+            }
+            else
+            {
+                rc = CreateSystemSaveData(fs.Impl, spaceId, saveDataId, InvalidUserId, ownerId, size, journalSize,
+                    flags, formatType);
+            }
+
+            fs.Impl.AbortIfNeeded(rc);
+            return rc;
         }
 
         public static Result ExtendSaveData(this FileSystemClientImpl fs, SaveDataSpaceId spaceId, ulong saveDataId,
