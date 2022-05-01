@@ -147,6 +147,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             }
             else if (attribute.Type == SaveDataType.Account && attribute.UserId == InvalidUserId)
             {
+                // Trying to create a program's debug save.
                 bool canAccess =
                     accessControl.CanCall(OperationType.CreateSaveData) ||
                     accessControl.CanCall(OperationType.DebugSaveData);
@@ -193,6 +194,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             }
             else if (attribute.Type == SaveDataType.Account)
             {
+                // We need debug save data permissions to open a debug save.
                 bool canAccess = attribute.UserId != InvalidUserId ||
                                  accessControl.CanCall(OperationType.DebugSaveData);
 
@@ -303,11 +305,11 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
                     {
                         canAccess |= accessControl.CanCall(OperationType.ExtendOwnSaveData);
 
-                        bool hasDebugAccess = accessControl.CanCall(OperationType.DebugSaveData)
-                                              && attribute.Type == SaveDataType.Account
-                                              && attribute.UserId == UserId.InvalidId;
+                        bool canAccessDebugSave = accessControl.CanCall(OperationType.DebugSaveData)
+                                                  && attribute.Type == SaveDataType.Account
+                                                  && attribute.UserId == UserId.InvalidId;
 
-                        canAccess |= hasDebugAccess;
+                        canAccess |= canAccessDebugSave;
 
                         if (!canAccess)
                             return ResultFs.PermissionDenied.Log();
@@ -351,11 +353,11 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             {
                 canAccess |= accessControl.CanCall(OperationType.ReadOwnSaveDataFileSystemExtraData);
 
-                bool hasDebugAccess = accessControl.CanCall(OperationType.DebugSaveData)
-                                      && attribute.Type == SaveDataType.Account
-                                      && attribute.UserId == UserId.InvalidId;
+                bool canAccessDebugSave = accessControl.CanCall(OperationType.DebugSaveData)
+                                          && attribute.Type == SaveDataType.Account
+                                          && attribute.UserId == UserId.InvalidId;
 
-                canAccess |= hasDebugAccess;
+                canAccess |= canAccessDebugSave;
             }
 
             if (!canAccess)
@@ -442,11 +444,11 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
                 AccessControl accessControl = programInfo.AccessControl;
                 canAccess = accessControl.CanCall(OperationType.FindOwnSaveDataWithFilter);
 
-                bool hasDebugAccess = accessControl.CanCall(OperationType.DebugSaveData)
-                                      && filter.Attribute.Type == SaveDataType.Account
-                                      && filter.Attribute.UserId == UserId.InvalidId;
+                bool canAccessDebugSave = accessControl.CanCall(OperationType.DebugSaveData)
+                                        && filter.Attribute.Type == SaveDataType.Account
+                                        && filter.Attribute.UserId == UserId.InvalidId;
 
-                canAccess |= hasDebugAccess;
+                canAccess |= canAccessDebugSave;
             }
             else
             {
