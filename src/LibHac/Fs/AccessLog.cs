@@ -988,6 +988,15 @@ namespace LibHac.Fs.Impl
                 (byte)'i', (byte)'d', (byte)':', (byte)' '
             };
 
+        /// <summary>"<c>, imagedirectoryid: </c>"</summary>
+        public static ReadOnlySpan<byte> LogImageDirectoryId => // ", imagedirectoryid: "
+            new[]
+            {
+                (byte)',', (byte)' ', (byte)'i', (byte)'m', (byte)'a', (byte)'g', (byte)'e', (byte)'d',
+                (byte)'i', (byte)'r', (byte)'e', (byte)'c', (byte)'t', (byte)'o', (byte)'r', (byte)'y',
+                (byte)'i', (byte)'d', (byte)':', (byte)' '
+            };
+
         /// <summary>"<c>, gamecard_handle: 0x</c>"</summary>
         public static ReadOnlySpan<byte> LogGameCardHandle => // ", gamecard_handle: 0x"
             new[]
