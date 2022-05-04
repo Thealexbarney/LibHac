@@ -72,9 +72,9 @@ public static class GameCard
         }
     }
 
-    public static Result GetGameCardHandle(this FileSystemClient fs, out GameCardHandle handle)
+    public static Result GetGameCardHandle(this FileSystemClient fs, out GameCardHandle outHandle)
     {
-        UnsafeHelpers.SkipParamInit(out handle);
+        UnsafeHelpers.SkipParamInit(out outHandle);
 
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
@@ -83,9 +83,12 @@ public static class GameCard
         fs.Impl.AbortIfNeeded(rc);
         if (rc.IsFailure()) return rc;
 
-        rc = deviceOperator.Get.GetGameCardHandle(out handle);
+        rc = deviceOperator.Get.GetGameCardHandle(out uint handle);
         fs.Impl.AbortIfNeeded(rc);
-        return rc;
+        if (rc.IsFailure()) return rc.Miss();
+
+        outHandle = new GameCardHandle((int)handle);
+        return Result.Success;
     }
 
     public static Result MountGameCardPartition(this FileSystemClient fs, U8Span mountName, GameCardHandle handle,

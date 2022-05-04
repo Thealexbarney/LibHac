@@ -13,6 +13,11 @@ public static class IntUtil
         return value >= 0;
     }
 
+    public static bool IsIntValueRepresentableAsInt(long value)
+    {
+        return value >= int.MinValue && value <= int.MaxValue;
+    }
+
     public static bool IsIntValueRepresentableAsUInt(long value)
     {
         return value >= uint.MinValue && value <= uint.MaxValue;

@@ -194,28 +194,30 @@ public enum SdCardSpeedMode
 
 public enum SdmmcBusWidth
 {
-    Width1Bit = 0,
-    Width4Bit = 1,
-    Width8Bit = 2,
+    Unknown = 0,
+    Width1Bit = 1,
+    Width4Bit = 2,
+    Width8Bit = 3,
 }
 
 public enum SdmmcSpeedMode
 {
-    MmcIdentification = 0,
-    MmcLegacySpeed = 1,
-    MmcHighSpeed = 2,
-    MmcHs200 = 3,
-    MmcHs400 = 4,
-    SdCardIdentification = 5,
-    SdCardDefaultSpeed = 6,
-    SdCardHighSpeed = 7,
-    SdCardSdr12 = 8,
-    SdCardSdr25 = 9,
-    SdCardSdr50 = 10,
-    SdCardSdr104 = 11,
-    SdCardDdr50 = 12,
-    GcAsicFpgaSpeed = 13,
-    GcAsicSpeed = 14
+    Unknown = 0,
+    MmcIdentification = 1,
+    MmcLegacySpeed = 2,
+    MmcHighSpeed = 3,
+    MmcHs200 = 4,
+    MmcHs400 = 5,
+    SdCardIdentification = 6,
+    SdCardDefaultSpeed = 7,
+    SdCardHighSpeed = 8,
+    SdCardSdr12 = 9,
+    SdCardSdr25 = 10,
+    SdCardSdr50 = 11,
+    SdCardSdr104 = 12,
+    SdCardDdr50 = 13,
+    GcAsicFpgaSpeed = 14,
+    GcAsicSpeed = 15
 }
 
 public enum SdmmcPort
