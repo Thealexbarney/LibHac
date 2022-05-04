@@ -1,4 +1,6 @@
-﻿using System;
+﻿global using GameCardHandle = System.UInt32;
+
+using System;
 using LibHac.Common.FixedArrays;
 
 namespace LibHac.Fs;
@@ -81,20 +83,4 @@ public struct GameCardErrorReportInfo
     public uint ReadCountFromInsert;
     public uint ReadCountFromAwaken;
     public Array8<byte> Reserved38;
-}
-
-public readonly struct GameCardHandle : IEquatable<GameCardHandle>
-{
-    public readonly int Value;
-
-    public GameCardHandle(int value)
-    {
-        Value = value;
-    }
-
-    public override bool Equals(object obj) => obj is GameCardHandle handle && Equals(handle);
-    public bool Equals(GameCardHandle other) => Value == other.Value;
-    public override int GetHashCode() => Value.GetHashCode();
-    public static bool operator ==(GameCardHandle left, GameCardHandle right) => left.Equals(right);
-    public static bool operator !=(GameCardHandle left, GameCardHandle right) => !(left == right);
 }

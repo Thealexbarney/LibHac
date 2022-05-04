@@ -9,7 +9,7 @@ namespace LibHac.FsSrv;
 public class EmulatedGameCard
 {
     private IStorage CardImageStorage { get; set; }
-    private int Handle { get; set; }
+    private GameCardHandle Handle { get; set; }
     private XciHeader CardHeader { get; set; }
     private Xci CardImage { get; set; }
     private KeySet KeySet { get; set; }
@@ -22,12 +22,12 @@ public class EmulatedGameCard
     }
     public GameCardHandle GetGameCardHandle()
     {
-        return new GameCardHandle(Handle);
+        return Handle;
     }
 
     public bool IsGameCardHandleInvalid(GameCardHandle handle)
     {
-        return Handle != handle.Value;
+        return Handle != handle;
     }
 
     public bool IsGameCardInserted()

@@ -63,7 +63,7 @@ public static class GameCard
             var sb = new U8StringBuilder(nameBuffer);
             sb.Append(CommonMountNames.GameCardFileSystemMountName)
                 .Append(GetGameCardMountNameSuffix(_partitionId))
-                .AppendFormat(_handle.Value, 'x', (byte)handleDigitCount)
+                .AppendFormat(_handle, 'x', (byte)handleDigitCount)
                 .Append(StringTraits.DriveSeparator);
 
             Assert.SdkEqual(sb.Length, requiredNameBufferSize - 1);
@@ -83,11 +83,11 @@ public static class GameCard
         fs.Impl.AbortIfNeeded(rc);
         if (rc.IsFailure()) return rc;
 
-        rc = deviceOperator.Get.GetGameCardHandle(out uint handle);
+        rc = deviceOperator.Get.GetGameCardHandle(out GameCardHandle handle);
         fs.Impl.AbortIfNeeded(rc);
         if (rc.IsFailure()) return rc.Miss();
 
-        outHandle = new GameCardHandle((int)handle);
+        outHandle = handle;
         return Result.Success;
     }
 
@@ -107,7 +107,7 @@ public static class GameCard
             var sb = new U8StringBuilder(logBuffer, true);
 
             sb.Append(LogName).Append(mountName).Append(LogQuote)
-                .Append(LogGameCardHandle).AppendFormat(handle.Value)
+                .Append(LogGameCardHandle).AppendFormat(handle)
                 .Append(LogGameCardPartition).Append(idString.ToString(partitionId));
 
             fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));

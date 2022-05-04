@@ -104,8 +104,7 @@ public class NcaFileSystemServiceImpl
 
         if (type == FileSystemProxyType.Logo && mountNameInfo.IsGameCard)
         {
-            rc = _config.BaseFsService.OpenGameCardFileSystem(ref outFileSystem,
-                new GameCardHandle(mountNameInfo.GcHandle),
+            rc = _config.BaseFsService.OpenGameCardFileSystem(ref outFileSystem, (uint)mountNameInfo.GcHandle,
                 GameCardPartition.Logo);
 
             if (rc.IsSuccess())
@@ -352,8 +351,7 @@ public class NcaFileSystemServiceImpl
 
             path = path.Slice(8);
 
-            Result rc = _config.BaseFsService.OpenGameCardFileSystem(ref outFileSystem, new GameCardHandle(handle),
-                partition);
+            Result rc = _config.BaseFsService.OpenGameCardFileSystem(ref outFileSystem, (uint)handle, partition);
             if (rc.IsFailure()) return rc;
 
             info.GcHandle = handle;

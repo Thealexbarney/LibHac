@@ -493,16 +493,6 @@ public class TypeLayoutTests
     }
 
     [Fact]
-    public static void GameCardHandle_Layout()
-    {
-        var s = new GameCardHandle();
-
-        Assert.Equal(4, Unsafe.SizeOf<GameCardHandle>());
-
-        Assert.Equal(0, GetOffset(in s, in s.Value));
-    }
-
-    [Fact]
     public static void Int64_Layout()
     {
         Assert.Equal(8, Unsafe.SizeOf<Int64>());

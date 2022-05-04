@@ -225,7 +225,7 @@ public class DeviceOperator : IDeviceOperator
         return _fsServer.Storage.EraseGameCard(gameCardSize, romAreaStartPageAddress).Ret();
     }
 
-    public Result GetGameCardHandle(out uint outHandle)
+    public Result GetGameCardHandle(out GameCardHandle outHandle)
     {
         UnsafeHelpers.SkipParamInit(out outHandle);
 
@@ -236,14 +236,14 @@ public class DeviceOperator : IDeviceOperator
         if (!isInserted)
             return ResultFs.GameCardFsGetHandleFailure.Log();
 
-        rc = _fsServer.Storage.GetGameCardHandle(out uint handle);
+        rc = _fsServer.Storage.GetGameCardHandle(out GameCardHandle handle);
         if (rc.IsFailure()) return rc.Miss();
 
         outHandle = handle;
         return Result.Success;
     }
 
-    public Result GetGameCardUpdatePartitionInfo(out uint outCupVersion, out ulong outCupId, uint handle)
+    public Result GetGameCardUpdatePartitionInfo(out uint outCupVersion, out ulong outCupId, GameCardHandle handle)
     {
         UnsafeHelpers.SkipParamInit(out outCupVersion, out outCupId);
 
@@ -265,7 +265,7 @@ public class DeviceOperator : IDeviceOperator
         return Result.Success;
     }
 
-    public Result GetGameCardAttribute(out byte outAttribute, uint handle)
+    public Result GetGameCardAttribute(out byte outAttribute, GameCardHandle handle)
     {
         UnsafeHelpers.SkipParamInit(out outAttribute);
 
@@ -276,7 +276,7 @@ public class DeviceOperator : IDeviceOperator
         return Result.Success;
     }
 
-    public Result GetGameCardCompatibilityType(out byte outCompatibilityType, uint handle)
+    public Result GetGameCardCompatibilityType(out byte outCompatibilityType, GameCardHandle handle)
     {
         UnsafeHelpers.SkipParamInit(out outCompatibilityType);
 
@@ -287,7 +287,7 @@ public class DeviceOperator : IDeviceOperator
         return Result.Success;
     }
 
-    public Result GetGameCardDeviceCertificate(OutBuffer outBuffer, long outBufferSize, uint handle)
+    public Result GetGameCardDeviceCertificate(OutBuffer outBuffer, long outBufferSize, GameCardHandle handle)
     {
         if (!_accessControl.CanCall(OperationType.GetGameCardDeviceCertificate))
             return ResultFs.PermissionDenied.Log();
@@ -299,7 +299,7 @@ public class DeviceOperator : IDeviceOperator
     }
 
     public Result ChallengeCardExistence(OutBuffer outResponseBuffer, InBuffer challengeSeedBuffer,
-        InBuffer challengeValueBuffer, uint handle)
+        InBuffer challengeValueBuffer, GameCardHandle handle)
     {
         if (!_accessControl.CanCall(OperationType.ChallengeCardExistence))
             return ResultFs.PermissionDenied.Log();
@@ -370,7 +370,7 @@ public class DeviceOperator : IDeviceOperator
         return Result.Success;
     }
 
-    public Result GetGameCardImageHash(OutBuffer outBuffer, long outBufferSize, uint handle)
+    public Result GetGameCardImageHash(OutBuffer outBuffer, long outBufferSize, GameCardHandle handle)
     {
         if (outBuffer.Size < outBufferSize)
             return ResultFs.InvalidSize.Log();

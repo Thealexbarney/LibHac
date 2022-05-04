@@ -108,11 +108,6 @@ public class EmulatedDeviceOperator : IDeviceOperator
         throw new NotImplementedException();
     }
 
-    public Result GetGameCardHandle(out uint outHandle)
-    {
-        throw new NotImplementedException();
-    }
-
     public Result GetGameCardUpdatePartitionInfo(out uint outCupVersion, out ulong outCupId, uint handle)
     {
         throw new NotImplementedException();
