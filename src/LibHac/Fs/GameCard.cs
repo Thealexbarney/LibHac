@@ -24,6 +24,18 @@ public static class GameCard
     }
 }
 
+public enum GameCardSize
+{
+    // ReSharper disable InconsistentNaming
+    Size1GB = 1,
+    Size2GB = 2,
+    Size4GB = 4,
+    Size8GB = 8,
+    Size16GB = 16,
+    Size32GB = 32
+    // ReSharper restore InconsistentNaming
+}
+
 public enum GameCardSizeInternal : byte
 {
     Size1Gb = 0xFA,
@@ -83,4 +95,10 @@ public struct GameCardErrorReportInfo
     public uint ReadCountFromInsert;
     public uint ReadCountFromAwaken;
     public Array8<byte> Reserved38;
+}
+
+public struct GameCardUpdatePartitionInfo
+{
+    public uint CupVersion;
+    public ulong CupId;
 }

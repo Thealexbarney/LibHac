@@ -493,6 +493,17 @@ public class TypeLayoutTests
     }
 
     [Fact]
+    public static void GameCardUpdatePartitionInfo_Layout()
+    {
+        var s = new GameCardUpdatePartitionInfo();
+
+        Assert.Equal(0x10, Unsafe.SizeOf<GameCardUpdatePartitionInfo>());
+
+        Assert.Equal(0, GetOffset(in s, in s.CupVersion));
+        Assert.Equal(8, GetOffset(in s, in s.CupId));
+    }
+
+    [Fact]
     public static void Int64_Layout()
     {
         Assert.Equal(8, Unsafe.SizeOf<Int64>());
