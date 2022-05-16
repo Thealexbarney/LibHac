@@ -9,9 +9,9 @@ public static class ReaderWriterLockApi
     public static void InitializeReaderWriterLock(this OsState os, ref ReaderWriterLockType rwLock)
     {
         // Create objects.
-        ReaderWriterLockImpl.GetLockCount(ref rwLock).Cs.Initialize();
-        rwLock.CvReadLockWaiter.Initialize();
-        rwLock.CvWriteLockWaiter.Initialize();
+        ReaderWriterLockImpl.GetLockCount(ref rwLock).Cs = new InternalCriticalSection();
+        rwLock.CvReadLockWaiter = new InternalConditionVariable();
+        rwLock.CvWriteLockWaiter = new InternalConditionVariable();
 
         // Set member variables.
         ReaderWriterLockImpl.ClearReadLockCount(ref ReaderWriterLockImpl.GetLockCount(ref rwLock));

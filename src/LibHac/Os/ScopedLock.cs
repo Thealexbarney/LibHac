@@ -12,6 +12,7 @@ public static class ScopedLock
     }
 }
 
+[NonCopyableDisposable]
 public ref struct ScopedLock<TMutex> where TMutex : IBasicLockable
 {
     private Ref<TMutex> _mutex;

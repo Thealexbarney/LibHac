@@ -5,64 +5,60 @@ using LibHac.Common;
 
 namespace LibHac.Os;
 
-/// <summary>
-/// Specifies that a constructed <see cref="UniqueLock{TMutex}"/> should not be automatically locked upon construction.<br/>
-/// Used only to differentiate between <see cref="UniqueLock{TMutex}"/> constructor signatures.
-/// </summary>
-public struct DeferLock { }
-
-public static class UniqueLock
+public static class SharedLock
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static UniqueLockRef<TMutex> Lock<TMutex>(ref TMutex lockable) where TMutex : struct, ILockable
+    public static SharedLockRef<TMutex> Lock<TMutex>(ref TMutex lockable) where TMutex : struct, ISharedMutex
     {
-        return new UniqueLockRef<TMutex>(ref lockable);
+        return new SharedLockRef<TMutex>(ref lockable);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static UniqueLock<TMutex> Lock<TMutex>(TMutex lockable) where TMutex : class, ILockable
+    public static SharedLock<TMutex> Lock<TMutex>(TMutex lockable) where TMutex : class, ISharedMutex
     {
-        return new UniqueLock<TMutex>(lockable);
+        return new SharedLock<TMutex>(lockable);
     }
 
+#pragma warning disable LH0001 // DoNotCopyValue
 #pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
-    public static unsafe ref UniqueLockRef<T> Ref<T>(this in UniqueLockRef<T> value) where T : struct, ILockable
+    public static unsafe ref SharedLockRef<T> Ref<T>(this scoped in SharedLockRef<T> value) where T : struct, ISharedMutex
     {
-        fixed (UniqueLockRef<T>* p = &value)
+        fixed (SharedLockRef<T>* p = &value)
         {
             return ref *p;
         }
     }
 #pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+#pragma warning restore LH0001 // DoNotCopyValue
 
-    public static ref UniqueLock<T> Ref<T>(this in UniqueLock<T> value) where T : class, ILockable
+    public static ref SharedLock<T> Ref<T>(this in SharedLock<T> value) where T : class, ISharedMutex
     {
         return ref Unsafe.AsRef(in value);
     }
 }
 
 [NonCopyableDisposable]
-public ref struct UniqueLockRef<TMutex> where TMutex : struct, ILockable
+public ref struct SharedLockRef<TMutex> where TMutex : struct, ISharedMutex
 {
     private Ref<TMutex> _mutex;
     private bool _ownsLock;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public UniqueLockRef(ref TMutex mutex)
+    public SharedLockRef(ref TMutex mutex)
     {
         _mutex = new Ref<TMutex>(ref mutex);
-        mutex.Lock();
+        mutex.LockShared();
         _ownsLock = true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public UniqueLockRef(ref TMutex mutex, DeferLock tag)
+    public SharedLockRef(ref TMutex mutex, DeferLock tag)
     {
         _mutex = new Ref<TMutex>(ref mutex);
         _ownsLock = false;
     }
 
-    public UniqueLockRef(ref UniqueLockRef<TMutex> other)
+    public SharedLockRef(ref SharedLockRef<TMutex> other)
     {
         _mutex = other._mutex;
         _ownsLock = other._ownsLock;
@@ -70,10 +66,10 @@ public ref struct UniqueLockRef<TMutex> where TMutex : struct, ILockable
         other = default;
     }
 
-    public void Set(ref UniqueLockRef<TMutex> other)
+    public void Set(ref SharedLockRef<TMutex> other)
     {
         if (_ownsLock)
-            _mutex.Value.Unlock();
+            _mutex.Value.UnlockShared();
 
         _mutex = default;
         _ownsLock = false;
@@ -87,33 +83,33 @@ public ref struct UniqueLockRef<TMutex> where TMutex : struct, ILockable
     public void Lock()
     {
         if (_mutex.IsNull)
-            throw new SynchronizationLockException("UniqueLock.Lock: References null mutex");
+            throw new SynchronizationLockException("SharedLock.Lock: References null mutex");
 
         if (_ownsLock)
-            throw new SynchronizationLockException("UniqueLock.Lock: Already locked");
+            throw new SynchronizationLockException("SharedLock.Lock: Already locked");
 
-        _mutex.Value.Lock();
+        _mutex.Value.LockShared();
         _ownsLock = true;
     }
 
     public bool TryLock()
     {
         if (_mutex.IsNull)
-            throw new SynchronizationLockException("UniqueLock.TryLock: References null mutex");
+            throw new SynchronizationLockException("SharedLock.TryLock: References null mutex");
 
         if (_ownsLock)
-            throw new SynchronizationLockException("UniqueLock.TryLock: Already locked");
+            throw new SynchronizationLockException("SharedLock.TryLock: Already locked");
 
-        _ownsLock = _mutex.Value.TryLock();
+        _ownsLock = _mutex.Value.TryLockShared();
         return _ownsLock;
     }
 
     public void Unlock()
     {
         if (_ownsLock)
-            throw new SynchronizationLockException("UniqueLock.Unlock: Not locked");
+            throw new SynchronizationLockException("SharedLock.Unlock: Not locked");
 
-        _mutex.Value.Unlock();
+        _mutex.Value.UnlockShared();
         _ownsLock = false;
     }
 
@@ -121,34 +117,34 @@ public ref struct UniqueLockRef<TMutex> where TMutex : struct, ILockable
     public void Dispose()
     {
         if (_ownsLock)
-            _mutex.Value.Unlock();
+            _mutex.Value.UnlockShared();
 
         this = default;
     }
 }
 
 [NonCopyableDisposable]
-public struct UniqueLock<TMutex> : IDisposable where TMutex : class, ILockable
+public struct SharedLock<TMutex> : IDisposable where TMutex : class, ISharedMutex
 {
     private TMutex _mutex;
     private bool _ownsLock;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public UniqueLock(TMutex mutex)
+    public SharedLock(TMutex mutex)
     {
         _mutex = mutex;
-        mutex.Lock();
+        mutex.LockShared();
         _ownsLock = true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public UniqueLock(TMutex mutex, DeferLock tag)
+    public SharedLock(TMutex mutex, DeferLock tag)
     {
         _mutex = mutex;
         _ownsLock = false;
     }
 
-    public UniqueLock(ref UniqueLock<TMutex> other)
+    public SharedLock(ref SharedLock<TMutex> other)
     {
         _mutex = other._mutex;
         _ownsLock = other._ownsLock;
@@ -156,10 +152,10 @@ public struct UniqueLock<TMutex> : IDisposable where TMutex : class, ILockable
         other = default;
     }
 
-    public void Set(ref UniqueLock<TMutex> other)
+    public void Set(ref SharedLock<TMutex> other)
     {
         if (_ownsLock)
-            _mutex.Unlock();
+            _mutex.UnlockShared();
 
         _mutex = null;
         _ownsLock = false;
@@ -173,46 +169,46 @@ public struct UniqueLock<TMutex> : IDisposable where TMutex : class, ILockable
     public void Reset(TMutex mutex)
     {
         if (_ownsLock)
-            _mutex.Unlock();
+            _mutex.UnlockShared();
 
         _mutex = null;
         _ownsLock = false;
 
         _mutex = mutex;
-        mutex.Lock();
+        mutex.LockShared();
         _ownsLock = true;
     }
 
     public void Lock()
     {
         if (_mutex is null)
-            throw new SynchronizationLockException("UniqueLock.Lock: References null mutex");
+            throw new SynchronizationLockException("SharedLock.Lock: References null mutex");
 
         if (_ownsLock)
-            throw new SynchronizationLockException("UniqueLock.Lock: Already locked");
+            throw new SynchronizationLockException("SharedLock.Lock: Already locked");
 
-        _mutex.Lock();
+        _mutex.LockShared();
         _ownsLock = true;
     }
 
     public bool TryLock()
     {
         if (_mutex is null)
-            throw new SynchronizationLockException("UniqueLock.TryLock: References null mutex");
+            throw new SynchronizationLockException("SharedLock.TryLock: References null mutex");
 
         if (_ownsLock)
-            throw new SynchronizationLockException("UniqueLock.TryLock: Already locked");
+            throw new SynchronizationLockException("SharedLock.TryLock: Already locked");
 
-        _ownsLock = _mutex.TryLock();
+        _ownsLock = _mutex.TryLockShared();
         return _ownsLock;
     }
 
     public void Unlock()
     {
         if (_ownsLock)
-            throw new SynchronizationLockException("UniqueLock.Unlock: Not locked");
+            throw new SynchronizationLockException("SharedLock.Unlock: Not locked");
 
-        _mutex.Unlock();
+        _mutex.UnlockShared();
         _ownsLock = false;
     }
 
@@ -220,7 +216,7 @@ public struct UniqueLock<TMutex> : IDisposable where TMutex : class, ILockable
     public void Dispose()
     {
         if (_ownsLock)
-            _mutex.Unlock();
+            _mutex.UnlockShared();
 
         this = default;
     }
