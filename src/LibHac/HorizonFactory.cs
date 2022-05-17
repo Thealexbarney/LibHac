@@ -24,9 +24,9 @@ public static class HorizonFactory
 
         var fsServerConfig = new FileSystemServerConfig
         {
-            DeviceOperator = defaultObjects.DeviceOperator,
             ExternalKeySet = keySet.ExternalKeySet,
             FsCreators = defaultObjects.FsCreators,
+            StorageDeviceManagerFactory = defaultObjects.StorageDeviceManagerFactory,
             RandomGenerator = randomGenerator
         };
 

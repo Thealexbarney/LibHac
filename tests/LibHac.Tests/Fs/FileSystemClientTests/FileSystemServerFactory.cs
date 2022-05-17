@@ -46,7 +46,7 @@ public static class FileSystemServerFactory
 
         var config = new FileSystemServerConfig();
         config.FsCreators = defaultObjects.FsCreators;
-        config.DeviceOperator = defaultObjects.DeviceOperator;
+        config.StorageDeviceManagerFactory = defaultObjects.StorageDeviceManagerFactory;
         config.ExternalKeySet = new ExternalKeySet();
         config.RandomGenerator = randomGenerator;
 

@@ -136,8 +136,11 @@ public readonly struct BaseStorageService
         Result res = GetProgramInfo(out ProgramInfo programInfo);
         if (res.IsFailure()) return res.Miss();
 
-        res = _serviceImpl.OpenDeviceOperator(ref outDeviceOperator, programInfo.AccessControl);
-        if (res.IsFailure()) return res.Miss();
+        using var deviceOperator =
+            new SharedRef<IDeviceOperator>(new DeviceOperator(_serviceImpl.FsServer, programInfo.AccessControl,
+                _processId));
+
+        outDeviceOperator.SetByMove(ref deviceOperator.Ref);
 
         return Result.Success;
     }
@@ -180,13 +183,11 @@ public class BaseStorageServiceImpl
 {
     private Configuration _config;
 
-    // LibHac addition
-    private SharedRef<IDeviceOperator> _deviceOperator;
+    internal FileSystemServer FsServer => _config.FsServer;
 
     public BaseStorageServiceImpl(in Configuration configuration)
     {
         _config = configuration;
-        _deviceOperator = new SharedRef<IDeviceOperator>(configuration.DeviceOperator);
     }
 
     public struct Configuration
@@ -196,8 +197,6 @@ public class BaseStorageServiceImpl
 
         // LibHac additions
         public FileSystemServer FsServer;
-        // Todo: The DeviceOperator in FS uses mostly global state. Decide how to handle this.
-        public IDeviceOperator DeviceOperator;
     }
 
     internal Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
@@ -230,13 +229,5 @@ public class BaseStorageServiceImpl
             default:
                 return ResultFs.InvalidArgument.Log();
         }
-    }
-
-    // LibHac addition
-    internal Result OpenDeviceOperator(ref SharedRef<IDeviceOperator> outDeviceOperator,
-        AccessControl accessControl)
-    {
-        outDeviceOperator.SetByCopy(in _deviceOperator);
-        return Result.Success;
     }
 }

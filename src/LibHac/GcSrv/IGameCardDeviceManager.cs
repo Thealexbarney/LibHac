@@ -1,14 +1,14 @@
 ﻿using System;
-using LibHac.Fs.Impl;
+using LibHac.Os;
 
 namespace LibHac.GcSrv;
 
 internal interface IGameCardDeviceManager
 {
-    Result AcquireReadLock(out UniqueLock locker, uint handle);
-    Result AcquireReadLockSecureMode(out UniqueLock locker, ref uint handle, ReadOnlySpan<byte> cardDeviceId, ReadOnlySpan<byte> cardImageHash);
-    Result AcquireWriteLock(out SharedLock locker);
+    Result AcquireReadLock(ref SharedLock<ReaderWriterLock> outLock, GameCardHandle handle);
+    Result AcquireSecureLock(ref SharedLock<ReaderWriterLock> outLock, ref GameCardHandle handle, ReadOnlySpan<byte> cardDeviceId, ReadOnlySpan<byte> cardImageHash);
+    Result AcquireWriteLock(ref UniqueLock<ReaderWriterLock> outLock);
     Result HandleGameCardAccessResult(Result result);
-    Result GetHandle(out uint handle);
+    Result GetHandle(out GameCardHandle outHandle);
     bool IsSecureMode();
 }

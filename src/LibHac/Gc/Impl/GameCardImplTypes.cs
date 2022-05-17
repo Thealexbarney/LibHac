@@ -22,6 +22,11 @@ public struct CardId3
     public Array4<byte> Reserved;
 }
 
+public struct DevCardParameter
+{
+    public Array512<byte> Data;
+}
+
 public struct CardInitialDataPayload
 {
     public Array8<byte> PackageId;

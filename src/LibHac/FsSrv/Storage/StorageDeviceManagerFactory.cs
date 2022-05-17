@@ -33,7 +33,7 @@ internal static class StorageDeviceManagerFactory
         IStorageDeviceManagerFactory factory = storage.GetStorageDeviceManagerFactory(null);
         Assert.SdkNotNull(factory);
 
-        return factory.Create(ref outDeviceManager, portId);
+        return factory.Create(ref outDeviceManager, portId).Ret();
     }
 
     public static IStorageDeviceManagerFactory GetStorageDeviceManagerFactory(this StorageService storage,

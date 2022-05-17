@@ -31,11 +31,11 @@ public static class FileSystemServerInitializer
         if (config.FsCreators == null)
             throw new ArgumentException("FsCreators must not be null");
 
-        if (config.DeviceOperator == null)
-            throw new ArgumentException("DeviceOperator must not be null");
+        if (config.StorageDeviceManagerFactory == null)
+            throw new ArgumentException("StorageDeviceManagerFactory must not be null");
 
         server.SetDebugFlagEnabled(false);
-        server.Storage.InitializeStorageDeviceManagerFactory(null);
+        server.Storage.InitializeStorageDeviceManagerFactory(config.StorageDeviceManagerFactory);
 
         FileSystemProxyConfiguration fspConfig = InitializeFileSystemProxy(server, config);
 
@@ -54,6 +54,9 @@ public static class FileSystemServerInitializer
         saveService.CompleteSaveDataExtension().IgnoreResult();
         saveService.FixSaveData().IgnoreResult();
         saveService.RecoverMultiCommit().IgnoreResult();
+
+        config.StorageDeviceManagerFactory.SetReady(StorageDevicePortId.SdCard, null);
+        config.StorageDeviceManagerFactory.SetReady(StorageDevicePortId.GameCard, null);
 
         // NS usually takes care of this
         if (client.Fs.IsSdCardInserted())
@@ -86,7 +89,6 @@ public static class FileSystemServerInitializer
         baseStorageConfig.BisStorageCreator = config.FsCreators.BuiltInStorageCreator;
         baseStorageConfig.GameCardStorageCreator = config.FsCreators.GameCardStorageCreator;
         baseStorageConfig.FsServer = server;
-        baseStorageConfig.DeviceOperator = config.DeviceOperator;
         var baseStorageService = new BaseStorageServiceImpl(in baseStorageConfig);
 
         var timeService = new TimeServiceImpl(server);
@@ -263,9 +265,9 @@ public class FileSystemServerConfig
     public FileSystemCreatorInterfaces FsCreators { get; set; }
 
     /// <summary>
-    /// An <see cref="IDeviceOperator"/> for managing the gamecard and SD card.
+    /// An <see cref="IStorageDeviceManagerFactory"/> for managing the gamecard and SD card.
     /// </summary>
-    public IDeviceOperator DeviceOperator { get; set; }
+    public IStorageDeviceManagerFactory StorageDeviceManagerFactory { get; set; }
 
     /// <summary>
     /// A keyset containing rights IDs and title keys.

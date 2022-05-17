@@ -518,9 +518,9 @@ public static class ResultFs
                 /// <summary>Error code: 2002-2957; Inner value: 0x171a02</summary>
                 public static Result.Base GameCardFsCheckHandleInChallengeCardExistence => new Result.Base(ModuleFs, 2957);
                 /// <summary>Error code: 2002-2958; Inner value: 0x171c02</summary>
-                public static Result.Base GameCardFsCheckHandleInOnAcquireLock => new Result.Base(ModuleFs, 2958);
+                public static Result.Base GameCardFsCheckHandleInAcquireReadLock => new Result.Base(ModuleFs, 2958);
                 /// <summary>Error code: 2002-2959; Inner value: 0x171e02</summary>
-                public static Result.Base GameCardFsCheckModeInOnAcquireSecureLock => new Result.Base(ModuleFs, 2959);
+                public static Result.Base GameCardFsCheckModeInAcquireSecureLock => new Result.Base(ModuleFs, 2959);
                 /// <summary>Error code: 2002-2960; Inner value: 0x172002</summary>
                 public static Result.Base GameCardFsCheckHandleInCreateReadOnlyFailure => new Result.Base(ModuleFs, 2960);
                 /// <summary>Error code: 2002-2961; Inner value: 0x172202</summary>

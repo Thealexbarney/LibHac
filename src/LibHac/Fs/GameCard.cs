@@ -45,6 +45,12 @@ public enum GameCardSizeInternal : byte
     Size32Gb = 0xE2
 }
 
+public enum GameCardClockRate
+{
+    ClockRate25 = 25,
+    ClockRate50 = 50
+}
+
 [Flags]
 public enum GameCardAttribute : byte
 {
