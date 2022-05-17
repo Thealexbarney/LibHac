@@ -23,7 +23,7 @@ public static class MountUtility
     /// </summary>
     /// <param name="mountName">If the method returns successfully, contains the mount name of the provided path;
     /// otherwise the contents are undefined.</param>
-    /// <param name="subPath">If the method returns successfully, contains the provided path without the
+    /// <param name="outSubPath">If the method returns successfully, contains the provided path without the
     /// mount name; otherwise the contents are undefined.</param>
     /// <param name="path">The <see cref="Path"/> to process.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
@@ -31,52 +31,58 @@ public static class MountUtility
     /// the mount name that begins with <c>/</c> or <c>\</c>.<br/>
     /// <see cref="ResultFs.InvalidMountName"/>: <paramref name="path"/> contains an invalid mount name
     /// or does not have a mount name.</returns>
-    private static Result GetMountNameAndSubPath(out MountName mountName, out U8Span subPath, U8Span path)
+    private static Result GetMountNameAndSubPath(out MountName mountName, out U8Span outSubPath, U8Span path)
     {
         UnsafeHelpers.SkipParamInit(out mountName);
-        subPath = default;
-
-        int mountLen = 0;
-        int maxMountLen = Math.Min(path.Length, PathTool.MountNameLengthMax);
+        outSubPath = default;
 
         if (WindowsPath.IsWindowsDrive(path) || WindowsPath.IsUncPath(path))
         {
             StringUtils.Copy(mountName.Name, HostRootFileSystemMountName);
             mountName.Name[PathTool.MountNameLengthMax] = NullTerminator;
 
-            subPath = path;
+            outSubPath = path;
             return Result.Success;
         }
 
-        for (int i = 0; i <= maxMountLen; i++)
-        {
-            if (path[i] == DriveSeparator)
-            {
-                mountLen = i;
-                break;
-            }
-        }
+        int mountLen = FindMountNameDriveSeparator(path);
 
         if (mountLen == 0)
             return ResultFs.InvalidMountName.Log();
 
-        if (mountLen > maxMountLen)
+        if (mountLen > PathTool.MountNameLengthMax)
             return ResultFs.InvalidMountName.Log();
 
         if (mountLen <= 0)
             return ResultFs.InvalidMountName.Log();
 
-        U8Span subPathTemp = path.Slice(mountLen + 1);
+        U8Span subPath = path.Slice(mountLen + 1);
 
-        if (subPathTemp.Length == 0 ||
-            (subPathTemp[0] != DirectorySeparator && subPathTemp[0] != AltDirectorySeparator))
+        bool startsWithDir = subPath.Length > 0 &&
+                             (subPath[0] == DirectorySeparator || subPath[0] == AltDirectorySeparator);
+
+        if (!startsWithDir)
             return ResultFs.InvalidPathFormat.Log();
 
         path.Value.Slice(0, mountLen).CopyTo(mountName.Name);
         mountName.Name[mountLen] = NullTerminator;
-        subPath = subPathTemp;
 
+        outSubPath = subPath;
         return Result.Success;
+
+        static int FindMountNameDriveSeparator(U8Span path)
+        {
+            for (int i = 0; i < path.Length && i < PathTool.MountNameLengthMax + 1; i++)
+            {
+                if (path[i] == NullTerminator)
+                    return 0;
+
+                if (path[i] == DriveSeparator)
+                    return i;
+            }
+
+            return 0;
+        }
     }
 
     public static bool IsValidMountName(this FileSystemClientImpl fs, U8Span name)
