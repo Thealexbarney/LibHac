@@ -3,7 +3,7 @@ using LibHac.Os;
 
 namespace LibHac.GcSrv;
 
-internal interface IGameCardDeviceManager
+internal interface IGameCardManager : IDisposable
 {
     Result AcquireReadLock(ref SharedLock<ReaderWriterLock> outLock, GameCardHandle handle);
     Result AcquireSecureLock(ref SharedLock<ReaderWriterLock> outLock, ref GameCardHandle handle, ReadOnlySpan<byte> cardDeviceId, ReadOnlySpan<byte> cardImageHash);

@@ -2,7 +2,7 @@
 
 namespace LibHac.GcSrv;
 
-public interface IGameCardKeyManager
+public interface IGameCardKeyManager : IDisposable
 {
     void PresetInternalKeys(ReadOnlySpan<byte> gameCardKey, ReadOnlySpan<byte> gameCardCertificate);
 }

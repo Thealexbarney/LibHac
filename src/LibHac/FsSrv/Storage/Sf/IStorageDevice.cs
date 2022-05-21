@@ -7,7 +7,7 @@ namespace LibHac.FsSrv.Storage.Sf;
 // StorageServiceObjectAdapter is a template that is used with either IStorage or IStorageDevice
 public interface IStorageDevice : IStorage
 {
-    Result GetHandle(out uint handle);
+    Result GetHandle(out GameCardHandle handle);
     Result IsHandleValid(out bool isValid);
     Result OpenOperator(ref SharedRef<IStorageDeviceOperator> outDeviceOperator);
 
