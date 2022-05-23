@@ -2,9 +2,25 @@
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.FsSrv.Sf;
 using LibHac.Os;
+using LibHac.Sf;
+using IDirectory = LibHac.Fs.Fsa.IDirectory;
+using IFile = LibHac.Fs.Fsa.IFile;
+using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
+using Path = LibHac.Fs.Path;
 
 namespace LibHac.FsSystem;
+
+public class DummyEventNotifier : IEventNotifier
+{
+    public void Dispose() { }
+
+    public Result GetEventHandle(out NativeHandle handle)
+    {
+        throw new NotImplementedException();
+    }
+}
 
 /// <summary>
 /// Various utility functions used by the <see cref="LibHac.FsSystem"/> namespace.

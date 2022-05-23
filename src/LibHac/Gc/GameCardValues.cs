@@ -9,4 +9,6 @@ public static class Values
     public static int GcCardImageHashSize => 0x20;
     public static int GcDeviceCertificateSize => 0x200;
     public static int GcCardKeyAreaSize => 0x1000;
+    public static int GcCardKeyAreaPageCount => 8;
+    public static int GcCertAreaStartPageAddress => 56;
 }

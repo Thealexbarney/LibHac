@@ -4,7 +4,10 @@ using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Gc;
+using LibHac.Sf;
 using static LibHac.Gc.Values;
+using static LibHac.GcSrv.GameCardDeviceOperator;
+using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.GcSrv;
 
@@ -38,8 +41,7 @@ internal class ReadOnlyGameCardStorage : IStorage
 
         // Missing: Allocate a device buffer if the destination buffer is not one
 
-        return _gc.Read(destination, GameCardManager.BytesToPages(offset),
-            GameCardManager.BytesToPages(destination.Length)).Ret();
+        return _gc.Read(destination, BytesToPages(offset), BytesToPages(destination.Length)).Ret();
     }
 
     public override Result Write(long offset, ReadOnlySpan<byte> source)
@@ -123,8 +125,7 @@ internal class WriteOnlyGameCardStorage : IStorage
 
         // Missing: Allocate a device buffer if the destination buffer is not one
 
-        return _gc.Writer.Write(source, GameCardManager.BytesToPages(offset),
-            GameCardManager.BytesToPages(source.Length)).Ret();
+        return _gc.Writer.Write(source, BytesToPages(offset), BytesToPages(source.Length)).Ret();
     }
 
     public override Result Flush()
@@ -152,5 +153,53 @@ internal class WriteOnlyGameCardStorage : IStorage
         ReadOnlySpan<byte> inBuffer)
     {
         return ResultFs.NotImplemented.Log();
+    }
+}
+
+internal abstract class GameCardStorageInterfaceAdapter : IStorageSf
+{
+    private SharedRef<IStorage> _baseStorage;
+
+    protected GameCardStorageInterfaceAdapter(ref SharedRef<IStorage> baseStorage)
+    {
+        _baseStorage = SharedRef<IStorage>.CreateMove(ref baseStorage);
+    }
+
+    public virtual void Dispose()
+    {
+        _baseStorage.Destroy();
+    }
+
+    public virtual Result Read(long offset, OutBuffer destination, long size)
+    {
+        return _baseStorage.Get.Read(offset, destination.Buffer.Slice(0, (int)size)).Ret();
+    }
+
+    public virtual Result Write(long offset, InBuffer source, long size)
+    {
+        return _baseStorage.Get.Write(offset, source.Buffer.Slice(0, (int)size)).Ret();
+    }
+
+    public virtual Result Flush()
+    {
+        return _baseStorage.Get.Flush().Ret();
+    }
+
+    public virtual Result SetSize(long size)
+    {
+        return _baseStorage.Get.SetSize(size).Ret();
+    }
+
+    public virtual Result GetSize(out long size)
+    {
+        return _baseStorage.Get.GetSize(out size).Ret();
+    }
+
+    public virtual Result OperateRange(out QueryRangeInfo rangeInfo, int operationId, long offset, long size)
+    {
+        UnsafeHelpers.SkipParamInit(out rangeInfo);
+
+        return _baseStorage.Get.OperateRange(SpanHelpers.AsByteSpan(ref rangeInfo), (OperationId)operationId, offset,
+            size, ReadOnlySpan<byte>.Empty).Ret();
     }
 }

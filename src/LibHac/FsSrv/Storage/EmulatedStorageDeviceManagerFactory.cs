@@ -1,6 +1,7 @@
 ﻿using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSrv.Storage.Sf;
+using LibHac.Gc;
 using LibHac.GcSrv;
 using LibHac.Os;
 using LibHac.SdmmcSrv;
@@ -22,6 +23,7 @@ public class EmulatedStorageDeviceManagerFactory : IStorageDeviceManagerFactory
     private readonly bool _hasGameCard;
 
     private readonly FileSystemServer _fsServer;
+    private readonly GameCardDummy _gc;
 
     public EmulatedStorageDeviceManagerFactory(FileSystemServer fsServer, bool hasGameCard)
     {
@@ -138,12 +140,13 @@ public class EmulatedStorageDeviceManagerFactory : IStorageDeviceManagerFactory
         {
             if (_hasGameCard)
             {
-                using SharedRef<GameCardManager> manger = GameCardManager.CreateShared(_fsServer);
-                _gameCardDeviceManager.SetByMove(ref manger.Ref);
+                using SharedRef<GameCardManager> manager = GameCardManager.CreateShared(_gc, _fsServer);
+                _gameCardDeviceManager.SetByMove(ref manager.Ref);
             }
             else
             {
-                _dummyGameCardDeviceManager.Reset(new DummyGameCardManager());
+                using SharedRef<DummyGameCardManager> manager = DummyGameCardManager.CreateShared();
+                _dummyGameCardDeviceManager.SetByMove(ref manager.Ref);
             }
         }
     }

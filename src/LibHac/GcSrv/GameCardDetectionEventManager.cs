@@ -3,9 +3,9 @@ using LibHac.FsSystem;
 
 namespace LibHac.GcSrv;
 
-internal class GameCardDeviceDetectionEventManager : CardDeviceDetectionEventManager
+internal class GameCardDetectionEventManager : CardDeviceDetectionEventManager
 {
-    public GameCardDeviceDetectionEventManager()
+    public GameCardDetectionEventManager()
     {
         throw new NotImplementedException();
     }
