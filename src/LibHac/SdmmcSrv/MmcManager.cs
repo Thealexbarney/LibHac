@@ -47,6 +47,21 @@ public class MmcManager : IStorageDeviceManager
         throw new NotImplementedException();
     }
 
+    public Result PutToSleep()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result Awaken()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result Shutdown()
+    {
+        throw new NotImplementedException();
+    }
+
     public Result Invalidate()
     {
         throw new NotImplementedException();

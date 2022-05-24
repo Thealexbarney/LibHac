@@ -23,7 +23,7 @@ internal class GameCardStorageDevice : GameCardStorageInterfaceAdapter, IStorage
     private readonly GameCardDummy _gc;
 
     private GameCardStorageDevice(GameCardDummy gc, ref SharedRef<IGameCardManager> manager,
-        ref SharedRef<IStorage> baseStorage, GameCardHandle handle) : base(ref baseStorage)
+        in SharedRef<IStorage> baseStorage, GameCardHandle handle) : base(in baseStorage)
     {
         _manager = SharedRef<IGameCardManager>.CreateMove(ref manager);
         _handle = handle;
@@ -33,9 +33,9 @@ internal class GameCardStorageDevice : GameCardStorageInterfaceAdapter, IStorage
     }
 
     private GameCardStorageDevice(GameCardDummy gc, ref SharedRef<IGameCardManager> manager,
-        ref SharedRef<IStorage> baseStorage, GameCardHandle handle, bool isSecure, ReadOnlySpan<byte> cardDeviceId,
+        in SharedRef<IStorage> baseStorage, GameCardHandle handle, bool isSecure, ReadOnlySpan<byte> cardDeviceId,
         ReadOnlySpan<byte> cardImageHash)
-        : base(ref baseStorage)
+        : base(in baseStorage)
     {
         Assert.SdkRequiresEqual(cardDeviceId.Length, Values.GcCardDeviceIdSize);
         Assert.SdkRequiresEqual(cardImageHash.Length, Values.GcCardImageHashSize);
@@ -51,9 +51,9 @@ internal class GameCardStorageDevice : GameCardStorageInterfaceAdapter, IStorage
     }
 
     public static SharedRef<GameCardStorageDevice> CreateShared(GameCardDummy gc,
-        ref SharedRef<IGameCardManager> manager, ref SharedRef<IStorage> baseStorage, GameCardHandle handle)
+        ref SharedRef<IGameCardManager> manager, in SharedRef<IStorage> baseStorage, GameCardHandle handle)
     {
-        var storageDevice = new GameCardStorageDevice(gc, ref manager, ref baseStorage, handle);
+        var storageDevice = new GameCardStorageDevice(gc, ref manager, in baseStorage, handle);
 
         using var sharedStorageDevice = new SharedRef<GameCardStorageDevice>(storageDevice);
         storageDevice._selfReference.Set(in sharedStorageDevice);
@@ -62,10 +62,10 @@ internal class GameCardStorageDevice : GameCardStorageInterfaceAdapter, IStorage
     }
 
     public static SharedRef<GameCardStorageDevice> CreateShared(GameCardDummy gc,
-        ref SharedRef<IGameCardManager> manager, ref SharedRef<IStorage> baseStorage, GameCardHandle handle,
+        ref SharedRef<IGameCardManager> manager, in SharedRef<IStorage> baseStorage, GameCardHandle handle,
         bool isSecure, ReadOnlySpan<byte> cardDeviceId, ReadOnlySpan<byte> cardImageHash)
     {
-        var storageDevice = new GameCardStorageDevice(gc, ref manager, ref baseStorage, handle, isSecure, cardDeviceId,
+        var storageDevice = new GameCardStorageDevice(gc, ref manager, in baseStorage, handle, isSecure, cardDeviceId,
             cardImageHash);
 
         using var sharedStorageDevice = new SharedRef<GameCardStorageDevice>(storageDevice);

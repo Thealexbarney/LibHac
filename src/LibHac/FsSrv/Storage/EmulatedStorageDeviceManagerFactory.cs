@@ -25,9 +25,10 @@ public class EmulatedStorageDeviceManagerFactory : IStorageDeviceManagerFactory
     private readonly FileSystemServer _fsServer;
     private readonly GameCardDummy _gc;
 
-    public EmulatedStorageDeviceManagerFactory(FileSystemServer fsServer, bool hasGameCard)
+    public EmulatedStorageDeviceManagerFactory(FileSystemServer fsServer, GameCardDummy gc, bool hasGameCard)
     {
         _fsServer = fsServer;
+        _gc = gc;
         _hasGameCard = hasGameCard;
 
         _gameCardDeviceMutex = new SdkMutexType();
@@ -110,12 +111,80 @@ public class EmulatedStorageDeviceManagerFactory : IStorageDeviceManagerFactory
         return ResultFs.StorageDeviceInvalidOperation.Log();
     }
 
+    public void AwakenAll()
+    {
+        EnsureMmcReady();
+        _mmcDeviceManager.Get.Awaken().IgnoreResult();
+
+        using (ScopedLock.Lock(ref _sdCardDeviceMutex))
+        {
+            if (_sdCardDeviceManager.HasValue)
+            {
+                _sdCardDeviceManager.Get.Awaken().IgnoreResult();
+            }
+        }
+
+        using (ScopedLock.Lock(ref _gameCardDeviceMutex))
+        {
+            if (_gameCardDeviceManager.HasValue)
+            {
+                _gameCardDeviceManager.Get.Awaken().IgnoreResult();
+            }
+        }
+    }
+
+    public void PutAllToSleep()
+    {
+        using (ScopedLock.Lock(ref _gameCardDeviceMutex))
+        {
+            if (_gameCardDeviceManager.HasValue)
+            {
+                _gameCardDeviceManager.Get.PutToSleep().IgnoreResult();
+            }
+        }
+
+        using (ScopedLock.Lock(ref _sdCardDeviceMutex))
+        {
+            if (_sdCardDeviceManager.HasValue)
+            {
+                _sdCardDeviceManager.Get.PutToSleep().IgnoreResult();
+            }
+        }
+
+        EnsureMmcReady();
+        _mmcDeviceManager.Get.PutToSleep().IgnoreResult();
+    }
+
+    public void ShutdownAll()
+    {
+        using (ScopedLock.Lock(ref _gameCardDeviceMutex))
+        {
+            if (_gameCardDeviceManager.HasValue)
+            {
+                _gameCardDeviceManager.Get.Shutdown().IgnoreResult();
+            }
+        }
+
+        using (ScopedLock.Lock(ref _sdCardDeviceMutex))
+        {
+            if (_sdCardDeviceManager.HasValue)
+            {
+                _sdCardDeviceManager.Get.Shutdown().IgnoreResult();
+            }
+        }
+
+        EnsureMmcReady();
+        _mmcDeviceManager.Get.Shutdown().IgnoreResult();
+    }
+
     private void EnsureMmcReady()
     {
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mmcDeviceMutex);
 
         if (!_mmcDeviceManager.HasValue)
         {
+            // Missing: Register device address space
+
             _mmcDeviceManager.Reset(new MmcManager());
         }
     }
