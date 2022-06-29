@@ -4,6 +4,7 @@ using LibHac.FsSrv.Storage.Sf;
 using LibHac.Gc;
 using LibHac.GcSrv;
 using LibHac.Os;
+using LibHac.Sdmmc;
 using LibHac.SdmmcSrv;
 using LibHac.Sf;
 
@@ -23,11 +24,14 @@ public class EmulatedStorageDeviceManagerFactory : IStorageDeviceManagerFactory
     private readonly bool _hasGameCard;
 
     private readonly FileSystemServer _fsServer;
+    private readonly SdmmcApi _sdmmc;
     private readonly GameCardDummy _gc;
 
-    public EmulatedStorageDeviceManagerFactory(FileSystemServer fsServer, GameCardDummy gc, bool hasGameCard)
+    public EmulatedStorageDeviceManagerFactory(FileSystemServer fsServer, SdmmcApi sdmmc, GameCardDummy gc,
+        bool hasGameCard)
     {
         _fsServer = fsServer;
+        _sdmmc = sdmmc;
         _gc = gc;
         _hasGameCard = hasGameCard;
 
@@ -195,7 +199,7 @@ public class EmulatedStorageDeviceManagerFactory : IStorageDeviceManagerFactory
 
         if (!_sdCardDeviceManager.HasValue)
         {
-            _sdCardDeviceManager.Reset(new SdCardManager());
+            _sdCardDeviceManager.Reset(new SdCardManager(_sdmmc));
 
             // Todo: BuiltInStorageFileSystemCreator::SetSdCardPortReady
         }

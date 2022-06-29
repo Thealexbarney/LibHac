@@ -4,6 +4,7 @@ using LibHac.FsSrv.FsCreator;
 using LibHac.FsSrv.Storage;
 using LibHac.FsSystem;
 using LibHac.Gc;
+using LibHac.Sdmmc;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 
 namespace LibHac.FsSrv;
@@ -24,6 +25,7 @@ public class DefaultFsServerObjects
         var sdCard = new EmulatedSdCard();
 
         var gameCardNew = new GameCardDummy();
+        var sdmmcNew = new SdmmcApi();
 
         var gcStorageCreator = new EmulatedGameCardStorageCreator(gameCard);
 
@@ -43,7 +45,7 @@ public class DefaultFsServerObjects
         creators.BuiltInStorageFileSystemCreator = new EmulatedBisFileSystemCreator(ref sharedRootFileSystem.Ref);
         creators.SdCardFileSystemCreator = new EmulatedSdCardFileSystemCreator(sdCard, ref sharedRootFileSystemCopy.Ref);
 
-        var storageDeviceManagerFactory = new EmulatedStorageDeviceManagerFactory(fsServer, gameCardNew, hasGameCard: true);
+        var storageDeviceManagerFactory = new EmulatedStorageDeviceManagerFactory(fsServer, sdmmcNew, gameCardNew, hasGameCard: true);
 
         return new DefaultFsServerObjects
         {

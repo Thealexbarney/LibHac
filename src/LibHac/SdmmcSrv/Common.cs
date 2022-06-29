@@ -11,4 +11,9 @@ public static class Common
 
         return Result.Success;
     }
+
+    public static uint BytesToSectors(long byteCount)
+    {
+        return (uint)((ulong)byteCount / SdmmcApi.SectorSize);
+    }
 }
