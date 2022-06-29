@@ -8,6 +8,7 @@ using LibHac.Sdmmc;
 using LibHac.SdmmcSrv;
 using LibHac.Sf;
 using IStorageSf = LibHac.FsSrv.Sf.IStorage;
+using MmcPartition = LibHac.Fs.MmcPartition;
 
 namespace LibHac.FsSrv.Storage;
 

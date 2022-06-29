@@ -10,6 +10,7 @@ using LibHac.Gc;
 using LibHac.Sdmmc;
 using LibHac.Sf;
 using LibHac.Util;
+using MmcPartition = LibHac.Fs.MmcPartition;
 
 namespace LibHac.FsSrv.Impl;
 
