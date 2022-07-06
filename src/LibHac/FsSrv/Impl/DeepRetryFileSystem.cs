@@ -7,7 +7,6 @@ namespace LibHac.FsSrv.Impl;
 
 public class DeepRetryFileSystem : ForwardingFileSystem
 {
-    // ReSharper disable once NotAccessedField.Local
     private WeakRef<DeepRetryFileSystem> _selfReference;
     private SharedRef<IRomFileSystemAccessFailureManager> _accessFailureManager;
 
@@ -31,6 +30,8 @@ public class DeepRetryFileSystem : ForwardingFileSystem
     public override void Dispose()
     {
         _accessFailureManager.Destroy();
+        _selfReference.Destroy();
+
         base.Dispose();
     }
 
