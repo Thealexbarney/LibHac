@@ -189,7 +189,8 @@ public class EmulatedStorageDeviceManagerFactory : IStorageDeviceManagerFactory
         {
             // Missing: Register device address space
 
-            _mmcDeviceManager.Reset(new MmcManager());
+            using SharedRef<MmcManager> mmcManager = MmcManager.CreateShared(_sdmmc);
+            _mmcDeviceManager.SetByMove(ref mmcManager.Ref);
         }
     }
 
@@ -199,7 +200,8 @@ public class EmulatedStorageDeviceManagerFactory : IStorageDeviceManagerFactory
 
         if (!_sdCardDeviceManager.HasValue)
         {
-            _sdCardDeviceManager.Reset(new SdCardManager(_sdmmc));
+            using SharedRef<SdCardManager> manager = SdCardManager.CreateShared(_sdmmc);
+            _sdCardDeviceManager.SetByMove(ref manager.Ref);
 
             // Todo: BuiltInStorageFileSystemCreator::SetSdCardPortReady
         }

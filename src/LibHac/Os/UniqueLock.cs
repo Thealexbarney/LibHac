@@ -26,7 +26,7 @@ public static class UniqueLock
     }
 
 #pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
-    public static unsafe ref UniqueLockRef<T> Ref<T>(this in UniqueLockRef<T> value) where T : struct, ILockable
+    public static unsafe ref UniqueLockRef<T> Ref<T>(this scoped in UniqueLockRef<T> value) where T : struct, ILockable
     {
         fixed (UniqueLockRef<T>* p = &value)
         {
@@ -70,7 +70,7 @@ public ref struct UniqueLockRef<TMutex> where TMutex : struct, ILockable
         other = default;
     }
 
-    public void Set(ref UniqueLockRef<TMutex> other)
+    public void Set(scoped ref UniqueLockRef<TMutex> other)
     {
         if (_ownsLock)
             _mutex.Value.Unlock();

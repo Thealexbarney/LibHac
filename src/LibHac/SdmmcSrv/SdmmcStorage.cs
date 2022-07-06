@@ -1,8 +1,15 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Diag;
 using LibHac.Fs;
+using LibHac.FsSystem;
 using LibHac.Sdmmc;
 using LibHac.Sf;
+using LibHac.Util;
+using static LibHac.Sdmmc.SdmmcApi;
+using static LibHac.SdmmcSrv.Common;
+using static LibHac.SdmmcSrv.SdmmcResultConverter;
 using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.SdmmcSrv;
@@ -22,33 +29,116 @@ internal class SdmmcStorage : IStorage
 
     public override Result Read(long offset, Span<byte> destination)
     {
-        throw new NotImplementedException();
+        Assert.SdkRequiresAligned(offset, SectorSize);
+        Assert.SdkRequiresAligned(destination.Length, SectorSize);
+
+        if (destination.Length == 0)
+            return Result.Success;
+
+        // Missing: Allocate a device buffer if the destination buffer is not one
+
+        return _sdmmc.Read(destination, _port, BytesToSectors(offset), BytesToSectors(destination.Length)).Ret();
     }
 
     public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
-        throw new NotImplementedException();
+        const int alignment = 0x4000;
+        Result res;
+
+        Assert.SdkRequiresAligned(offset, SectorSize);
+        Assert.SdkRequiresAligned(source.Length, SectorSize);
+
+        if (source.Length == 0)
+            return Result.Success;
+
+        // Missing: Allocate a device buffer if the source buffer is not one
+
+        // Check if we have any unaligned data at the head of the source buffer.
+        long alignedUpOffset = Alignment.AlignUp(offset, alignment);
+        int unalignedHeadSize = (int)(alignedUpOffset - offset);
+        int remainingSize = source.Length;
+
+        // The start offset must be aligned to 0x4000 bytes. The end offset does not need to be aligned to 0x4000 bytes.
+        if (alignedUpOffset != offset)
+        {
+            // Get the number of bytes that come before the unaligned data.
+            int paddingSize = alignment - unalignedHeadSize;
+
+            // If the end offset is inside the first 0x4000-byte block, don't write past the end offset.
+            // Otherwise write the entire aligned block.
+            int writeSize = Math.Min(alignment, paddingSize + source.Length);
+
+            using var pooledBuffer = new PooledBuffer(writeSize, alignment);
+
+            // Get the number of bytes from source to be written to the aligned buffer, and copy that data to the buffer.
+            int unalignedSize = writeSize - paddingSize;
+            source.Slice(0, unalignedSize).CopyTo(pooledBuffer.GetBuffer().Slice(paddingSize));
+
+            // Read the current data into the aligned buffer.
+            res = GetFsResult(_port,
+                _sdmmc.Read(pooledBuffer.GetBuffer().Slice(0, paddingSize), _port,
+                    BytesToSectors(alignedUpOffset - alignment), BytesToSectors(paddingSize)));
+            if (res.IsFailure()) return res.Miss();
+
+            // Write the aligned buffer.
+            res = GetFsResult(_port,
+                _sdmmc.Write(_port, BytesToSectors(alignedUpOffset - alignment), BytesToSectors(writeSize),
+                    pooledBuffer.GetBuffer().Slice(0, writeSize)));
+            if (res.IsFailure()) return res.Miss();
+
+            remainingSize -= unalignedSize;
+        }
+
+        // We've written any unaligned data. Write the remaining aligned data.
+        if (remainingSize > 0)
+        {
+            res = GetFsResult(_port,
+                _sdmmc.Write(_port, BytesToSectors(alignedUpOffset), BytesToSectors(remainingSize),
+                    source.Slice(unalignedHeadSize, remainingSize)));
+            if (res.IsFailure()) return res.Miss();
+        }
+
+        return Result.Success;
     }
 
     public override Result Flush()
     {
-        throw new NotImplementedException();
+        return Result.Success;
     }
 
     public override Result SetSize(long size)
     {
-        throw new NotImplementedException();
+        return ResultFs.UnsupportedSetSizeForSdmmcStorage.Log();
     }
 
     public override Result GetSize(out long size)
     {
-        throw new NotImplementedException();
+        UnsafeHelpers.SkipParamInit(out size);
+
+        Result res = GetFsResult(_port, _sdmmc.GetDeviceMemoryCapacity(out uint numSectors, _port));
+        if (res.IsFailure()) return res.Miss();
+
+        size = numSectors * SectorSize;
+        return Result.Success;
     }
 
     public override Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
         ReadOnlySpan<byte> inBuffer)
     {
-        throw new NotImplementedException();
+        switch (operationId)
+        {
+            case OperationId.InvalidateCache:
+                return Result.Success;
+            case OperationId.QueryRange:
+                if (outBuffer.Length != Unsafe.SizeOf<QueryRangeInfo>())
+                    return ResultFs.InvalidSize.Log();
+
+                SpanHelpers.AsStruct<QueryRangeInfo>(outBuffer).Clear();
+
+                return Result.Success;
+            default:
+                return ResultFs.UnsupportedOperateRangeForSdmmcStorage.Log();
+        }
     }
 }
 

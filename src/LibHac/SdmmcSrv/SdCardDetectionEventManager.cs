@@ -6,7 +6,7 @@ namespace LibHac.SdmmcSrv;
 internal class SdCardDetectionEventManager : CardDeviceDetectionEventManager
 {
     // LibHac addition
-    private SdmmcApi _sdmmc;
+    private readonly SdmmcApi _sdmmc;
 
     public SdCardDetectionEventManager(Port port, SdmmcApi sdmmc)
     {

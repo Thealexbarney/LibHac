@@ -1,11 +1,12 @@
 ﻿using System;
 using LibHac.Os;
+using LibHac.Sdmmc;
 
 namespace LibHac.SdmmcSrv;
 
 internal class PatrolReader
 {
-    public PatrolReader(SdkMutex mutex)
+    public PatrolReader(SdkMutex mutex, SdmmcApi sdmmc)
     {
         throw new NotImplementedException();
     }
@@ -30,7 +31,7 @@ internal class PatrolReader
         throw new NotImplementedException();
     }
 
-    public void GetAndClearAllocateCount(out long outSuccessCount, out long outFailureCount)
+    public void GetAndClearAllocateCount(out ulong outSuccessCount, out ulong outFailureCount)
     {
         throw new NotImplementedException();
     }

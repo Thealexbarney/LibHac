@@ -10,20 +10,30 @@ using MmcPartition = LibHac.Sdmmc.MmcPartition;
 
 namespace LibHac.SdmmcSrv;
 
-internal class MmcPartitionStorageDevice : IDisposable
+internal abstract class MmcPartitionStorageDevice : IDisposable
 {
     private SharedRef<ISdmmcDeviceManager> _manager;
-    private SdmmcHandle _handle;
-    private MmcPartition _partition;
+    private readonly SdmmcHandle _handle;
+    private readonly MmcPartition _partition;
 
-    public MmcPartitionStorageDevice(ref SharedRef<ISdmmcDeviceManager> manager, SdmmcHandle handle, MmcPartition partition)
+    // LibHac addition
+    protected WeakRef<MmcPartitionStorageDevice> SelfReference;
+    protected readonly SdmmcApi Sdmmc;
+
+    protected MmcPartitionStorageDevice(MmcPartition partition, ref SharedRef<ISdmmcDeviceManager> manager,
+        SdmmcHandle handle, SdmmcApi sdmmc)
     {
+        _partition = partition;
         _manager = SharedRef<ISdmmcDeviceManager>.CreateMove(ref manager);
         _handle = handle;
-        _partition = partition;
+        Sdmmc = sdmmc;
     }
 
-    public void Dispose() { }
+    public void Dispose()
+    {
+        _manager.Destroy();
+        SelfReference.Destroy();
+    }
 
     public Result GetHandle(out SdmmcHandle handle)
     {
@@ -41,7 +51,18 @@ internal class MmcPartitionStorageDevice : IDisposable
 
     public Result OpenOperator(ref SharedRef<IStorageDeviceOperator> outDeviceOperator)
     {
-        throw new NotImplementedException();
+        using SharedRef<MmcPartitionStorageDevice> storageDevice =
+            SharedRef<MmcPartitionStorageDevice>.Create(in SelfReference);
+
+        using var deviceOperator =
+            new SharedRef<MmcDeviceOperator>(new MmcDeviceOperator(ref storageDevice.Ref, Sdmmc));
+
+        if (!deviceOperator.HasValue)
+            return ResultFs.AllocationMemoryFailedInSdmmcStorageServiceA.Log();
+
+        outDeviceOperator.SetByMove(ref deviceOperator.Ref);
+
+        return Result.Success;
     }
 
     public Result Lock(ref UniqueLockRef<SdkMutexType> outLock)
@@ -63,12 +84,13 @@ internal class MmcPartitionStorageDevice : IDisposable
 // The Mmc*PartitionStorageDevice classes inherit both from SdmmcStorageInterfaceAdapter and MmcPartitionStorageDevice
 // Because C# doesn't have multiple inheritance, we make a copy of the SdmmcStorageInterfaceAdapter class that inherits
 // from MmcPartitionStorageDevice. This class must mirror any changes made to SdmmcStorageInterfaceAdapter.
-internal class MmcPartitionStorageDeviceInterfaceAdapter : MmcPartitionStorageDevice, IStorageDevice
+internal abstract class MmcPartitionStorageDeviceInterfaceAdapter : MmcPartitionStorageDevice, IStorageDevice
 {
-    private IStorage _baseStorage;
+    private readonly IStorage _baseStorage;
 
-    public MmcPartitionStorageDeviceInterfaceAdapter(IStorage baseStorage, ref SharedRef<ISdmmcDeviceManager> manager,
-        SdmmcHandle handle, MmcPartition partition) : base(ref manager, handle, partition)
+    protected MmcPartitionStorageDeviceInterfaceAdapter(IStorage baseStorage, MmcPartition partition,
+        ref SharedRef<ISdmmcDeviceManager> manager, SdmmcHandle handle, SdmmcApi sdmmc)
+        : base(partition, ref manager, handle, sdmmc)
     {
         _baseStorage = baseStorage;
     }
@@ -109,9 +131,21 @@ internal class MmcPartitionStorageDeviceInterfaceAdapter : MmcPartitionStorageDe
 
 internal class MmcUserDataPartitionStorageDevice : MmcPartitionStorageDeviceInterfaceAdapter
 {
-    public MmcUserDataPartitionStorageDevice(ref SharedRef<ISdmmcDeviceManager> manager, SdmmcHandle handle)
-        : base(manager.Get.GetStorage(), ref manager, handle, MmcPartition.UserData)
+    private MmcUserDataPartitionStorageDevice(ref SharedRef<ISdmmcDeviceManager> manager, SdmmcHandle handle,
+        SdmmcApi sdmmc)
+        : base(manager.Get.GetStorage(), MmcPartition.UserData, ref manager, handle, sdmmc)
     { }
+
+    public static SharedRef<MmcUserDataPartitionStorageDevice> CreateShared(ref SharedRef<ISdmmcDeviceManager> manager,
+        SdmmcHandle handle, SdmmcApi sdmmc)
+    {
+        var storageDevice = new MmcUserDataPartitionStorageDevice(ref manager, handle, sdmmc);
+
+        using var sharedStorageDevice = new SharedRef<MmcUserDataPartitionStorageDevice>(storageDevice);
+        storageDevice.SelfReference.Set(in sharedStorageDevice);
+
+        return SharedRef<MmcUserDataPartitionStorageDevice>.CreateMove(ref sharedStorageDevice.Ref);
+    }
 
     public override Result Read(long offset, OutBuffer destination, long size)
     {
@@ -157,12 +191,20 @@ internal class MmcUserDataPartitionStorageDevice : MmcPartitionStorageDeviceInte
 
 internal class MmcBootPartitionStorageDevice : MmcPartitionStorageDeviceInterfaceAdapter
 {
-    private SdmmcApi _sdmmc;
+    private MmcBootPartitionStorageDevice(Fs.MmcPartition partition, ref SharedRef<ISdmmcDeviceManager> manager,
+        SdmmcHandle handle, SdmmcApi sdmmc)
+        : base(manager.Get.GetStorage(), GetPartition(partition), ref manager, handle, sdmmc)
+    { }
 
-    public MmcBootPartitionStorageDevice(ref SharedRef<ISdmmcDeviceManager> manager, Fs.MmcPartition partition,
-        SdmmcHandle handle, SdmmcApi sdmmc) : base(manager.Get.GetStorage(), ref manager, handle, GetPartition(partition))
+    public static SharedRef<MmcBootPartitionStorageDevice> CreateShared(Fs.MmcPartition partition,
+        ref SharedRef<ISdmmcDeviceManager> manager, SdmmcHandle handle, SdmmcApi sdmmc)
     {
-        _sdmmc = sdmmc;
+        var storageDevice = new MmcBootPartitionStorageDevice(partition, ref manager, handle, sdmmc);
+
+        using var sharedStorageDevice = new SharedRef<MmcBootPartitionStorageDevice>(storageDevice);
+        storageDevice.SelfReference.Set(in sharedStorageDevice);
+
+        return SharedRef<MmcBootPartitionStorageDevice>.CreateMove(ref sharedStorageDevice.Ref);
     }
 
     private static MmcPartition GetPartition(Fs.MmcPartition partition)
@@ -188,7 +230,7 @@ internal class MmcBootPartitionStorageDevice : MmcPartitionStorageDeviceInterfac
         Result res = Lock(ref scopedLock.Ref());
         if (res.IsFailure()) return res.Miss();
 
-        Abort.DoAbortUnlessSuccess(_sdmmc.SelectMmcPartition(GetPort(), GetPartition()));
+        Abort.DoAbortUnlessSuccess(Sdmmc.SelectMmcPartition(GetPort(), GetPartition()));
 
         try
         {
@@ -199,7 +241,7 @@ internal class MmcBootPartitionStorageDevice : MmcPartitionStorageDeviceInterfac
         }
         finally
         {
-            Abort.DoAbortUnlessSuccess(_sdmmc.SelectMmcPartition(GetPort(), MmcPartition.UserData));
+            Abort.DoAbortUnlessSuccess(Sdmmc.SelectMmcPartition(GetPort(), MmcPartition.UserData));
         }
     }
 
@@ -210,7 +252,7 @@ internal class MmcBootPartitionStorageDevice : MmcPartitionStorageDeviceInterfac
         Result res = Lock(ref scopedLock.Ref());
         if (res.IsFailure()) return res.Miss();
 
-        Abort.DoAbortUnlessSuccess(_sdmmc.SelectMmcPartition(GetPort(), GetPartition()));
+        Abort.DoAbortUnlessSuccess(Sdmmc.SelectMmcPartition(GetPort(), GetPartition()));
 
         try
         {
@@ -221,7 +263,7 @@ internal class MmcBootPartitionStorageDevice : MmcPartitionStorageDeviceInterfac
         }
         finally
         {
-            Abort.DoAbortUnlessSuccess(_sdmmc.SelectMmcPartition(GetPort(), MmcPartition.UserData));
+            Abort.DoAbortUnlessSuccess(Sdmmc.SelectMmcPartition(GetPort(), MmcPartition.UserData));
         }
     }
 
@@ -236,11 +278,11 @@ internal class MmcBootPartitionStorageDevice : MmcPartitionStorageDeviceInterfac
 
         Port port = GetPort();
 
-        Abort.DoAbortUnlessSuccess(_sdmmc.SelectMmcPartition(port, GetPartition()));
+        Abort.DoAbortUnlessSuccess(Sdmmc.SelectMmcPartition(port, GetPartition()));
 
         try
         {
-            res = SdmmcResultConverter.GetFsResult(port, _sdmmc.GetMmcBootPartitionCapacity(out uint numSectors, port));
+            res = SdmmcResultConverter.GetFsResult(port, Sdmmc.GetMmcBootPartitionCapacity(out uint numSectors, port));
             if (res.IsFailure()) return res.Miss();
 
             size = numSectors * SdmmcApi.SectorSize;
@@ -249,7 +291,7 @@ internal class MmcBootPartitionStorageDevice : MmcPartitionStorageDeviceInterfac
         }
         finally
         {
-            Abort.DoAbortUnlessSuccess(_sdmmc.SelectMmcPartition(GetPort(), MmcPartition.UserData));
+            Abort.DoAbortUnlessSuccess(Sdmmc.SelectMmcPartition(GetPort(), MmcPartition.UserData));
         }
     }
 }

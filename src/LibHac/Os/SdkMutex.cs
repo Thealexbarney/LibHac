@@ -36,6 +36,11 @@ public class SdkMutex : ILockable
     {
         return _mutex.IsLockedByCurrentThread();
     }
+
+    public ref SdkMutexType GetBase()
+    {
+        return ref _mutex;
+    }
 }
 
 public struct SdkMutexType : ILockable
