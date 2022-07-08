@@ -13,7 +13,7 @@ public class DefaultFsServerObjects
 {
     public FileSystemCreatorInterfaces FsCreators { get; set; }
     public EmulatedGameCard GameCard { get; set; }
-    public EmulatedSdCard SdCard { get; set; }
+    public SdmmcApi Sdmmc { get; set; }
     public GameCardDummy GameCardNew { get; set; }
     public EmulatedStorageDeviceManagerFactory StorageDeviceManagerFactory { get; set; }
 
@@ -22,7 +22,6 @@ public class DefaultFsServerObjects
     {
         var creators = new FileSystemCreatorInterfaces();
         var gameCard = new EmulatedGameCard(keySet);
-        var sdCard = new EmulatedSdCard();
 
         var gameCardNew = new GameCardDummy();
         var sdmmcNew = new SdmmcApi(fsServer);
@@ -43,7 +42,7 @@ public class DefaultFsServerObjects
         creators.GameCardFileSystemCreator = new EmulatedGameCardFsCreator(gcStorageCreator, gameCard);
         creators.EncryptedFileSystemCreator = new EncryptedFileSystemCreator(keySet);
         creators.BuiltInStorageFileSystemCreator = new EmulatedBisFileSystemCreator(ref sharedRootFileSystem.Ref);
-        creators.SdCardFileSystemCreator = new EmulatedSdCardFileSystemCreator(sdCard, ref sharedRootFileSystemCopy.Ref);
+        creators.SdCardFileSystemCreator = new EmulatedSdCardFileSystemCreator(sdmmcNew, ref sharedRootFileSystemCopy.Ref);
 
         var storageDeviceManagerFactory = new EmulatedStorageDeviceManagerFactory(fsServer, sdmmcNew, gameCardNew, hasGameCard: true);
 
@@ -51,7 +50,7 @@ public class DefaultFsServerObjects
         {
             FsCreators = creators,
             GameCard = gameCard,
-            SdCard = sdCard,
+            Sdmmc = sdmmcNew,
             GameCardNew = gameCardNew,
             StorageDeviceManagerFactory = storageDeviceManagerFactory
         };

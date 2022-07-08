@@ -20,6 +20,19 @@ public partial class SdmmcApi
 
     public const int SdCardWorkBufferSize = SdCardSdStatusSize;
 
+    private bool _isSdCardInserted;
+    private bool _isSdCardRemoved;
+
+    public void SetSdCardInserted(bool isInserted)
+    {
+        if (_isSdCardInserted && isInserted == false)
+        {
+            _isSdCardRemoved = true;
+        }
+
+        _isSdCardInserted = isInserted;
+    }
+
     public void SetSdCardWorkBuffer(Port port, Memory<byte> workBuffer)
     {
         throw new NotImplementedException();
@@ -67,21 +80,21 @@ public partial class SdmmcApi
 
     public void RegisterSdCardDetectionEventCallback(Port port, DeviceDetectionEventCallback callback, object args)
     {
-        throw new NotImplementedException();
+
     }
 
     public void UnregisterSdCardDetectionEventCallback(Port port)
     {
-        throw new NotImplementedException();
+
     }
 
     public bool IsSdCardInserted(Port port)
     {
-        throw new NotImplementedException();
+        return _isSdCardInserted;
     }
 
     public bool IsSdCardRemoved(Port port)
     {
-        throw new NotImplementedException();
+        return _isSdCardRemoved;
     }
 }

@@ -2,6 +2,7 @@
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.Sdmmc;
 using LibHac.Util;
 using Utility = LibHac.FsSrv.Impl.Utility;
 
@@ -11,20 +12,20 @@ public class EmulatedSdCardFileSystemCreator : ISdCardProxyFileSystemCreator, ID
 {
     private const string DefaultPath = "/sdcard";
 
-    private EmulatedSdCard _sdCard;
+    private SdmmcApi _sdmmc;
     private SharedRef<IFileSystem> _rootFileSystem;
     private SharedRef<IFileSystem> _sdCardFileSystem;
     private string _path;
 
-    public EmulatedSdCardFileSystemCreator(EmulatedSdCard sdCard, ref SharedRef<IFileSystem> rootFileSystem)
+    public EmulatedSdCardFileSystemCreator(SdmmcApi sdmmc, ref SharedRef<IFileSystem> rootFileSystem)
     {
-        _sdCard = sdCard;
+        _sdmmc = sdmmc;
         _rootFileSystem = SharedRef<IFileSystem>.CreateMove(ref rootFileSystem);
     }
 
-    public EmulatedSdCardFileSystemCreator(EmulatedSdCard sdCard, ref SharedRef<IFileSystem> rootFileSystem, string path)
+    public EmulatedSdCardFileSystemCreator(SdmmcApi sdmmc, ref SharedRef<IFileSystem> rootFileSystem, string path)
     {
-        _sdCard = sdCard;
+        _sdmmc = sdmmc;
         _rootFileSystem = SharedRef<IFileSystem>.CreateMove(ref rootFileSystem);
         _path = path;
     }
@@ -37,7 +38,7 @@ public class EmulatedSdCardFileSystemCreator : ISdCardProxyFileSystemCreator, ID
 
     public Result Create(ref SharedRef<IFileSystem> outFileSystem, bool openCaseSensitive)
     {
-        if (!_sdCard.IsSdCardInserted())
+        if (!_sdmmc.IsSdCardInserted(Port.SdCard0))
         {
             return ResultFs.PortSdCardNoDevice.Log();
         }

@@ -42,7 +42,7 @@ public static class FileSystemServerFactory
             DefaultFsServerObjects.GetDefaultEmulatedCreators(hos.RootFileSystem, keySet, hos.FsServer,
                 randomGenerator);
 
-        defaultObjects.SdCard.SetSdCardInsertionStatus(sdCardInserted);
+        defaultObjects.Sdmmc.SetSdCardInserted(sdCardInserted);
 
         var config = new FileSystemServerConfig();
         config.FsCreators = defaultObjects.FsCreators;

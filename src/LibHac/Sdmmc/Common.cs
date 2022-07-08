@@ -96,6 +96,12 @@ public partial class SdmmcApi
 
     public Result Activate(Port port)
     {
+        if (port == Port.SdCard0)
+        {
+            _isSdCardRemoved = false;
+            return Result.Success;
+        }
+
         throw new NotImplementedException();
     }
 
