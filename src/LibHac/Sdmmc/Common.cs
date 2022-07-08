@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.FsSrv;
 
 namespace LibHac.Sdmmc;
 
@@ -59,6 +60,14 @@ public partial class SdmmcApi
 
     public const int DeviceCidSize = 0x10;
     public const int DeviceCsdSize = 0x10;
+
+    private FileSystemServer _fsServer;
+    internal HorizonClient Hos => _fsServer.Hos;
+
+    public SdmmcApi(FileSystemServer fsServer)
+    {
+        _fsServer = fsServer;
+    }
 
     public void SwitchToPcvClockResetControl()
     {

@@ -25,7 +25,7 @@ public class DefaultFsServerObjects
         var sdCard = new EmulatedSdCard();
 
         var gameCardNew = new GameCardDummy();
-        var sdmmcNew = new SdmmcApi();
+        var sdmmcNew = new SdmmcApi(fsServer);
 
         var gcStorageCreator = new EmulatedGameCardStorageCreator(gameCard);
 
