@@ -55,6 +55,8 @@ NCA options:
   --romfsdir <dir>     Specify RomFS directory path.
   --listromfs          List files in RomFS.
   --basenca            Set Base NCA to use with update partitions.
+NPDM options:
+  --json <file>        Specify file path for saving JSON representation of program permissions to.
 KIP1 options:
   --uncompressed <f>   Specify file path for saving uncompressed KIP1.
 RomFS options:

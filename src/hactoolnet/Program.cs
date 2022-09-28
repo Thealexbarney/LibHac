@@ -182,6 +182,9 @@ public static class Program
             case FileType.Bench:
                 ProcessBench.Process(ctx);
                 break;
+            case FileType.Npdm:
+                ProcessNpdm.Process(ctx);
+                break;
             default:
                 throw new ArgumentOutOfRangeException();
         }

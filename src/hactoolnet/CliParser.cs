@@ -68,6 +68,7 @@ internal static class CliParser
         new CliOption("title", 1, (o, a) => o.TitleId = ParseTitleId(o, a[0])),
         new CliOption("bench", 1, (o, a) => o.BenchType = a[0]),
         new CliOption("cpufreq", 1, (o, a) => o.CpuFrequencyGhz = ParseDouble(o, a[0])),
+        new CliOption("json", 1, (o, a) => o.JsonFile = a[0]),
 
         new CliOption("replacefile", 2, (o, a) =>
         {
@@ -190,6 +191,7 @@ internal static class CliParser
             case "ini1": return FileType.Ini1;
             case "ndv0": return FileType.Ndv0;
             case "bench": return FileType.Bench;
+            case "npdm": return FileType.Npdm;
         }
 
         options.ParseErrorMessage ??= "Specified type is invalid.";
@@ -274,6 +276,8 @@ internal static class CliParser
         sb.AppendLine("  --romfsdir <dir>     Specify RomFS directory path.");
         sb.AppendLine("  --listromfs          List files in RomFS.");
         sb.AppendLine("  --basenca            Set Base NCA to use with update partitions.");
+        sb.AppendLine("NPDM options:");
+        sb.AppendLine("  --json <file>        Specify file path for saving JSON representation of program permissions to.");
         sb.AppendLine("KIP1 options:");
         sb.AppendLine("  --uncompressed <f>   Specify file path for saving uncompressed KIP1.");
         sb.AppendLine("RomFS options:");
