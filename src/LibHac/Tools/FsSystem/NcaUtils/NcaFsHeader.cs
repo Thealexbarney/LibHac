@@ -112,7 +112,7 @@ public struct NcaFsHeader
         public const int SparseInfoOffset = 0x148;
         public const int SparseInfoSize = 0x30;
         public const int CompressionInfoOffset = 0x178;
-        public const int CompressionInfoSize = 0x20;
+        public const int CompressionInfoSize = 0x28;
 
         [FieldOffset(0)] public short Version;
         [FieldOffset(2)] public byte FormatType;
