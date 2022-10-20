@@ -27,8 +27,6 @@ public class KernelAccessControl
                 continue;
             }
 
-            items[index] = new KernelAccessControlItem();
-
             int lowBits = 0;
 
             while ((descriptor & 1) != 0)
@@ -39,6 +37,8 @@ public class KernelAccessControl
             }
 
             descriptor >>= 1;
+
+            items[index] = new KernelAccessControlItem(lowBits);
 
             switch (lowBits)
             {
