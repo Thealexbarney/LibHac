@@ -15,6 +15,7 @@ public class Cnmt
     public int TableOffset { get; }
     public int ContentEntryCount { get; }
     public int MetaEntryCount { get; }
+    public ContentMetaAttribute ContentMetaAttributes { get; }
 
     public CnmtContentEntry[] ContentEntries { get; }
     public CnmtContentMetaEntry[] MetaEntries { get; }
@@ -42,11 +43,12 @@ public class Cnmt
             TableOffset = reader.ReadUInt16();
             ContentEntryCount = reader.ReadUInt16();
             MetaEntryCount = reader.ReadUInt16();
+            ContentMetaAttributes = (ContentMetaAttribute)reader.ReadByte();
 
             // Old, pre-release cnmt files don't have the "required system version" field.
             // Try to detect this by reading the padding after that field.
             // The old format usually contains hashes there.
-            file.Position += 8;
+            file.Position += 7;
             int padding = reader.ReadInt32();
             bool isOldCnmtFormat = padding != 0;
 

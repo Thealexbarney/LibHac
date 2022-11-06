@@ -9,70 +9,70 @@ internal static class CliParser
 {
     private static CliOption[] GetCliOptions() => new[]
     {
-            new CliOption("custom", 0, (o, _) => o.RunCustom = true),
-            new CliOption("intype", 't', 1, (o, a) => o.InFileType = ParseFileType(a[0])),
-            new CliOption("raw", 'r', 0, (o, _) => o.Raw = true),
-            new CliOption("verify", 'y', 0, (o, _) => o.Validate = true),
-            new CliOption("dev", 'd', 0, (o, _) => o.UseDevKeys = true),
-            new CliOption("enablehash", 'h', 0, (o, _) => o.EnableHash = true),
-            new CliOption("disablekeywarns", 0, (o, _) => o.DisableKeyWarns = true),
-            new CliOption("keyset", 'k', 1, (o, a) => o.Keyfile = a[0]),
-            new CliOption("titlekeys", 1, (o, a) => o.TitleKeyFile = a[0]),
-            new CliOption("consolekeys", 1, (o, a) => o.ConsoleKeyFile = a[0]),
-            new CliOption("accesslog", 1, (o, a) => o.AccessLog = a[0]),
-            new CliOption("resultlog", 1, (o, a) => o.ResultLog = a[0]),
-            new CliOption("section0", 1, (o, a) => o.SectionOut[0] = a[0]),
-            new CliOption("section1", 1, (o, a) => o.SectionOut[1] = a[0]),
-            new CliOption("section2", 1, (o, a) => o.SectionOut[2] = a[0]),
-            new CliOption("section3", 1, (o, a) => o.SectionOut[3] = a[0]),
-            new CliOption("section0dir", 1, (o, a) => o.SectionOutDir[0] = a[0]),
-            new CliOption("section1dir", 1, (o, a) => o.SectionOutDir[1] = a[0]),
-            new CliOption("section2dir", 1, (o, a) => o.SectionOutDir[2] = a[0]),
-            new CliOption("section3dir", 1, (o, a) => o.SectionOutDir[3] = a[0]),
-            new CliOption("header", 1, (o, a) => o.HeaderOut = a[0]),
-            new CliOption("exefs", 1, (o, a) => o.ExefsOut = a[0]),
-            new CliOption("exefsdir", 1, (o, a) => o.ExefsOutDir = a[0]),
-            new CliOption("romfs", 1, (o, a) => o.RomfsOut = a[0]),
-            new CliOption("romfsdir", 1, (o, a) => o.RomfsOutDir = a[0]),
-            new CliOption("debugoutdir", 1, (o, a) => o.DebugOutDir = a[0]),
-            new CliOption("savedir", 1, (o, a) => o.SaveOutDir = a[0]),
-            new CliOption("outdir", 1, (o, a) => o.OutDir = a[0]),
-            new CliOption("ini1dir", 1, (o, a) => o.Ini1OutDir = a[0]),
-            new CliOption("outfile", 1, (o, a) => o.OutFile = a[0]),
-            new CliOption("plaintext", 1, (o, a) => o.PlaintextOut = a[0]),
-            new CliOption("ciphertext", 1, (o, a) => o.CiphertextOut = a[0]),
-            new CliOption("uncompressed", 1, (o, a) => o.UncompressedOut = a[0]),
-            new CliOption("nspout", 1, (o, a) => o.NspOut = a[0]),
-            new CliOption("sdseed", 1, (o, a) => o.SdSeed = a[0]),
-            new CliOption("sdpath", 1, (o, a) => o.SdPath = a[0]),
-            new CliOption("basenca", 1, (o, a) => o.BaseNca = a[0]),
-            new CliOption("basefile", 1, (o, a) => o.BaseFile = a[0]),
-            new CliOption("rootdir", 1, (o, a) => o.RootDir = a[0]),
-            new CliOption("updatedir", 1, (o, a) => o.UpdateDir = a[0]),
-            new CliOption("normaldir", 1, (o, a) => o.NormalDir = a[0]),
-            new CliOption("securedir", 1, (o, a) => o.SecureDir = a[0]),
-            new CliOption("logodir", 1, (o, a) => o.LogoDir = a[0]),
-            new CliOption("repack", 1, (o, a) => o.RepackSource = a[0]),
-            new CliOption("listapps", 0, (o, _) => o.ListApps = true),
-            new CliOption("listtitles", 0, (o, _) => o.ListTitles = true),
-            new CliOption("listncas", 0, (o, _) => o.ListNcas = true),
-            new CliOption("listromfs", 0, (o, _) => o.ListRomFs = true),
-            new CliOption("listfiles", 0, (o, _) => o.ListFiles = true),
-            new CliOption("sign", 0, (o, _) => o.SignSave = true),
-            new CliOption("trim", 0, (o, _) => o.TrimSave = true),
-            new CliOption("readbench", 0, (o, _) => o.ReadBench = true),
-            new CliOption("hashedfs", 0, (o, _) => o.BuildHfs = true),
-            new CliOption("extractini1", 0, (o, _) => o.ExtractIni1 = true),
-            new CliOption("title", 1, (o, a) => o.TitleId = ParseTitleId(a[0])),
-            new CliOption("bench", 1, (o, a) => o.BenchType = a[0]),
-            new CliOption("cpufreq", 1, (o, a) => o.CpuFrequencyGhz = ParseDouble(a[0])),
+        new CliOption("custom", 0, (o, _) => o.RunCustom = true),
+        new CliOption("intype", 't', 1, (o, a) => o.InFileType = ParseFileType(a[0])),
+        new CliOption("raw", 'r', 0, (o, _) => o.Raw = true),
+        new CliOption("verify", 'y', 0, (o, _) => o.Validate = true),
+        new CliOption("dev", 'd', 0, (o, _) => o.UseDevKeys = true),
+        new CliOption("enablehash", 'h', 0, (o, _) => o.EnableHash = true),
+        new CliOption("disablekeywarns", 0, (o, _) => o.DisableKeyWarns = true),
+        new CliOption("keyset", 'k', 1, (o, a) => o.Keyfile = a[0]),
+        new CliOption("titlekeys", 1, (o, a) => o.TitleKeyFile = a[0]),
+        new CliOption("consolekeys", 1, (o, a) => o.ConsoleKeyFile = a[0]),
+        new CliOption("accesslog", 1, (o, a) => o.AccessLog = a[0]),
+        new CliOption("resultlog", 1, (o, a) => o.ResultLog = a[0]),
+        new CliOption("section0", 1, (o, a) => o.SectionOut[0] = a[0]),
+        new CliOption("section1", 1, (o, a) => o.SectionOut[1] = a[0]),
+        new CliOption("section2", 1, (o, a) => o.SectionOut[2] = a[0]),
+        new CliOption("section3", 1, (o, a) => o.SectionOut[3] = a[0]),
+        new CliOption("section0dir", 1, (o, a) => o.SectionOutDir[0] = a[0]),
+        new CliOption("section1dir", 1, (o, a) => o.SectionOutDir[1] = a[0]),
+        new CliOption("section2dir", 1, (o, a) => o.SectionOutDir[2] = a[0]),
+        new CliOption("section3dir", 1, (o, a) => o.SectionOutDir[3] = a[0]),
+        new CliOption("header", 1, (o, a) => o.HeaderOut = a[0]),
+        new CliOption("exefs", 1, (o, a) => o.ExefsOut = a[0]),
+        new CliOption("exefsdir", 1, (o, a) => o.ExefsOutDir = a[0]),
+        new CliOption("romfs", 1, (o, a) => o.RomfsOut = a[0]),
+        new CliOption("romfsdir", 1, (o, a) => o.RomfsOutDir = a[0]),
+        new CliOption("debugoutdir", 1, (o, a) => o.DebugOutDir = a[0]),
+        new CliOption("savedir", 1, (o, a) => o.SaveOutDir = a[0]),
+        new CliOption("outdir", 1, (o, a) => o.OutDir = a[0]),
+        new CliOption("ini1dir", 1, (o, a) => o.Ini1OutDir = a[0]),
+        new CliOption("outfile", 1, (o, a) => o.OutFile = a[0]),
+        new CliOption("plaintext", 1, (o, a) => o.PlaintextOut = a[0]),
+        new CliOption("ciphertext", 1, (o, a) => o.CiphertextOut = a[0]),
+        new CliOption("uncompressed", 1, (o, a) => o.UncompressedOut = a[0]),
+        new CliOption("nspout", 1, (o, a) => o.NspOut = a[0]),
+        new CliOption("sdseed", 1, (o, a) => o.SdSeed = a[0]),
+        new CliOption("sdpath", 1, (o, a) => o.SdPath = a[0]),
+        new CliOption("basenca", 1, (o, a) => o.BaseNca = a[0]),
+        new CliOption("basefile", 1, (o, a) => o.BaseFile = a[0]),
+        new CliOption("rootdir", 1, (o, a) => o.RootDir = a[0]),
+        new CliOption("updatedir", 1, (o, a) => o.UpdateDir = a[0]),
+        new CliOption("normaldir", 1, (o, a) => o.NormalDir = a[0]),
+        new CliOption("securedir", 1, (o, a) => o.SecureDir = a[0]),
+        new CliOption("logodir", 1, (o, a) => o.LogoDir = a[0]),
+        new CliOption("repack", 1, (o, a) => o.RepackSource = a[0]),
+        new CliOption("listapps", 0, (o, _) => o.ListApps = true),
+        new CliOption("listtitles", 0, (o, _) => o.ListTitles = true),
+        new CliOption("listncas", 0, (o, _) => o.ListNcas = true),
+        new CliOption("listromfs", 0, (o, _) => o.ListRomFs = true),
+        new CliOption("listfiles", 0, (o, _) => o.ListFiles = true),
+        new CliOption("sign", 0, (o, _) => o.SignSave = true),
+        new CliOption("trim", 0, (o, _) => o.TrimSave = true),
+        new CliOption("readbench", 0, (o, _) => o.ReadBench = true),
+        new CliOption("hashedfs", 0, (o, _) => o.BuildHfs = true),
+        new CliOption("extractini1", 0, (o, _) => o.ExtractIni1 = true),
+        new CliOption("title", 1, (o, a) => o.TitleId = ParseTitleId(a[0])),
+        new CliOption("bench", 1, (o, a) => o.BenchType = a[0]),
+        new CliOption("cpufreq", 1, (o, a) => o.CpuFrequencyGhz = ParseDouble(a[0])),
 
-            new CliOption("replacefile", 2, (o, a) =>
-            {
-                o.ReplaceFileDest = a[0];
-                o.ReplaceFileSource = a[1];
-            })
-        };
+        new CliOption("replacefile", 2, (o, a) =>
+        {
+            o.ReplaceFileDest = a[0];
+            o.ReplaceFileSource = a[1];
+        })
+    };
 
     public static Options Parse(string[] args)
     {
@@ -249,11 +249,16 @@ internal static class CliParser
         sb.AppendLine("  --securedir <dir>    Specify secure XCI directory path.");
         sb.AppendLine("  --logodir <dir>      Specify logo XCI directory path.");
         sb.AppendLine("  --outdir <dir>       Specify XCI directory path.");
+        sb.AppendLine("  --nspout <file>      Specify file for the created NSP.");
+        sb.AppendLine("Partition FS and XCI options:");
         sb.AppendLine("  --exefs <file>       Specify main ExeFS file path.");
         sb.AppendLine("  --exefsdir <dir>     Specify main ExeFS directory path.");
         sb.AppendLine("  --romfs <file>       Specify main RomFS file path.");
         sb.AppendLine("  --romfsdir <dir>     Specify main RomFS directory path.");
-        sb.AppendLine("  --nspout <file>      Specify file for the created NSP.");
+        sb.AppendLine("  --listapps           List application info.");
+        sb.AppendLine("  --listtitles         List title info for all titles.");
+        sb.AppendLine("  --listncas           List info for all NCAs.");
+        sb.AppendLine("  --title <title id>   Specify title ID to use.");
         sb.AppendLine("Package1 options:");
         sb.AppendLine("  --outdir <dir>       Specify Package1 directory path.");
         sb.AppendLine("Package2 options:");

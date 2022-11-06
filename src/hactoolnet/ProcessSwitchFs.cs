@@ -234,7 +234,7 @@ internal static class ProcessSwitchFs
         }
     }
 
-    static string ListTitles(SwitchFs sdfs)
+    public static string ListTitles(SwitchFs sdfs)
     {
         var table = new TableBuilder("Title ID", "Version", "", "Type", "Size", "Display Version", "Name");
 
@@ -252,7 +252,7 @@ internal static class ProcessSwitchFs
         return table.Print();
     }
 
-    static string ListNcas(SwitchFs sdfs)
+    public static string ListNcas(SwitchFs sdfs)
     {
         var table = new TableBuilder("NCA ID", "Type", "Title ID");
 
@@ -264,7 +264,7 @@ internal static class ProcessSwitchFs
         return table.Print();
     }
 
-    static string ListApplications(SwitchFs sdfs)
+    public static string ListApplications(SwitchFs sdfs)
     {
         var sb = new StringBuilder();
 

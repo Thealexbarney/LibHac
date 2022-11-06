@@ -1,4 +1,6 @@
-﻿namespace LibHac.Ncm;
+﻿using System;
+
+namespace LibHac.Ncm;
 
 public enum ContentType : byte
 {
@@ -24,11 +26,13 @@ public enum ContentMetaType : byte
     Delta = 0x83
 }
 
+[Flags]
 public enum ContentMetaAttribute : byte
 {
     None = 0,
-    IncludesExFatDriver = 1,
-    Rebootless = 2
+    IncludesExFatDriver = 1 << 0,
+    Rebootless = 1 << 1,
+    Compacted = 1 << 2,
 }
 
 public enum UpdateType : byte

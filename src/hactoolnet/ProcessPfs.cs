@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using LibHac.Fs;
@@ -23,6 +24,11 @@ internal static class ProcessPfs
             if (ctx.Options.OutDir != null)
             {
                 pfs.Extract(ctx.Options.OutDir, ctx.Logger);
+            }
+
+            if (pfs.EnumerateEntries("*.nca", SearchOptions.Default).Any())
+            {
+                ProcessAppFs.Process(ctx, pfs);
             }
         }
     }

@@ -8,7 +8,6 @@ using LibHac.FsSystem;
 using LibHac.Gc.Impl;
 using LibHac.Tools.Fs;
 using LibHac.Tools.FsSystem;
-using LibHac.Tools.FsSystem.NcaUtils;
 
 namespace hactoolnet;
 
@@ -65,78 +64,11 @@ internal static class ProcessXci
                 }
             }
 
-            if (ctx.Options.ExefsOutDir != null || ctx.Options.ExefsOut != null)
+            if (xci.HasPartition(XciPartitionType.Secure))
             {
-                Nca mainNca = GetXciMainNca(xci, ctx);
-
-                if (mainNca == null)
-                {
-                    ctx.Logger.LogMessage("Could not find Program NCA");
-                    return;
-                }
-
-                if (!mainNca.SectionExists(NcaSectionType.Code))
-                {
-                    ctx.Logger.LogMessage("NCA has no ExeFS section");
-                    return;
-                }
-
-                if (ctx.Options.ExefsOutDir != null)
-                {
-                    mainNca.ExtractSection(NcaSectionType.Code, ctx.Options.ExefsOutDir, ctx.Options.IntegrityLevel, ctx.Logger);
-                }
-
-                if (ctx.Options.ExefsOut != null)
-                {
-                    mainNca.ExportSection(NcaSectionType.Code, ctx.Options.ExefsOut, ctx.Options.Raw, ctx.Options.IntegrityLevel, ctx.Logger);
-                }
-            }
-
-            if (ctx.Options.RomfsOutDir != null || ctx.Options.RomfsOut != null || ctx.Options.ListRomFs)
-            {
-                Nca mainNca = GetXciMainNca(xci, ctx);
-
-                if (mainNca == null)
-                {
-                    ctx.Logger.LogMessage("Could not find Program NCA");
-                    return;
-                }
-
-                if (!mainNca.SectionExists(NcaSectionType.Data))
-                {
-                    ctx.Logger.LogMessage("NCA has no RomFS section");
-                    return;
-                }
-
-                ProcessRomfs.Process(ctx, mainNca.OpenStorage(NcaSectionType.Data, ctx.Options.IntegrityLevel, false));
+                ProcessAppFs.Process(ctx, xci.OpenPartition(XciPartitionType.Secure));
             }
         }
-    }
-
-    private static Nca GetXciMainNca(Xci xci, Context ctx)
-    {
-        XciPartition partition = xci.OpenPartition(XciPartitionType.Secure);
-
-        if (partition == null)
-        {
-            ctx.Logger.LogMessage("Could not find secure partition");
-            return null;
-        }
-
-        Nca mainNca = null;
-
-        foreach (PartitionFileEntry fileEntry in partition.Files.Where(x => x.Name.EndsWith(".nca")))
-        {
-            IStorage ncaStorage = partition.OpenFile(fileEntry, OpenMode.Read).AsStorage();
-            var nca = new Nca(ctx.KeySet, ncaStorage);
-
-            if (nca.Header.ContentType == NcaContentType.Program)
-            {
-                mainNca = nca;
-            }
-        }
-
-        return mainNca;
     }
 
     private static string Print(this Xci xci)

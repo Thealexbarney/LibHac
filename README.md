@@ -74,11 +74,16 @@ XCI options:
   --securedir <dir>    Specify secure XCI directory path.
   --logodir <dir>      Specify logo XCI directory path.
   --outdir <dir>       Specify XCI directory path.
+  --nspout <file>      Specify file for the created NSP.
+Partition FS and XCI options:
   --exefs <file>       Specify main ExeFS file path.
   --exefsdir <dir>     Specify main ExeFS directory path.
   --romfs <file>       Specify main RomFS file path.
   --romfsdir <dir>     Specify main RomFS directory path.
-  --nspout <file>      Specify file for the created NSP.
+  --listapps           List application info.
+  --listtitles         List title info for all titles.
+  --listncas           List info for all NCAs.
+  --title <title id>   Specify title ID to use.
 Package1 options:
   --outdir <dir>       Specify Package1 directory path.
 Package2 options:
