@@ -83,7 +83,7 @@ public static class PathExtensions
 /// ensure a write buffer is allocated and copy the input path to it. <see cref="SetShallowBuffer"/> will
 /// directly use the input buffer without copying. If this method is used, the caller must ensure the path
 /// is normalized before passing it to <see cref="SetShallowBuffer"/>.</para>
-/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para></remarks>
+/// <para>Based on nnSdk 13.4.0 (FS 13.1.0)</para></remarks>
 [DebuggerDisplay("{" + nameof(ToString) + "(),nq}")]
 [NonCopyableDisposable]
 public ref struct Path

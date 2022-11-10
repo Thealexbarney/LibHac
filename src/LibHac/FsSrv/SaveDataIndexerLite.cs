@@ -11,7 +11,7 @@ namespace LibHac.FsSrv;
 /// <summary>
 /// Iterates through all the save data indexed in a <see cref="SaveDataIndexerLite"/>.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 internal class SaveDataIndexerLiteInfoReader : SaveDataInfoReaderImpl
 {
     private bool _finishedIterating;
@@ -68,7 +68,7 @@ internal class SaveDataIndexerLiteInfoReader : SaveDataInfoReaderImpl
 /// <remarks>
 /// Only one temporary save data may exist at a time. When a new
 /// save data is added to the index, the existing key-value pair is replaced.
-/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para>
+/// <para>Based on nnSdk 13.4.0 (FS 13.1.0)</para>
 /// </remarks>
 public class SaveDataIndexerLite : ISaveDataIndexer
 {

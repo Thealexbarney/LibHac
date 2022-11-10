@@ -16,7 +16,7 @@ namespace LibHac.FsSystem;
 /// Only reads that access a single block will use the cache. Reads that access multiple blocks will
 /// be passed down to the base <see cref="IStorage"/> to be handled without caching.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public class ReadOnlyBlockCacheStorage : IStorage
 {
     private SdkMutexType _mutex;

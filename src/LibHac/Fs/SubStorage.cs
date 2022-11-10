@@ -18,7 +18,7 @@ namespace LibHac.Fs;
 /// the SubStorage as resizable. The SubStorage may only be resized if the end of the SubStorage
 /// is located at the end of the base storage. When resizing the SubStorage, the base storage
 /// will be resized to the appropriate length.</para>
-/// <para>Based on FS 14.1.0 (nnSdk 14.3.0)</para>
+/// <para>Based on nnSdk 14.3.0 (FS 14.1.0)</para>
 /// </remarks>
 public class SubStorage : IStorage
 {

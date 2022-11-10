@@ -14,7 +14,7 @@ namespace LibHac.FsSystem;
 /// All encryption or decryption will be done externally via a provided function.
 /// This allows for using hardware decryption where the FS process doesn't has access to the actual keys.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public class AesXtsStorageExternal : IStorage
 {
     public const int AesBlockSize = Aes.BlockSize;

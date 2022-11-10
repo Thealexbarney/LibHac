@@ -10,7 +10,7 @@ namespace LibHac.FsSystem;
 /// Wraps an <see cref="IFile"/>, converting its returned <see cref="Result"/>s to different
 /// <see cref="Result"/>s based on the <see cref="ConvertResult"/> function.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public abstract class IResultConvertFile : IFile
 {
     private UniqueRef<IFile> _baseFile;
@@ -66,7 +66,7 @@ public abstract class IResultConvertFile : IFile
 /// Wraps an <see cref="IDirectory"/>, converting its returned <see cref="Result"/>s to different
 /// <see cref="Result"/>s based on the <see cref="ConvertResult"/> function.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public abstract class IResultConvertDirectory : IDirectory
 {
     private UniqueRef<IDirectory> _baseDirectory;
@@ -101,7 +101,7 @@ public abstract class IResultConvertDirectory : IDirectory
 /// Wraps an <see cref="IFileSystem"/>, converting its returned <see cref="Result"/>s to different
 /// <see cref="Result"/>s based on the <see cref="ConvertResult"/> function.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public abstract class IResultConvertFileSystem<T> : ISaveDataFileSystem where T : IFileSystem
 {
     private SharedRef<T> _baseFileSystem;

@@ -11,7 +11,7 @@ namespace LibHac.Fs.Impl;
 /// An adapter for using an <see cref="IStorageSf"/> service object as an <see cref="IStorage"/>. Used
 /// when receiving a Horizon IPC storage object so it can be used as an <see cref="IStorage"/> locally.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 internal class StorageServiceObjectAdapter : IStorage
 {
     private SharedRef<IStorageSf> _baseStorage;

@@ -9,7 +9,7 @@ namespace LibHac.FsSystem;
 /// </summary>
 /// <typeparam name="TKey">The type of the keys in the list.</typeparam>
 /// <typeparam name="TValue">The type of the values in the list.</typeparam>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public class LruListCache<TKey, TValue> where TKey : IEquatable<TKey>
 {
     public struct Node

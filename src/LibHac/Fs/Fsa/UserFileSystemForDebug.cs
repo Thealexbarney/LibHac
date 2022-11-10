@@ -6,7 +6,7 @@ namespace LibHac.Fs.Fsa;
 /// <summary>
 /// Contains functions meant for debug use for interacting with mounted file systems.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public static class UserFileSystemForDebug
 {
     internal static Result GetFileTimeStampRawForDebug(this FileSystemClientImpl fs, out FileTimeStampRaw timeStamp,

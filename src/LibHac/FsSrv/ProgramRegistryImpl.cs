@@ -19,7 +19,7 @@ internal struct ProgramRegistryImplGlobals
 /// is stored in a <see cref="ProgramInfo"/> and includes the process' process ID, program ID,
 /// storage location and file system permissions. This allows FS to resolve the program ID and
 /// verify the permissions of any process calling it. 
-/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para></remarks>
+/// <para>Based on nnSdk 13.4.0 (FS 13.1.0)</para></remarks>
 public class ProgramRegistryImpl : IProgramRegistry
 {
     private ulong _processId;

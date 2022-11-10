@@ -15,7 +15,7 @@ public enum HashAlgorithmType : byte
 /// Generates a hash for a stream of data. The data can be given to the <see cref="IHash256Generator"/>
 /// as multiple, smaller sequential blocks of data.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public abstract class IHash256Generator : IDisposable
 {
     public static readonly long HashSize = 256 / 8;
@@ -47,7 +47,7 @@ public abstract class IHash256Generator : IDisposable
 /// <summary>
 /// Creates <see cref="IHash256Generator"/> objects and can generate a hash for a single, in-memory block of data.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public abstract class IHash256GeneratorFactory : IDisposable
 {
     public virtual void Dispose() { }
@@ -71,7 +71,7 @@ public abstract class IHash256GeneratorFactory : IDisposable
 /// <summary>
 /// Creates <see cref="IHash256GeneratorFactory"/> objects.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public abstract class IHash256GeneratorFactorySelector : IDisposable
 {
     public virtual void Dispose() { }

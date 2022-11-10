@@ -11,7 +11,7 @@ namespace LibHac.FsSrv.Impl;
 /// Manages a list of cached save data file systems. Each file system is registered and retrieved
 /// based on its save data ID and save data space ID.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public class SaveDataFileSystemCacheManager : IDisposable
 {
     [NonCopyable]

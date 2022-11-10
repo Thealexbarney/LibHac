@@ -32,7 +32,7 @@ namespace LibHac.FsSrv;
 /// </summary>
 /// <remarks>FS will have one instance of this class for every connected process.
 /// The FS permissions of the calling process are checked on every function call.
-/// <br/>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <br/>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISaveDataMultiCommitCoreInterface
 {
     private const int OpenEntrySemaphoreCount = 256;

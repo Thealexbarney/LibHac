@@ -39,7 +39,7 @@ internal struct LocationResolverSetGlobals
 /// <summary>
 /// Manages resolving the location of NCAs via the <c>lr</c> service.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 internal class LocationResolverSet : IDisposable
 {
     private Array5<Optional<LocationResolver>> _resolvers;

@@ -11,7 +11,7 @@ namespace LibHac.FsSystem;
 /// <summary>
 /// Contains the configuration used for decrypting NCAs.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public struct NcaCryptoConfiguration
 {
     public const int Rsa2048KeyModulusSize = Rsa.ModulusSize2048Pss;

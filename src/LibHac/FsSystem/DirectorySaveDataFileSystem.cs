@@ -24,7 +24,7 @@ internal struct DirectorySaveDataFileSystemGlobals
 /// <remarks>
 /// Transactional commits should be atomic as long as the <see cref="IFileSystem.RenameDirectory"/> function of the
 /// underlying <see cref="IFileSystem"/> is atomic.
-/// <para>Based on FS 14.1.0 (nnSdk 14.3.0)</para>
+/// <para>Based on nnSdk 14.3.0 (FS 14.1.0)</para>
 /// </remarks>
 public class DirectorySaveDataFileSystem : ISaveDataFileSystem
 {

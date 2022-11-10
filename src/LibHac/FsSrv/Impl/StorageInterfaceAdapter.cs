@@ -11,7 +11,7 @@ namespace LibHac.FsSrv.Impl;
 /// <summary>
 /// Wraps an <see cref="IStorage"/> to allow interfacing with it via the <see cref="IStorageSf"/> interface over IPC.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public class StorageInterfaceAdapter : IStorageSf
 {
     private SharedRef<IStorage> _baseStorage;

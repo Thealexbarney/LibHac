@@ -6,7 +6,7 @@ namespace LibHac.FsSrv.FsCreator;
 /// <summary>
 /// Contains functions for converting internal save data <see cref="Result"/>s to external <see cref="Result"/>s.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public static class SaveDataResultConverter
 {
     private static Result ConvertCorruptedResult(Result result)

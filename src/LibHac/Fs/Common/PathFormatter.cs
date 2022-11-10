@@ -13,7 +13,7 @@ namespace LibHac.Fs;
 /// <summary>
 /// Contains functions for working with path formatting and normalization.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public static class PathFormatter
 {
     private static ReadOnlySpan<byte> InvalidCharacter =>

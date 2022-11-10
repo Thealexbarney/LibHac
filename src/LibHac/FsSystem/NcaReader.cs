@@ -16,7 +16,7 @@ public delegate bool VerifySign1Function(ReadOnlySpan<byte> signature, ReadOnlyS
 /// <summary>
 /// Handles reading information from an NCA file's header.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public class NcaReader : IDisposable
 {
     private const uint SdkAddonVersionMin = 0xB0000;
@@ -480,7 +480,7 @@ public class NcaReader : IDisposable
 /// <summary>
 /// Handles reading information from the <see cref="NcaFsHeader"/> of a file system inside an NCA file.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public class NcaFsHeaderReader
 {
     private NcaFsHeader _header;

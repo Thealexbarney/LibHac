@@ -57,7 +57,7 @@ internal struct FileSystemProxyImplGlobals
 /// <summary>
 /// Dispatches calls to the various file system service objects.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
 {
     private FileSystemProxyCoreImpl _fsProxyCore;

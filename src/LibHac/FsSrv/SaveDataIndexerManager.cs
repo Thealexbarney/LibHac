@@ -12,7 +12,7 @@ namespace LibHac.FsSrv;
 /// Initializes and holds <see cref="ISaveDataIndexer"/>s for each save data space.
 /// Creates accessors for individual SaveDataIndexers.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 internal class SaveDataIndexerManager : ISaveDataIndexerManager, IDisposable
 {
     private MemoryResource _memoryResource;
@@ -267,7 +267,7 @@ internal class SaveDataIndexerManager : ISaveDataIndexerManager, IDisposable
 /// Gives exclusive access to an <see cref="ISaveDataIndexer"/>.
 /// Releases the lock to the <see cref="ISaveDataIndexer"/> upon disposal.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public class SaveDataIndexerAccessor : IDisposable
 {
     private readonly ISaveDataIndexer _indexer;

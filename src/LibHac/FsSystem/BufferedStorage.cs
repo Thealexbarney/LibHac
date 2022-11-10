@@ -16,7 +16,7 @@ namespace LibHac.FsSystem;
 /// <summary>
 /// An <see cref="IStorage"/> that provides buffered access to a base <see cref="IStorage"/>.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public class BufferedStorage : IStorage
 {
     private const long InvalidOffset = long.MaxValue;

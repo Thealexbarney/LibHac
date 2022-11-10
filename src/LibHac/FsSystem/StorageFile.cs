@@ -9,7 +9,7 @@ namespace LibHac.FsSystem;
 /// <summary>
 /// Allows interacting with an <see cref="IStorage"/> via an <see cref="IFile"/> interface.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public class StorageFile : IFile
 {
     private IStorage _baseStorage;

@@ -23,7 +23,7 @@ public interface IAlignmentMatchingStorageSize { }
 /// <remarks><para>This class uses a work buffer on the stack to avoid allocations. Because of this the data alignment
 /// must be kept small; no larger than 0x200. The <see cref="AlignmentMatchingStoragePooledBuffer{TBufferAlignment}"/> class
 /// should be used for data alignment sizes larger than this.</para>
-/// <para>Based on FS 14.1.0 (nnSdk 14.3.0)</para></remarks>
+/// <para>Based on nnSdk 14.3.0 (FS 14.1.0)</para></remarks>
 [SkipLocalsInit]
 public class AlignmentMatchingStorage<TDataAlignment, TBufferAlignment> : IStorage
     where TDataAlignment : struct, IAlignmentMatchingStorageSize
@@ -166,7 +166,7 @@ public class AlignmentMatchingStorage<TDataAlignment, TBufferAlignment> : IStora
 /// the beginning or end of the requested range. For data alignment sizes of 0x200 or smaller
 /// <see cref="AlignmentMatchingStorage{TDataAlignment,TBufferAlignment}"/> should be used instead
 /// to avoid these allocations.</para>
-/// <para>Based on FS 14.1.0 (nnSdk 14.3.0)</para></remarks>
+/// <para>Based on nnSdk 14.3.0 (FS 14.1.0)</para></remarks>
 public class AlignmentMatchingStoragePooledBuffer<TBufferAlignment> : IStorage
     where TBufferAlignment : struct, IAlignmentMatchingStorageSize
 {
@@ -310,7 +310,7 @@ public class AlignmentMatchingStoragePooledBuffer<TBufferAlignment> : IStorage
 /// <typeparam name="TBufferAlignment">The alignment of the destination buffer for the core read. Must be a power of 2.</typeparam>
 /// <remarks><para>This class is basically the same as <see cref="AlignmentMatchingStoragePooledBuffer{TBufferAlignment}"/> except
 /// it doesn't allocate a work buffer for reads that are already aligned, and it ignores the buffer alignment for reads.</para>
-/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para></remarks>
+/// <para>Based on nnSdk 13.4.0 (FS 13.1.0)</para></remarks>
 public class AlignmentMatchingStorageInBulkRead<TBufferAlignment> : IStorage
     where TBufferAlignment : struct, IAlignmentMatchingStorageSize
 {

@@ -28,7 +28,7 @@ namespace LibHac.FsSystem;
 /// Each internal file except the final one must have the internal file size that was specified
 /// at the creation of the <see cref="ConcatenationFileSystem"/>.
 /// </para>
-/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para>
+/// <para>Based on nnSdk 13.4.0 (FS 13.1.0)</para>
 /// </remarks>
 public class ConcatenationFileSystem : IFileSystem
 {

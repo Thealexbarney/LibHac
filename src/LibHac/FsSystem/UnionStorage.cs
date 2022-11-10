@@ -25,7 +25,7 @@ namespace LibHac.FsSystem;
 ///    u8 Data[BlockSize];
 /// };
 /// </code></para>
-/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para></remarks>
+/// <para>Based on nnSdk 13.4.0 (FS 13.1.0)</para></remarks>
 public class UnionStorage : IStorage
 {
     private const long Sentinel = -1;

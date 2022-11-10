@@ -60,7 +60,7 @@ internal struct ProgramInfoGlobals
 /// <summary>
 /// Contains the program ID, storage location and FS permissions of a running process.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public class ProgramInfo
 {
     private readonly ulong _processId;

@@ -10,7 +10,7 @@ namespace LibHac.Fs.Impl;
 /// <summary>
 /// Provides a system for caching reads to one or more file systems.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 internal abstract class IFileDataCache : IDisposable
 {
     public abstract void Dispose();

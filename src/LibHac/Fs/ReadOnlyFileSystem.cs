@@ -9,7 +9,7 @@ namespace LibHac.Fs;
 /// <summary>
 /// Wraps an <see cref="IFile"/> and only allows read operations on it.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 internal class ReadOnlyFile : IFile
 {
     private UniqueRef<IFile> _baseFile;
@@ -71,7 +71,7 @@ internal class ReadOnlyFile : IFile
 /// <summary>
 /// Wraps an <see cref="IFileSystem"/> and only allows read operations on it.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public class ReadOnlyFileSystem : IFileSystem
 {
     private SharedRef<IFileSystem> _baseFileSystem;

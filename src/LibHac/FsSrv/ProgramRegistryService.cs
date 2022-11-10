@@ -14,7 +14,7 @@ namespace LibHac.FsSrv;
 /// </summary>
 /// <remarks>Appropriate methods calls on IFileSystemProxy are forwarded to this class
 /// which then checks the calling process' permissions and performs the requested operation.
-/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para></remarks>
+/// <para>Based on nnSdk 13.4.0 (FS 13.1.0)</para></remarks>
 internal readonly struct ProgramIndexRegistryService
 {
     private readonly ProgramRegistryServiceImpl _serviceImpl;
@@ -111,7 +111,7 @@ internal readonly struct ProgramIndexRegistryService
 /// <summary>
 /// Manages the main program registry and the multi-program registry.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public class ProgramRegistryServiceImpl : IDisposable
 {
     // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable

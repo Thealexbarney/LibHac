@@ -10,7 +10,7 @@ namespace LibHac.FsSystem;
 /// <see cref="IStorage"/>s. On each request the provided storage selection function will be called and the request
 /// will be forwarded to the appropriate <see cref="IStorage"/> based on the return value.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public class SwitchStorage : IStorage
 {
     private SharedRef<IStorage> _trueStorage;
@@ -112,7 +112,7 @@ public class SwitchStorage : IStorage
 /// the provided <see cref="Region"/> will be forwarded to one <see cref="IStorage"/>, and requests outside
 /// will be forwarded to the other.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public class RegionSwitchStorage : IStorage
 {
     public struct Region

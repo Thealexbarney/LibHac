@@ -12,7 +12,7 @@ namespace LibHac.Fs;
 /// <summary>
 /// Contains various utility functions for working with paths.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public static class PathUtility
 {
     public static void Replace(Span<byte> buffer, byte currentChar, byte newChar)

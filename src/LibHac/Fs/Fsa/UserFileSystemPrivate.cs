@@ -9,7 +9,7 @@ namespace LibHac.Fs.Fsa;
 /// <summary>
 /// Contains functions meant for internal use for interacting with mounted file systems.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public static class UserFileSystemPrivate
 {
     public static Result CreateFile(this FileSystemClient fs, U8Span path, long size, CreateFileOptions option)

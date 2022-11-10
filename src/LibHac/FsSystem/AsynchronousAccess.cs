@@ -13,7 +13,7 @@ namespace LibHac.FsSystem;
 /// <para>This interface exists because of <see cref="CompressedStorage"/> where it will split requests into
 /// chunks that start and end on the boundaries of the compressed blocks.</para> 
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public interface IAsynchronousAccessSplitter : IDisposable
 {
     private static readonly DefaultAsynchronousAccessSplitter DefaultAccessSplitter = new();
@@ -70,7 +70,7 @@ public interface IAsynchronousAccessSplitter : IDisposable
 /// The default <see cref="IAsynchronousAccessSplitter"/> that is used when an <see cref="IStorage"/>
 /// or <see cref="IFile"/> doesn't need any special logic to split a request into multiple chunks.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public class DefaultAsynchronousAccessSplitter : IAsynchronousAccessSplitter
 {
     public void Dispose() { }

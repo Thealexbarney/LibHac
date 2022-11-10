@@ -19,7 +19,7 @@ internal enum WriteState
 /// <summary>
 /// Provides access to a mount <see cref="IFile"/> and handles caching it.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 internal class FileAccessor : IDisposable
 {
     private const string NeedFlushMessage = "Error: nn::fs::CloseFile() failed because the file was not flushed.\n";

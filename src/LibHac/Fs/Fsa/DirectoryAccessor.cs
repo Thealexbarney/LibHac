@@ -8,7 +8,7 @@ namespace LibHac.Fs.Impl;
 /// <summary>
 /// Provides access to a directory in a mounted file system and handles closing the directory.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 internal class DirectoryAccessor : IDisposable
 {
     private UniqueRef<IDirectory> _directory;

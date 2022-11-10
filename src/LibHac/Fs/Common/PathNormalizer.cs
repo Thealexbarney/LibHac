@@ -10,7 +10,7 @@ namespace LibHac.Fs;
 /// <summary>
 /// Contains functions for doing with basic path normalization.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public static class PathNormalizer
 {
     private enum PathState

@@ -9,7 +9,7 @@ namespace LibHac.FsSystem;
 /// Allocates a buffer from the provided <see cref="MemoryResource"/> that is deallocated
 /// when the <see cref="MemoryResourceBufferHoldStorage"/> is disposed.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public class MemoryResourceBufferHoldStorage : IStorage
 {
     private SharedRef<IStorage> _storage;

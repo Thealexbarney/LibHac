@@ -6,7 +6,7 @@ namespace LibHac.Fs.Fsa;
 /// <summary>
 /// Provides an interface for enumerating the child entries of a directory.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public abstract class IDirectory : IDisposable
 {
     public virtual void Dispose() { }

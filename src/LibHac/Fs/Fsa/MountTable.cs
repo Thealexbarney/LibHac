@@ -13,7 +13,7 @@ namespace LibHac.Fs.Impl;
 /// Holds a list of <see cref="FileSystemAccessor"/>s that are indexed by their name.
 /// These may be retrieved or removed using their name as a key.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 internal class MountTable : IDisposable
 {
     private LinkedList<FileSystemAccessor> _fileSystemList;

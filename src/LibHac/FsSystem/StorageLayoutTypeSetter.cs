@@ -21,7 +21,7 @@ internal enum StorageLayoutType
 /// <summary>
 /// Contains functions for validating the storage layout type flag.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 internal static class StorageLayoutTypeFunctions
 {
     public static bool IsStorageFlagValid(StorageLayoutType storageFlag)
@@ -48,7 +48,7 @@ internal struct ScopedStorageLayoutTypeSetter : IDisposable
 /// Wraps an <see cref="IStorage"/>, automatically setting the thread's storage type when accessing the storage.
 /// This is used to determine which storage speed emulation parameters to use for the current thread.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 internal class StorageLayoutTypeSetStorage : IStorage
 {
     private SharedRef<IStorage> _baseStorage;
@@ -114,7 +114,7 @@ internal class StorageLayoutTypeSetStorage : IStorage
 /// Wraps an <see cref="IFile"/>, automatically setting the thread's storage type when accessing the file.
 /// This is used to determine which storage speed emulation parameters to use for the current thread.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 internal class StorageLayoutTypeSetFile : IFile
 {
     private IFile _baseFile;
@@ -194,7 +194,7 @@ internal class StorageLayoutTypeSetFile : IFile
 /// Wraps an <see cref="IDirectory"/>, automatically setting the thread's storage type when accessing the directory.
 /// This is used to determine which storage speed emulation parameters to use for the current thread.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 internal class StorageLayoutTypeSetDirectory : IDirectory
 {
     private UniqueRef<IDirectory> _baseDirectory;

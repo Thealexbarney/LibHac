@@ -11,7 +11,7 @@ namespace LibHac.FsSrv;
 /// </summary>
 /// <remarks><para>This struct handles checking a process' permissions before forwarding
 /// a request to the <see cref="TimeServiceImpl"/> object.</para>
-/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para></remarks>
+/// <para>Based on nnSdk 13.4.0 (FS 13.1.0)</para></remarks>
 public readonly struct TimeService
 {
     private readonly TimeServiceImpl _serviceImpl;
@@ -40,7 +40,7 @@ public readonly struct TimeService
 /// <summary>
 /// Manages the current time used by the FS service.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public class TimeServiceImpl
 {
     private long _basePosixTime;

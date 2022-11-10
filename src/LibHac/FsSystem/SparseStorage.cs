@@ -11,7 +11,7 @@ namespace LibHac.FsSystem;
 /// <remarks><para>The <see cref="SparseStorage"/>'s <see cref="BucketTree"/> contains <see cref="IndirectStorage.Entry"/>
 /// values describing which portions of the storage are empty. This is accomplished by using a standard
 /// <see cref="IndirectStorage"/> where the second <see cref="IStorage"/> contains only zeros.</para>
-/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para></remarks>
+/// <para>Based on nnSdk 13.4.0 (FS 13.1.0)</para></remarks>
 public class SparseStorage : IndirectStorage
 {
     private class ZeroStorage : IStorage

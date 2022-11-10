@@ -19,7 +19,7 @@ namespace LibHac.Fs.Fsa;
 /// <para>- If <see cref="Write"/> is called on an offset past the end of the <see cref="IFile"/>,
 /// the <see cref="OpenMode.AllowAppend"/> mode is set and the file supports expansion,
 /// the file will be expanded so that it is large enough to contain the written data.</para>
-/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para></remarks>
+/// <para>Based on nnSdk 13.4.0 (FS 13.1.0)</para></remarks>
 public abstract class IFile : IDisposable
 {
     public virtual void Dispose() { }

@@ -13,7 +13,7 @@ namespace LibHac.FsSystem;
 /// </summary>
 /// <remarks><para>The <see cref="IndirectStorage"/>'s <see cref="BucketTree"/> contains <see cref="Entry"/>
 /// values that describe how the created storage is to be built from the base storages.</para>
-/// <para>Based on FS 14.1.0 (nnSdk 14.3.0)</para></remarks>
+/// <para>Based on nnSdk 14.3.0 (FS 14.1.0)</para></remarks>
 public class IndirectStorage : IStorage
 {
     public static readonly int StorageCount = 2;

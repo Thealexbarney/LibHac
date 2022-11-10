@@ -10,7 +10,7 @@ namespace LibHac.FsSrv.Impl;
 /// <summary>
 /// Handles adding, removing, and accessing <see cref="ProgramInfo"/> from the <see cref="ProgramRegistryImpl"/>.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 internal class ProgramRegistryManager : IDisposable
 {
     // Note: FS keeps each ProgramInfo in a shared_ptr, but there aren't any non-memory resources

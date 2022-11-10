@@ -17,7 +17,7 @@ namespace LibHac.Fs.Impl;
 /// system, whether caching is being used, how to get a save file system's <see cref="SaveDataAttribute"/> and
 /// the target used to include a save file system in a multi-commit operation.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 internal class FileSystemAccessor : IDisposable
 {
     private const string EmptyMountNameMessage = "Error: Mount failed because the mount name was empty.\n";

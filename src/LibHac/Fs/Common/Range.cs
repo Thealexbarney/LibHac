@@ -8,7 +8,7 @@ namespace LibHac.Fs;
 /// <summary>
 /// Represents a contiguous range of offsets in a piece of data.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public readonly struct Range : IEquatable<Range>, IComparable<Range>
 {
     public readonly long Offset;

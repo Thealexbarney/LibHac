@@ -35,7 +35,7 @@ internal struct GameCardServiceGlobals : IDisposable
 /// <summary>
 /// Contains functions for interacting with the game card storage device.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 internal static class GameCardService
 {
     private static ulong MakeAttributeId(OpenGameCardAttribute attribute) => (ulong)attribute;

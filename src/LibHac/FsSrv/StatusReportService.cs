@@ -11,7 +11,7 @@ namespace LibHac.FsSrv;
 /// </summary>
 /// <remarks><para>This struct handles forwarding calls to the <see cref="StatusReportServiceImpl"/> object.
 /// No permissions are needed to call any of this struct's functions.</para>
-/// <para>Based on FS 14.1.0 (nnSdk 14.3.0)</para></remarks>
+/// <para>Based on nnSdk 14.3.0 (FS 14.1.0)</para></remarks>
 public readonly struct StatusReportService
 {
     private readonly StatusReportServiceImpl _serviceImpl;
@@ -41,7 +41,7 @@ public readonly struct StatusReportService
 /// <summary>
 /// Manages getting and resetting various status reports and statistics about parts of the FS service.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public class StatusReportServiceImpl
 {
     private Configuration _config;

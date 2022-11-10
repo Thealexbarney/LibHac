@@ -20,7 +20,7 @@ namespace LibHac.FsSrv;
 /// Handles the lower-level operations on save data.
 /// <see cref="SaveDataFileSystemService"/> uses this class to provide save data APIs at a higher level of abstraction.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public class SaveDataFileSystemServiceImpl : IDisposable
 {
     private static readonly bool UseTargetManager = true;

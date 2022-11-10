@@ -17,7 +17,7 @@ namespace LibHac.FsSystem;
 /// <summary>
 /// An <see cref="IBufferManager"/> that uses a <see cref="FileSystemBuddyHeap"/> as an allocator.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public class FileSystemBufferManager : IBufferManager
 {
     private class CacheHandleTable : IDisposable

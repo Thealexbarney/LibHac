@@ -14,7 +14,7 @@ namespace LibHac.FsSystem;
 /// <summary>
 /// Allows searching and iterating the entries in a bucket tree data structure.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public partial class BucketTree : IDisposable
 {
     private const uint ExpectedMagic = 0x52544B42; // BKTR

@@ -17,7 +17,7 @@ namespace LibHac.FsSystem;
 /// <remarks><para>The base data used for this storage comes with a table of ranges and counter values that are used
 /// to decrypt each range. This encryption scheme is used for encrypting content updates so that no counter values
 /// are ever reused.</para>
-/// <para>Based on FS 14.1.0 (nnSdk 14.3.0)</para></remarks>
+/// <para>Based on nnSdk 14.3.0 (FS 14.1.0)</para></remarks>
 public class AesCtrCounterExtendedStorage : IStorage
 {
     public delegate Result DecryptFunction(Span<byte> destination, int index, int generation,

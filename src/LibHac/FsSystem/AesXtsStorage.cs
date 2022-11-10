@@ -13,7 +13,7 @@ namespace LibHac.FsSystem;
 /// <summary>
 /// Reads and writes to an <see cref="IStorage"/> that's encrypted with AES-XTS-128.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public class AesXtsStorage : IStorage
 {
     public static readonly int AesBlockSize = Aes.BlockSize;

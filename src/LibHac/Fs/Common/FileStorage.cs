@@ -11,7 +11,7 @@ namespace LibHac.Fs;
 /// <summary>
 /// Allows interacting with an <see cref="IFile"/> via an <see cref="IStorage"/> interface.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public class FileStorage : IStorage
 {
     private const long InvalidSize = -1;
@@ -155,7 +155,7 @@ public class FileStorage : IStorage
 /// <see cref="IStorage"/> interface. The opened file will automatically be closed when the
 /// <see cref="FileStorageBasedFileSystem"/> is disposed.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public class FileStorageBasedFileSystem : FileStorage
 {
     private SharedRef<IFileSystem> _baseFileSystem;
@@ -198,7 +198,7 @@ public class FileStorageBasedFileSystem : FileStorage
 /// Provides an <see cref="IStorage"/> interface for interacting with an opened file from a mounted file system.
 /// The caller may choose whether or not the file will be closed when the <see cref="FileHandleStorage"/> is disposed.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public class FileHandleStorage : IStorage
 {
     private const long InvalidSize = -1;

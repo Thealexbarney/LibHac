@@ -10,7 +10,7 @@ namespace LibHac.FsSrv.FsCreator;
 /// <summary>
 /// Handles creating FAT file systems.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public class FatFileSystemCreator : IFatFileSystemCreator
 {
     // ReSharper disable once NotAccessedField.Local

@@ -25,7 +25,7 @@ namespace LibHac.FsSrv;
 /// Each <see cref="SaveDataIndexer"/> manages one to two save data spaces.
 /// Each save data space is identified by a <see cref="SaveDataSpaceId"/>,
 /// and has its own unique storage location on disk.
-/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para>
+/// <para>Based on nnSdk 13.4.0 (FS 13.1.0)</para>
 /// </remarks>
 public class SaveDataIndexer : ISaveDataIndexer
 {
@@ -54,7 +54,7 @@ public class SaveDataIndexer : ISaveDataIndexer
     /// Mounts the storage for a <see cref="SaveDataIndexer"/>, and unmounts the storage
     /// when the <see cref="ScopedMount"/> is disposed;
     /// </summary>
-    /// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+    /// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
     [NonCopyableDisposable]
     private ref struct ScopedMount
     {
@@ -134,7 +134,7 @@ public class SaveDataIndexer : ISaveDataIndexer
     /// <summary>
     /// Iterates through all the save data indexed in a <see cref="SaveDataIndexer"/>.
     /// </summary>
-    /// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+    /// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
     private class Reader : SaveDataInfoReaderImpl
     {
         private readonly SaveDataIndexer _indexer;

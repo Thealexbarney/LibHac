@@ -8,7 +8,7 @@ namespace LibHac.Fs.Fsa;
 /// <summary>
 /// Provides an interface for accessing a file system. <c>/</c> is used as the path delimiter.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public abstract class IFileSystem : IDisposable
 {
     public virtual void Dispose() { }

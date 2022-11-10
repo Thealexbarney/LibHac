@@ -10,13 +10,13 @@ namespace LibHac.FsSrv.Impl;
 /// <summary>
 /// Holds the <see cref="ISaveDataExtraDataAccessor"/>s for opened save data file systems.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public class SaveDataExtraDataAccessorCacheManager : ISaveDataExtraDataAccessorObserver
 {
     /// <summary>
     /// Holds a single cached extra data accessor identified by its save data ID and save data space ID.
     /// </summary>
-    /// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+    /// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
     [NonCopyable]
     private struct Cache : IDisposable
     {

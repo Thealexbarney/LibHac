@@ -9,7 +9,7 @@ namespace LibHac.Fs;
 /// <summary>
 /// Iterates through each directory in a path beginning with the root directory.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 [NonCopyableDisposable]
 public ref struct DirectoryPathParser
 {

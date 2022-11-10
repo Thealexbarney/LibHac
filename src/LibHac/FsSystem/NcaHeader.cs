@@ -10,7 +10,7 @@ namespace LibHac.FsSystem;
 /// <summary>
 /// The structure used as the header for an NCA file.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public struct NcaHeader
 {
     public enum ContentType : byte
@@ -171,7 +171,7 @@ public struct NcaAesCtrUpperIv
 /// <summary>
 /// The structure used as the header for an NCA file system.
 /// </summary>
-/// <remarks>Based on FS 14.1.0 (nnSdk 14.3.0)</remarks>
+/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 public struct NcaFsHeader
 {
     public ushort Version;

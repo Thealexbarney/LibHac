@@ -27,7 +27,7 @@ internal struct AccessControlGlobals
 /// </summary>
 /// <remarks><para>Each process has its own FS permissions. Every time a process tries to access various FS resources
 /// or perform certain actions, this class determines if the process has the permissions to do so.</para>
-/// <para>Based on FS 13.1.0 (nnSdk 13.4.0)</para></remarks>
+/// <para>Based on nnSdk 13.4.0 (FS 13.1.0)</para></remarks>
 public class AccessControl
 {
     private Optional<AccessControlBits> _accessBits;

@@ -16,7 +16,7 @@ internal struct UserMountTableGlobals
 /// <summary>
 /// Contains functions for adding, removing and retrieving <see cref="FileSystemAccessor"/>s from the mount table.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 internal static class UserMountTable
 {
     public static Result Register(this FileSystemClientImpl fs, ref UniqueRef<FileSystemAccessor> fileSystem)

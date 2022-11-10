@@ -13,7 +13,7 @@ namespace LibHac.FsSrv;
 /// Contains filter parameters for <see cref="SaveDataInfo"/> and can check
 /// to see if a <see cref="SaveDataInfo"/> matches those parameters.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 internal struct SaveDataInfoFilter
 {
     private Optional<SaveDataSpaceId> _spaceId;
@@ -110,7 +110,7 @@ internal struct SaveDataInfoFilter
 /// Wraps a <see cref="SaveDataInfoReaderImpl"/> and only allows <see cref="SaveDataInfo"/>
 /// that match a provided <see cref="SaveDataInfoFilter"/> to be returned.
 /// </summary>
-/// <remarks>Based on FS 13.1.0 (nnSdk 13.4.0)</remarks>
+/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 internal class SaveDataInfoFilterReader : SaveDataInfoReaderImpl
 {
     private SharedRef<SaveDataInfoReaderImpl> _reader;
