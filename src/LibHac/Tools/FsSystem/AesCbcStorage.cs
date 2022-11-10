@@ -28,14 +28,14 @@ public class AesCbcStorage : SectorStorage
 
     public override Result Read(long offset, Span<byte> destination)
     {
-        Result rc = CheckAccessRange(offset, destination.Length, _size);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = CheckAccessRange(offset, destination.Length, _size);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = base.Read(offset, destination);
-        if (rc.IsFailure()) return rc;
+        res = base.Read(offset, destination);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetDecryptor(out ICipher cipher, offset);
-        if (rc.IsFailure()) return rc;
+        res = GetDecryptor(out ICipher cipher, offset);
+        if (res.IsFailure()) return res.Miss();
 
         cipher.Transform(destination, destination);
 
@@ -70,8 +70,8 @@ public class AesCbcStorage : SectorStorage
 
         // Need to get the output of the previous block
         Span<byte> prevBlock = stackalloc byte[BlockSize];
-        Result rc = BaseStorage.Read(offset - BlockSize, prevBlock);
-        if (rc.IsFailure()) return rc;
+        Result res = BaseStorage.Read(offset - BlockSize, prevBlock);
+        if (res.IsFailure()) return res.Miss();
 
         ICipher tmpDecryptor = Aes.CreateCbcDecryptor(_key, _iv);
 

@@ -15,18 +15,18 @@ public abstract partial class IFileSystemTests
         fs.CreateDirectory("/dir/dir2");
         fs.CreateFile("/dir/file1", 0, CreateFileOptions.None);
 
-        Result rcDelete = fs.CleanDirectoryRecursively("/dir");
+        Result resultDelete = fs.CleanDirectoryRecursively("/dir");
 
-        Result rcDir1Type = fs.GetEntryType(out DirectoryEntryType dir1Type, "/dir");
-        Result rcDir2Type = fs.GetEntryType(out _, "/dir/dir2");
-        Result rcFileType = fs.GetEntryType(out _, "/dir/file1");
+        Result resultDir1Type = fs.GetEntryType(out DirectoryEntryType dir1Type, "/dir");
+        Result resultDir2Type = fs.GetEntryType(out _, "/dir/dir2");
+        Result resultFileType = fs.GetEntryType(out _, "/dir/file1");
 
-        Assert.Success(rcDelete);
+        Assert.Success(resultDelete);
 
-        Assert.Success(rcDir1Type);
+        Assert.Success(resultDir1Type);
         Assert.Equal(DirectoryEntryType.Directory, dir1Type);
 
-        Assert.Result(ResultFs.PathNotFound, rcDir2Type);
-        Assert.Result(ResultFs.PathNotFound, rcFileType);
+        Assert.Result(ResultFs.PathNotFound, resultDir2Type);
+        Assert.Result(ResultFs.PathNotFound, resultFileType);
     }
 }

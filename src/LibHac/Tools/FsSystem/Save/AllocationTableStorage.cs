@@ -47,8 +47,8 @@ public class AllocationTableStorage : IStorage
             int remainingInSegment = iterator.CurrentSegmentSize * BlockSize - segmentPos;
             int bytesToRead = Math.Min(remaining, remainingInSegment);
 
-            Result rc = BaseStorage.Read(physicalOffset, destination.Slice(outPos, bytesToRead));
-            if (rc.IsFailure()) return rc;
+            Result res = BaseStorage.Read(physicalOffset, destination.Slice(outPos, bytesToRead));
+            if (res.IsFailure()) return res.Miss();
 
             outPos += bytesToRead;
             inPos += bytesToRead;
@@ -81,8 +81,8 @@ public class AllocationTableStorage : IStorage
             int remainingInSegment = iterator.CurrentSegmentSize * BlockSize - segmentPos;
             int bytesToWrite = Math.Min(remaining, remainingInSegment);
 
-            Result rc = BaseStorage.Write(physicalOffset, source.Slice(outPos, bytesToWrite));
-            if (rc.IsFailure()) return rc;
+            Result res = BaseStorage.Write(physicalOffset, source.Slice(outPos, bytesToWrite));
+            if (res.IsFailure()) return res.Miss();
 
             outPos += bytesToWrite;
             inPos += bytesToWrite;

@@ -14,35 +14,35 @@ public static class SignedSystemPartition
 {
     public static bool IsValidSignedSystemPartitionOnSdCard(this FileSystemClient fs, U8Span path)
     {
-        Result rc = fs.Impl.FindFileSystem(out FileSystemAccessor fileSystem, out U8Span _, path);
-        fs.Impl.LogResultErrorMessage(rc);
-        Abort.DoAbortUnlessSuccess(rc);
+        Result res = fs.Impl.FindFileSystem(out FileSystemAccessor fileSystem, out U8Span _, path);
+        fs.Impl.LogResultErrorMessage(res);
+        Abort.DoAbortUnlessSuccess(res);
 
         bool isValid = false;
 
-        rc = Operate(ref isValid, fileSystem);
-        fs.Impl.LogResultErrorMessage(rc);
-        Abort.DoAbortUnlessSuccess(rc);
+        res = Operate(ref isValid, fileSystem);
+        fs.Impl.LogResultErrorMessage(res);
+        Abort.DoAbortUnlessSuccess(res);
 
         return isValid;
 
         static Result Operate(ref bool isValid, FileSystemAccessor fileSystem)
         {
-            Result rc = fileSystem.QueryEntry(SpanHelpers.AsByteSpan(ref isValid), ReadOnlySpan<byte>.Empty,
+            Result res = fileSystem.QueryEntry(SpanHelpers.AsByteSpan(ref isValid), ReadOnlySpan<byte>.Empty,
                 QueryId.IsSignedSystemPartition, new U8Span(new[] { (byte)'/' }));
 
-            if (rc.IsFailure())
+            if (res.IsFailure())
             {
                 // Any IFileSystems other than a signed system partition IFileSystem should
                 // return an "UnsupportedOperation" result
-                if (ResultFs.UnsupportedOperation.Includes(rc))
+                if (ResultFs.UnsupportedOperation.Includes(res))
                 {
-                    rc.Catch();
+                    res.Catch();
                     isValid = false;
                 }
                 else
                 {
-                    return rc.Miss();
+                    return res.Miss();
                 }
             }
 

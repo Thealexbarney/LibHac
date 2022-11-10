@@ -110,8 +110,8 @@ public static class Registrar
         using var accessor = new UniqueRef<FileSystemAccessor>(new FileSystemAccessor(fs.Hos, name, null,
             ref fileSystem, ref mountNameGenerator.Ref(), ref attributeGetter.Ref()));
 
-        Result rc = fs.Impl.Register(ref accessor.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fs.Impl.Register(ref accessor.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -124,8 +124,8 @@ public static class Registrar
         using var accessor = new UniqueRef<FileSystemAccessor>(new FileSystemAccessor(fs.Hos, name, null,
             ref fileSystem, ref mountNameGenerator, ref attributeGetter.Ref()));
 
-        Result rc = fs.Impl.Register(ref accessor.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fs.Impl.Register(ref accessor.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -137,10 +137,10 @@ public static class Registrar
         using var unmountHookInvoker = new UniqueRef<IUnmountHookInvoker>();
         using var attributeGetter = new UniqueRef<ISaveDataAttributeGetter>();
 
-        Result rc = Register(fs, name, multiCommitTarget, ref fileSystem, ref mountNameGenerator,
+        Result res = Register(fs, name, multiCommitTarget, ref fileSystem, ref mountNameGenerator,
             ref attributeGetter.Ref(), useDataCache, storageForPurgeFileDataCache, usePathCache,
             ref unmountHookInvoker.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -152,9 +152,9 @@ public static class Registrar
     {
         using var attributeGetter = new UniqueRef<ISaveDataAttributeGetter>();
 
-        Result rc = Register(fs, name, multiCommitTarget, ref fileSystem, ref mountNameGenerator,
+        Result res = Register(fs, name, multiCommitTarget, ref fileSystem, ref mountNameGenerator,
             ref attributeGetter.Ref(), useDataCache, storageForPurgeFileDataCache, usePathCache, ref unmountHook);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -166,10 +166,10 @@ public static class Registrar
     {
         using var unmountHookInvoker = new UniqueRef<IUnmountHookInvoker>();
 
-        Result rc = Register(fs, name, multiCommitTarget, ref fileSystem, ref mountNameGenerator,
+        Result res = Register(fs, name, multiCommitTarget, ref fileSystem, ref mountNameGenerator,
             ref saveAttributeGetter, useDataCache, storageForPurgeFileDataCache, usePathCache,
             ref unmountHookInvoker.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -200,8 +200,8 @@ public static class Registrar
         accessor.Get.SetFileDataCacheAttachable(useDataCache, storageForPurgeFileDataCache);
         accessor.Get.SetPathBasedFileDataCacheAttachable(usePathCache);
 
-        Result rc = fs.Impl.Register(ref accessor.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fs.Impl.Register(ref accessor.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }

@@ -55,19 +55,19 @@ public class FileInterfaceAdapter : IFileSf
         if (destination.Size < (int)size)
             return ResultFs.InvalidSize.Log();
 
-        Result rc = Result.Success;
+        Result res = Result.Success;
         long readSize = 0;
 
         for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
         {
-            rc = _baseFile.Get.Read(out readSize, offset, destination.Buffer.Slice(0, (int)size), option);
+            res = _baseFile.Get.Read(out readSize, offset, destination.Buffer.Slice(0, (int)size), option);
 
             // Retry on ResultDataCorrupted
-            if (!ResultFs.DataCorrupted.Includes(rc))
+            if (!ResultFs.DataCorrupted.Includes(res))
                 break;
         }
 
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         bytesRead = readSize;
         return Result.Success;
@@ -108,19 +108,19 @@ public class FileInterfaceAdapter : IFileSf
         const int maxTryCount = 2;
         UnsafeHelpers.SkipParamInit(out size);
 
-        Result rc = Result.Success;
+        Result res = Result.Success;
         long tmpSize = 0;
 
         for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
         {
-            rc = _baseFile.Get.GetSize(out tmpSize);
+            res = _baseFile.Get.GetSize(out tmpSize);
 
             // Retry on ResultDataCorrupted
-            if (!ResultFs.DataCorrupted.Includes(rc))
+            if (!ResultFs.DataCorrupted.Includes(res))
                 break;
         }
 
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         size = tmpSize;
         return Result.Success;
@@ -135,17 +135,17 @@ public class FileInterfaceAdapter : IFileSf
         {
             Unsafe.SkipInit(out QueryRangeInfo info);
 
-            Result rc = _baseFile.Get.OperateRange(SpanHelpers.AsByteSpan(ref info), OperationId.QueryRange, offset,
+            Result res = _baseFile.Get.OperateRange(SpanHelpers.AsByteSpan(ref info), OperationId.QueryRange, offset,
                 size, ReadOnlySpan<byte>.Empty);
-            if (rc.IsFailure()) return rc;
+            if (res.IsFailure()) return res.Miss();
 
             rangeInfo.Merge(in info);
         }
         else if (operationId == (int)OperationId.InvalidateCache)
         {
-            Result rc = _baseFile.Get.OperateRange(Span<byte>.Empty, OperationId.InvalidateCache, offset, size,
+            Result res = _baseFile.Get.OperateRange(Span<byte>.Empty, OperationId.InvalidateCache, offset, size,
                 ReadOnlySpan<byte>.Empty);
-            if (rc.IsFailure()) return rc;
+            if (res.IsFailure()) return res.Miss();
         }
 
         return Result.Success;
@@ -168,11 +168,11 @@ public class FileInterfaceAdapter : IFileSf
             return Result.Success;
         }
 
-        Result rc = PermissionCheck((OperationId)operationId, this);
-        if (rc.IsFailure()) return rc;
+        Result res = PermissionCheck((OperationId)operationId, this);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _baseFile.Get.OperateRange(outBuffer.Buffer, (OperationId)operationId, offset, size, inBuffer.Buffer);
-        if (rc.IsFailure()) return rc;
+        res = _baseFile.Get.OperateRange(outBuffer.Buffer, (OperationId)operationId, offset, size, inBuffer.Buffer);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -207,19 +207,19 @@ public class DirectoryInterfaceAdapter : IDirectorySf
 
         Span<DirectoryEntry> entries = MemoryMarshal.Cast<byte, DirectoryEntry>(entryBuffer.Buffer);
 
-        Result rc = Result.Success;
+        Result res = Result.Success;
         long numRead = 0;
 
         for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
         {
-            rc = _baseDirectory.Get.Read(out numRead, entries);
+            res = _baseDirectory.Get.Read(out numRead, entries);
 
             // Retry on ResultDataCorrupted
-            if (!ResultFs.DataCorrupted.Includes(rc))
+            if (!ResultFs.DataCorrupted.Includes(res))
                 break;
         }
 
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         entriesRead = numRead;
         return Result.Success;
@@ -229,8 +229,8 @@ public class DirectoryInterfaceAdapter : IDirectorySf
     {
         UnsafeHelpers.SkipParamInit(out entryCount);
 
-        Result rc = _baseDirectory.Get.GetEntryCount(out long count);
-        if (rc.IsFailure()) return rc;
+        Result res = _baseDirectory.Get.GetEntryCount(out long count);
+        if (res.IsFailure()) return res.Miss();
 
         entryCount = count;
         return Result.Success;
@@ -297,21 +297,21 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
 
     private Result SetUpPath(ref Path fsPath, in PathSf sfPath)
     {
-        Result rc;
+        Result res;
 
         if (_pathFlags.IsWindowsPathAllowed())
         {
-            rc = fsPath.InitializeWithReplaceUnc(sfPath.Str);
-            if (rc.IsFailure()) return rc;
+            res = fsPath.InitializeWithReplaceUnc(sfPath.Str);
+            if (res.IsFailure()) return res.Miss();
         }
         else
         {
-            rc = fsPath.Initialize(sfPath.Str);
-            if (rc.IsFailure()) return rc;
+            res = fsPath.Initialize(sfPath.Str);
+            if (res.IsFailure()) return res.Miss();
         }
 
-        rc = fsPath.Normalize(_pathFlags);
-        if (rc.IsFailure()) return rc;
+        res = fsPath.Normalize(_pathFlags);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -322,11 +322,11 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
             return ResultFs.InvalidSize.Log();
 
         using var pathNormalized = new Path();
-        Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        Result res = SetUpPath(ref pathNormalized.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _baseFileSystem.Get.CreateFile(in pathNormalized, size, (CreateFileOptions)option);
-        if (rc.IsFailure()) return rc;
+        res = _baseFileSystem.Get.CreateFile(in pathNormalized, size, (CreateFileOptions)option);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -334,11 +334,11 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
     public Result DeleteFile(in PathSf path)
     {
         using var pathNormalized = new Path();
-        Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        Result res = SetUpPath(ref pathNormalized.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _baseFileSystem.Get.DeleteFile(in pathNormalized);
-        if (rc.IsFailure()) return rc;
+        res = _baseFileSystem.Get.DeleteFile(in pathNormalized);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -346,14 +346,14 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
     public Result CreateDirectory(in PathSf path)
     {
         using var pathNormalized = new Path();
-        Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        Result res = SetUpPath(ref pathNormalized.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
         if (pathNormalized == RootDir)
             return ResultFs.PathAlreadyExists.Log();
 
-        rc = _baseFileSystem.Get.CreateDirectory(in pathNormalized);
-        if (rc.IsFailure()) return rc;
+        res = _baseFileSystem.Get.CreateDirectory(in pathNormalized);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -361,14 +361,14 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
     public Result DeleteDirectory(in PathSf path)
     {
         using var pathNormalized = new Path();
-        Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        Result res = SetUpPath(ref pathNormalized.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
         if (pathNormalized == RootDir)
             return ResultFs.DirectoryUndeletable.Log();
 
-        rc = _baseFileSystem.Get.DeleteDirectory(in pathNormalized);
-        if (rc.IsFailure()) return rc;
+        res = _baseFileSystem.Get.DeleteDirectory(in pathNormalized);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -376,14 +376,14 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
     public Result DeleteDirectoryRecursively(in PathSf path)
     {
         using var pathNormalized = new Path();
-        Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        Result res = SetUpPath(ref pathNormalized.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
         if (pathNormalized == RootDir)
             return ResultFs.DirectoryUndeletable.Log();
 
-        rc = _baseFileSystem.Get.DeleteDirectoryRecursively(in pathNormalized);
-        if (rc.IsFailure()) return rc;
+        res = _baseFileSystem.Get.DeleteDirectoryRecursively(in pathNormalized);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -391,11 +391,11 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
     public Result CleanDirectoryRecursively(in PathSf path)
     {
         using var pathNormalized = new Path();
-        Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        Result res = SetUpPath(ref pathNormalized.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _baseFileSystem.Get.CleanDirectoryRecursively(in pathNormalized);
-        if (rc.IsFailure()) return rc;
+        res = _baseFileSystem.Get.CleanDirectoryRecursively(in pathNormalized);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -403,15 +403,15 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
     public Result RenameFile(in PathSf currentPath, in PathSf newPath)
     {
         using var currentPathNormalized = new Path();
-        Result rc = SetUpPath(ref currentPathNormalized.Ref(), in currentPath);
-        if (rc.IsFailure()) return rc;
+        Result res = SetUpPath(ref currentPathNormalized.Ref(), in currentPath);
+        if (res.IsFailure()) return res.Miss();
 
         using var newPathNormalized = new Path();
-        rc = SetUpPath(ref newPathNormalized.Ref(), in newPath);
-        if (rc.IsFailure()) return rc;
+        res = SetUpPath(ref newPathNormalized.Ref(), in newPath);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _baseFileSystem.Get.RenameFile(in currentPathNormalized, in newPathNormalized);
-        if (rc.IsFailure()) return rc;
+        res = _baseFileSystem.Get.RenameFile(in currentPathNormalized, in newPathNormalized);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -419,18 +419,18 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
     public Result RenameDirectory(in PathSf currentPath, in PathSf newPath)
     {
         using var currentPathNormalized = new Path();
-        Result rc = SetUpPath(ref currentPathNormalized.Ref(), in currentPath);
-        if (rc.IsFailure()) return rc;
+        Result res = SetUpPath(ref currentPathNormalized.Ref(), in currentPath);
+        if (res.IsFailure()) return res.Miss();
 
         using var newPathNormalized = new Path();
-        rc = SetUpPath(ref newPathNormalized.Ref(), in newPath);
-        if (rc.IsFailure()) return rc;
+        res = SetUpPath(ref newPathNormalized.Ref(), in newPath);
+        if (res.IsFailure()) return res.Miss();
 
         if (PathUtility.IsSubPath(currentPathNormalized.GetString(), newPathNormalized.GetString()))
             return ResultFs.DirectoryUnrenamable.Log();
 
-        rc = _baseFileSystem.Get.RenameDirectory(in currentPathNormalized, in newPathNormalized);
-        if (rc.IsFailure()) return rc;
+        res = _baseFileSystem.Get.RenameDirectory(in currentPathNormalized, in newPathNormalized);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -440,11 +440,11 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         UnsafeHelpers.SkipParamInit(out entryType);
 
         using var pathNormalized = new Path();
-        Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        Result res = SetUpPath(ref pathNormalized.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _baseFileSystem.Get.GetEntryType(out DirectoryEntryType type, in pathNormalized);
-        if (rc.IsFailure()) return rc;
+        res = _baseFileSystem.Get.GetEntryType(out DirectoryEntryType type, in pathNormalized);
+        if (res.IsFailure()) return res.Miss();
 
         entryType = (uint)type;
         return Result.Success;
@@ -455,11 +455,11 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         UnsafeHelpers.SkipParamInit(out freeSpace);
 
         using var pathNormalized = new Path();
-        Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        Result res = SetUpPath(ref pathNormalized.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _baseFileSystem.Get.GetFreeSpaceSize(out long space, in pathNormalized);
-        if (rc.IsFailure()) return rc;
+        res = _baseFileSystem.Get.GetFreeSpaceSize(out long space, in pathNormalized);
+        if (res.IsFailure()) return res.Miss();
 
         freeSpace = space;
         return Result.Success;
@@ -470,11 +470,11 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         UnsafeHelpers.SkipParamInit(out totalSpace);
 
         using var pathNormalized = new Path();
-        Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        Result res = SetUpPath(ref pathNormalized.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _baseFileSystem.Get.GetTotalSpaceSize(out long space, in pathNormalized);
-        if (rc.IsFailure()) return rc;
+        res = _baseFileSystem.Get.GetTotalSpaceSize(out long space, in pathNormalized);
+        if (res.IsFailure()) return res.Miss();
 
         totalSpace = space;
         return Result.Success;
@@ -485,21 +485,21 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         const int maxTryCount = 2;
 
         using var pathNormalized = new Path();
-        Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        Result res = SetUpPath(ref pathNormalized.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
         using var file = new UniqueRef<IFile>();
 
         for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
         {
-            rc = _baseFileSystem.Get.OpenFile(ref file.Ref(), in pathNormalized, (OpenMode)mode);
+            res = _baseFileSystem.Get.OpenFile(ref file.Ref(), in pathNormalized, (OpenMode)mode);
 
             // Retry on ResultDataCorrupted
-            if (!ResultFs.DataCorrupted.Includes(rc))
+            if (!ResultFs.DataCorrupted.Includes(res))
                 break;
         }
 
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         using SharedRef<FileSystemInterfaceAdapter> selfReference =
             SharedRef<FileSystemInterfaceAdapter>.Create(in _selfReference);
@@ -515,22 +515,22 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         const int maxTryCount = 2;
 
         using var pathNormalized = new Path();
-        Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        Result res = SetUpPath(ref pathNormalized.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
         using var directory = new UniqueRef<IDirectory>();
 
         for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
         {
-            rc = _baseFileSystem.Get.OpenDirectory(ref directory.Ref(), in pathNormalized,
+            res = _baseFileSystem.Get.OpenDirectory(ref directory.Ref(), in pathNormalized,
                 (OpenDirectoryMode)mode);
 
             // Retry on ResultDataCorrupted
-            if (!ResultFs.DataCorrupted.Includes(rc))
+            if (!ResultFs.DataCorrupted.Includes(res))
                 break;
         }
 
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         using SharedRef<FileSystemInterfaceAdapter> selfReference =
             SharedRef<FileSystemInterfaceAdapter>.Create(in _selfReference);
@@ -551,11 +551,11 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         UnsafeHelpers.SkipParamInit(out timeStamp);
 
         using var pathNormalized = new Path();
-        Result rc = SetUpPath(ref pathNormalized.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        Result res = SetUpPath(ref pathNormalized.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _baseFileSystem.Get.GetFileTimeStampRaw(out FileTimeStampRaw tempTimeStamp, in pathNormalized);
-        if (rc.IsFailure()) return rc;
+        res = _baseFileSystem.Get.GetFileTimeStampRaw(out FileTimeStampRaw tempTimeStamp, in pathNormalized);
+        if (res.IsFailure()) return res.Miss();
 
         timeStamp = tempTimeStamp;
         return Result.Success;
@@ -578,16 +578,16 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
             return Result.Success;
         }
 
-        Result rc = PermissionCheck((QueryId)queryId, this);
-        if (rc.IsFailure()) return rc;
+        Result res = PermissionCheck((QueryId)queryId, this);
+        if (res.IsFailure()) return res.Miss();
 
         using var pathNormalized = new Path();
-        rc = SetUpPath(ref pathNormalized.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        res = SetUpPath(ref pathNormalized.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _baseFileSystem.Get.QueryEntry(outBuffer.Buffer, inBuffer.Buffer, (QueryId)queryId,
+        res = _baseFileSystem.Get.QueryEntry(outBuffer.Buffer, inBuffer.Buffer, (QueryId)queryId,
             in pathNormalized);
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }

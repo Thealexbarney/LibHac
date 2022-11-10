@@ -157,8 +157,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             }
             else
             {
-                Result rc = GetAccessibilityForSaveData(out Accessibility accessibility, programInfo, ownerId);
-                if (rc.IsFailure()) return rc.Miss();
+                Result res = GetAccessibilityForSaveData(out Accessibility accessibility, programInfo, ownerId);
+                if (res.IsFailure()) return res.Miss();
 
                 // If none of the above conditions apply, the program needs write access to the owner's save data.
                 // The program also needs either permission to create any save data, or it must be creating its own
@@ -210,8 +210,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         {
             AccessControl accessControl = programInfo.AccessControl;
 
-            Result rc = GetAccessibilityForSaveData(out Accessibility accessibility, programInfo, extraDataGetter);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = GetAccessibilityForSaveData(out Accessibility accessibility, programInfo, extraDataGetter);
+            if (res.IsFailure()) return res.Miss();
 
             // Note: This is correct. Even if a program only has read accessibility to a save data,
             // Nintendo allows opening it with read/write accessibility as of FS 14.0.0
@@ -254,8 +254,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             }
 
             // Otherwise the program needs the DeleteOwnSaveData permission and write access to the save
-            Result rc = GetAccessibilityForSaveData(out Accessibility accessibility, programInfo, extraDataGetter);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = GetAccessibilityForSaveData(out Accessibility accessibility, programInfo, extraDataGetter);
+            if (res.IsFailure()) return res.Miss();
 
             if (accessControl.CanCall(OperationType.DeleteOwnSaveData) && accessibility.CanWrite)
             {
@@ -277,9 +277,9 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
                 case SaveDataSpaceId.ProperSystem:
                 case SaveDataSpaceId.SafeMode:
                 {
-                    Result rc = GetAccessibilityForSaveData(out Accessibility accessibility, programInfo,
+                    Result res = GetAccessibilityForSaveData(out Accessibility accessibility, programInfo,
                         extraDataGetter);
-                    if (rc.IsFailure()) return rc.Miss();
+                    if (res.IsFailure()) return res.Miss();
 
                     // The program needs the ExtendSystemSaveData permission and either one of
                     // read/write access to the save or the ExtendOthersSystemSaveData permission
@@ -297,9 +297,9 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
                 {
                     bool canAccess = accessControl.CanCall(OperationType.ExtendSaveData);
 
-                    Result rc = GetAccessibilityForSaveData(out Accessibility accessibility, programInfo,
+                    Result res = GetAccessibilityForSaveData(out Accessibility accessibility, programInfo,
                         extraDataGetter);
-                    if (rc.IsFailure()) return rc.Miss();
+                    if (res.IsFailure()) return res.Miss();
 
                     if (attribute.ProgramId == programInfo.ProgramId || accessibility.CanRead)
                     {
@@ -331,8 +331,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
             bool canAccess = accessControl.CanCall(OperationType.ReadSaveDataFileSystemExtraData);
 
-            Result rc = GetAccessibilityForSaveData(out Accessibility accessibility, programInfo, extraDataGetter);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = GetAccessibilityForSaveData(out Accessibility accessibility, programInfo, extraDataGetter);
+            if (res.IsFailure()) return res.Miss();
 
             SaveDataExtraData emptyMask = default;
             SaveDataExtraData maskWithoutRestoreFlag = mask;
@@ -378,18 +378,18 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
                 if (SaveDataProperties.IsSystemSaveData(attribute.Type))
                 {
-                    Result rc = GetAccessibilityForSaveData(out Accessibility accessibility, programInfo,
+                    Result res = GetAccessibilityForSaveData(out Accessibility accessibility, programInfo,
                         extraDataGetter);
-                    if (rc.IsFailure()) return rc.Miss();
+                    if (res.IsFailure()) return res.Miss();
 
                     canAccess |= accessibility.CanWrite;
                 }
 
                 if ((mask.Flags & ~SaveDataFlags.Restore) == 0)
                 {
-                    Result rc = GetAccessibilityForSaveData(out Accessibility accessibility, programInfo,
+                    Result res = GetAccessibilityForSaveData(out Accessibility accessibility, programInfo,
                         extraDataGetter);
-                    if (rc.IsFailure()) return rc.Miss();
+                    if (res.IsFailure()) return res.Miss();
 
                     canAccess |= accessibility.CanWrite;
                 }
@@ -463,8 +463,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
         public static Result CheckOpenProhibiter(ProgramId programId, ProgramInfo programInfo)
         {
-            Result rc = GetAccessibilityForSaveData(out Accessibility accessibility, programInfo, programId.Value);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = GetAccessibilityForSaveData(out Accessibility accessibility, programInfo, programId.Value);
+            if (res.IsFailure()) return res.Miss();
 
             bool canAccess = programInfo.AccessControl.CanCall(OperationType.OpenSaveDataTransferProhibiter);
 
@@ -500,16 +500,16 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         {
             UnsafeHelpers.SkipParamInit(out accessibility);
 
-            Result rc = extraDataGetter(out SaveDataExtraData extraData);
-            if (rc.IsFailure())
+            Result res = extraDataGetter(out SaveDataExtraData extraData);
+            if (res.IsFailure())
             {
-                if (ResultFs.TargetNotFound.Includes(rc))
+                if (ResultFs.TargetNotFound.Includes(res))
                 {
                     accessibility = new Accessibility(false, false);
                     return Result.Success;
                 }
 
-                return rc;
+                return res;
             }
 
             // Allow access when opening a directory save FS on a dev console
@@ -619,15 +619,15 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
         using var fileSystem = new SharedRef<IFileSystem>();
 
-        Result rc = _serviceImpl.OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref(), spaceId);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _serviceImpl.OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref(), spaceId);
+        if (res.IsFailure()) return res.Miss();
 
         using var pathRoot = new Path();
-        rc = PathFunctions.SetUpFixedPath(ref pathRoot.Ref(), new[] { (byte)'/' });
-        if (rc.IsFailure()) return rc.Miss();
+        res = PathFunctions.SetUpFixedPath(ref pathRoot.Ref(), new[] { (byte)'/' });
+        if (res.IsFailure()) return res.Miss();
 
         fileSystem.Get.GetFreeSpaceSize(out long freeSpaceSize, in pathRoot);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         outFreeSpaceSize = freeSpaceSize;
         return Result.Success;
@@ -637,8 +637,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     {
         using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.Bis);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         // This function only operates on the system save data space, so the caller
         // must have permissions to delete system save data
@@ -653,8 +653,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         bool success = false;
 
         using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
-        rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
-        if (rc.IsFailure()) return rc.Miss();
+        res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
+        if (res.IsFailure()) return res.Miss();
 
         ReadOnlySpan<ulong> ids = MemoryMarshal.Cast<byte, ulong>(saveDataIds.Buffer);
 
@@ -663,12 +663,12 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             // Try to set the state of all the save IDs as being marked for deletion.
             for (int i = 0; i < ids.Length; i++)
             {
-                rc = accessor.Get.GetInterface().SetState(ids[i], SaveDataState.MarkedForDeletion);
-                if (rc.IsFailure()) return rc.Miss();
+                res = accessor.Get.GetInterface().SetState(ids[i], SaveDataState.MarkedForDeletion);
+                if (res.IsFailure()) return res.Miss();
             }
 
-            rc = accessor.Get.GetInterface().Commit();
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().Commit();
+            if (res.IsFailure()) return res.Miss();
 
             success = true;
             return Result.Success;
@@ -678,8 +678,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             // Rollback the operation if something goes wrong.
             if (!success)
             {
-                rc = accessor.Get.GetInterface().Rollback();
-                if (rc.IsFailure())
+                res = accessor.Get.GetInterface().Rollback();
+                if (res.IsFailure())
                 {
                     Hos.Diag.Impl.LogImpl(Log.EmptyModuleName, LogSeverity.Info,
                         "[fs] Error: Failed to rollback save data indexer.\n".ToU8Span());
@@ -698,15 +698,15 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     private Result DeleteSaveDataFileSystemCore(SaveDataSpaceId spaceId, ulong saveDataId, bool wipeSaveFile)
     {
         // Delete the save data's meta files
-        Result rc = _serviceImpl.DeleteAllSaveDataMetas(saveDataId, spaceId);
-        if (rc.IsFailure() && !ResultFs.PathNotFound.Includes(rc))
-            return rc.Miss();
+        Result res = _serviceImpl.DeleteAllSaveDataMetas(saveDataId, spaceId);
+        if (res.IsFailure() && !ResultFs.PathNotFound.Includes(res))
+            return res.Miss();
 
         // Delete the actual save data.
         using Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
-        rc = _serviceImpl.DeleteSaveDataFileSystem(spaceId, saveDataId, wipeSaveFile, in saveDataRootPath);
-        if (rc.IsFailure() && !ResultFs.PathNotFound.Includes(rc))
-            return rc.Miss();
+        res = _serviceImpl.DeleteSaveDataFileSystem(spaceId, saveDataId, wipeSaveFile, in saveDataRootPath);
+        if (res.IsFailure() && !ResultFs.PathNotFound.Includes(res))
+            return res.Miss();
 
         return Result.Success;
     }
@@ -723,11 +723,11 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         if (saveDataId != SaveIndexerId)
         {
             using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
-            Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = accessor.Get.GetInterface().GetValue(out SaveDataIndexerValue value, saveDataId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().GetValue(out SaveDataIndexerValue value, saveDataId);
+            if (res.IsFailure()) return res.Miss();
 
             if (value.SpaceId != ConvertToRealSpaceId(spaceId))
                 return ResultFs.TargetNotFound.Log();
@@ -741,16 +741,16 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     {
         using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
-        Result rs = GetSaveDataInfo(out SaveDataInfo info, spaceId, in attribute);
-        if (rs.IsFailure()) return rs;
+        Result res = GetSaveDataInfo(out SaveDataInfo info, spaceId, in attribute);
+        if (res.IsFailure()) return res;
 
         return DeleteSaveDataFileSystemBySaveDataSpaceIdCore(spaceId, info.SaveDataId).Ret();
     }
 
     private Result DeleteSaveDataFileSystemCommon(SaveDataSpaceId spaceId, ulong saveDataId)
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
@@ -758,8 +758,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
         if (saveDataId != SaveIndexerId)
         {
-            rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+            if (res.IsFailure()) return res.Miss();
 
             // Get the actual space ID of this save.
             if (spaceId == SaveDataSpaceId.ProperSystem || spaceId == SaveDataSpaceId.SafeMode)
@@ -768,29 +768,29 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             }
             else
             {
-                rc = accessor.Get.GetInterface().GetValue(out SaveDataIndexerValue value, saveDataId);
-                if (rc.IsFailure()) return rc.Miss();
+                res = accessor.Get.GetInterface().GetValue(out SaveDataIndexerValue value, saveDataId);
+                if (res.IsFailure()) return res.Miss();
 
                 targetSpaceId = value.SpaceId;
             }
 
             // Check if the caller has permission to delete this save.
-            rc = accessor.Get.GetInterface().GetKey(out SaveDataAttribute key, saveDataId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().GetKey(out SaveDataAttribute key, saveDataId);
+            if (res.IsFailure()) return res.Miss();
 
             Result GetExtraData(out SaveDataExtraData data) =>
                 _serviceImpl.ReadSaveDataFileSystemExtraData(out data, targetSpaceId, saveDataId, key.Type,
                     _saveDataRootPath.DangerousGetPath());
 
-            rc = SaveDataAccessibilityChecker.CheckDelete(in key, programInfo, GetExtraData);
-            if (rc.IsFailure()) return rc.Miss();
+            res = SaveDataAccessibilityChecker.CheckDelete(in key, programInfo, GetExtraData);
+            if (res.IsFailure()) return res.Miss();
 
             // Pre-delete checks successful. Put the save in the Processing state until deletion is finished.
-            rc = accessor.Get.GetInterface().SetState(saveDataId, SaveDataState.Processing);
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().SetState(saveDataId, SaveDataState.Processing);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = accessor.Get.GetInterface().Commit();
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().Commit();
+            if (res.IsFailure()) return res.Miss();
         }
         else
         {
@@ -802,18 +802,18 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         }
 
         // Do the actual deletion.
-        rc = DeleteSaveDataFileSystemCore(targetSpaceId, saveDataId, wipeSaveFile: false);
-        if (rc.IsFailure()) return rc.Miss();
+        res = DeleteSaveDataFileSystemCore(targetSpaceId, saveDataId, wipeSaveFile: false);
+        if (res.IsFailure()) return res.Miss();
 
         // Remove the save data from the indexer.
         // The indexer doesn't track itself, so skip if deleting its save data.
         if (saveDataId != SaveIndexerId)
         {
-            rc = accessor.Get.GetInterface().Delete(saveDataId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().Delete(saveDataId);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = accessor.Get.GetInterface().Commit();
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().Commit();
+            if (res.IsFailure()) return res.Miss();
         }
 
         return Result.Success;
@@ -846,8 +846,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
     public Result SetSaveDataRootPath(in FspPath path)
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.DebugSaveData))
             return ResultFs.PermissionDenied.Log();
@@ -856,13 +856,13 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
         if (path.Str[0] == NullTerminator)
         {
-            rc = saveDataRootPath.Initialize(new[] { (byte)'.' });
-            if (rc.IsFailure()) return rc.Miss();
+            res = saveDataRootPath.Initialize(new[] { (byte)'.' });
+            if (res.IsFailure()) return res.Miss();
         }
         else
         {
-            rc = saveDataRootPath.InitializeWithReplaceUnc(path.Str);
-            if (rc.IsFailure()) return rc.Miss();
+            res = saveDataRootPath.InitializeWithReplaceUnc(path.Str);
+            if (res.IsFailure()) return res.Miss();
         }
 
         var pathFlags = new PathFlags();
@@ -870,8 +870,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         pathFlags.AllowRelativePath();
         pathFlags.AllowEmptyPath();
 
-        rc = saveDataRootPath.Normalize(pathFlags);
-        if (rc.IsFailure()) return rc.Miss();
+        res = saveDataRootPath.Normalize(pathFlags);
+        if (res.IsFailure()) return res.Miss();
 
         _saveDataRootPath.Initialize(in saveDataRootPath);
 
@@ -880,15 +880,15 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
     public Result UnsetSaveDataRootPath()
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.DebugSaveData))
             return ResultFs.PermissionDenied.Log();
 
         using var saveDataRootPath = new Path();
-        rc = saveDataRootPath.InitializeAsEmpty();
-        if (rc.IsFailure()) return rc.Miss();
+        res = saveDataRootPath.InitializeAsEmpty();
+        if (res.IsFailure()) return res.Miss();
 
         _saveDataRootPath.Initialize(in saveDataRootPath);
 
@@ -911,8 +911,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         using var file = new SharedRef<IFile>();
-        Result rc = _serviceImpl.OpenSaveDataFile(ref file.Ref(), spaceId, saveDataId, openMode);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _serviceImpl.OpenSaveDataFile(ref file.Ref(), spaceId, saveDataId, openMode);
+        if (res.IsFailure()) return res.Miss();
 
         using var typeSetFile = new SharedRef<IFile>(new StorageLayoutTypeSetFile(ref file.Ref(), storageFlag));
 
@@ -930,7 +930,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         ulong saveDataId = 0;
         bool creating = false;
         bool accessorInitialized = false;
-        Result rc;
+        Result res;
 
         StorageLayoutType storageFlag = DecidePossibleStorageFlag(creationInfo.Attribute.Type, creationInfo.SpaceId);
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
@@ -944,9 +944,9 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             {
                 // The save indexer doesn't index itself
                 saveDataId = SaveIndexerId;
-                rc = _serviceImpl.DoesSaveDataEntityExist(out bool saveExists, creationInfo.SpaceId, saveDataId);
+                res = _serviceImpl.DoesSaveDataEntityExist(out bool saveExists, creationInfo.SpaceId, saveDataId);
 
-                if (rc.IsSuccess() && saveExists)
+                if (res.IsSuccess() && saveExists)
                 {
                     return ResultFs.PathAlreadyExists.Log();
                 }
@@ -955,8 +955,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             }
             else
             {
-                rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), creationInfo.SpaceId);
-                if (rc.IsFailure()) return rc.Miss();
+                res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), creationInfo.SpaceId);
+                if (res.IsFailure()) return res.Miss();
 
                 accessorInitialized = true;
 
@@ -968,7 +968,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
                     // If a static save data ID is specified that ID is always used
                     saveDataId = creationInfo.Attribute.StaticSaveDataId;
 
-                    rc = accessor.Get.GetInterface().PutStaticSaveDataIdIndex(in indexerKey);
+                    res = accessor.Get.GetInterface().PutStaticSaveDataIdIndex(in indexerKey);
                 }
                 else
                 {
@@ -984,102 +984,102 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
                     }
 
                     // If a static save data ID is no specified we're assigned a new save ID
-                    rc = accessor.Get.GetInterface().Publish(out saveDataId, in indexerKey);
+                    res = accessor.Get.GetInterface().Publish(out saveDataId, in indexerKey);
                 }
 
-                if (rc.IsSuccess())
+                if (res.IsSuccess())
                 {
                     creating = true;
 
                     // Set the state, space ID and size on the new save indexer entry.
-                    rc = accessor.Get.GetInterface().SetState(saveDataId, SaveDataState.Processing);
-                    if (rc.IsFailure()) return rc.Miss();
+                    res = accessor.Get.GetInterface().SetState(saveDataId, SaveDataState.Processing);
+                    if (res.IsFailure()) return res.Miss();
 
-                    rc = accessor.Get.GetInterface().SetSpaceId(saveDataId, ConvertToRealSpaceId(creationInfo.SpaceId));
-                    if (rc.IsFailure()) return rc.Miss();
+                    res = accessor.Get.GetInterface().SetSpaceId(saveDataId, ConvertToRealSpaceId(creationInfo.SpaceId));
+                    if (res.IsFailure()) return res.Miss();
 
-                    rc = QuerySaveDataTotalSize(out long saveDataSize, creationInfo.Size, creationInfo.JournalSize);
-                    if (rc.IsFailure()) return rc.Miss();
+                    res = QuerySaveDataTotalSize(out long saveDataSize, creationInfo.Size, creationInfo.JournalSize);
+                    if (res.IsFailure()) return res.Miss();
 
-                    rc = accessor.Get.GetInterface().SetSize(saveDataId, saveDataSize);
-                    if (rc.IsFailure()) return rc.Miss();
+                    res = accessor.Get.GetInterface().SetSize(saveDataId, saveDataSize);
+                    if (res.IsFailure()) return res.Miss();
 
-                    rc = accessor.Get.GetInterface().Commit();
-                    if (rc.IsFailure()) return rc.Miss();
+                    res = accessor.Get.GetInterface().Commit();
+                    if (res.IsFailure()) return res.Miss();
                 }
                 else
                 {
-                    if (ResultFs.AlreadyExists.Includes(rc))
+                    if (ResultFs.AlreadyExists.Includes(res))
                     {
                         // The save already exists. Ensure the thumbnail meta file exists if needed.
                         if (creationInfo.MetaType == SaveDataMetaType.Thumbnail)
                         {
-                            Result rcMeta = accessor.Get.GetInterface().Get(out SaveDataIndexerValue value, in indexerKey);
-                            if (rcMeta.IsFailure()) return rcMeta.Miss();
+                            Result resultMeta = accessor.Get.GetInterface().Get(out SaveDataIndexerValue value, in indexerKey);
+                            if (resultMeta.IsFailure()) return resultMeta.Miss();
 
-                            rcMeta = CreateEmptyThumbnailFile(creationInfo.SpaceId, value.SaveDataId);
+                            resultMeta = CreateEmptyThumbnailFile(creationInfo.SpaceId, value.SaveDataId);
 
                             // Allow the thumbnail file to already exist
-                            if (rcMeta.IsFailure() && !ResultFs.PathAlreadyExists.Includes(rcMeta))
-                                return rcMeta.Miss();
+                            if (resultMeta.IsFailure() && !ResultFs.PathAlreadyExists.Includes(resultMeta))
+                                return resultMeta.Miss();
                         }
 
-                        return ResultFs.PathAlreadyExists.LogConverted(rc);
+                        return ResultFs.PathAlreadyExists.LogConverted(res);
                     }
 
-                    return rc.Miss();
+                    return res.Miss();
                 }
 
-                if (rc.IsFailure())
+                if (res.IsFailure())
                 {
-                    if (ResultFs.AlreadyExists.Includes(rc))
+                    if (ResultFs.AlreadyExists.Includes(res))
                     {
-                        return ResultFs.PathAlreadyExists.LogConverted(rc);
+                        return ResultFs.PathAlreadyExists.LogConverted(res);
                     }
 
-                    return rc;
+                    return res;
                 }
             }
 
             // After the new save is added to the save indexer, create the save data file or directory.
             using Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
-            rc = _serviceImpl.CreateSaveDataFileSystem(saveDataId, in creationInfo, in saveDataRootPath, skipFormat: false);
+            res = _serviceImpl.CreateSaveDataFileSystem(saveDataId, in creationInfo, in saveDataRootPath, skipFormat: false);
 
-            if (rc.IsFailure())
+            if (res.IsFailure())
             {
-                if (!ResultFs.PathAlreadyExists.Includes(rc))
-                    return rc.Miss();
+                if (!ResultFs.PathAlreadyExists.Includes(res))
+                    return res.Miss();
 
                 // The save exists on the file system but not in the save indexer.
                 // Delete the save data and try creating it again.
-                rc = DeleteSaveDataFileSystemCore(creationInfo.SpaceId, saveDataId, false);
-                if (rc.IsFailure()) return rc.Miss();
+                res = DeleteSaveDataFileSystemCore(creationInfo.SpaceId, saveDataId, false);
+                if (res.IsFailure()) return res.Miss();
 
-                rc = _serviceImpl.CreateSaveDataFileSystem(saveDataId, in creationInfo, in saveDataRootPath,
+                res = _serviceImpl.CreateSaveDataFileSystem(saveDataId, in creationInfo, in saveDataRootPath,
                     skipFormat: false);
-                if (rc.IsFailure()) return rc.Miss();
+                if (res.IsFailure()) return res.Miss();
             }
 
             if (creationInfo.MetaType != SaveDataMetaType.None)
             {
                 // Create the requested save data meta file.
-                rc = _serviceImpl.CreateSaveDataMeta(saveDataId, creationInfo.SpaceId, creationInfo.MetaType,
+                res = _serviceImpl.CreateSaveDataMeta(saveDataId, creationInfo.SpaceId, creationInfo.MetaType,
                     creationInfo.MetaSize);
-                if (rc.IsFailure()) return rc.Miss();
+                if (res.IsFailure()) return res.Miss();
 
                 if (creationInfo.MetaType == SaveDataMetaType.Thumbnail)
                 {
                     using var metaFile = new UniqueRef<IFile>();
-                    rc = _serviceImpl.OpenSaveDataMeta(ref metaFile.Ref(), saveDataId, creationInfo.SpaceId,
+                    res = _serviceImpl.OpenSaveDataMeta(ref metaFile.Ref(), saveDataId, creationInfo.SpaceId,
                         creationInfo.MetaType);
-                    if (rc.IsFailure()) return rc.Miss();
+                    if (res.IsFailure()) return res.Miss();
 
                     // The first 0x20 bytes of thumbnail meta files is an SHA-256 hash.
                     // Zero the hash to indicate that it's currently unused.
                     ReadOnlySpan<byte> metaFileHash = stackalloc byte[0x20];
 
-                    rc = metaFile.Get.Write(0, metaFileHash, WriteOption.Flush);
-                    if (rc.IsFailure()) return rc.Miss();
+                    res = metaFile.Get.Write(0, metaFileHash, WriteOption.Flush);
+                    if (res.IsFailure()) return res.Miss();
                 }
             }
 
@@ -1093,11 +1093,11 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             if (creationInfo.Attribute.StaticSaveDataId != SaveIndexerId)
             {
                 // Mark the save data as being successfully created
-                rc = accessor.Get.GetInterface().SetState(saveDataId, SaveDataState.Normal);
-                if (rc.IsFailure()) return rc.Miss();
+                res = accessor.Get.GetInterface().SetState(saveDataId, SaveDataState.Normal);
+                if (res.IsFailure()) return res.Miss();
 
-                rc = accessor.Get.GetInterface().Commit();
-                if (rc.IsFailure()) return rc.Miss();
+                res = accessor.Get.GetInterface().Commit();
+                if (res.IsFailure()) return res.Miss();
             }
 
             creating = false;
@@ -1108,28 +1108,28 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             // Revert changes if an error happened in the middle of creation
             if (creating)
             {
-                rc = DeleteSaveDataFileSystemCore(creationInfo.SpaceId, saveDataId, false);
-                if (rc.IsFailure())
+                res = DeleteSaveDataFileSystemCore(creationInfo.SpaceId, saveDataId, false);
+                if (res.IsFailure())
                 {
-                    Hos.Diag.Impl.LogImpl(Log.EmptyModuleName, LogSeverity.Info, GetRollbackErrorMessage(rc));
+                    Hos.Diag.Impl.LogImpl(Log.EmptyModuleName, LogSeverity.Info, GetRollbackErrorMessage(res));
                 }
 
                 if (accessorInitialized && saveDataId != SaveIndexerId)
                 {
-                    rc = accessor.Get.GetInterface().GetValue(out SaveDataIndexerValue value, saveDataId);
+                    res = accessor.Get.GetInterface().GetValue(out SaveDataIndexerValue value, saveDataId);
 
-                    if (rc.IsSuccess() && value.SpaceId == creationInfo.SpaceId)
+                    if (res.IsSuccess() && value.SpaceId == creationInfo.SpaceId)
                     {
                         accessor.Get.GetInterface().Delete(saveDataId);
-                        if (rc.IsFailure() && !ResultFs.TargetNotFound.Includes(rc))
+                        if (res.IsFailure() && !ResultFs.TargetNotFound.Includes(res))
                         {
-                            Hos.Diag.Impl.LogImpl(Log.EmptyModuleName, LogSeverity.Info, GetRollbackErrorMessage(rc));
+                            Hos.Diag.Impl.LogImpl(Log.EmptyModuleName, LogSeverity.Info, GetRollbackErrorMessage(res));
                         }
 
                         accessor.Get.GetInterface().Commit();
-                        if (rc.IsFailure())
+                        if (res.IsFailure())
                         {
-                            Hos.Diag.Impl.LogImpl(Log.EmptyModuleName, LogSeverity.Info, GetRollbackErrorMessage(rc));
+                            Hos.Diag.Impl.LogImpl(Log.EmptyModuleName, LogSeverity.Info, GetRollbackErrorMessage(res));
                         }
                     }
                 }
@@ -1147,10 +1147,10 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         in SaveDataMetaInfo metaInfo, in Optional<HashSalt> hashSalt, bool leaveUnfinalized)
     {
         // Changed: The original allocates a SaveDataCreationInfo2 on the heap for some reason
-        Result rc = SaveDataCreationInfo2.Make(out SaveDataCreationInfo2 newCreationInfo, in attribute,
+        Result res = SaveDataCreationInfo2.Make(out SaveDataCreationInfo2 newCreationInfo, in attribute,
             creationInfo.Size, creationInfo.JournalSize, creationInfo.BlockSize, creationInfo.OwnerId,
             creationInfo.Flags, creationInfo.SpaceId, GetSaveDataFormatType(in attribute));
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         newCreationInfo.IsHashSaltEnabled = hashSalt.HasValue;
         if (hashSalt.HasValue)
@@ -1161,8 +1161,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         newCreationInfo.MetaType = metaInfo.Type;
         newCreationInfo.MetaSize = metaInfo.Size;
 
-        rc = CreateSaveDataFileSystemCore(in newCreationInfo, leaveUnfinalized);
-        if (rc.IsFailure()) return rc.Miss();
+        res = CreateSaveDataFileSystemCore(in newCreationInfo, leaveUnfinalized);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -1174,11 +1174,11 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
         using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
-        Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = accessor.Get.GetInterface().Get(out SaveDataIndexerValue value, in attribute);
-        if (rc.IsFailure()) return rc.Miss();
+        res = accessor.Get.GetInterface().Get(out SaveDataIndexerValue value, in attribute);
+        if (res.IsFailure()) return res.Miss();
 
         SaveDataIndexer.GenerateSaveDataInfo(out info, in attribute, in value);
         return Result.Success;
@@ -1191,8 +1191,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         if (dataSize < 0 || journalSize < 0)
             return ResultFs.InvalidSize.Log();
 
-        Result rc = _serviceImpl.QuerySaveDataTotalSize(out long totalSize, SaveDataBlockSize, dataSize, journalSize);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _serviceImpl.QuerySaveDataTotalSize(out long totalSize, SaveDataBlockSize, dataSize, journalSize);
+        if (res.IsFailure()) return res.Miss();
 
         outTotalSize = totalSize;
         return Result.Success;
@@ -1202,17 +1202,17 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         in SaveDataMetaInfo metaInfo)
     {
         // Changed: The original allocates a SaveDataCreationInfo2 on the heap for some reason
-        Result rc = SaveDataCreationInfo2.Make(out SaveDataCreationInfo2 newCreationInfo, in attribute,
+        Result res = SaveDataCreationInfo2.Make(out SaveDataCreationInfo2 newCreationInfo, in attribute,
             creationInfo.Size, creationInfo.JournalSize, creationInfo.BlockSize, creationInfo.OwnerId,
             creationInfo.Flags, creationInfo.SpaceId, GetSaveDataFormatType(in attribute));
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         newCreationInfo.IsHashSaltEnabled = false;
         newCreationInfo.MetaType = metaInfo.Type;
         newCreationInfo.MetaSize = metaInfo.Size;
 
-        rc = CreateSaveDataFileSystemWithCreationInfo2(in newCreationInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        res = CreateSaveDataFileSystemWithCreationInfo2(in newCreationInfo);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -1221,18 +1221,18 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         in SaveDataCreationInfo creationInfo, in SaveDataMetaInfo metaInfo, in HashSalt hashSalt)
     {
         // Changed: The original allocates a SaveDataCreationInfo2 on the heap for some reason
-        Result rc = SaveDataCreationInfo2.Make(out SaveDataCreationInfo2 newCreationInfo, in attribute,
+        Result res = SaveDataCreationInfo2.Make(out SaveDataCreationInfo2 newCreationInfo, in attribute,
             creationInfo.Size, creationInfo.JournalSize, creationInfo.BlockSize, creationInfo.OwnerId,
             creationInfo.Flags, creationInfo.SpaceId, GetSaveDataFormatType(in attribute));
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         newCreationInfo.IsHashSaltEnabled = true;
         newCreationInfo.HashSalt = hashSalt;
         newCreationInfo.MetaType = metaInfo.Type;
         newCreationInfo.MetaSize = metaInfo.Size;
 
-        rc = CreateSaveDataFileSystemWithCreationInfo2(in newCreationInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        res = CreateSaveDataFileSystemWithCreationInfo2(in newCreationInfo);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -1242,8 +1242,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         StorageLayoutType storageFlag = DecidePossibleStorageFlag(creationInfo.Attribute.Type, creationInfo.SpaceId);
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (creationInfo.IsHashSaltEnabled &&
             !programInfo.AccessControl.CanCall(OperationType.CreateSaveDataWithHashSalt))
@@ -1252,9 +1252,9 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         }
 
         ProgramId resolvedProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId);
-        rc = SaveDataAccessibilityChecker.CheckCreate(in creationInfo.Attribute, creationInfo.OwnerId, programInfo,
+        res = SaveDataAccessibilityChecker.CheckCreate(in creationInfo.Attribute, creationInfo.OwnerId, programInfo,
             resolvedProgramId);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         if (creationInfo.Attribute.Type == SaveDataType.Account && creationInfo.Attribute.UserId == InvalidUserId)
         {
@@ -1271,13 +1271,13 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
                 newCreationInfo.OwnerId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId).Value;
             }
 
-            rc = CreateSaveDataFileSystemCore(in newCreationInfo, leaveUnfinalized: false);
-            if (rc.IsFailure()) return rc.Miss();
+            res = CreateSaveDataFileSystemCore(in newCreationInfo, leaveUnfinalized: false);
+            if (res.IsFailure()) return res.Miss();
         }
         else
         {
-            rc = CreateSaveDataFileSystemCore(in creationInfo, leaveUnfinalized: false);
-            if (rc.IsFailure()) return rc.Miss();
+            res = CreateSaveDataFileSystemCore(in creationInfo, leaveUnfinalized: false);
+            if (res.IsFailure()) return res.Miss();
         }
 
         return Result.Success;
@@ -1289,22 +1289,22 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         StorageLayoutType storageFlag = DecidePossibleStorageFlag(attribute.Type, creationInfo.SpaceId);
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!IsStaticSaveDataIdValueRange(attribute.StaticSaveDataId))
             return ResultFs.InvalidArgument.Log();
 
         ulong ownerId = creationInfo.OwnerId == 0 ? programInfo.ProgramIdValue : creationInfo.OwnerId;
 
-        rc = SaveDataAccessibilityChecker.CheckCreate(in attribute, ownerId, programInfo, programInfo.ProgramId);
-        if (rc.IsFailure()) return rc.Miss();
+        res = SaveDataAccessibilityChecker.CheckCreate(in attribute, ownerId, programInfo, programInfo.ProgramId);
+        if (res.IsFailure()) return res.Miss();
 
         // Changed: The original allocates a SaveDataCreationInfo2 on the heap for some reason
-        rc = SaveDataCreationInfo2.Make(out SaveDataCreationInfo2 newCreationInfo, in attribute, creationInfo.Size,
+        res = SaveDataCreationInfo2.Make(out SaveDataCreationInfo2 newCreationInfo, in attribute, creationInfo.Size,
             creationInfo.JournalSize, creationInfo.BlockSize, ownerId, creationInfo.Flags, creationInfo.SpaceId,
             GetSaveDataFormatType(in attribute));
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         newCreationInfo.IsHashSaltEnabled = false;
 
@@ -1312,8 +1312,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         newCreationInfo.MetaType = SaveDataMetaType.None;
         newCreationInfo.MetaSize = 0;
 
-        rc = CreateSaveDataFileSystemCore(in newCreationInfo, leaveUnfinalized: false);
-        if (rc.IsFailure()) return rc.Miss();
+        res = CreateSaveDataFileSystemCore(in newCreationInfo, leaveUnfinalized: false);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -1322,16 +1322,16 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     {
         SaveDataAttribute key;
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         using (var accessor = new UniqueRef<SaveDataIndexerAccessor>())
         {
-            rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = accessor.Get.GetInterface().GetKey(out key, saveDataId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().GetKey(out key, saveDataId);
+            if (res.IsFailure()) return res.Miss();
 
             Result ReadExtraData(out SaveDataExtraData data)
             {
@@ -1340,12 +1340,12 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             }
 
             // Check if we have permissions to extend this save data.
-            rc = SaveDataAccessibilityChecker.CheckExtend(spaceId, in key, programInfo, ReadExtraData);
-            if (rc.IsFailure()) return rc.Miss();
+            res = SaveDataAccessibilityChecker.CheckExtend(spaceId, in key, programInfo, ReadExtraData);
+            if (res.IsFailure()) return res.Miss();
 
             // Check that the save data is in a state that we can start extending it.
-            rc = accessor.Get.GetInterface().GetValue(out SaveDataIndexerValue value, saveDataId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().GetValue(out SaveDataIndexerValue value, saveDataId);
+            if (res.IsFailure()) return res.Miss();
 
             switch (value.State)
             {
@@ -1362,21 +1362,21 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             }
 
             // Mark the save data as being extended.
-            rc = accessor.Get.GetInterface().SetState(saveDataId, SaveDataState.Extending);
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().SetState(saveDataId, SaveDataState.Extending);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = accessor.Get.GetInterface().Commit();
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().Commit();
+            if (res.IsFailure()) return res.Miss();
         }
 
         // Get the indexer key for the save data.
         using (var accessor = new UniqueRef<SaveDataIndexerAccessor>())
         {
-            rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = accessor.Get.GetInterface().GetKey(out key, saveDataId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().GetKey(out key, saveDataId);
+            if (res.IsFailure()) return res.Miss();
         }
 
         // Start the extension.
@@ -1388,17 +1388,17 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         {
             // Try to return the save data to its original state if something went wrong.
             using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
-            rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = accessor.Get.GetInterface().GetValue(out SaveDataIndexerValue value, saveDataId);
-            if (rc.IsSuccess())
+            res = accessor.Get.GetInterface().GetValue(out SaveDataIndexerValue value, saveDataId);
+            if (res.IsSuccess())
             {
                 _serviceImpl.RevertExtendSaveDataFileSystem(saveDataId, spaceId, value.Size, in saveDataRootPath);
             }
 
-            rc = accessor.Get.GetInterface().SetState(saveDataId, SaveDataState.Normal);
-            if (rc.IsSuccess())
+            res = accessor.Get.GetInterface().SetState(saveDataId, SaveDataState.Normal);
+            if (res.IsSuccess())
             {
                 accessor.Get.GetInterface().Commit().IgnoreResult();
             }
@@ -1409,30 +1409,30 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         // Update the save data's size in the indexer.
         using (var accessor = new UniqueRef<SaveDataIndexerAccessor>())
         {
-            rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+            if (res.IsFailure()) return res.Miss();
 
             accessor.Get.GetInterface().SetSize(saveDataId, extendedTotalSize).IgnoreResult();
 
-            rc = accessor.Get.GetInterface().Commit();
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().Commit();
+            if (res.IsFailure()) return res.Miss();
         }
 
         // Finish the extension.
-        rc = _serviceImpl.FinishExtendSaveDataFileSystem(saveDataId, spaceId);
-        if (rc.IsFailure()) return rc.Miss();
+        res = _serviceImpl.FinishExtendSaveDataFileSystem(saveDataId, spaceId);
+        if (res.IsFailure()) return res.Miss();
 
         // Set the save data's state back to normal.
         using (var accessor = new UniqueRef<SaveDataIndexerAccessor>())
         {
-            rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = accessor.Get.GetInterface().SetState(saveDataId, SaveDataState.Normal);
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().SetState(saveDataId, SaveDataState.Normal);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = accessor.Get.GetInterface().Commit();
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().Commit();
+            if (res.IsFailure()) return res.Miss();
         }
 
         return Result.Success;
@@ -1468,11 +1468,11 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         }
         else
         {
-            Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = accessor.Get.GetInterface().Get(out SaveDataIndexerValue indexerValue, in attribute);
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().Get(out SaveDataIndexerValue indexerValue, in attribute);
+            if (res.IsFailure()) return res.Miss();
 
             if (indexerValue.SpaceId != ConvertToRealSpaceId(spaceId))
                 return ResultFs.TargetNotFound.Log();
@@ -1500,16 +1500,16 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         // Remove the save from the indexer if the save is missing from the disk.
         if (ResultFs.PathNotFound.Includes(saveFsResult))
         {
-            Result rc = RemoveSaveIndexerEntry();
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = RemoveSaveIndexerEntry();
+            if (res.IsFailure()) return res.Miss();
 
             return ResultFs.TargetNotFound.LogConverted(saveFsResult);
         }
 
         if (ResultFs.TargetNotFound.Includes(saveFsResult))
         {
-            Result rc = RemoveSaveIndexerEntry();
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = RemoveSaveIndexerEntry();
+            if (res.IsFailure()) return res.Miss();
         }
 
         return saveFsResult;
@@ -1522,12 +1522,12 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             if (isStaticSaveDataId)
             {
                 // The accessor won't be open yet if the save has a static ID
-                Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
-                if (rc.IsFailure()) return rc.Miss();
+                Result res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+                if (res.IsFailure()) return res.Miss();
 
                 // Check the space ID of the save data
-                rc = accessor.Get.GetInterface().Get(out SaveDataIndexerValue value, in key);
-                if (rc.IsFailure()) return rc.Miss();
+                res = accessor.Get.GetInterface().Get(out SaveDataIndexerValue value, in key);
+                if (res.IsFailure()) return res.Miss();
 
                 if (value.SpaceId != ConvertToRealSpaceId(spaceId))
                     return ResultFs.TargetNotFound.Log();
@@ -1549,8 +1549,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
         // Try grabbing the mount count semaphore
         using var mountCountSemaphore = new UniqueRef<IUniqueLock>();
-        Result rc = TryAcquireSaveDataMountCountSemaphore(ref mountCountSemaphore.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = TryAcquireSaveDataMountCountSemaphore(ref mountCountSemaphore.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         using Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
         bool useAsyncFileSystem = !_serviceImpl.IsAllowedDirectorySaveData(spaceId, in saveDataRootPath);
@@ -1558,9 +1558,9 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         using var fileSystem = new SharedRef<IFileSystem>();
 
         // Open the file system
-        rc = OpenSaveDataFileSystemCore(ref fileSystem.Ref(), out ulong saveDataId, spaceId, in attribute,
+        res = OpenSaveDataFileSystemCore(ref fileSystem.Ref(), out ulong saveDataId, spaceId, in attribute,
             openReadOnly, cacheExtraData: true);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         // Can't use attribute in a closure, so copy the needed field
         SaveDataType type = attribute.Type;
@@ -1572,8 +1572,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         }
 
         // Check if we have permissions to open this save data
-        rc = SaveDataAccessibilityChecker.CheckOpen(in attribute, programInfo, ReadExtraData);
-        if (rc.IsFailure()) return rc.Miss();
+        res = SaveDataAccessibilityChecker.CheckOpen(in attribute, programInfo, ReadExtraData);
+        if (res.IsFailure()) return res.Miss();
 
         // Add all the wrappers for the file system
         using var typeSetFileSystem =
@@ -1612,11 +1612,11 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     private Result OpenUserSaveDataFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, SaveDataSpaceId spaceId,
         in SaveDataAttribute attribute, bool openReadOnly)
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = SaveDataAccessibilityChecker.CheckOpenPre(in attribute, programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        res = SaveDataAccessibilityChecker.CheckOpenPre(in attribute, programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         SaveDataAttribute tempAttribute;
 
@@ -1624,9 +1624,9 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         {
             ProgramId resolvedProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId);
 
-            rc = SaveDataAttribute.Make(out tempAttribute, resolvedProgramId, attribute.Type, attribute.UserId,
+            res = SaveDataAttribute.Make(out tempAttribute, resolvedProgramId, attribute.Type, attribute.UserId,
                 attribute.StaticSaveDataId, attribute.Index);
-            if (rc.IsFailure()) return rc.Miss();
+            if (res.IsFailure()) return res.Miss();
         }
         else
         {
@@ -1638,8 +1638,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         if (tempAttribute.Type == SaveDataType.Cache)
         {
             // Check whether the save is on the SD card or the BIS
-            rc = GetCacheStorageSpaceId(out targetSpaceId, tempAttribute.ProgramId.Value);
-            if (rc.IsFailure()) return rc.Miss();
+            res = GetCacheStorageSpaceId(out targetSpaceId, tempAttribute.ProgramId.Value);
+            if (res.IsFailure()) return res.Miss();
         }
         else
         {
@@ -1656,8 +1656,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         if (!IsStaticSaveDataIdValueRange(attribute.StaticSaveDataId))
             return ResultFs.InvalidArgument.Log();
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         StorageLayoutType storageFlag = DecidePossibleStorageFlag(attribute.Type, spaceId);
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
@@ -1674,9 +1674,9 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         using var fileSystem = new SharedRef<IFileSystem>();
 
         // Open the file system
-        rc = OpenSaveDataFileSystemCore(ref fileSystem.Ref(), out ulong saveDataId, spaceId, in attribute,
+        res = OpenSaveDataFileSystemCore(ref fileSystem.Ref(), out ulong saveDataId, spaceId, in attribute,
             openReadOnly: false, cacheExtraData: true);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         // Can't use attribute in a closure, so copy the needed field
         SaveDataType type = attribute.Type;
@@ -1688,8 +1688,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         }
 
         // Check if we have permissions to open this save data
-        rc = SaveDataAccessibilityChecker.CheckOpen(in attribute, programInfo, ReadExtraData);
-        if (rc.IsFailure()) return rc.Miss();
+        res = SaveDataAccessibilityChecker.CheckOpen(in attribute, programInfo, ReadExtraData);
+        if (res.IsFailure()) return res.Miss();
 
         // Add all the wrappers for the file system
         using var typeSetFileSystem =
@@ -1736,11 +1736,11 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
         using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
-        Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = accessor.Get.GetInterface().GetKey(out SaveDataAttribute key, saveDataId);
-        if (rc.IsFailure()) return rc.Miss();
+        res = accessor.Get.GetInterface().GetKey(out SaveDataAttribute key, saveDataId);
+        if (res.IsFailure()) return res.Miss();
 
         using Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
         return _serviceImpl.ReadSaveDataFileSystemExtraData(out extraData, spaceId, saveDataId, key.Type,
@@ -1754,8 +1754,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
         using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         SaveDataSpaceId resolvedSpaceId;
         SaveDataAttribute key;
@@ -1766,37 +1766,37 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
             if (IsStaticSaveDataIdValueRange(saveDataId))
             {
-                rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
-                if (rc.IsFailure()) return rc.Miss();
+                res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
+                if (res.IsFailure()) return res.Miss();
             }
             else
             {
-                rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.User);
-                if (rc.IsFailure()) return rc.Miss();
+                res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.User);
+                if (res.IsFailure()) return res.Miss();
             }
 
-            rc = accessor.Get.GetInterface().GetValue(out SaveDataIndexerValue value, saveDataId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().GetValue(out SaveDataIndexerValue value, saveDataId);
+            if (res.IsFailure()) return res.Miss();
 
             resolvedSpaceId = value.SpaceId;
 
-            rc = accessor.Get.GetInterface().GetKey(out key, saveDataId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().GetKey(out key, saveDataId);
+            if (res.IsFailure()) return res.Miss();
         }
         else
         {
             using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
-            rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId.ValueRo);
-            if (rc.IsFailure()) return rc.Miss();
+            res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId.ValueRo);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = accessor.Get.GetInterface().GetValue(out SaveDataIndexerValue _, saveDataId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().GetValue(out SaveDataIndexerValue _, saveDataId);
+            if (res.IsFailure()) return res.Miss();
 
             resolvedSpaceId = spaceId.ValueRo;
 
-            rc = accessor.Get.GetInterface().GetKey(out key, saveDataId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().GetKey(out key, saveDataId);
+            if (res.IsFailure()) return res.Miss();
         }
 
         Result ReadExtraData(out SaveDataExtraData data)
@@ -1806,13 +1806,13 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
                 in savePath);
         }
 
-        rc = SaveDataAccessibilityChecker.CheckReadExtraData(in key, in extraDataMask, programInfo, ReadExtraData);
-        if (rc.IsFailure()) return rc.Miss();
+        res = SaveDataAccessibilityChecker.CheckReadExtraData(in key, in extraDataMask, programInfo, ReadExtraData);
+        if (res.IsFailure()) return res.Miss();
 
         using Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
-        rc = _serviceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData tempExtraData, resolvedSpaceId,
+        res = _serviceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData tempExtraData, resolvedSpaceId,
             saveDataId, key.Type, in saveDataRootPath);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         MaskExtraData(ref tempExtraData, in extraDataMask);
         extraData = tempExtraData;
@@ -1841,8 +1841,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
         ref SaveDataExtraData extraDataRef = ref SpanHelpers.AsStruct<SaveDataExtraData>(extraData.Buffer);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         SaveDataAttribute tempAttribute = attribute;
 
@@ -1851,8 +1851,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             tempAttribute.ProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId);
         }
 
-        rc = GetSaveDataInfo(out SaveDataInfo info, spaceId, in tempAttribute);
-        if (rc.IsFailure()) return rc.Miss();
+        res = GetSaveDataInfo(out SaveDataInfo info, spaceId, in tempAttribute);
+        if (res.IsFailure()) return res.Miss();
 
         // Make a mask for reading the entire extra data
         Unsafe.SkipInit(out SaveDataExtraData extraDataMask);
@@ -1890,8 +1890,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
         ref SaveDataExtraData extraDataRef = ref SpanHelpers.AsStruct<SaveDataExtraData>(extraData.Buffer);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         SaveDataAttribute tempAttribute = attribute;
 
@@ -1900,8 +1900,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             tempAttribute.ProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId);
         }
 
-        rc = GetSaveDataInfo(out SaveDataInfo info, spaceId, in tempAttribute);
-        if (rc.IsFailure()) return rc.Miss();
+        res = GetSaveDataInfo(out SaveDataInfo info, spaceId, in tempAttribute);
+        if (res.IsFailure()) return res.Miss();
 
         return ReadSaveDataFileSystemExtraDataCore(out extraDataRef, spaceId, info.SaveDataId, in maskRef).Ret();
     }
@@ -1921,16 +1921,16 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     {
         using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
-        rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
-        if (rc.IsFailure()) return rc.Miss();
+        res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = accessor.Get.GetInterface().GetKey(out SaveDataAttribute key, saveDataId);
-        if (rc.IsFailure()) return rc.Miss();
+        res = accessor.Get.GetInterface().GetKey(out SaveDataAttribute key, saveDataId);
+        if (res.IsFailure()) return res.Miss();
 
         Result ReadExtraData(out SaveDataExtraData data)
         {
@@ -1939,13 +1939,13 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
                 in saveDataRootPath);
         }
 
-        rc = SaveDataAccessibilityChecker.CheckWriteExtraData(in key, in extraDataMask, programInfo, ReadExtraData);
-        if (rc.IsFailure()) return rc.Miss();
+        res = SaveDataAccessibilityChecker.CheckWriteExtraData(in key, in extraDataMask, programInfo, ReadExtraData);
+        if (res.IsFailure()) return res.Miss();
 
         using Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
-        rc = _serviceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraDataModify, spaceId, saveDataId,
+        res = _serviceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraDataModify, spaceId, saveDataId,
             key.Type, in saveDataRootPath);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         ModifySaveDataExtraData(ref extraDataModify, in extraData, in extraDataMask);
 
@@ -1970,8 +1970,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     public Result WriteSaveDataFileSystemExtraDataWithMaskBySaveDataAttribute(in SaveDataAttribute attribute,
         SaveDataSpaceId spaceId, InBuffer extraData, InBuffer extraDataMask)
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         SaveDataAttribute tempAttribute = attribute;
 
@@ -1980,8 +1980,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             tempAttribute.ProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId);
         }
 
-        rc = GetSaveDataInfo(out SaveDataInfo info, spaceId, in tempAttribute);
-        if (rc.IsFailure()) return rc.Miss();
+        res = GetSaveDataInfo(out SaveDataInfo info, spaceId, in tempAttribute);
+        if (res.IsFailure()) return res.Miss();
 
         return WriteSaveDataFileSystemExtraDataWithMask(info.SaveDataId, spaceId, extraData, extraDataMask).Ret();
     }
@@ -2008,8 +2008,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     {
         using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.Bis);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.OpenSaveDataInfoReader))
             return ResultFs.PermissionDenied.Log();
@@ -2021,11 +2021,11 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
         using (var accessor = new UniqueRef<SaveDataIndexerAccessor>())
         {
-            rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
-            if (rc.IsFailure()) return rc.Miss();
+            res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = accessor.Get.GetInterface().OpenSaveDataInfoReader(ref reader.Ref());
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().OpenSaveDataInfoReader(ref reader.Ref());
+            if (res.IsFailure()) return res.Miss();
         }
 
         outInfoReader.SetByMove(ref reader.Ref());
@@ -2038,23 +2038,23 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     {
         using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = CheckOpenSaveDataInfoReaderAccessControl(programInfo, spaceId);
-        if (rc.IsFailure()) return rc.Miss();
+        res = CheckOpenSaveDataInfoReaderAccessControl(programInfo, spaceId);
+        if (res.IsFailure()) return res.Miss();
 
         using var filterReader = new UniqueRef<SaveDataInfoFilterReader>();
 
         using (var accessor = new UniqueRef<SaveDataIndexerAccessor>())
         {
-            rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+            if (res.IsFailure()) return res.Miss();
 
             using var reader = new SharedRef<SaveDataInfoReaderImpl>();
 
-            rc = accessor.Get.GetInterface().OpenSaveDataInfoReader(ref reader.Ref());
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().OpenSaveDataInfoReader(ref reader.Ref());
+            if (res.IsFailure()) return res.Miss();
 
             var filter = new SaveDataInfoFilter(ConvertToRealSpaceId(spaceId), programId: default,
                 saveDataType: default, userId: default, saveDataId: default, index: default, (int)SaveDataRank.Primary);
@@ -2072,26 +2072,26 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     {
         using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.OpenSaveDataInfoReaderForInternal))
             return ResultFs.PermissionDenied.Log();
 
-        rc = CheckOpenSaveDataInfoReaderAccessControl(programInfo, spaceId);
-        if (rc.IsFailure()) return rc.Miss();
+        res = CheckOpenSaveDataInfoReaderAccessControl(programInfo, spaceId);
+        if (res.IsFailure()) return res.Miss();
 
         using var filterReader = new UniqueRef<SaveDataInfoFilterReader>();
 
         using (var accessor = new UniqueRef<SaveDataIndexerAccessor>())
         {
-            rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+            if (res.IsFailure()) return res.Miss();
 
             using var reader = new SharedRef<SaveDataInfoReaderImpl>();
 
-            rc = accessor.Get.GetInterface().OpenSaveDataInfoReader(ref reader.Ref());
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().OpenSaveDataInfoReader(ref reader.Ref());
+            if (res.IsFailure()) return res.Miss();
 
             var infoFilter = new SaveDataInfoFilter(ConvertToRealSpaceId(spaceId), in filter);
 
@@ -2111,11 +2111,11 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         using var reader = new SharedRef<SaveDataInfoReaderImpl>();
         using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
-        Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = accessor.Get.GetInterface().OpenSaveDataInfoReader(ref reader.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        res = accessor.Get.GetInterface().OpenSaveDataInfoReader(ref reader.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         using var filterReader =
             new UniqueRef<SaveDataInfoFilterReader>(new SaveDataInfoFilterReader(ref reader.Ref(), in infoFilter));
@@ -2133,19 +2133,19 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
         using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = CheckOpenSaveDataInfoReaderAccessControl(programInfo, spaceId);
+        res = CheckOpenSaveDataInfoReaderAccessControl(programInfo, spaceId);
 
-        if (rc.IsFailure())
+        if (res.IsFailure())
         {
-            if (!ResultFs.PermissionDenied.Includes(rc))
-                return rc;
+            if (!ResultFs.PermissionDenied.Includes(res))
+                return res;
 
             // Don't have full info reader permissions. Check if we have find permissions.
-            rc = SaveDataAccessibilityChecker.CheckFind(in filter, programInfo);
-            if (rc.IsFailure()) return rc.Miss();
+            res = SaveDataAccessibilityChecker.CheckFind(in filter, programInfo);
+            if (res.IsFailure()) return res.Miss();
         }
 
         SaveDataFilter tempFilter = filter;
@@ -2162,17 +2162,17 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
     private Result CreateEmptyThumbnailFile(SaveDataSpaceId spaceId, ulong saveDataId)
     {
-        Result rc = _serviceImpl.CreateSaveDataMeta(saveDataId, spaceId, SaveDataMetaType.Thumbnail,
+        Result res = _serviceImpl.CreateSaveDataMeta(saveDataId, spaceId, SaveDataMetaType.Thumbnail,
             SaveDataMetaPolicy.ThumbnailFileSize);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         using var file = new UniqueRef<IFile>();
-        rc = _serviceImpl.OpenSaveDataMeta(ref file.Ref(), saveDataId, spaceId, SaveDataMetaType.Thumbnail);
-        if (rc.IsFailure()) return rc.Miss();
+        res = _serviceImpl.OpenSaveDataMeta(ref file.Ref(), saveDataId, spaceId, SaveDataMetaType.Thumbnail);
+        if (res.IsFailure()) return res.Miss();
 
         Hash hash = default;
-        rc = file.Get.Write(0, hash.Value, WriteOption.Flush);
-        if (rc.IsFailure()) return rc.Miss();
+        res = file.Get.Write(0, hash.Value, WriteOption.Flush);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -2198,15 +2198,15 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     {
         UnsafeHelpers.SkipParamInit(out commitId);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.GetSaveDataCommitId))
             return ResultFs.PermissionDenied.Log();
 
         Unsafe.SkipInit(out SaveDataExtraData extraData);
-        rc = ReadSaveDataFileSystemExtraDataBySaveDataSpaceId(OutBuffer.FromStruct(ref extraData), spaceId, saveDataId);
-        if (rc.IsFailure()) return rc.Miss();
+        res = ReadSaveDataFileSystemExtraDataBySaveDataSpaceId(OutBuffer.FromStruct(ref extraData), spaceId, saveDataId);
+        if (res.IsFailure()) return res.Miss();
 
         commitId = Impl.Utility.ConvertZeroCommitId(in extraData);
         return Result.Success;
@@ -2217,14 +2217,14 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
         // Find where the current program's cache storage is located
-        Result rc = GetCacheStorageSpaceId(out SaveDataSpaceId spaceId);
+        Result res = GetCacheStorageSpaceId(out SaveDataSpaceId spaceId);
 
-        if (rc.IsFailure())
+        if (res.IsFailure())
         {
             spaceId = SaveDataSpaceId.User;
 
-            if (!ResultFs.TargetNotFound.Includes(rc))
-                return rc;
+            if (!ResultFs.TargetNotFound.Includes(res))
+                return res;
         }
 
         return OpenSaveDataInfoReaderOnlyCacheStorage(ref outInfoReader, spaceId).Ret();
@@ -2235,8 +2235,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     {
         using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (spaceId != SaveDataSpaceId.SdUser && spaceId != SaveDataSpaceId.User)
             return ResultFs.InvalidSaveDataSpaceId.Log();
@@ -2246,11 +2246,11 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         using (var reader = new SharedRef<SaveDataInfoReaderImpl>())
         using (var accessor = new UniqueRef<SaveDataIndexerAccessor>())
         {
-            rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = accessor.Get.GetInterface().OpenSaveDataInfoReader(ref reader.Ref());
-            if (rc.IsFailure()) return rc.Miss();
+            res = accessor.Get.GetInterface().OpenSaveDataInfoReader(ref reader.Ref());
+            if (res.IsFailure()) return res.Miss();
 
             ProgramId resolvedProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId);
 
@@ -2281,8 +2281,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     {
         UnsafeHelpers.SkipParamInit(out spaceId);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         ulong resolvedProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId).Value;
         return GetCacheStorageSpaceId(out spaceId, resolvedProgramId);
@@ -2291,13 +2291,13 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     private Result GetCacheStorageSpaceId(out SaveDataSpaceId spaceId, ulong programId)
     {
         UnsafeHelpers.SkipParamInit(out spaceId);
-        Result rc;
+        Result res;
 
         // Cache storage on the SD card will always take priority over case storage in NAND
         if (_serviceImpl.IsSdCardAccessible())
         {
-            rc = DoesCacheStorageExist(out bool existsOnSdCard, SaveDataSpaceId.SdUser);
-            if (rc.IsFailure()) return rc.Miss();
+            res = DoesCacheStorageExist(out bool existsOnSdCard, SaveDataSpaceId.SdUser);
+            if (res.IsFailure()) return res.Miss();
 
             if (existsOnSdCard)
             {
@@ -2306,8 +2306,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             }
         }
 
-        rc = DoesCacheStorageExist(out bool existsOnNand, SaveDataSpaceId.User);
-        if (rc.IsFailure()) return rc.Miss();
+        res = DoesCacheStorageExist(out bool existsOnNand, SaveDataSpaceId.User);
+        if (res.IsFailure()) return res.Miss();
 
         if (existsOnNand)
         {
@@ -2336,19 +2336,19 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     {
         UnsafeHelpers.SkipParamInit(out saveInfo);
 
-        Result rc = GetCacheStorageSpaceId(out spaceId);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetCacheStorageSpaceId(out spaceId);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         ProgramId resolvedProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId);
 
         var filter = new SaveDataInfoFilter(ConvertToRealSpaceId(spaceId), resolvedProgramId, SaveDataType.Cache,
             userId: default, saveDataId: default, index, (int)SaveDataRank.Primary);
 
-        rc = FindSaveDataWithFilterImpl(out long count, out SaveDataInfo info, spaceId, in filter);
-        if (rc.IsFailure()) return rc.Miss();
+        res = FindSaveDataWithFilterImpl(out long count, out SaveDataInfo info, spaceId, in filter);
+        if (res.IsFailure()) return res.Miss();
 
         if (count == 0)
             return ResultFs.TargetNotFound.Log();
@@ -2361,11 +2361,11 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     {
         using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
-        Result rc = FindCacheStorage(out SaveDataInfo saveInfo, out SaveDataSpaceId spaceId, index);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = FindCacheStorage(out SaveDataInfo saveInfo, out SaveDataSpaceId spaceId, index);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = Hos.Fs.DeleteSaveData(spaceId, saveInfo.SaveDataId);
-        if (rc.IsFailure()) return rc.Miss();
+        res = Hos.Fs.DeleteSaveData(spaceId, saveInfo.SaveDataId);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -2376,13 +2376,13 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
         using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
-        Result rc = FindCacheStorage(out SaveDataInfo saveInfo, out SaveDataSpaceId spaceId, index);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = FindCacheStorage(out SaveDataInfo saveInfo, out SaveDataSpaceId spaceId, index);
+        if (res.IsFailure()) return res.Miss();
 
         using Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
-        rc = _serviceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraData, spaceId, saveInfo.SaveDataId,
+        res = _serviceImpl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraData, spaceId, saveInfo.SaveDataId,
             saveInfo.Type, in saveDataRootPath);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         usableDataSize = extraData.DataSize;
         journalSize = extraData.JournalSize;
@@ -2420,13 +2420,13 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     public Result OpenSaveDataTransferProhibiter(ref SharedRef<ISaveDataTransferProhibiter> prohibiter,
         Ncm.ApplicationId applicationId)
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkNotNull(_serviceImpl.GetSaveDataTransferCryptoConfiguration());
 
-        rc = SaveDataAccessibilityChecker.CheckOpenProhibiter(applicationId, programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        res = SaveDataAccessibilityChecker.CheckOpenProhibiter(applicationId, programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         return OpenSaveDataTransferProhibiterCore(ref prohibiter, applicationId).Ret();
     }
@@ -2465,14 +2465,14 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
                 return ResultFs.InvalidSize.Log();
         }
 
-        Result rc = GetProgramInfo(out ProgramInfo callerProgramInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo callerProgramInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!callerProgramInfo.AccessControl.CanCall(OperationType.ListAccessibleSaveDataOwnerId))
             return ResultFs.PermissionDenied.Log();
 
-        rc = GetProgramInfoByProgramId(out ProgramInfo targetProgramInfo, programId.Value);
-        if (rc.IsFailure()) return rc.Miss();
+        res = GetProgramInfoByProgramId(out ProgramInfo targetProgramInfo, programId.Value);
+        if (res.IsFailure()) return res.Miss();
 
         targetProgramInfo.AccessControl.ListSaveDataOwnedId(out readCount, ids.Slice(0, bufferIdCount), startIndex);
         return Result.Success;
@@ -2487,8 +2487,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         OutBuffer workBuffer)
     {
         // The caller needs the VerifySaveData permission.
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.VerifySaveData))
             return ResultFs.PermissionDenied.Log();
@@ -2503,14 +2503,14 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
             using (var accessor = new UniqueRef<SaveDataIndexerAccessor>())
             {
-                rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
-                if (rc.IsFailure()) return rc.Miss();
+                res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), spaceId);
+                if (res.IsFailure()) return res.Miss();
 
-                rc = accessor.Get.GetInterface().GetValue(out value, saveDataId);
-                if (rc.IsFailure()) return rc.Miss();
+                res = accessor.Get.GetInterface().GetValue(out value, saveDataId);
+                if (res.IsFailure()) return res.Miss();
 
-                rc = accessor.Get.GetInterface().GetKey(out SaveDataAttribute key, saveDataId);
-                if (rc.IsFailure()) return rc.Miss();
+                res = accessor.Get.GetInterface().GetKey(out SaveDataAttribute key, saveDataId);
+                if (res.IsFailure()) return res.Miss();
 
                 saveDataType = key.Type;
             }
@@ -2519,14 +2519,14 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             using var fileSystem = new SharedRef<IFileSystem>();
 
             using Path saveDataRootPath = _saveDataRootPath.DangerousGetPath();
-            rc = _serviceImpl.OpenSaveDataFileSystem(ref fileSystem.Ref(), value.SpaceId, saveDataId,
+            res = _serviceImpl.OpenSaveDataFileSystem(ref fileSystem.Ref(), value.SpaceId, saveDataId,
                 in saveDataRootPath,
                 openReadOnly: false, saveDataType, cacheExtraData: true);
-            if (rc.IsFailure()) return rc.Miss();
+            if (res.IsFailure()) return res.Miss();
 
             // Verify the file system.
-            rc = Utility.VerifyDirectoryRecursively(fileSystem.Get, workBuffer.Buffer);
-            if (rc.IsFailure()) return rc.Miss();
+            res = Utility.VerifyDirectoryRecursively(fileSystem.Get, workBuffer.Buffer);
+            if (res.IsFailure()) return res.Miss();
 
             return Result.Success;
         }
@@ -2547,8 +2547,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.Bis);
         using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
-        Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
+        if (res.IsFailure()) return res.Miss();
 
         return CleanUpSaveData(accessor.Get).Ret();
     }
@@ -2564,8 +2564,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.Bis);
         using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
 
-        Result rc = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), SaveDataSpaceId.System);
+        if (res.IsFailure()) return res.Miss();
 
         return CompleteSaveDataExtension(accessor.Get).Ret();
     }
@@ -2581,15 +2581,15 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.Bis);
         using var fileSystem = new SharedRef<IFileSystem>();
 
-        Result rc = _serviceImpl.OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref(), SaveDataSpaceId.Temporary);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _serviceImpl.OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref(), SaveDataSpaceId.Temporary);
+        if (res.IsFailure()) return res.Miss();
 
         using var pathRoot = new Path();
-        rc = PathFunctions.SetUpFixedPath(ref pathRoot.Ref(), new[] { (byte)'/' });
-        if (rc.IsFailure()) return rc.Miss();
+        res = PathFunctions.SetUpFixedPath(ref pathRoot.Ref(), new[] { (byte)'/' });
+        if (res.IsFailure()) return res.Miss();
 
-        rc = fileSystem.Get.CleanDirectoryRecursively(in pathRoot);
-        if (rc.IsFailure()) return rc.Miss();
+        res = fileSystem.Get.CleanDirectoryRecursively(in pathRoot);
+        if (res.IsFailure()) return res.Miss();
 
         _serviceImpl.ResetTemporaryStorageIndexer();
         return Result.Success;
@@ -2612,15 +2612,15 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
     public Result OpenMultiCommitContext(ref SharedRef<IFileSystem> contextFileSystem)
     {
-        Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, new ProgramId(MultiCommitManager.ProgramId),
+        Result res = SaveDataAttribute.Make(out SaveDataAttribute attribute, new ProgramId(MultiCommitManager.ProgramId),
             SaveDataType.System, InvalidUserId, MultiCommitManager.SaveDataId, index: 0);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         using var fileSystem = new SharedRef<IFileSystem>();
 
-        rc = OpenSaveDataFileSystemCore(ref fileSystem.Ref(), out _, SaveDataSpaceId.System, in attribute,
+        res = OpenSaveDataFileSystemCore(ref fileSystem.Ref(), out _, SaveDataSpaceId.System, in attribute,
             openReadOnly: false, cacheExtraData: true);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         contextFileSystem.SetByMove(ref fileSystem.Ref());
         return Result.Success;
@@ -2638,25 +2638,25 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
     public Result RecoverProvisionallyCommittedSaveData(in SaveDataInfo saveInfo, bool doRollback)
     {
-        Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, saveInfo.ProgramId, saveInfo.Type,
+        Result res = SaveDataAttribute.Make(out SaveDataAttribute attribute, saveInfo.ProgramId, saveInfo.Type,
             saveInfo.UserId, saveInfo.SaveDataId, saveInfo.Index);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         using var fileSystem = new SharedRef<IFileSystem>();
 
-        rc = OpenSaveDataFileSystemCore(ref fileSystem.Ref(), out _, saveInfo.SpaceId, in attribute,
+        res = OpenSaveDataFileSystemCore(ref fileSystem.Ref(), out _, saveInfo.SpaceId, in attribute,
             openReadOnly: false, cacheExtraData: false);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         if (!doRollback)
         {
-            rc = fileSystem.Get.Commit();
-            if (rc.IsFailure()) return rc.Miss();
+            res = fileSystem.Get.Commit();
+            if (res.IsFailure()) return res.Miss();
         }
         else
         {
-            rc = fileSystem.Get.Rollback();
-            if (rc.IsFailure()) return rc.Miss();
+            res = fileSystem.Get.Rollback();
+            if (res.IsFailure()) return res.Miss();
         }
 
         return Result.Success;
@@ -2666,9 +2666,9 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     {
         using SharedRef<SaveDataFileSystemService> saveService = GetSharedFromThis();
 
-        Result rc = Utility.MakeUniqueLockWithPin(ref outSemaphoreLock, _openEntryCountSemaphore,
+        Result res = Utility.MakeUniqueLockWithPin(ref outSemaphoreLock, _openEntryCountSemaphore,
             ref saveService.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -2677,9 +2677,9 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     {
         using SharedRef<SaveDataFileSystemService> saveService = GetSharedFromThis();
 
-        Result rc = Utility.MakeUniqueLockWithPin(ref outSemaphoreLock, _saveDataMountCountSemaphore,
+        Result res = Utility.MakeUniqueLockWithPin(ref outSemaphoreLock, _saveDataMountCountSemaphore,
             ref saveService.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -2691,8 +2691,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
     public Result SetSdCardAccessibility(bool isAccessible)
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.SetSdCardAccessibility))
             return ResultFs.PermissionDenied.Log();
@@ -2711,8 +2711,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         SaveDataSpaceId spaceId)
     {
         using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
-        Result rc = _serviceImpl.OpenSaveDataIndexerAccessor(ref accessor.Ref(), out bool isInitialOpen, spaceId);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _serviceImpl.OpenSaveDataIndexerAccessor(ref accessor.Ref(), out bool isInitialOpen, spaceId);
+        if (res.IsFailure()) return res.Miss();
 
         if (isInitialOpen)
         {

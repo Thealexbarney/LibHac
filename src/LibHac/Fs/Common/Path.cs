@@ -129,8 +129,8 @@ public ref struct Path
 
             _length = path.GetLength();
 
-            Result rc = Preallocate(_length + NullTerminatorLength);
-            if (rc.IsFailure()) return rc;
+            Result res = Preallocate(_length + NullTerminatorLength);
+            if (res.IsFailure()) return res.Miss();
 
             int bytesCopied = StringUtils.Copy(_buffer, path._string, _length + NullTerminatorLength);
 
@@ -404,8 +404,8 @@ public ref struct Path
 
         int otherLength = other.GetLength();
 
-        Result rc = Preallocate(otherLength + NullTerminatorLength);
-        if (rc.IsFailure()) return rc;
+        Result res = Preallocate(otherLength + NullTerminatorLength);
+        if (res.IsFailure()) return res.Miss();
 
         int bytesCopied = StringUtils.Copy(_writeBuffer, other.GetString(), otherLength + NullTerminatorLength);
 
@@ -428,8 +428,8 @@ public ref struct Path
     {
         int otherLength = other.GetLength();
 
-        Result rc = Preallocate(otherLength + NullTerminatorLength);
-        if (rc.IsFailure()) return rc;
+        Result res = Preallocate(otherLength + NullTerminatorLength);
+        if (res.IsFailure()) return res.Miss();
 
         int bytesCopied = StringUtils.Copy(_writeBuffer, other.GetString(), otherLength + NullTerminatorLength);
 
@@ -457,8 +457,8 @@ public ref struct Path
             return Result.Success;
         }
 
-        Result rc = Preallocate(length + NullTerminatorLength);
-        if (rc.IsFailure()) return rc;
+        Result res = Preallocate(length + NullTerminatorLength);
+        if (res.IsFailure()) return res.Miss();
 
         int bytesCopied = StringUtils.Copy(GetWriteBuffer(), path, length + NullTerminatorLength);
 
@@ -478,8 +478,8 @@ public ref struct Path
     /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
     public Result Initialize(ReadOnlySpan<byte> path)
     {
-        Result rc = InitializeImpl(path, StringUtils.GetLength(path));
-        if (rc.IsFailure()) return rc;
+        Result res = InitializeImpl(path, StringUtils.GetLength(path));
+        if (res.IsFailure()) return res.Miss();
 
         _isNormalized = false;
         return Result.Success;
@@ -500,8 +500,8 @@ public ref struct Path
     /// <see cref="ResultFs.InvalidPathFormat"/>: The path is not in a valid format.</returns>
     public Result InitializeWithNormalization(ReadOnlySpan<byte> path)
     {
-        Result rc = Initialize(path);
-        if (rc.IsFailure()) return rc;
+        Result res = Initialize(path);
+        if (res.IsFailure()) return res.Miss();
 
         if (_string.At(0) != NullTerminator && !WindowsPath.IsWindowsPath(_string, false) &&
             _string.At(0) != DirectorySeparator)
@@ -509,21 +509,21 @@ public ref struct Path
             var flags = new PathFlags();
             flags.AllowRelativePath();
 
-            rc = Normalize(flags);
-            if (rc.IsFailure()) return rc;
+            res = Normalize(flags);
+            if (res.IsFailure()) return res.Miss();
         }
         else if (WindowsPath.IsWindowsPath(_string, true))
         {
             var flags = new PathFlags();
             flags.AllowWindowsPath();
 
-            rc = Normalize(flags);
-            if (rc.IsFailure()) return rc;
+            res = Normalize(flags);
+            if (res.IsFailure()) return res.Miss();
         }
         else
         {
-            rc = PathNormalizer.IsNormalized(out _isNormalized, out _, _string);
-            if (rc.IsFailure()) return rc;
+            res = PathNormalizer.IsNormalized(out _isNormalized, out _, _string);
+            if (res.IsFailure()) return res.Miss();
         }
 
         // Note: I have no idea why Nintendo checks if the path is normalized
@@ -544,8 +544,8 @@ public ref struct Path
     /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
     public Result Initialize(ReadOnlySpan<byte> path, int length)
     {
-        Result rc = InitializeImpl(path, length);
-        if (rc.IsFailure()) return rc;
+        Result res = InitializeImpl(path, length);
+        if (res.IsFailure()) return res.Miss();
 
         _isNormalized = false;
         return Result.Success;
@@ -567,8 +567,8 @@ public ref struct Path
     /// <see cref="ResultFs.InvalidPathFormat"/>: The path is not in a valid format.</returns>
     public Result InitializeWithNormalization(ReadOnlySpan<byte> path, int length)
     {
-        Result rc = Initialize(path, length);
-        if (rc.IsFailure()) return rc;
+        Result res = Initialize(path, length);
+        if (res.IsFailure()) return res.Miss();
 
         if (_string.At(0) != NullTerminator && !WindowsPath.IsWindowsPath(_string, false) &&
             _string.At(0) != DirectorySeparator)
@@ -576,21 +576,21 @@ public ref struct Path
             var flags = new PathFlags();
             flags.AllowRelativePath();
 
-            rc = Normalize(flags);
-            if (rc.IsFailure()) return rc;
+            res = Normalize(flags);
+            if (res.IsFailure()) return res.Miss();
         }
         else if (WindowsPath.IsWindowsPath(_string, true))
         {
             var flags = new PathFlags();
             flags.AllowWindowsPath();
 
-            rc = Normalize(flags);
-            if (rc.IsFailure()) return rc;
+            res = Normalize(flags);
+            if (res.IsFailure()) return res.Miss();
         }
         else
         {
-            rc = PathNormalizer.IsNormalized(out _isNormalized, out _, _string);
-            if (rc.IsFailure()) return rc;
+            res = PathNormalizer.IsNormalized(out _isNormalized, out _, _string);
+            if (res.IsFailure()) return res.Miss();
         }
 
         // Note: I have no idea why Nintendo checks if the path is normalized
@@ -610,8 +610,8 @@ public ref struct Path
     /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
     public Result InitializeWithReplaceBackslash(ReadOnlySpan<byte> path)
     {
-        Result rc = InitializeImpl(path, StringUtils.GetLength(path));
-        if (rc.IsFailure()) return rc;
+        Result res = InitializeImpl(path, StringUtils.GetLength(path));
+        if (res.IsFailure()) return res.Miss();
 
         if (_writeBufferLength > 1)
         {
@@ -632,8 +632,8 @@ public ref struct Path
     /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
     public Result InitializeWithReplaceForwardSlashes(ReadOnlySpan<byte> path)
     {
-        Result rc = InitializeImpl(path, StringUtils.GetLength(path));
-        if (rc.IsFailure()) return rc;
+        Result res = InitializeImpl(path, StringUtils.GetLength(path));
+        if (res.IsFailure()) return res.Miss();
 
         if (_writeBufferLength > 1)
         {
@@ -663,8 +663,8 @@ public ref struct Path
     /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
     public Result InitializeWithReplaceUnc(ReadOnlySpan<byte> path)
     {
-        Result rc = InitializeImpl(path, StringUtils.GetLength(path));
-        if (rc.IsFailure()) return rc;
+        Result res = InitializeImpl(path, StringUtils.GetLength(path));
+        if (res.IsFailure()) return res.Miss();
 
         _isNormalized = false;
 
@@ -763,8 +763,8 @@ public ref struct Path
             }
 
             // Give our Path a buffer that can hold the combined string.
-            Result rc = Preallocate(parentLength + DirectorySeparator + childLength + NullTerminatorLength);
-            if (rc.IsFailure()) return rc;
+            Result res = Preallocate(parentLength + DirectorySeparator + childLength + NullTerminatorLength);
+            if (res.IsFailure()) return res.Miss();
 
             Span<byte> destBuffer = GetWriteBuffer();
 
@@ -887,8 +887,8 @@ public ref struct Path
                 ClearBuffer();
             }
 
-            Result rc = Preallocate(parentLength + SeparatorLength + childLength + NullTerminatorLength);
-            if (rc.IsFailure()) return rc;
+            Result res = Preallocate(parentLength + SeparatorLength + childLength + NullTerminatorLength);
+            if (res.IsFailure()) return res.Miss();
 
             Span<byte> destBuffer = GetWriteBuffer();
 
@@ -946,21 +946,21 @@ public ref struct Path
         int path1Length = path1.GetLength();
         int path2Length = path2.GetLength();
 
-        Result rc = Preallocate(path1Length + SeparatorLength + path2Length + NullTerminatorLength);
-        if (rc.IsFailure()) return rc;
+        Result res = Preallocate(path1Length + SeparatorLength + path2Length + NullTerminatorLength);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = Initialize(in path1);
-        if (rc.IsFailure()) return rc;
+        res = Initialize(in path1);
+        if (res.IsFailure()) return res.Miss();
 
         if (IsEmpty())
         {
-            rc = Initialize(in path2);
-            if (rc.IsFailure()) return rc;
+            res = Initialize(in path2);
+            if (res.IsFailure()) return res.Miss();
         }
         else
         {
-            rc = AppendChild(in path2);
-            if (rc.IsFailure()) return rc;
+            res = AppendChild(in path2);
+            if (res.IsFailure()) return res.Miss();
         }
 
         return Result.Success;
@@ -982,14 +982,14 @@ public ref struct Path
         int path1Length = path1.GetLength();
         int path2Length = StringUtils.GetLength(path2);
 
-        Result rc = Preallocate(path1Length + SeparatorLength + path2Length + NullTerminatorLength);
-        if (rc.IsFailure()) return rc;
+        Result res = Preallocate(path1Length + SeparatorLength + path2Length + NullTerminatorLength);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = Initialize(in path1);
-        if (rc.IsFailure()) return rc;
+        res = Initialize(in path1);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = AppendChild(path2);
-        if (rc.IsFailure()) return rc;
+        res = AppendChild(path2);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -1007,14 +1007,14 @@ public ref struct Path
         int path1Length = StringUtils.GetLength(path1);
         int path2Length = path2.GetLength();
 
-        Result rc = Preallocate(path1Length + SeparatorLength + path2Length + NullTerminatorLength);
-        if (rc.IsFailure()) return rc;
+        Result res = Preallocate(path1Length + SeparatorLength + path2Length + NullTerminatorLength);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = Initialize(path1);
-        if (rc.IsFailure()) return rc;
+        res = Initialize(path1);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = AppendChild(in path2);
-        if (rc.IsFailure()) return rc;
+        res = AppendChild(in path2);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -1036,8 +1036,8 @@ public ref struct Path
             if (oldLength > 0)
             {
                 ReadOnlySpan<byte> oldString = _string;
-                Result rc = Preallocate(oldLength);
-                if (rc.IsFailure()) return rc;
+                Result res = Preallocate(oldLength);
+                if (res.IsFailure()) return res.Miss();
 
                 StringUtils.Copy(_writeBuffer, oldString, oldLength + NullTerminatorLength);
             }
@@ -1109,8 +1109,8 @@ public ref struct Path
         if (_isNormalized)
             return Result.Success;
 
-        Result rc = PathFormatter.IsNormalized(out bool isNormalized, out _, _string, flags);
-        if (rc.IsFailure()) return rc;
+        Result res = PathFormatter.IsNormalized(out bool isNormalized, out _, _string, flags);
+        if (res.IsFailure()) return res.Miss();
 
         if (isNormalized)
         {
@@ -1133,8 +1133,8 @@ public ref struct Path
         {
             rentedArray = ArrayPool<byte>.Shared.Rent(alignedBufferLength);
 
-            rc = PathFormatter.Normalize(rentedArray, GetWriteBuffer(), flags);
-            if (rc.IsFailure()) return rc;
+            res = PathFormatter.Normalize(rentedArray, GetWriteBuffer(), flags);
+            if (res.IsFailure()) return res.Miss();
 
             SetModifiableBuffer(Shared.Move(ref rentedArray), alignedBufferLength);
             _isNormalized = true;
@@ -1169,14 +1169,14 @@ public static class PathFunctions
     /// <see cref="ResultFs.InvalidPathFormat"/>: The path is in an invalid format or is not normalized.</returns>
     public static Result SetUpFixedPath(ref Path path, ReadOnlySpan<byte> pathBuffer)
     {
-        Result rc = PathNormalizer.IsNormalized(out bool isNormalized, out _, pathBuffer);
-        if (rc.IsFailure()) return rc;
+        Result res = PathNormalizer.IsNormalized(out bool isNormalized, out _, pathBuffer);
+        if (res.IsFailure()) return res.Miss();
 
         if (!isNormalized)
             return ResultFs.InvalidPathFormat.Log();
 
-        rc = path.SetShallowBuffer(pathBuffer);
-        if (rc.IsFailure()) return rc;
+        res = path.SetShallowBuffer(pathBuffer);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }

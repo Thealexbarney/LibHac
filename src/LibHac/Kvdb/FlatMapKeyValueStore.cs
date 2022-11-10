@@ -57,8 +57,8 @@ public class FlatMapKeyValueStore<TKey> : IDisposable where TKey : unmanaged, IE
         MemoryResource memoryResource, MemoryResource autoBufferMemoryResource)
     {
         // The root path must be an existing directory
-        Result rc = fsClient.GetEntryType(out DirectoryEntryType rootEntryType, rootPath);
-        if (rc.IsFailure()) return rc;
+        Result res = fsClient.GetEntryType(out DirectoryEntryType rootEntryType, rootPath);
+        if (res.IsFailure()) return res.Miss();
 
         if (rootEntryType == DirectoryEntryType.File)
             return ResultFs.PathNotFound.Log();
@@ -66,8 +66,8 @@ public class FlatMapKeyValueStore<TKey> : IDisposable where TKey : unmanaged, IE
         var sb = new U8StringBuilder(_archivePath.Get());
         sb.Append(rootPath).Append(ArchiveFileName);
 
-        rc = _index.Initialize(capacity, memoryResource);
-        if (rc.IsFailure()) return rc;
+        res = _index.Initialize(capacity, memoryResource);
+        if (res.IsFailure()) return res.Miss();
 
         _fsClient = fsClient;
         _memoryResource = memoryResource;
@@ -95,18 +95,18 @@ public class FlatMapKeyValueStore<TKey> : IDisposable where TKey : unmanaged, IE
 
         try
         {
-            Result rc = ReadArchive(ref buffer);
-            if (rc.IsFailure())
+            Result res = ReadArchive(ref buffer);
+            if (res.IsFailure())
             {
                 // If the file is not found, we don't have any entries to load.
-                if (ResultFs.PathNotFound.Includes(rc))
-                    return Result.Success.LogConverted(rc);
+                if (ResultFs.PathNotFound.Includes(res))
+                    return Result.Success.LogConverted(res);
 
-                return rc;
+                return res;
             }
 
-            rc = LoadFrom(buffer.Get());
-            if (rc.IsFailure()) return rc;
+            res = LoadFrom(buffer.Get());
+            if (res.IsFailure()) return res.Miss();
 
             return Result.Success;
         }
@@ -124,8 +124,8 @@ public class FlatMapKeyValueStore<TKey> : IDisposable where TKey : unmanaged, IE
     {
         // Create a buffer to hold the archive.
         var buffer = new AutoBuffer();
-        Result rc = buffer.Initialize(CalculateArchiveSize(), _memoryResourceForAutoBuffers);
-        if (rc.IsFailure()) return rc;
+        Result res = buffer.Initialize(CalculateArchiveSize(), _memoryResourceForAutoBuffers);
+        if (res.IsFailure()) return res.Miss();
 
         try
         {
@@ -243,19 +243,19 @@ public class FlatMapKeyValueStore<TKey> : IDisposable where TKey : unmanaged, IE
     /// <returns>The <see cref="Result"/> of the operation.</returns>
     private Result ReadArchive(ref AutoBuffer buffer)
     {
-        Result rc = _fsClient.OpenFile(out FileHandle file, new U8Span(_archivePath.Get()), OpenMode.Read);
-        if (rc.IsFailure()) return rc;
+        Result res = _fsClient.OpenFile(out FileHandle file, new U8Span(_archivePath.Get()), OpenMode.Read);
+        if (res.IsFailure()) return res.Miss();
 
         try
         {
-            rc = _fsClient.GetFileSize(out long archiveSize, file);
-            if (rc.IsFailure()) return rc;
+            res = _fsClient.GetFileSize(out long archiveSize, file);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = buffer.Initialize(archiveSize, _memoryResourceForAutoBuffers);
-            if (rc.IsFailure()) return rc;
+            res = buffer.Initialize(archiveSize, _memoryResourceForAutoBuffers);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = _fsClient.ReadFile(file, 0, buffer.Get());
-            if (rc.IsFailure()) return rc;
+            res = _fsClient.ReadFile(file, 0, buffer.Get());
+            if (res.IsFailure()) return res.Miss();
 
             return Result.Success;
         }
@@ -275,14 +275,14 @@ public class FlatMapKeyValueStore<TKey> : IDisposable where TKey : unmanaged, IE
     {
         var reader = new KeyValueArchiveBufferReader(buffer);
 
-        Result rc = reader.ReadEntryCount(out int entryCount);
-        if (rc.IsFailure()) return rc;
+        Result res = reader.ReadEntryCount(out int entryCount);
+        if (res.IsFailure()) return res.Miss();
 
         for (int i = 0; i < entryCount; i++)
         {
             // Get size of key/value.
-            rc = reader.GetKeyValueSize(out _, out int valueSize);
-            if (rc.IsFailure()) return rc;
+            res = reader.GetKeyValueSize(out _, out int valueSize);
+            if (res.IsFailure()) return res.Miss();
 
             // Allocate memory for value.
             Buffer newValue = _memoryResource.Allocate(valueSize, Alignment);
@@ -295,11 +295,11 @@ public class FlatMapKeyValueStore<TKey> : IDisposable where TKey : unmanaged, IE
                 // Read key and value.
                 Unsafe.SkipInit(out TKey key);
 
-                rc = reader.ReadKeyValue(SpanHelpers.AsByteSpan(ref key), newValue.Span);
-                if (rc.IsFailure()) return rc;
+                res = reader.ReadKeyValue(SpanHelpers.AsByteSpan(ref key), newValue.Span);
+                if (res.IsFailure()) return res.Miss();
 
-                rc = _index.AppendUnsafe(in key, newValue);
-                if (rc.IsFailure()) return rc;
+                res = _index.AppendUnsafe(in key, newValue);
+                if (res.IsFailure()) return res.Miss();
 
                 success = true;
             }
@@ -336,17 +336,17 @@ public class FlatMapKeyValueStore<TKey> : IDisposable where TKey : unmanaged, IE
         _fsClient.DeleteFile(path).IgnoreResult();
 
         // Create new archive.
-        Result rc = _fsClient.CreateFile(path, buffer.Length);
-        if (rc.IsFailure()) return rc;
+        Result res = _fsClient.CreateFile(path, buffer.Length);
+        if (res.IsFailure()) return res.Miss();
 
         // Write data to the archive.
-        rc = _fsClient.OpenFile(out FileHandle file, path, OpenMode.Write);
-        if (rc.IsFailure()) return rc;
+        res = _fsClient.OpenFile(out FileHandle file, path, OpenMode.Write);
+        if (res.IsFailure()) return res.Miss();
 
         try
         {
-            rc = _fsClient.WriteFile(file, 0, buffer, WriteOption.Flush);
-            if (rc.IsFailure()) return rc;
+            res = _fsClient.WriteFile(file, 0, buffer, WriteOption.Flush);
+            if (res.IsFailure()) return res.Miss();
         }
         finally
         {

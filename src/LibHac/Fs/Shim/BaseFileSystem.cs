@@ -19,8 +19,8 @@ public static class BaseFileSystem
     {
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-        Result rc = fileSystemProxy.Get.OpenBaseFileSystem(ref outFileSystem, fileSystemId);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fileSystemProxy.Get.OpenBaseFileSystem(ref outFileSystem, fileSystemId);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -31,26 +31,26 @@ public static class BaseFileSystem
         using var fileSystemAdapter =
             new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
 
-        Result rc = fs.Register(mountName, ref fileSystemAdapter.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fs.Register(mountName, ref fileSystemAdapter.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
 
     public static Result MountBaseFileSystem(this FileSystemClient fs, U8Span mountName, BaseFileSystemId fileSystemId)
     {
-        Result rc = fs.Impl.CheckMountName(mountName);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fs.Impl.CheckMountName(mountName);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         using var fileSystem = new SharedRef<IFileSystemSf>();
-        rc = OpenBaseFileSystem(fs, ref fileSystem.Ref(), fileSystemId);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        res = OpenBaseFileSystem(fs, ref fileSystem.Ref(), fileSystemId);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = RegisterFileSystem(fs, mountName, ref fileSystem.Ref());
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        res = RegisterFileSystem(fs, mountName, ref fileSystem.Ref());
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -59,9 +59,9 @@ public static class BaseFileSystem
     {
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-        Result rc = fileSystemProxy.Get.FormatBaseFileSystem(fileSystemId);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fileSystemProxy.Get.FormatBaseFileSystem(fileSystemId);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }

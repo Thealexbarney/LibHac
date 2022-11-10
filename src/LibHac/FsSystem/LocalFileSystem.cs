@@ -58,9 +58,9 @@ public class LocalFileSystem : IAttributeFileSystem
     /// <param name="rootPath">The path that will be the root of the <see cref="LocalFileSystem"/>.</param>
     public LocalFileSystem(string rootPath)
     {
-        Result rc = Initialize(rootPath, PathMode.DefaultCaseSensitivity, true);
-        if (rc.IsFailure())
-            throw new HorizonResultException(rc, "Error creating LocalFileSystem.");
+        Result res = Initialize(rootPath, PathMode.DefaultCaseSensitivity, true);
+        if (res.IsFailure())
+            throw new HorizonResultException(res, "Error creating LocalFileSystem.");
     }
 
     public static Result Create(out LocalFileSystem fileSystem, string rootPath,
@@ -69,8 +69,8 @@ public class LocalFileSystem : IAttributeFileSystem
         UnsafeHelpers.SkipParamInit(out fileSystem);
 
         var localFs = new LocalFileSystem();
-        Result rc = localFs.Initialize(rootPath, pathMode, ensurePathExists);
-        if (rc.IsFailure()) return rc;
+        Result res = localFs.Initialize(rootPath, pathMode, ensurePathExists);
+        if (res.IsFailure()) return res.Miss();
 
         fileSystem = localFs;
         return Result.Success;
@@ -78,7 +78,7 @@ public class LocalFileSystem : IAttributeFileSystem
 
     public Result Initialize(string rootPath, PathMode pathMode, bool ensurePathExists)
     {
-        Result rc;
+        Result res;
 
         if (rootPath == null)
             return ResultFs.NullptrArgument.Log();
@@ -89,11 +89,11 @@ public class LocalFileSystem : IAttributeFileSystem
         if (rootPath == string.Empty)
         {
             using var path = new Path();
-            rc = path.InitializeAsEmpty();
-            if (rc.IsFailure()) return rc;
+            res = path.InitializeAsEmpty();
+            if (res.IsFailure()) return res.Miss();
 
-            rc = _rootPath.Initialize(in path);
-            if (rc.IsFailure()) return rc;
+            res = _rootPath.Initialize(in path);
+            if (res.IsFailure()) return res.Miss();
 
             return Result.Success;
         }
@@ -133,13 +133,13 @@ public class LocalFileSystem : IAttributeFileSystem
 
         if (utf8Path.At(0) == DirectorySeparator && utf8Path.At(1) != DirectorySeparator)
         {
-            rc = pathNormalized.Initialize(utf8Path);
-            if (rc.IsFailure()) return rc;
+            res = pathNormalized.Initialize(utf8Path);
+            if (res.IsFailure()) return res.Miss();
         }
         else
         {
-            rc = pathNormalized.InitializeWithReplaceUnc(utf8Path);
-            if (rc.IsFailure()) return rc;
+            res = pathNormalized.InitializeWithReplaceUnc(utf8Path);
+            if (res.IsFailure()) return res.Miss();
         }
 
         var flags = new PathFlags();
@@ -147,11 +147,11 @@ public class LocalFileSystem : IAttributeFileSystem
         flags.AllowRelativePath();
         flags.AllowEmptyPath();
 
-        rc = pathNormalized.Normalize(flags);
-        if (rc.IsFailure()) return rc;
+        res = pathNormalized.Normalize(flags);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _rootPath.Initialize(in pathNormalized);
-        if (rc.IsFailure()) return rc;
+        res = _rootPath.Initialize(in pathNormalized);
+        if (res.IsFailure()) return res.Miss();
 
         _rootPathUtf16 = _rootPath.ToString();
 
@@ -166,28 +166,28 @@ public class LocalFileSystem : IAttributeFileSystem
         // because we don't want to allow access to anything outside the root path.
 
         using var pathNormalized = new Path();
-        Result rc = pathNormalized.Initialize(path.GetString());
-        if (rc.IsFailure()) return rc;
+        Result res = pathNormalized.Initialize(path.GetString());
+        if (res.IsFailure()) return res.Miss();
 
         var pathFlags = new PathFlags();
         pathFlags.AllowWindowsPath();
         pathFlags.AllowRelativePath();
         pathFlags.AllowEmptyPath();
-        rc = pathNormalized.Normalize(pathFlags);
-        if (rc.IsFailure()) return rc;
+        res = pathNormalized.Normalize(pathFlags);
+        if (res.IsFailure()) return res.Miss();
 
         using Path rootPath = _rootPath.DangerousGetPath();
 
         using var fullPath = new Path();
-        rc = fullPath.Combine(in rootPath, in pathNormalized);
-        if (rc.IsFailure()) return rc;
+        res = fullPath.Combine(in rootPath, in pathNormalized);
+        if (res.IsFailure()) return res.Miss();
 
         string utf16FullPath = fullPath.ToString();
 
         if (_mode == PathMode.CaseSensitive && checkCaseSensitivity)
         {
-            rc = CheckPathCaseSensitively(utf16FullPath);
-            if (rc.IsFailure()) return rc;
+            res = CheckPathCaseSensitively(utf16FullPath);
+            if (res.IsFailure()) return res.Miss();
         }
 
         outFullPath = utf16FullPath;
@@ -198,11 +198,11 @@ public class LocalFileSystem : IAttributeFileSystem
     {
         UnsafeHelpers.SkipParamInit(out attributes);
 
-        Result rc = ResolveFullPath(out string fullPath, in path, true);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolveFullPath(out string fullPath, in path, true);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetFileInfo(out FileInfo info, fullPath);
-        if (rc.IsFailure()) return rc;
+        res = GetFileInfo(out FileInfo info, fullPath);
+        if (res.IsFailure()) return res.Miss();
 
         if (info.Attributes == (FileAttributes)(-1))
         {
@@ -215,11 +215,11 @@ public class LocalFileSystem : IAttributeFileSystem
 
     protected override Result DoSetFileAttributes(in Path path, NxFileAttributes attributes)
     {
-        Result rc = ResolveFullPath(out string fullPath, in path, true);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolveFullPath(out string fullPath, in path, true);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetFileInfo(out FileInfo info, fullPath);
-        if (rc.IsFailure()) return rc;
+        res = GetFileInfo(out FileInfo info, fullPath);
+        if (res.IsFailure()) return res.Miss();
 
         if (info.Attributes == (FileAttributes)(-1))
         {
@@ -245,11 +245,11 @@ public class LocalFileSystem : IAttributeFileSystem
     {
         UnsafeHelpers.SkipParamInit(out fileSize);
 
-        Result rc = ResolveFullPath(out string fullPath, in path, true);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolveFullPath(out string fullPath, in path, true);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetFileInfo(out FileInfo info, fullPath);
-        if (rc.IsFailure()) return rc;
+        res = GetFileInfo(out FileInfo info, fullPath);
+        if (res.IsFailure()) return res.Miss();
 
         return GetSizeInternal(out fileSize, info);
     }
@@ -261,11 +261,11 @@ public class LocalFileSystem : IAttributeFileSystem
 
     protected override Result DoCreateDirectory(in Path path, NxFileAttributes archiveAttribute)
     {
-        Result rc = ResolveFullPath(out string fullPath, in path, false);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolveFullPath(out string fullPath, in path, false);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetDirInfo(out DirectoryInfo dir, fullPath);
-        if (rc.IsFailure()) return rc;
+        res = GetDirInfo(out DirectoryInfo dir, fullPath);
+        if (res.IsFailure()) return res.Miss();
 
         if (dir.Exists)
         {
@@ -282,11 +282,11 @@ public class LocalFileSystem : IAttributeFileSystem
 
     protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
     {
-        Result rc = ResolveFullPath(out string fullPath, in path, false);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolveFullPath(out string fullPath, in path, false);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetFileInfo(out FileInfo file, fullPath);
-        if (rc.IsFailure()) return rc;
+        res = GetFileInfo(out FileInfo file, fullPath);
+        if (res.IsFailure()) return res.Miss();
 
         if (file.Exists)
         {
@@ -298,11 +298,11 @@ public class LocalFileSystem : IAttributeFileSystem
             return ResultFs.PathNotFound.Log();
         }
 
-        rc = CreateFileInternal(out FileStream stream, file);
+        res = CreateFileInternal(out FileStream stream, file);
 
         using (stream)
         {
-            if (rc.IsFailure()) return rc;
+            if (res.IsFailure()) return res.Miss();
 
             return SetStreamLengthInternal(stream, size);
         }
@@ -310,11 +310,11 @@ public class LocalFileSystem : IAttributeFileSystem
 
     protected override Result DoDeleteDirectory(in Path path)
     {
-        Result rc = ResolveFullPath(out string fullPath, in path, true);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolveFullPath(out string fullPath, in path, true);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetDirInfo(out DirectoryInfo dir, fullPath);
-        if (rc.IsFailure()) return rc;
+        res = GetDirInfo(out DirectoryInfo dir, fullPath);
+        if (res.IsFailure()) return res.Miss();
 
         return TargetLockedAvoidance.RetryToAvoidTargetLocked(
             () => DeleteDirectoryInternal(dir, false), _fsClient);
@@ -322,11 +322,11 @@ public class LocalFileSystem : IAttributeFileSystem
 
     protected override Result DoDeleteDirectoryRecursively(in Path path)
     {
-        Result rc = ResolveFullPath(out string fullPath, in path, true);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolveFullPath(out string fullPath, in path, true);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetDirInfo(out DirectoryInfo dir, fullPath);
-        if (rc.IsFailure()) return rc;
+        res = GetDirInfo(out DirectoryInfo dir, fullPath);
+        if (res.IsFailure()) return res.Miss();
 
         return TargetLockedAvoidance.RetryToAvoidTargetLocked(
             () => DeleteDirectoryInternal(dir, true), _fsClient);
@@ -334,22 +334,22 @@ public class LocalFileSystem : IAttributeFileSystem
 
     protected override Result DoCleanDirectoryRecursively(in Path path)
     {
-        Result rc = ResolveFullPath(out string fullPath, in path, true);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolveFullPath(out string fullPath, in path, true);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetDirInfo(out DirectoryInfo dir, fullPath);
-        if (rc.IsFailure()) return rc;
+        res = GetDirInfo(out DirectoryInfo dir, fullPath);
+        if (res.IsFailure()) return res.Miss();
 
         return CleanDirectoryInternal(dir, _fsClient);
     }
 
     protected override Result DoDeleteFile(in Path path)
     {
-        Result rc = ResolveFullPath(out string fullPath, in path, true);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolveFullPath(out string fullPath, in path, true);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetFileInfo(out FileInfo file, fullPath);
-        if (rc.IsFailure()) return rc;
+        res = GetFileInfo(out FileInfo file, fullPath);
+        if (res.IsFailure()) return res.Miss();
 
         return TargetLockedAvoidance.RetryToAvoidTargetLocked(
             () => DeleteFileInternal(file), _fsClient);
@@ -358,11 +358,11 @@ public class LocalFileSystem : IAttributeFileSystem
     protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
         OpenDirectoryMode mode)
     {
-        Result rc = ResolveFullPath(out string fullPath, in path, true);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolveFullPath(out string fullPath, in path, true);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetDirInfo(out DirectoryInfo dirInfo, fullPath);
-        if (rc.IsFailure()) return rc;
+        res = GetDirInfo(out DirectoryInfo dirInfo, fullPath);
+        if (res.IsFailure()) return res.Miss();
 
         if (!dirInfo.Attributes.HasFlag(FileAttributes.Directory))
         {
@@ -370,9 +370,9 @@ public class LocalFileSystem : IAttributeFileSystem
         }
 
         IDirectory dirTemp = null;
-        rc = TargetLockedAvoidance.RetryToAvoidTargetLocked(() =>
+        res = TargetLockedAvoidance.RetryToAvoidTargetLocked(() =>
             OpenDirectoryInternal(out dirTemp, mode, dirInfo), _fsClient);
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         outDirectory.Reset(dirTemp);
         return Result.Success;
@@ -380,11 +380,11 @@ public class LocalFileSystem : IAttributeFileSystem
 
     protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
     {
-        Result rc = ResolveFullPath(out string fullPath, in path, true);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolveFullPath(out string fullPath, in path, true);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetEntryType(out DirectoryEntryType entryType, path);
-        if (rc.IsFailure()) return rc;
+        res = GetEntryType(out DirectoryEntryType entryType, path);
+        if (res.IsFailure()) return res.Miss();
 
         if (entryType == DirectoryEntryType.Directory)
         {
@@ -393,9 +393,9 @@ public class LocalFileSystem : IAttributeFileSystem
 
         FileStream fileStream = null;
 
-        rc = TargetLockedAvoidance.RetryToAvoidTargetLocked(() =>
+        res = TargetLockedAvoidance.RetryToAvoidTargetLocked(() =>
             OpenFileInternal(out fileStream, fullPath, mode), _fsClient);
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         outFile.Reset(new LocalFile(fileStream, mode));
         return Result.Success;
@@ -403,20 +403,20 @@ public class LocalFileSystem : IAttributeFileSystem
 
     protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
     {
-        Result rc = ResolveFullPath(out string fullCurrentPath, in currentPath, true);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolveFullPath(out string fullCurrentPath, in currentPath, true);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = ResolveFullPath(out string fullNewPath, in newPath, false);
-        if (rc.IsFailure()) return rc;
+        res = ResolveFullPath(out string fullNewPath, in newPath, false);
+        if (res.IsFailure()) return res.Miss();
 
         // Official FS behavior is to do nothing in this case
         if (fullCurrentPath == fullNewPath) return Result.Success;
 
-        rc = GetDirInfo(out DirectoryInfo currentDirInfo, fullCurrentPath);
-        if (rc.IsFailure()) return rc;
+        res = GetDirInfo(out DirectoryInfo currentDirInfo, fullCurrentPath);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetDirInfo(out DirectoryInfo newDirInfo, fullNewPath);
-        if (rc.IsFailure()) return rc;
+        res = GetDirInfo(out DirectoryInfo newDirInfo, fullNewPath);
+        if (res.IsFailure()) return res.Miss();
 
         return TargetLockedAvoidance.RetryToAvoidTargetLocked(
             () => RenameDirInternal(currentDirInfo, newDirInfo), _fsClient);
@@ -424,20 +424,20 @@ public class LocalFileSystem : IAttributeFileSystem
 
     protected override Result DoRenameFile(in Path currentPath, in Path newPath)
     {
-        Result rc = ResolveFullPath(out string fullCurrentPath, in currentPath, true);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolveFullPath(out string fullCurrentPath, in currentPath, true);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = ResolveFullPath(out string fullNewPath, in newPath, false);
-        if (rc.IsFailure()) return rc;
+        res = ResolveFullPath(out string fullNewPath, in newPath, false);
+        if (res.IsFailure()) return res.Miss();
 
         // Official FS behavior is to do nothing in this case
         if (fullCurrentPath == fullNewPath) return Result.Success;
 
-        rc = GetFileInfo(out FileInfo currentFileInfo, fullCurrentPath);
-        if (rc.IsFailure()) return rc;
+        res = GetFileInfo(out FileInfo currentFileInfo, fullCurrentPath);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetFileInfo(out FileInfo newFileInfo, fullNewPath);
-        if (rc.IsFailure()) return rc;
+        res = GetFileInfo(out FileInfo newFileInfo, fullNewPath);
+        if (res.IsFailure()) return res.Miss();
 
         return TargetLockedAvoidance.RetryToAvoidTargetLocked(
             () => RenameFileInternal(currentFileInfo, newFileInfo), _fsClient);
@@ -447,11 +447,11 @@ public class LocalFileSystem : IAttributeFileSystem
     {
         UnsafeHelpers.SkipParamInit(out entryType);
 
-        Result rc = ResolveFullPath(out string fullPath, in path, true);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolveFullPath(out string fullPath, in path, true);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetDirInfo(out DirectoryInfo dir, fullPath);
-        if (rc.IsFailure()) return rc;
+        res = GetDirInfo(out DirectoryInfo dir, fullPath);
+        if (res.IsFailure()) return res.Miss();
 
         if (dir.Exists)
         {
@@ -459,8 +459,8 @@ public class LocalFileSystem : IAttributeFileSystem
             return Result.Success;
         }
 
-        rc = GetFileInfo(out FileInfo file, fullPath);
-        if (rc.IsFailure()) return rc;
+        res = GetFileInfo(out FileInfo file, fullPath);
+        if (res.IsFailure()) return res.Miss();
 
         if (file.Exists)
         {
@@ -475,11 +475,11 @@ public class LocalFileSystem : IAttributeFileSystem
     {
         UnsafeHelpers.SkipParamInit(out timeStamp);
 
-        Result rc = ResolveFullPath(out string fullPath, in path, true);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolveFullPath(out string fullPath, in path, true);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetFileInfo(out FileInfo file, fullPath);
-        if (rc.IsFailure()) return rc;
+        res = GetFileInfo(out FileInfo file, fullPath);
+        if (res.IsFailure()) return res.Miss();
 
         if (!file.Exists) return ResultFs.PathNotFound.Log();
 
@@ -505,8 +505,8 @@ public class LocalFileSystem : IAttributeFileSystem
     {
         UnsafeHelpers.SkipParamInit(out freeSpace);
 
-        Result rc = ResolveFullPath(out string fullPath, in path, true);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolveFullPath(out string fullPath, in path, true);
+        if (res.IsFailure()) return res.Miss();
 
         freeSpace = new DriveInfo(fullPath).AvailableFreeSpace;
         return Result.Success;
@@ -516,8 +516,8 @@ public class LocalFileSystem : IAttributeFileSystem
     {
         UnsafeHelpers.SkipParamInit(out totalSpace);
 
-        Result rc = ResolveFullPath(out string fullPath, in path, true);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolveFullPath(out string fullPath, in path, true);
+        if (res.IsFailure()) return res.Miss();
 
         totalSpace = new DriveInfo(fullPath).TotalSize;
         return Result.Success;
@@ -627,16 +627,16 @@ public class LocalFileSystem : IAttributeFileSystem
         {
             foreach (FileInfo fileInfo in dir.EnumerateFiles())
             {
-                Result rc = TargetLockedAvoidance.RetryToAvoidTargetLocked(() => DeleteFileInternal(fileInfo),
+                Result res = TargetLockedAvoidance.RetryToAvoidTargetLocked(() => DeleteFileInternal(fileInfo),
                     fsClient);
-                if (rc.IsFailure()) return rc;
+                if (res.IsFailure()) return res.Miss();
             }
 
             foreach (DirectoryInfo dirInfo in dir.EnumerateDirectories())
             {
-                Result rc = TargetLockedAvoidance.RetryToAvoidTargetLocked(() => DeleteDirectoryInternal(dirInfo, true),
+                Result res = TargetLockedAvoidance.RetryToAvoidTargetLocked(() => DeleteDirectoryInternal(dirInfo, true),
                     fsClient);
-                if (rc.IsFailure()) return rc;
+                if (res.IsFailure()) return res.Miss();
             }
         }
         catch (Exception ex) when (ex.HResult < 0)
@@ -662,8 +662,8 @@ public class LocalFileSystem : IAttributeFileSystem
             {
                 if (recursive)
                 {
-                    Result rc = DeleteDirectoryRecursivelyWithReadOnly(dir);
-                    if (rc.IsFailure()) return rc.Miss();
+                    Result res = DeleteDirectoryRecursivelyWithReadOnly(dir);
+                    if (res.IsFailure()) return res.Miss();
                 }
                 else
                 {
@@ -733,8 +733,8 @@ public class LocalFileSystem : IAttributeFileSystem
                 }
                 else if (info is DirectoryInfo dir)
                 {
-                    Result rc = DeleteDirectoryRecursivelyWithReadOnly(dir);
-                    if (rc.IsFailure()) return rc.Miss();
+                    Result res = DeleteDirectoryRecursivelyWithReadOnly(dir);
+                    if (res.IsFailure()) return res.Miss();
                 }
                 else
                 {
@@ -881,9 +881,9 @@ public class LocalFileSystem : IAttributeFileSystem
         string pathUtf16 = StringUtils.Utf8ZToString(path);
         string workingDirectoryPathUtf16 = StringUtils.Utf8ZToString(workingDirectoryPath);
 
-        Result rc = GetCaseSensitivePathFull(out string caseSensitivePath, out int rootPathLength, pathUtf16,
+        Result res = GetCaseSensitivePathFull(out string caseSensitivePath, out int rootPathLength, pathUtf16,
             workingDirectoryPathUtf16);
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         OperationStatus status = Utf8.FromUtf16(caseSensitivePath.AsSpan(rootPathLength),
             buffer.Slice(0, buffer.Length - 1), out _, out int utf8BytesWritten);
@@ -902,8 +902,8 @@ public class LocalFileSystem : IAttributeFileSystem
 
     private Result CheckPathCaseSensitively(string path)
     {
-        Result rc = GetCaseSensitivePathFull(out string caseSensitivePath, out _, path, _rootPathUtf16);
-        if (rc.IsFailure()) return rc;
+        Result res = GetCaseSensitivePathFull(out string caseSensitivePath, out _, path, _rootPathUtf16);
+        if (res.IsFailure()) return res.Miss();
 
         if (path.Length != caseSensitivePath.Length)
             return ResultFs.PathNotFound.Log();
@@ -950,8 +950,8 @@ public class LocalFileSystem : IAttributeFileSystem
             fullPath = Combine(workingDirectoryPath, path);
         }
 
-        Result rc = GetCorrectCasedPath(out caseSensitivePath, fullPath);
-        if (rc.IsFailure()) return rc;
+        Result res = GetCorrectCasedPath(out caseSensitivePath, fullPath);
+        if (res.IsFailure()) return res.Miss();
 
         rootPathLength = workingDirectoryPathLength;
         return Result.Success;

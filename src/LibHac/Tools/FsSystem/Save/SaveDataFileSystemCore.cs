@@ -34,8 +34,8 @@ public class SaveDataFileSystemCore : IFileSystem
 
     private Result CheckIfNormalized(in Path path)
     {
-        Result rc = PathNormalizer.IsNormalized(out bool isNormalized, out _, path.GetString());
-        if (rc.IsFailure()) return rc;
+        Result res = PathNormalizer.IsNormalized(out bool isNormalized, out _, path.GetString());
+        if (res.IsFailure()) return res.Miss();
 
         if (!isNormalized)
             return ResultFs.NotNormalized.Log();
@@ -45,8 +45,8 @@ public class SaveDataFileSystemCore : IFileSystem
 
     protected override Result DoCreateDirectory(in Path path)
     {
-        Result rc = CheckIfNormalized(in path);
-        if (rc.IsFailure()) return rc;
+        Result res = CheckIfNormalized(in path);
+        if (res.IsFailure()) return res.Miss();
 
         FileTable.AddDirectory(new U8Span(path.GetString()));
 
@@ -55,8 +55,8 @@ public class SaveDataFileSystemCore : IFileSystem
 
     protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
     {
-        Result rc = CheckIfNormalized(in path);
-        if (rc.IsFailure()) return rc;
+        Result res = CheckIfNormalized(in path);
+        if (res.IsFailure()) return res.Miss();
 
         if (size == 0)
         {
@@ -83,8 +83,8 @@ public class SaveDataFileSystemCore : IFileSystem
 
     protected override Result DoDeleteDirectory(in Path path)
     {
-        Result rc = CheckIfNormalized(in path);
-        if (rc.IsFailure()) return rc;
+        Result res = CheckIfNormalized(in path);
+        if (res.IsFailure()) return res.Miss();
 
         FileTable.DeleteDirectory(new U8Span(path.GetString()));
 
@@ -93,22 +93,22 @@ public class SaveDataFileSystemCore : IFileSystem
 
     protected override Result DoDeleteDirectoryRecursively(in Path path)
     {
-        Result rc = CheckIfNormalized(in path);
-        if (rc.IsFailure()) return rc;
+        Result res = CheckIfNormalized(in path);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = CleanDirectoryRecursively(in path);
-        if (rc.IsFailure()) return rc;
+        res = CleanDirectoryRecursively(in path);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = DeleteDirectory(in path);
-        if (rc.IsFailure()) return rc;
+        res = DeleteDirectory(in path);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
 
     protected override Result DoCleanDirectoryRecursively(in Path path)
     {
-        Result rc = CheckIfNormalized(in path);
-        if (rc.IsFailure()) return rc;
+        Result res = CheckIfNormalized(in path);
+        if (res.IsFailure()) return res.Miss();
 
         FileSystemExtensions.CleanDirectoryRecursivelyGeneric(this, new U8Span(path.GetString()).ToString());
 
@@ -117,8 +117,8 @@ public class SaveDataFileSystemCore : IFileSystem
 
     protected override Result DoDeleteFile(in Path path)
     {
-        Result rc = CheckIfNormalized(in path);
-        if (rc.IsFailure()) return rc;
+        Result res = CheckIfNormalized(in path);
+        if (res.IsFailure()) return res.Miss();
 
         if (!FileTable.TryOpenFile(new U8Span(path.GetString()), out SaveFileInfo fileInfo))
         {
@@ -138,8 +138,8 @@ public class SaveDataFileSystemCore : IFileSystem
     protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
         OpenDirectoryMode mode)
     {
-        Result rc = CheckIfNormalized(in path);
-        if (rc.IsFailure()) return rc;
+        Result res = CheckIfNormalized(in path);
+        if (res.IsFailure()) return res.Miss();
 
         if (!FileTable.TryOpenDirectory(new U8Span(path.GetString()), out SaveFindPosition position))
         {
@@ -153,8 +153,8 @@ public class SaveDataFileSystemCore : IFileSystem
 
     protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
     {
-        Result rc = CheckIfNormalized(in path);
-        if (rc.IsFailure()) return rc;
+        Result res = CheckIfNormalized(in path);
+        if (res.IsFailure()) return res.Miss();
 
         if (!FileTable.TryOpenFile(new U8Span(path.GetString()), out SaveFileInfo fileInfo))
         {
@@ -170,22 +170,22 @@ public class SaveDataFileSystemCore : IFileSystem
 
     protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
     {
-        Result rc = CheckIfNormalized(in currentPath);
-        if (rc.IsFailure()) return rc;
+        Result res = CheckIfNormalized(in currentPath);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = CheckIfNormalized(in newPath);
-        if (rc.IsFailure()) return rc;
+        res = CheckIfNormalized(in newPath);
+        if (res.IsFailure()) return res.Miss();
 
         return FileTable.RenameDirectory(new U8Span(currentPath.GetString()), new U8Span(newPath.GetString()));
     }
 
     protected override Result DoRenameFile(in Path currentPath, in Path newPath)
     {
-        Result rc = CheckIfNormalized(in currentPath);
-        if (rc.IsFailure()) return rc;
+        Result res = CheckIfNormalized(in currentPath);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = CheckIfNormalized(in newPath);
-        if (rc.IsFailure()) return rc;
+        res = CheckIfNormalized(in newPath);
+        if (res.IsFailure()) return res.Miss();
 
         FileTable.RenameFile(new U8Span(currentPath.GetString()), new U8Span(newPath.GetString()));
 
@@ -196,8 +196,8 @@ public class SaveDataFileSystemCore : IFileSystem
     {
         UnsafeHelpers.SkipParamInit(out entryType);
 
-        Result rc = CheckIfNormalized(in path);
-        if (rc.IsFailure()) return rc;
+        Result res = CheckIfNormalized(in path);
+        if (res.IsFailure()) return res.Miss();
 
         if (FileTable.TryOpenFile(new U8Span(path.GetString()), out SaveFileInfo _))
         {

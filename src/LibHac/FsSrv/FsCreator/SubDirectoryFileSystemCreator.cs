@@ -12,8 +12,8 @@ public class SubDirectoryFileSystemCreator : ISubDirectoryFileSystemCreator
     {
         using var directory = new UniqueRef<IDirectory>();
 
-        Result rc = baseFileSystem.Get.OpenDirectory(ref directory.Ref(), in path, OpenDirectoryMode.Directory);
-        if (rc.IsFailure()) return rc;
+        Result res = baseFileSystem.Get.OpenDirectory(ref directory.Ref(), in path, OpenDirectoryMode.Directory);
+        if (res.IsFailure()) return res.Miss();
 
         directory.Reset();
 
@@ -22,8 +22,8 @@ public class SubDirectoryFileSystemCreator : ISubDirectoryFileSystemCreator
         if (!subFs.HasValue)
             return ResultFs.AllocationMemoryFailedInSubDirectoryFileSystemCreatorA.Log();
 
-        rc = subFs.Get.Initialize(in path);
-        if (rc.IsFailure()) return rc;
+        res = subFs.Get.Initialize(in path);
+        if (res.IsFailure()) return res.Miss();
 
         outSubDirFileSystem.SetByMove(ref subFs.Ref());
         return Result.Success;

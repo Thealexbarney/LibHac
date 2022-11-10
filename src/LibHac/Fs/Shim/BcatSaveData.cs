@@ -23,12 +23,12 @@ public static class BcatSaveData
     public static Result MountBcatSaveData(this FileSystemClient fs, U8Span mountName,
         Ncm.ApplicationId applicationId)
     {
-        Result rc;
+        Result res;
 
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = Mount(fs, mountName, applicationId);
+            res = Mount(fs, mountName, applicationId);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             Span<byte> logBuffer = stackalloc byte[0x50];
@@ -37,15 +37,15 @@ public static class BcatSaveData
             sb.Append(LogName).Append(mountName).Append(LogQuote)
                 .Append(LogApplicationId).AppendFormat(applicationId.Value, 'X');
 
-            fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+            fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(sb.Buffer));
         }
         else
         {
-            rc = Mount(fs, mountName, applicationId);
+            res = Mount(fs, mountName, applicationId);
         }
 
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc;
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
             fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
@@ -54,19 +54,19 @@ public static class BcatSaveData
 
         static Result Mount(FileSystemClient fs, U8Span mountName, Ncm.ApplicationId applicationId)
         {
-            Result rc = fs.Impl.CheckMountName(mountName);
-            if (rc.IsFailure()) return rc;
+            Result res = fs.Impl.CheckMountName(mountName);
+            if (res.IsFailure()) return res.Miss();
 
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-            rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, applicationId, SaveDataType.Bcat,
+            res = SaveDataAttribute.Make(out SaveDataAttribute attribute, applicationId, SaveDataType.Bcat,
                 InvalidUserId, InvalidSystemSaveDataId);
-            if (rc.IsFailure()) return rc;
+            if (res.IsFailure()) return res.Miss();
 
             using var fileSystem = new SharedRef<IFileSystemSf>();
 
-            rc = fileSystemProxy.Get.OpenSaveDataFileSystem(ref fileSystem.Ref(), SaveDataSpaceId.User, in attribute);
-            if (rc.IsFailure()) return rc;
+            res = fileSystemProxy.Get.OpenSaveDataFileSystem(ref fileSystem.Ref(), SaveDataSpaceId.User, in attribute);
+            if (res.IsFailure()) return res.Miss();
 
             using var fileSystemAdapter =
                 new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
@@ -74,8 +74,8 @@ public static class BcatSaveData
             if (!fileSystemAdapter.HasValue)
                 return ResultFs.AllocationMemoryFailedInBcatSaveDataA.Log();
 
-            rc = fs.Register(mountName, ref fileSystemAdapter.Ref());
-            if (rc.IsFailure()) return rc.Miss();
+            res = fs.Register(mountName, ref fileSystemAdapter.Ref());
+            if (res.IsFailure()) return res.Miss();
 
             return Result.Success;
         }

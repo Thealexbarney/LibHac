@@ -238,7 +238,7 @@ public static class PathFormatter
 
         if (WindowsPath.IsUncPath(currentPath, false, true))
         {
-            Result rc;
+            Result res;
 
             ReadOnlySpan<byte> finalPath = currentPath;
 
@@ -253,9 +253,9 @@ public static class PathFormatter
                 {
                     if (currentComponentOffset != 0)
                     {
-                        rc = CheckSharedName(
+                        res = CheckSharedName(
                             currentPath.Slice(currentComponentOffset, pos - currentComponentOffset));
-                        if (rc.IsFailure()) return rc;
+                        if (res.IsFailure()) return res.Miss();
 
                         finalPath = currentPath.Slice(pos);
                         break;
@@ -264,8 +264,8 @@ public static class PathFormatter
                     if (currentPath.At(pos + 1) == DirectorySeparator || currentPath.At(pos + 1) == AltDirectorySeparator)
                         return ResultFs.InvalidPathFormat.Log();
 
-                    rc = CheckHostName(currentPath.Slice(2, pos - 2));
-                    if (rc.IsFailure()) return rc;
+                    res = CheckHostName(currentPath.Slice(2, pos - 2));
+                    if (res.IsFailure()) return res.Miss();
 
                     currentComponentOffset = pos + 1;
                 }
@@ -276,8 +276,8 @@ public static class PathFormatter
 
             if (currentComponentOffset != 0 && finalPath == currentPath)
             {
-                rc = CheckSharedName(currentPath.Slice(currentComponentOffset, pos - currentComponentOffset));
-                if (rc.IsFailure()) return rc;
+                res = CheckSharedName(currentPath.Slice(currentComponentOffset, pos - currentComponentOffset));
+                if (res.IsFailure()) return res.Miss();
 
                 finalPath = currentPath.Slice(pos);
             }
@@ -326,16 +326,16 @@ public static class PathFormatter
     {
         isNormalized = true;
 
-        Result rc = ParseWindowsPathImpl(out newPath, out windowsPathLength, Span<byte>.Empty, path, hasMountName);
-        if (!rc.IsSuccess())
+        Result res = ParseWindowsPathImpl(out newPath, out windowsPathLength, Span<byte>.Empty, path, hasMountName);
+        if (!res.IsSuccess())
         {
-            if (ResultFs.NotNormalized.Includes(rc))
+            if (ResultFs.NotNormalized.Includes(res))
             {
                 isNormalized = false;
             }
             else
             {
-                return rc;
+                return res;
             }
         }
 
@@ -396,8 +396,8 @@ public static class PathFormatter
     {
         UnsafeHelpers.SkipParamInit(out isNormalized, out normalizedLength);
 
-        Result rc = PathUtility.CheckUtf8(path);
-        if (rc.IsFailure()) return rc;
+        Result res = PathUtility.CheckUtf8(path);
+        if (res.IsFailure()) return res.Miss();
 
         ReadOnlySpan<byte> buffer = path;
         int totalLength = 0;
@@ -425,8 +425,8 @@ public static class PathFormatter
 
         bool hasMountName = false;
 
-        rc = SkipMountName(out buffer, out int mountNameLength, buffer);
-        if (rc.IsFailure()) return rc;
+        res = SkipMountName(out buffer, out int mountNameLength, buffer);
+        if (res.IsFailure()) return res.Miss();
 
         if (mountNameLength != 0)
         {
@@ -449,8 +449,8 @@ public static class PathFormatter
 
         bool isRelativePath = false;
 
-        rc = SkipRelativeDotPath(out buffer, out int relativePathLength, buffer);
-        if (rc.IsFailure()) return rc;
+        res = SkipRelativeDotPath(out buffer, out int relativePathLength, buffer);
+        if (res.IsFailure()) return res.Miss();
 
         if (relativePathLength != 0)
         {
@@ -469,8 +469,8 @@ public static class PathFormatter
             isRelativePath = true;
         }
 
-        rc = SkipWindowsPath(out buffer, out int windowsPathLength, out bool isNormalizedWin, buffer, hasMountName);
-        if (rc.IsFailure()) return rc;
+        res = SkipWindowsPath(out buffer, out int windowsPathLength, out bool isNormalizedWin, buffer, hasMountName);
+        if (res.IsFailure()) return res.Miss();
 
         if (!isNormalizedWin)
         {
@@ -513,9 +513,9 @@ public static class PathFormatter
             return Result.Success;
         }
 
-        rc = PathUtility.CheckInvalidBackslash(out bool isBackslashContained, buffer,
+        res = PathUtility.CheckInvalidBackslash(out bool isBackslashContained, buffer,
             flags.IsWindowsPathAllowed() || flags.IsBackslashAllowed());
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         if (isBackslashContained && !flags.IsBackslashAllowed())
         {
@@ -523,8 +523,8 @@ public static class PathFormatter
             return Result.Success;
         }
 
-        rc = PathNormalizer.IsNormalized(out isNormalized, out int length, buffer, flags.AreAllCharactersAllowed());
-        if (rc.IsFailure()) return rc;
+        res = PathNormalizer.IsNormalized(out isNormalized, out int length, buffer, flags.AreAllCharactersAllowed());
+        if (res.IsFailure()) return res.Miss();
 
         totalLength += length;
         normalizedLength = totalLength;
@@ -533,7 +533,7 @@ public static class PathFormatter
 
     public static Result Normalize(Span<byte> outputBuffer, ReadOnlySpan<byte> path, PathFlags flags)
     {
-        Result rc;
+        Result res;
 
         ReadOnlySpan<byte> src = path;
         int currentPos = 0;
@@ -554,8 +554,8 @@ public static class PathFormatter
 
         if (flags.IsMountNameAllowed())
         {
-            rc = ParseMountName(out src, out int mountNameLength, outputBuffer.Slice(currentPos), src);
-            if (rc.IsFailure()) return rc;
+            res = ParseMountName(out src, out int mountNameLength, outputBuffer.Slice(currentPos), src);
+            if (res.IsFailure()) return res.Miss();
 
             currentPos += mountNameLength;
             hasMountName = mountNameLength != 0;
@@ -578,8 +578,8 @@ public static class PathFormatter
             if (currentPos >= outputBuffer.Length)
                 return ResultFs.TooLongPath.Log();
 
-            rc = ParseRelativeDotPath(out src, out int relativePathLength, outputBuffer.Slice(currentPos), src);
-            if (rc.IsFailure()) return rc;
+            res = ParseRelativeDotPath(out src, out int relativePathLength, outputBuffer.Slice(currentPos), src);
+            if (res.IsFailure()) return res.Miss();
 
             currentPos += relativePathLength;
 
@@ -600,9 +600,9 @@ public static class PathFormatter
             if (currentPos >= outputBuffer.Length)
                 return ResultFs.TooLongPath.Log();
 
-            rc = ParseWindowsPath(out src, out int windowsPathLength, outputBuffer.Slice(currentPos), src,
+            res = ParseWindowsPath(out src, out int windowsPathLength, outputBuffer.Slice(currentPos), src,
                 hasMountName);
-            if (rc.IsFailure()) return rc;
+            if (res.IsFailure()) return res.Miss();
 
             currentPos += windowsPathLength;
 
@@ -624,9 +624,9 @@ public static class PathFormatter
                 isWindowsPath = true;
         }
 
-        rc = PathUtility.CheckInvalidBackslash(out bool isBackslashContained, src,
+        res = PathUtility.CheckInvalidBackslash(out bool isBackslashContained, src,
             flags.IsWindowsPathAllowed() || flags.IsBackslashAllowed());
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         byte[] srcBufferSlashReplaced = null;
         try
@@ -644,9 +644,9 @@ public static class PathFormatter
                 src = srcBufferSlashReplaced.AsSpan(srcOffset);
             }
 
-            rc = PathNormalizer.Normalize(outputBuffer.Slice(currentPos), out _, src, isWindowsPath, isDriveRelative,
+            res = PathNormalizer.Normalize(outputBuffer.Slice(currentPos), out _, src, isWindowsPath, isDriveRelative,
                 flags.AreAllCharactersAllowed());
-            if (rc.IsFailure()) return rc;
+            if (res.IsFailure()) return res.Miss();
 
             return Result.Success;
         }

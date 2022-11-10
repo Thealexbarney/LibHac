@@ -15,9 +15,9 @@ public abstract partial class IFileSystemTests
         fs.CreateFile("/file", 0, CreateFileOptions.None);
 
         using var directory = new UniqueRef<IDirectory>();
-        Result rc = fs.OpenDirectory(ref directory.Ref(), "/file", OpenDirectoryMode.All);
+        Result res = fs.OpenDirectory(ref directory.Ref(), "/file", OpenDirectoryMode.All);
 
-        Assert.Result(ResultFs.PathNotFound, rc);
+        Assert.Result(ResultFs.PathNotFound, res);
     }
 
     [Fact]
@@ -26,8 +26,8 @@ public abstract partial class IFileSystemTests
         IFileSystem fs = CreateFileSystem();
 
         using var directory = new UniqueRef<IDirectory>();
-        Result rc = fs.OpenDirectory(ref directory.Ref(), "/dir", OpenDirectoryMode.All);
+        Result res = fs.OpenDirectory(ref directory.Ref(), "/dir", OpenDirectoryMode.All);
 
-        Assert.Result(ResultFs.PathNotFound, rc);
+        Assert.Result(ResultFs.PathNotFound, res);
     }
 }

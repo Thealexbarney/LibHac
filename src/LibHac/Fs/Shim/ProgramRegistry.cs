@@ -21,15 +21,15 @@ public static class ProgramRegistry
     {
         using SharedRef<IProgramRegistry> programRegistry = fs.Impl.GetProgramRegistryServiceObject();
 
-        Result rc = programRegistry.Get.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = programRegistry.Get.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = programRegistry.Get.RegisterProgram(processId, programId, storageId, new InBuffer(accessControlData),
+        res = programRegistry.Get.RegisterProgram(processId, programId, storageId, new InBuffer(accessControlData),
             accessControlData.Length, new InBuffer(accessControlDescriptor), accessControlDescriptor.Length);
 
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }

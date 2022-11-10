@@ -43,17 +43,17 @@ internal class DeliveryCacheFileService : IDeliveryCacheFileService
                 return ResultBcat.AlreadyOpen.Log();
 
             var metaReader = new DeliveryCacheFileMetaAccessor(Server);
-            Result rc = metaReader.ReadApplicationFileMeta(ApplicationId, ref directoryName, true);
-            if (rc.IsFailure()) return rc;
+            Result res = metaReader.ReadApplicationFileMeta(ApplicationId, ref directoryName, true);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = metaReader.FindEntry(out DeliveryCacheFileMetaEntry entry, ref fileName);
-            if (rc.IsFailure()) return rc;
+            res = metaReader.FindEntry(out DeliveryCacheFileMetaEntry entry, ref fileName);
+            if (res.IsFailure()) return res.Miss();
 
             Span<byte> filePath = stackalloc byte[0x80];
             Server.GetStorageManager().GetFilePath(filePath, ApplicationId, ref directoryName, ref fileName);
 
-            rc = Server.GetFsClient().OpenFile(out _handle, new U8Span(filePath), OpenMode.Read);
-            if (rc.IsFailure()) return rc;
+            res = Server.GetFsClient().OpenFile(out _handle, new U8Span(filePath), OpenMode.Read);
+            if (res.IsFailure()) return res.Miss();
 
             _metaEntry = entry;
             IsFileOpen = true;
@@ -71,8 +71,8 @@ internal class DeliveryCacheFileService : IDeliveryCacheFileService
             if (!IsFileOpen)
                 return ResultBcat.NotOpen.Log();
 
-            Result rc = Server.GetFsClient().ReadFile(out long read, _handle, offset, destination);
-            if (rc.IsFailure()) return rc;
+            Result res = Server.GetFsClient().ReadFile(out long read, _handle, offset, destination);
+            if (res.IsFailure()) return res.Miss();
 
             bytesRead = read;
             return Result.Success;

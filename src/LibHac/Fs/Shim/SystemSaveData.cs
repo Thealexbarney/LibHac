@@ -40,13 +40,13 @@ public static class SystemSaveData
     public static Result MountSystemSaveData(this FileSystemClient fs, U8Span mountName,
         SaveDataSpaceId spaceId, ulong saveDataId, UserId userId)
     {
-        Result rc;
+        Result res;
         Span<byte> logBuffer = stackalloc byte[0x90];
 
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = Mount(fs, mountName, spaceId, saveDataId, userId);
+            res = Mount(fs, mountName, spaceId, saveDataId, userId);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var idString = new IdString();
@@ -56,37 +56,37 @@ public static class SystemSaveData
                 .Append(LogSaveDataId).AppendFormat(saveDataId, 'X')
                 .Append(LogUserId).AppendFormat(userId.Id.High, 'X', 16).AppendFormat(userId.Id.Low, 'X', 16);
 
-            fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+            fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(sb.Buffer));
         }
         else
         {
-            rc = Mount(fs, mountName, spaceId, saveDataId, userId);
+            res = Mount(fs, mountName, spaceId, saveDataId, userId);
         }
 
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
             fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
 
-        return rc;
+        return res;
 
         static Result Mount(FileSystemClient fs, U8Span mountName, SaveDataSpaceId spaceId, ulong saveDataId,
             UserId userId)
         {
-            Result rc = fs.Impl.CheckMountName(mountName);
-            if (rc.IsFailure()) return rc;
+            Result res = fs.Impl.CheckMountName(mountName);
+            if (res.IsFailure()) return res.Miss();
 
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-            rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, InvalidProgramId,
+            res = SaveDataAttribute.Make(out SaveDataAttribute attribute, InvalidProgramId,
                 SaveDataType.System, userId, saveDataId);
-            if (rc.IsFailure()) return rc;
+            if (res.IsFailure()) return res.Miss();
 
             using var fileSystem = new SharedRef<IFileSystemSf>();
 
-            rc = fileSystemProxy.Get.OpenSaveDataFileSystemBySystemSaveDataId(ref fileSystem.Ref(), spaceId, in attribute);
-            if (rc.IsFailure()) return rc;
+            res = fileSystemProxy.Get.OpenSaveDataFileSystemBySystemSaveDataId(ref fileSystem.Ref(), spaceId, in attribute);
+            if (res.IsFailure()) return res.Miss();
 
             var fileSystemAdapterRaw = new FileSystemServiceObjectAdapter(ref fileSystem.Ref());
             using var fileSystemAdapter = new UniqueRef<IFileSystem>(fileSystemAdapterRaw);

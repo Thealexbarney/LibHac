@@ -153,9 +153,9 @@ internal static class ProcessPackage
 
     private static string Print(this Package2StorageReader package2)
     {
-        Result rc = package2.VerifySignature();
+        Result res = package2.VerifySignature();
 
-        Validity signatureValidity = rc.IsSuccess() ? Validity.Valid : Validity.Invalid;
+        Validity signatureValidity = res.IsSuccess() ? Validity.Valid : Validity.Invalid;
 
         int colLen = 36;
         var sb = new StringBuilder();

@@ -42,8 +42,8 @@ internal static class MmcService
         ref SharedRef<IStorageDeviceOperator> outDeviceOperator)
     {
         using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
-        Result rc = service.GetMmcManager(ref storageDeviceManager.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetMmcManager(ref storageDeviceManager.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         return storageDeviceManager.Get.OpenOperator(ref outDeviceOperator);
     }
@@ -77,15 +77,15 @@ internal static class MmcService
         ref SharedRef<IStorageDeviceOperator> outMmcOperator, MmcPartition partition)
     {
         using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
-        Result rc = service.GetMmcManager(ref storageDeviceManager.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetMmcManager(ref storageDeviceManager.Ref());
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetAttribute(out ulong attribute, partition);
-        if (rc.IsFailure()) return rc;
+        res = GetAttribute(out ulong attribute, partition);
+        if (res.IsFailure()) return res.Miss();
 
         using var storageDevice = new SharedRef<IStorageDevice>();
-        rc = storageDeviceManager.Get.OpenDevice(ref storageDevice.Ref(), attribute);
-        if (rc.IsFailure()) return rc;
+        res = storageDeviceManager.Get.OpenDevice(ref storageDevice.Ref(), attribute);
+        if (res.IsFailure()) return res.Miss();
 
         return storageDevice.Get.OpenOperator(ref outMmcOperator);
     }
@@ -94,15 +94,15 @@ internal static class MmcService
         MmcPartition partition)
     {
         using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
-        Result rc = service.GetMmcManager(ref storageDeviceManager.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetMmcManager(ref storageDeviceManager.Ref());
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetAttribute(out ulong attribute, partition);
-        if (rc.IsFailure()) return rc;
+        res = GetAttribute(out ulong attribute, partition);
+        if (res.IsFailure()) return res.Miss();
 
         using var mmcStorage = new SharedRef<IStorageSf>();
-        rc = storageDeviceManager.Get.OpenStorage(ref mmcStorage.Ref(), attribute);
-        if (rc.IsFailure()) return rc;
+        res = storageDeviceManager.Get.OpenStorage(ref mmcStorage.Ref(), attribute);
+        if (res.IsFailure()) return res.Miss();
 
         using var storage = new SharedRef<IStorage>(new StorageServiceObjectAdapter(ref mmcStorage.Ref()));
 
@@ -124,15 +124,15 @@ internal static class MmcService
         UnsafeHelpers.SkipParamInit(out speedMode);
 
         using var mmcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetMmcOperator(ref mmcOperator.Ref(), MmcPartition.UserData);
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetMmcOperator(ref mmcOperator.Ref(), MmcPartition.UserData);
+        if (res.IsFailure()) return res.Miss();
 
         Unsafe.SkipInit(out SpeedMode sdmmcSpeedMode);
         OutBuffer outBuffer = OutBuffer.FromStruct(ref sdmmcSpeedMode);
         int operationId = MakeOperationId(MmcOperationIdValue.GetSpeedMode);
 
-        rc = mmcOperator.Get.OperateOut(out _, outBuffer, operationId);
-        if (rc.IsFailure()) return rc;
+        res = mmcOperator.Get.OperateOut(out _, outBuffer, operationId);
+        if (res.IsFailure()) return res.Miss();
 
         speedMode = sdmmcSpeedMode switch
         {
@@ -150,8 +150,8 @@ internal static class MmcService
     public static Result GetMmcCid(this StorageService service, Span<byte> cidBuffer)
     {
         using var mmcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetMmcOperator(ref mmcOperator.Ref(), MmcPartition.UserData);
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetMmcOperator(ref mmcOperator.Ref(), MmcPartition.UserData);
+        if (res.IsFailure()) return res.Miss();
 
         int operationId = MakeOperationId(MmcOperationIdValue.GetCid);
         var outBuffer = new OutBuffer(cidBuffer);
@@ -162,8 +162,8 @@ internal static class MmcService
     public static Result EraseMmc(this StorageService service, MmcPartition partition)
     {
         using var mmcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetMmcOperator(ref mmcOperator.Ref(), partition);
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetMmcOperator(ref mmcOperator.Ref(), partition);
+        if (res.IsFailure()) return res.Miss();
 
         return mmcOperator.Get.Operate(MakeOperationId(MmcOperationIdValue.Erase));
     }
@@ -173,8 +173,8 @@ internal static class MmcService
         UnsafeHelpers.SkipParamInit(out size);
 
         using var mmcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetMmcOperator(ref mmcOperator.Ref(), partition);
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetMmcOperator(ref mmcOperator.Ref(), partition);
+        if (res.IsFailure()) return res.Miss();
 
         int operationId = MakeOperationId(MmcOperationIdValue.GetPartitionSize);
         OutBuffer outBuffer = OutBuffer.FromStruct(ref size);
@@ -187,8 +187,8 @@ internal static class MmcService
         UnsafeHelpers.SkipParamInit(out count);
 
         using var mmcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetMmcManagerOperator(ref mmcOperator.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetMmcManagerOperator(ref mmcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         int operationId = MakeOperationId(MmcManagerOperationIdValue.GetPatrolCount);
         OutBuffer outBuffer = OutBuffer.FromStruct(ref count);
@@ -202,8 +202,8 @@ internal static class MmcService
         UnsafeHelpers.SkipParamInit(out errorInfo, out logSize);
 
         using var mmcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetMmcManagerOperator(ref mmcOperator.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetMmcManagerOperator(ref mmcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         OutBuffer errorInfoOutBuffer = OutBuffer.FromStruct(ref errorInfo);
         var logOutBuffer = new OutBuffer(logBuffer);
@@ -215,8 +215,8 @@ internal static class MmcService
     public static Result GetMmcExtendedCsd(this StorageService service, Span<byte> buffer)
     {
         using var mmcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetMmcOperator(ref mmcOperator.Ref(), MmcPartition.UserData);
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetMmcOperator(ref mmcOperator.Ref(), MmcPartition.UserData);
+        if (res.IsFailure()) return res.Miss();
 
         int operationId = MakeOperationId(MmcOperationIdValue.GetExtendedCsd);
         var outBuffer = new OutBuffer(buffer);
@@ -227,8 +227,8 @@ internal static class MmcService
     public static Result SuspendMmcPatrol(this StorageService service)
     {
         using var mmcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetMmcManagerOperator(ref mmcOperator.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetMmcManagerOperator(ref mmcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         return mmcOperator.Get.Operate(MakeOperationId(MmcManagerOperationIdValue.SuspendPatrol));
     }
@@ -236,8 +236,8 @@ internal static class MmcService
     public static Result ResumeMmcPatrol(this StorageService service)
     {
         using var mmcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetMmcManagerOperator(ref mmcOperator.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetMmcManagerOperator(ref mmcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         return mmcOperator.Get.Operate(MakeOperationId(MmcManagerOperationIdValue.ResumePatrol));
     }
@@ -248,8 +248,8 @@ internal static class MmcService
         UnsafeHelpers.SkipParamInit(out successCount, out failureCount);
 
         using var mmcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetMmcManagerOperator(ref mmcOperator.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetMmcManagerOperator(ref mmcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         int operationId = MakeOperationId(MmcManagerOperationIdValue.GetAndClearPatrolReadAllocateBufferCount);
         OutBuffer successCountBuffer = OutBuffer.FromStruct(ref successCount);
@@ -261,8 +261,8 @@ internal static class MmcService
     public static Result SuspendMmcControl(this StorageService service)
     {
         using var mmcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetMmcManagerOperator(ref mmcOperator.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetMmcManagerOperator(ref mmcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         return mmcOperator.Get.Operate(MakeOperationId(MmcManagerOperationIdValue.SuspendControl));
     }
@@ -270,8 +270,8 @@ internal static class MmcService
     public static Result ResumeMmcControl(this StorageService service)
     {
         using var mmcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetMmcManagerOperator(ref mmcOperator.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetMmcManagerOperator(ref mmcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         return mmcOperator.Get.Operate(MakeOperationId(MmcManagerOperationIdValue.ResumeControl));
     }

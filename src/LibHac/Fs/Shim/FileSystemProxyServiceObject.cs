@@ -61,11 +61,11 @@ public static class FileSystemProxyServiceObject
         }
 
         using var fileSystemProxy = new SharedRef<IFileSystemProxy>();
-        Result rc = fs.Hos.Sm.GetService(ref fileSystemProxy.Ref(), "fsp-srv");
+        Result res = fs.Hos.Sm.GetService(ref fileSystemProxy.Ref(), "fsp-srv");
 
-        if (rc.IsFailure())
+        if (res.IsFailure())
         {
-            throw new HorizonResultException(rc, "Failed to get file system proxy service object.");
+            throw new HorizonResultException(res, "Failed to get file system proxy service object.");
         }
 
         fileSystemProxy.Get.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
@@ -92,11 +92,11 @@ public static class FileSystemProxyServiceObject
         FileSystemClientImpl fs)
     {
         using var fileSystemProxy = new SharedRef<IFileSystemProxyForLoader>();
-        Result rc = fs.Hos.Sm.GetService(ref fileSystemProxy.Ref(), "fsp-ldr");
+        Result res = fs.Hos.Sm.GetService(ref fileSystemProxy.Ref(), "fsp-ldr");
 
-        if (rc.IsFailure())
+        if (res.IsFailure())
         {
-            throw new HorizonResultException(rc, "Failed to get file system proxy service object.");
+            throw new HorizonResultException(res, "Failed to get file system proxy service object.");
         }
 
         fileSystemProxy.Get.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
@@ -121,11 +121,11 @@ public static class FileSystemProxyServiceObject
     private static SharedRef<IProgramRegistry> GetProgramRegistryServiceObjectImpl(FileSystemClientImpl fs)
     {
         using var registry = new SharedRef<IProgramRegistry>();
-        Result rc = fs.Hos.Sm.GetService(ref registry.Ref(), "fsp-pr");
+        Result res = fs.Hos.Sm.GetService(ref registry.Ref(), "fsp-pr");
 
-        if (rc.IsFailure())
+        if (res.IsFailure())
         {
-            throw new HorizonResultException(rc, "Failed to get registry service object.");
+            throw new HorizonResultException(res, "Failed to get registry service object.");
         }
 
         registry.Get.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value).IgnoreResult();

@@ -93,7 +93,7 @@ internal class FileAccessor : IDisposable
     {
         UnsafeHelpers.SkipParamInit(out bytesRead);
 
-        Result rc;
+        Result res;
         Span<byte> logBuffer = stackalloc byte[0x50];
         var handle = new FileHandle(this);
 
@@ -102,15 +102,15 @@ internal class FileAccessor : IDisposable
             if (Hos.Fs.Impl.IsEnabledAccessLog() && Hos.Fs.Impl.IsEnabledHandleAccessLog(handle))
             {
                 Tick start = Hos.Os.GetSystemTick();
-                rc = _lastResult;
+                res = _lastResult;
                 Tick end = Hos.Os.GetSystemTick();
 
                 var sb = new U8StringBuilder(logBuffer, true);
                 sb.Append(LogOffset).AppendFormat(offset)
                     .Append(LogSize).AppendFormat(destination.Length)
-                    .Append(LogReadSize).AppendFormat(AccessLogImpl.DereferenceOutValue(in bytesRead, rc));
+                    .Append(LogReadSize).AppendFormat(AccessLogImpl.DereferenceOutValue(in bytesRead, res));
 
-                Hos.Fs.Impl.OutputAccessLog(rc, start, end, handle, new U8Span(logBuffer),
+                Hos.Fs.Impl.OutputAccessLog(res, start, end, handle, new U8Span(logBuffer),
                     nameof(UserFile.ReadFile));
             }
 
@@ -130,23 +130,23 @@ internal class FileAccessor : IDisposable
         if (Hos.Fs.Impl.IsEnabledAccessLog() && Hos.Fs.Impl.IsEnabledHandleAccessLog(handle))
         {
             Tick start = Hos.Os.GetSystemTick();
-            rc = ReadWithoutCacheAccessLog(out bytesRead, offset, destination, in option);
+            res = ReadWithoutCacheAccessLog(out bytesRead, offset, destination, in option);
             Tick end = Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
             sb.Append(LogOffset).AppendFormat(offset)
                 .Append(LogSize).AppendFormat(destination.Length)
-                .Append(LogReadSize).AppendFormat(AccessLogImpl.DereferenceOutValue(in bytesRead, rc));
+                .Append(LogReadSize).AppendFormat(AccessLogImpl.DereferenceOutValue(in bytesRead, res));
 
-            Hos.Fs.Impl.OutputAccessLog(rc, start, end, handle, new U8Span(logBuffer),
+            Hos.Fs.Impl.OutputAccessLog(res, start, end, handle, new U8Span(logBuffer),
                 nameof(UserFile.ReadFile));
         }
         else
         {
-            rc = ReadWithoutCacheAccessLog(out bytesRead, offset, destination, in option);
+            res = ReadWithoutCacheAccessLog(out bytesRead, offset, destination, in option);
         }
 
-        return rc;
+        return res;
     }
 
     public Result Write(long offset, ReadOnlySpan<byte> source, in WriteOption option)
@@ -159,14 +159,14 @@ internal class FileAccessor : IDisposable
 
         if (_filePathHash is not null)
         {
-            Result rc = UpdateLastResult(Hos.Fs.Impl.WriteViaPathBasedFileDataCache(_file.Get, (int)GetOpenMode(),
+            Result res = UpdateLastResult(Hos.Fs.Impl.WriteViaPathBasedFileDataCache(_file.Get, (int)GetOpenMode(),
                 _parentFileSystem, in _filePathHash.Value, _pathHashIndex, offset, source, in option));
-            if (rc.IsFailure()) return rc.Miss();
+            if (res.IsFailure()) return res.Miss();
         }
         else
         {
-            Result rc = UpdateLastResult(_file.Get.Write(offset, source, in option));
-            if (rc.IsFailure()) return rc;
+            Result res = UpdateLastResult(_file.Get.Write(offset, source, in option));
+            if (res.IsFailure()) return res.Miss();
         }
 
         setter.Set(option.HasFlushFlag() ? WriteState.None : WriteState.NeedsFlush);
@@ -181,8 +181,8 @@ internal class FileAccessor : IDisposable
         using ScopedSetter<WriteState> setter =
             ScopedSetter<WriteState>.MakeScopedSetter(ref _writeState, WriteState.Failed);
 
-        Result rc = UpdateLastResult(_file.Get.Flush());
-        if (rc.IsFailure()) return rc;
+        Result res = UpdateLastResult(_file.Get.Flush());
+        if (res.IsFailure()) return res.Miss();
 
         setter.Set(WriteState.None);
         return Result.Success;
@@ -201,16 +201,16 @@ internal class FileAccessor : IDisposable
         {
             using UniqueLock lk = Hos.Fs.Impl.LockPathBasedFileDataCacheEntries();
 
-            Result rc = UpdateLastResult(_file.Get.SetSize(size));
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = UpdateLastResult(_file.Get.SetSize(size));
+            if (res.IsFailure()) return res.Miss();
 
             Hos.Fs.Impl.InvalidatePathBasedFileDataCacheEntry(_parentFileSystem, in _filePathHash.Value, _pathHashIndex);
-            if (rc.IsFailure()) return rc.Miss();
+            if (res.IsFailure()) return res.Miss();
         }
         else
         {
-            Result rc = UpdateLastResult(_file.Get.SetSize(size));
-            if (rc.IsFailure()) return rc;
+            Result res = UpdateLastResult(_file.Get.SetSize(size));
+            if (res.IsFailure()) return res.Miss();
         }
 
         setter.Set(originalWriteState);

@@ -194,8 +194,8 @@ public class XciHeader
             }
 
             Span<byte> key = stackalloc byte[0x10];
-            Result rc = DecryptCardInitialData(key, InitialData, KekIndex, keySet);
-            if (rc.IsSuccess())
+            Result res = DecryptCardInitialData(key, InitialData, KekIndex, keySet);
+            if (res.IsSuccess())
             {
                 DecryptedTitleKey = key.ToArray();
             }
@@ -252,14 +252,14 @@ public class XciHeader
     {
         UnsafeHelpers.SkipParamInit(out keyAreaStorage, out bodyStorage);
 
-        Result rc = baseStorage.GetSize(out long storageSize);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = baseStorage.GetSize(out long storageSize);
+        if (res.IsFailure()) return res.Miss();
 
         if (storageSize >= 0x1104)
         {
             uint magic = 0;
-            rc = baseStorage.Read(0x1100, SpanHelpers.AsByteSpan(ref magic));
-            if (rc.IsFailure()) return rc.Miss();
+            res = baseStorage.Read(0x1100, SpanHelpers.AsByteSpan(ref magic));
+            if (res.IsFailure()) return res.Miss();
 
             if (magic == HeaderMagicValue)
             {

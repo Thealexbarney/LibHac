@@ -164,15 +164,15 @@ public class IntegrityVerificationStorage : IStorage
         if (destination.Length == 0)
             return Result.Success;
 
-        Result rc = _dataStorage.GetSize(out long dataSize);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _dataStorage.GetSize(out long dataSize);
+        if (res.IsFailure()) return res.Miss();
 
         if (dataSize < offset)
             return ResultFs.InvalidOffset.Log();
 
         long alignedDataSize = Alignment.AlignUpPow2(dataSize, (uint)_verificationBlockSize);
-        rc = CheckAccessRange(offset, destination.Length, alignedDataSize);
-        if (rc.IsFailure()) return rc.Miss();
+        res = CheckAccessRange(offset, destination.Length, alignedDataSize);
+        if (res.IsFailure()) return res.Miss();
 
         int readSize = destination.Length;
         if (offset + readSize > dataSize)
@@ -192,19 +192,19 @@ public class IntegrityVerificationStorage : IStorage
         }
 
         // Read all of the data to be validated.
-        rc = _dataStorage.Read(offset, destination.Slice(0, readSize));
-        if (rc.IsFailure())
+        res = _dataStorage.Read(offset, destination.Slice(0, readSize));
+        if (res.IsFailure())
         {
             destination.Clear();
-            return rc.Log();
+            return res.Log();
         }
 
         // Validate the hashes of the read data blocks.
         Result verifyHashResult = Result.Success;
 
         using var hashGenerator = new UniqueRef<IHash256Generator>();
-        rc = _hashGeneratorFactory.Create(ref hashGenerator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        res = _hashGeneratorFactory.Create(ref hashGenerator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         int signatureCount = destination.Length >> _verificationBlockOrder;
         using var signatureBuffer =
@@ -259,17 +259,17 @@ public class IntegrityVerificationStorage : IStorage
         if (source.Length == 0)
             return Result.Success;
 
-        Result rc = CheckOffsetAndSize(offset, source.Length);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = CheckOffsetAndSize(offset, source.Length);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _dataStorage.GetSize(out long dataSize);
-        if (rc.IsFailure()) return rc.Miss();
+        res = _dataStorage.GetSize(out long dataSize);
+        if (res.IsFailure()) return res.Miss();
 
         if (offset >= dataSize)
             return ResultFs.InvalidOffset.Log();
 
-        rc = CheckAccessRange(offset, source.Length, Alignment.AlignUpPow2(dataSize, (uint)_verificationBlockSize));
-        if (rc.IsFailure()) return rc.Miss();
+        res = CheckAccessRange(offset, source.Length, Alignment.AlignUpPow2(dataSize, (uint)_verificationBlockSize));
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkRequiresAligned(offset, _verificationBlockSize);
         Assert.SdkRequiresAligned(source.Length, _verificationBlockSize);
@@ -304,8 +304,8 @@ public class IntegrityVerificationStorage : IStorage
             int bufferCount = Math.Min(signatureCount, signatureBuffer.GetSize() / Unsafe.SizeOf<BlockHash>());
 
             using var hashGenerator = new UniqueRef<IHash256Generator>();
-            rc = _hashGeneratorFactory.Create(ref hashGenerator.Ref());
-            if (rc.IsFailure()) return rc.Miss();
+            res = _hashGeneratorFactory.Create(ref hashGenerator.Ref());
+            if (res.IsFailure()) return res.Miss();
 
             while (updatedSignatureCount < signatureCount)
             {
@@ -339,19 +339,19 @@ public class IntegrityVerificationStorage : IStorage
         // If there was an error writing the updated hashes, only the data for the blocks that were
         // successfully updated will be written.
         int dataWriteSize = Math.Min(writeSize, updatedSignatureCount << _verificationBlockOrder);
-        rc = _dataStorage.Write(offset, source.Slice(0, dataWriteSize));
-        if (rc.IsFailure()) return rc.Miss();
+        res = _dataStorage.Write(offset, source.Slice(0, dataWriteSize));
+        if (res.IsFailure()) return res.Miss();
 
         return updateResult;
     }
 
     public override Result Flush()
     {
-        Result rc = _hashStorage.Flush();
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _hashStorage.Flush();
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _dataStorage.Flush();
-        if (rc.IsFailure()) return rc.Miss();
+        res = _dataStorage.Flush();
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -371,8 +371,8 @@ public class IntegrityVerificationStorage : IStorage
             {
                 Assert.SdkRequires(_isWritable);
 
-                Result rc = _dataStorage.GetSize(out long dataStorageSize);
-                if (rc.IsFailure()) return rc.Miss();
+                Result res = _dataStorage.GetSize(out long dataStorageSize);
+                if (res.IsFailure()) return res.Miss();
 
                 if (offset < 0 || dataStorageSize < offset)
                     return ResultFs.InvalidOffset.Log();
@@ -396,9 +396,9 @@ public class IntegrityVerificationStorage : IStorage
                 {
                     int currentSize = (int)Math.Min(remainingSize, bufferSize);
 
-                    rc = _hashStorage.Write(signOffset + signSize - remainingSize,
+                    res = _hashStorage.Write(signOffset + signSize - remainingSize,
                         workBuffer.Span.Slice(0, currentSize));
-                    if (rc.IsFailure()) return rc.Miss();
+                    if (res.IsFailure()) return res.Miss();
 
                     remainingSize -= currentSize;
                 }
@@ -409,8 +409,8 @@ public class IntegrityVerificationStorage : IStorage
             {
                 Assert.SdkRequires(_isWritable);
 
-                Result rc = _dataStorage.GetSize(out long dataStorageSize);
-                if (rc.IsFailure()) return rc.Miss();
+                Result res = _dataStorage.GetSize(out long dataStorageSize);
+                if (res.IsFailure()) return res.Miss();
 
                 if (offset < 0 || dataStorageSize < offset)
                     return ResultFs.InvalidOffset.Log();
@@ -424,8 +424,8 @@ public class IntegrityVerificationStorage : IStorage
                     return ResultFs.AllocationMemoryFailedInIntegrityVerificationStorageB.Log();
 
                 // Read the existing signature.
-                rc = _hashStorage.Read(signOffset, workBuffer.Span);
-                if (rc.IsFailure()) return rc.Miss();
+                res = _hashStorage.Read(signOffset, workBuffer.Span);
+                if (res.IsFailure()) return res.Miss();
 
                 // Clear the signature.
                 // This flips all bits, leaving the verification bit cleared.
@@ -443,25 +443,25 @@ public class IntegrityVerificationStorage : IStorage
                 if (_isWritable)
                     return ResultFs.UnsupportedOperateRangeForWritableIntegrityVerificationStorage.Log();
 
-                Result rc = _hashStorage.OperateRange(operationId, 0, long.MaxValue);
-                if (rc.IsFailure()) return rc.Miss();
+                Result res = _hashStorage.OperateRange(operationId, 0, long.MaxValue);
+                if (res.IsFailure()) return res.Miss();
 
-                rc = _dataStorage.OperateRange(operationId, offset, size);
-                if (rc.IsFailure()) return rc.Miss();
+                res = _dataStorage.OperateRange(operationId, offset, size);
+                if (res.IsFailure()) return res.Miss();
 
                 return Result.Success;
             }
             case OperationId.QueryRange:
             {
-                Result rc = _dataStorage.GetSize(out long dataStorageSize);
-                if (rc.IsFailure()) return rc.Miss();
+                Result res = _dataStorage.GetSize(out long dataStorageSize);
+                if (res.IsFailure()) return res.Miss();
 
                 if (offset < 0 || dataStorageSize < offset)
                     return ResultFs.InvalidOffset.Log();
 
                 long actualSize = Math.Min(size, dataStorageSize - offset);
-                rc = _dataStorage.OperateRange(outBuffer, operationId, offset, actualSize, inBuffer);
-                if (rc.IsFailure()) return rc.Miss();
+                res = _dataStorage.OperateRange(outBuffer, operationId, offset, actualSize, inBuffer);
+                if (res.IsFailure()) return res.Miss();
 
                 return Result.Success;
             }
@@ -481,8 +481,8 @@ public class IntegrityVerificationStorage : IStorage
         Assert.SdkGreaterEqual(destination.Length, sizeSignData);
 
         // Validate the hash storage contains the calculated range.
-        Result rc = _hashStorage.GetSize(out long sizeHash);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _hashStorage.GetSize(out long sizeHash);
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkLessEqual(offsetSignData + sizeSignData, sizeHash);
 
@@ -490,12 +490,12 @@ public class IntegrityVerificationStorage : IStorage
             return ResultFs.OutOfRange.Log();
 
         // Read the signature.
-        rc = _hashStorage.Read(offsetSignData, destination.Slice(0, (int)sizeSignData));
-        if (rc.IsFailure())
+        res = _hashStorage.Read(offsetSignData, destination.Slice(0, (int)sizeSignData));
+        if (res.IsFailure())
         {
             // Clear any read signature data if something goes wrong.
             destination.Slice(0, (int)sizeSignData);
-            return rc.Miss();
+            return res.Miss();
         }
 
         return Result.Success;
@@ -509,8 +509,8 @@ public class IntegrityVerificationStorage : IStorage
         long sizeSignData = (size >> _verificationBlockOrder) * HashSize;
         Assert.SdkGreaterEqual(source.Length, sizeSignData);
 
-        Result rc = _hashStorage.Write(offsetSignData, source.Slice(0, (int)sizeSignData));
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _hashStorage.Write(offsetSignData, source.Slice(0, (int)sizeSignData));
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -520,8 +520,8 @@ public class IntegrityVerificationStorage : IStorage
         UnsafeHelpers.SkipParamInit(out outHash);
 
         using var hashGenerator = new UniqueRef<IHash256Generator>();
-        Result rc = _hashGeneratorFactory.Create(ref hashGenerator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _hashGeneratorFactory.Create(ref hashGenerator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         CalcBlockHash(out outHash, buffer, verificationBlockSize, in hashGenerator);
         return Result.Success;
@@ -575,8 +575,8 @@ public class IntegrityVerificationStorage : IStorage
         // Writable storages allow using an all-zeros hash to indicate an empty block.
         if (_isWritable)
         {
-            Result rc = IsCleared(out bool isCleared, in hash);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = IsCleared(out bool isCleared, in hash);
+            if (res.IsFailure()) return res.Miss();
 
             if (isCleared)
                 return ResultFs.ClearedRealDataVerificationFailed.Log();

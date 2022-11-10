@@ -33,8 +33,8 @@ public class DuplexStorage : IStorage
         int outPos = 0;
         int remaining = destination.Length;
 
-        Result rc = CheckAccessRange(offset, destination.Length, Length);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = CheckAccessRange(offset, destination.Length, Length);
+        if (res.IsFailure()) return res.Miss();
 
         while (remaining > 0)
         {
@@ -45,8 +45,8 @@ public class DuplexStorage : IStorage
 
             IStorage data = Bitmap.Bitmap[blockNum] ? DataB : DataA;
 
-            rc = data.Read(inPos, destination.Slice(outPos, bytesToRead));
-            if (rc.IsFailure()) return rc;
+            res = data.Read(inPos, destination.Slice(outPos, bytesToRead));
+            if (res.IsFailure()) return res.Miss();
 
             outPos += bytesToRead;
             inPos += bytesToRead;
@@ -62,8 +62,8 @@ public class DuplexStorage : IStorage
         int outPos = 0;
         int remaining = source.Length;
 
-        Result rc = CheckAccessRange(offset, source.Length, Length);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = CheckAccessRange(offset, source.Length, Length);
+        if (res.IsFailure()) return res.Miss();
 
         while (remaining > 0)
         {
@@ -74,8 +74,8 @@ public class DuplexStorage : IStorage
 
             IStorage data = Bitmap.Bitmap[blockNum] ? DataB : DataA;
 
-            rc = data.Write(inPos, source.Slice(outPos, bytesToWrite));
-            if (rc.IsFailure()) return rc;
+            res = data.Write(inPos, source.Slice(outPos, bytesToWrite));
+            if (res.IsFailure()) return res.Miss();
 
             outPos += bytesToWrite;
             inPos += bytesToWrite;
@@ -87,14 +87,14 @@ public class DuplexStorage : IStorage
 
     public override Result Flush()
     {
-        Result rc = BitmapStorage.Flush();
-        if (rc.IsFailure()) return rc;
+        Result res = BitmapStorage.Flush();
+        if (res.IsFailure()) return res.Miss();
 
-        rc = DataA.Flush();
-        if (rc.IsFailure()) return rc;
+        res = DataA.Flush();
+        if (res.IsFailure()) return res.Miss();
 
-        rc = DataB.Flush();
-        if (rc.IsFailure()) return rc;
+        res = DataB.Flush();
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }

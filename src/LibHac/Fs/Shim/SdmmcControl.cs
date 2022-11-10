@@ -17,12 +17,12 @@ public static class SdmmcControl
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result rc = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = deviceOperator.Get.GetSdmmcConnectionStatus(out int speedMode, out int busWidth, (int)port);
-        if (rc.IsFailure()) return rc.Miss();
+        res = deviceOperator.Get.GetSdmmcConnectionStatus(out int speedMode, out int busWidth, (int)port);
+        if (res.IsFailure()) return res.Miss();
 
         outSpeedMode = (SdmmcSpeedMode)speedMode;
         outBusWidth = (SdmmcBusWidth)busWidth;
@@ -35,13 +35,13 @@ public static class SdmmcControl
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result rc = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = deviceOperator.Get.SuspendSdmmcControl();
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        res = deviceOperator.Get.SuspendSdmmcControl();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -51,13 +51,13 @@ public static class SdmmcControl
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result rc = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = deviceOperator.Get.ResumeSdmmcControl();
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        res = deviceOperator.Get.ResumeSdmmcControl();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }

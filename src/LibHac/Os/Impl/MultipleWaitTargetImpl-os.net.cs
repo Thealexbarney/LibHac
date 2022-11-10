@@ -42,9 +42,9 @@ public class MultiWaitTargetImpl : IDisposable
 
         do
         {
-            Result rc = WaitForAnyObjects(out int index, num, handles,
+            Result res = WaitForAnyObjects(out int index, num, handles,
                 (int)timeoutHelper.GetTimeLeftOnTarget().GetMilliSeconds());
-            if (rc.IsFailure()) return rc.Miss();
+            if (res.IsFailure()) return res.Miss();
 
             if (index == MultiWaitImpl.WaitTimedOut)
             {

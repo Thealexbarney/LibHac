@@ -28,57 +28,57 @@ public static class UserFile
     public static Result ReadFile(this FileSystemClient fs, FileHandle handle, long offset, Span<byte> destination,
         in ReadOption option)
     {
-        Result rc = ReadFileImpl(fs, out long bytesRead, handle, offset, destination, in option);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc;
+        Result res = ReadFileImpl(fs, out long bytesRead, handle, offset, destination, in option);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         if (bytesRead == destination.Length)
             return Result.Success;
 
-        rc = ResultFs.OutOfRange.Log();
-        fs.Impl.AbortIfNeeded(rc);
-        return rc;
+        res = ResultFs.OutOfRange.Log();
+        fs.Impl.AbortIfNeeded(res);
+        return res;
     }
 
     public static Result ReadFile(this FileSystemClient fs, FileHandle handle, long offset, Span<byte> destination)
     {
-        Result rc = ReadFileImpl(fs, out long bytesRead, handle, offset, destination, ReadOption.None);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc;
+        Result res = ReadFileImpl(fs, out long bytesRead, handle, offset, destination, ReadOption.None);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         if (bytesRead == destination.Length)
             return Result.Success;
 
-        rc = ResultFs.OutOfRange.Log();
-        fs.Impl.AbortIfNeeded(rc);
-        return rc;
+        res = ResultFs.OutOfRange.Log();
+        fs.Impl.AbortIfNeeded(res);
+        return res;
     }
 
     public static Result ReadFile(this FileSystemClient fs, out long bytesRead, FileHandle handle, long offset,
         Span<byte> destination, in ReadOption option)
     {
-        Result rc = ReadFileImpl(fs, out bytesRead, handle, offset, destination, in option);
-        fs.Impl.AbortIfNeeded(rc);
-        return rc;
+        Result res = ReadFileImpl(fs, out bytesRead, handle, offset, destination, in option);
+        fs.Impl.AbortIfNeeded(res);
+        return res;
     }
 
     public static Result ReadFile(this FileSystemClient fs, out long bytesRead, FileHandle handle, long offset,
         Span<byte> destination)
     {
-        Result rc = ReadFileImpl(fs, out bytesRead, handle, offset, destination, ReadOption.None);
-        fs.Impl.AbortIfNeeded(rc);
-        return rc;
+        Result res = ReadFileImpl(fs, out bytesRead, handle, offset, destination, ReadOption.None);
+        fs.Impl.AbortIfNeeded(res);
+        return res;
     }
 
     public static Result WriteFile(this FileSystemClient fs, FileHandle handle, long offset,
         ReadOnlySpan<byte> source, in WriteOption option)
     {
-        Result rc;
+        Result res;
 
         if (fs.Impl.IsEnabledAccessLog() && fs.Impl.IsEnabledHandleAccessLog(handle))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = Get(handle).Write(offset, source, in option);
+            res = Get(handle).Write(offset, source, in option);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             Span<byte> buffer = stackalloc byte[0x60];
@@ -89,87 +89,87 @@ public static class UserFile
             if (option.HasFlushFlag())
                 sb.Append(LogWriteOptionFlush);
 
-            fs.Impl.OutputAccessLog(rc, start, end, handle, new U8Span(sb.Buffer));
+            fs.Impl.OutputAccessLog(res, start, end, handle, new U8Span(sb.Buffer));
             sb.Dispose();
         }
         else
         {
-            rc = Get(handle).Write(offset, source, in option);
+            res = Get(handle).Write(offset, source, in option);
         }
 
-        fs.Impl.AbortIfNeeded(rc);
-        return rc;
+        fs.Impl.AbortIfNeeded(res);
+        return res;
     }
 
     public static Result FlushFile(this FileSystemClient fs, FileHandle handle)
     {
-        Result rc;
+        Result res;
 
         if (fs.Impl.IsEnabledAccessLog() && fs.Impl.IsEnabledHandleAccessLog(handle))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = Get(handle).Flush();
+            res = Get(handle).Flush();
             Tick end = fs.Hos.Os.GetSystemTick();
 
-            fs.Impl.OutputAccessLog(rc, start, end, handle, U8Span.Empty);
+            fs.Impl.OutputAccessLog(res, start, end, handle, U8Span.Empty);
         }
         else
         {
-            rc = Get(handle).Flush();
+            res = Get(handle).Flush();
         }
 
-        fs.Impl.AbortIfNeeded(rc);
-        return rc;
+        fs.Impl.AbortIfNeeded(res);
+        return res;
     }
 
     public static Result SetFileSize(this FileSystemClient fs, FileHandle handle, long size)
     {
-        Result rc;
+        Result res;
 
         if (fs.Impl.IsEnabledAccessLog() && fs.Impl.IsEnabledHandleAccessLog(handle))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = Get(handle).SetSize(size);
+            res = Get(handle).SetSize(size);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             Span<byte> buffer = stackalloc byte[0x20];
             var sb = new U8StringBuilder(buffer, true);
 
             sb.Append(LogSize).AppendFormat(size);
-            fs.Impl.OutputAccessLog(rc, start, end, handle, new U8Span(sb.Buffer));
+            fs.Impl.OutputAccessLog(res, start, end, handle, new U8Span(sb.Buffer));
         }
         else
         {
-            rc = Get(handle).SetSize(size);
+            res = Get(handle).SetSize(size);
         }
 
-        fs.Impl.AbortIfNeeded(rc);
-        return rc;
+        fs.Impl.AbortIfNeeded(res);
+        return res;
     }
 
     public static Result GetFileSize(this FileSystemClient fs, out long size, FileHandle handle)
     {
-        Result rc;
+        Result res;
 
         if (fs.Impl.IsEnabledAccessLog() && fs.Impl.IsEnabledHandleAccessLog(handle))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = Get(handle).GetSize(out size);
+            res = Get(handle).GetSize(out size);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             Span<byte> buffer = stackalloc byte[0x20];
             var sb = new U8StringBuilder(buffer, true);
 
-            sb.Append(LogSize).AppendFormat(AccessLogImpl.DereferenceOutValue(in size, rc));
-            fs.Impl.OutputAccessLog(rc, start, end, handle, new U8Span(sb.Buffer));
+            sb.Append(LogSize).AppendFormat(AccessLogImpl.DereferenceOutValue(in size, res));
+            fs.Impl.OutputAccessLog(res, start, end, handle, new U8Span(sb.Buffer));
         }
         else
         {
-            rc = Get(handle).GetSize(out size);
+            res = Get(handle).GetSize(out size);
         }
 
-        fs.Impl.AbortIfNeeded(rc);
-        return rc;
+        fs.Impl.AbortIfNeeded(res);
+        return res;
     }
 
     public static OpenMode GetFileOpenMode(this FileSystemClient fs, FileHandle handle)
@@ -212,20 +212,20 @@ public static class UserFile
     {
         UnsafeHelpers.SkipParamInit(out rangeInfo);
 
-        Result rc = Get(handle).OperateRange(SpanHelpers.AsByteSpan(ref rangeInfo), OperationId.QueryRange, offset,
+        Result res = Get(handle).OperateRange(SpanHelpers.AsByteSpan(ref rangeInfo), OperationId.QueryRange, offset,
             size, ReadOnlySpan<byte>.Empty);
 
-        fs.Impl.AbortIfNeeded(rc);
-        return rc;
+        fs.Impl.AbortIfNeeded(res);
+        return res;
     }
 
     public static Result InvalidateCache(this FileSystemClient fs, FileHandle handle)
     {
-        Result rc = Get(handle).OperateRange(Span<byte>.Empty, OperationId.InvalidateCache, 0, long.MaxValue,
+        Result res = Get(handle).OperateRange(Span<byte>.Empty, OperationId.InvalidateCache, 0, long.MaxValue,
             ReadOnlySpan<byte>.Empty);
 
-        fs.Impl.AbortIfNeeded(rc);
-        return rc;
+        fs.Impl.AbortIfNeeded(res);
+        return res;
     }
 
     public static Result QueryUnpreparedRange(this FileSystemClient fs, out Range unpreparedRange, FileHandle handle)
@@ -233,11 +233,11 @@ public static class UserFile
         UnsafeHelpers.SkipParamInit(out unpreparedRange);
         Unsafe.SkipInit(out UnpreparedRangeInfo info);
 
-        Result rc = Get(handle).OperateRange(SpanHelpers.AsByteSpan(ref info), OperationId.QueryUnpreparedRange, 0, 0,
+        Result res = Get(handle).OperateRange(SpanHelpers.AsByteSpan(ref info), OperationId.QueryUnpreparedRange, 0, 0,
             ReadOnlySpan<byte>.Empty);
 
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         unpreparedRange = info.Range;
         return Result.Success;
@@ -249,11 +249,11 @@ public static class UserFile
         UnsafeHelpers.SkipParamInit(out unpreparedRangeInfo);
         Unsafe.SkipInit(out UnpreparedRangeInfo info);
 
-        Result rc = Get(handle).OperateRange(SpanHelpers.AsByteSpan(ref info), OperationId.QueryUnpreparedRange, 0, 0,
+        Result res = Get(handle).OperateRange(SpanHelpers.AsByteSpan(ref info), OperationId.QueryUnpreparedRange, 0, 0,
             ReadOnlySpan<byte>.Empty);
 
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         unpreparedRangeInfo = info;
         return Result.Success;
@@ -267,11 +267,11 @@ public static class UserFile
         Unsafe.SkipInit(out UnpreparedRangeInfo info);
         var args = new LazyLoadArguments { GuideIndex = guideIndex };
 
-        Result rc = Get(handle).OperateRange(SpanHelpers.AsByteSpan(ref info), OperationId.QueryLazyLoadCompletionRate,
+        Result res = Get(handle).OperateRange(SpanHelpers.AsByteSpan(ref info), OperationId.QueryLazyLoadCompletionRate,
             0, 0, SpanHelpers.AsReadOnlyByteSpan(in args));
 
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         completionRate = info.CompletionRate;
         return Result.Success;
@@ -282,11 +282,11 @@ public static class UserFile
     {
         Unsafe.SkipInit(out UnpreparedRangeInfo info);
 
-        Result rc = Get(handle).OperateRange(SpanHelpers.AsByteSpan(ref info), OperationId.ReadyLazyLoadFile,
+        Result res = Get(handle).OperateRange(SpanHelpers.AsByteSpan(ref info), OperationId.ReadyLazyLoadFile,
             offset, size, ReadOnlySpan<byte>.Empty);
 
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }

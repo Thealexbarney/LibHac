@@ -19,13 +19,13 @@ public static class ImageDirectory
 {
     public static Result MountImageDirectory(this FileSystemClient fs, U8Span mountName, ImageDirectoryId directoryId)
     {
-        Result rc;
+        Result res;
         Span<byte> logBuffer = stackalloc byte[0x50];
 
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = Mount(fs, mountName, directoryId);
+            res = Mount(fs, mountName, directoryId);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var idString = new IdString();
@@ -34,15 +34,15 @@ public static class ImageDirectory
             sb.Append(LogName).Append(mountName).Append(LogQuote)
                 .Append(LogImageDirectoryId).Append(idString.ToString(directoryId));
 
-            fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+            fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(sb.Buffer));
         }
         else
         {
-            rc = Mount(fs, mountName, directoryId);
+            res = Mount(fs, mountName, directoryId);
         }
 
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
             fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
@@ -51,14 +51,14 @@ public static class ImageDirectory
 
         static Result Mount(FileSystemClient fs, U8Span mountName, ImageDirectoryId directoryId)
         {
-            Result rc = fs.Impl.CheckMountName(mountName);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = fs.Impl.CheckMountName(mountName);
+            if (res.IsFailure()) return res.Miss();
 
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
             using var fileSystem = new SharedRef<IFileSystemSf>();
 
-            rc = fileSystemProxy.Get.OpenImageDirectoryFileSystem(ref fileSystem.Ref(), directoryId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = fileSystemProxy.Get.OpenImageDirectoryFileSystem(ref fileSystem.Ref(), directoryId);
+            if (res.IsFailure()) return res.Miss();
 
             using var fileSystemAdapter =
                 new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
@@ -66,8 +66,8 @@ public static class ImageDirectory
             if (!fileSystemAdapter.HasValue)
                 return ResultFs.AllocationMemoryFailedInImageDirectoryA.Log();
 
-            rc = fs.Impl.Fs.Register(mountName, ref fileSystemAdapter.Ref());
-            if (rc.IsFailure()) return rc.Miss();
+            res = fs.Impl.Fs.Register(mountName, ref fileSystemAdapter.Ref());
+            if (res.IsFailure()) return res.Miss();
 
             return Result.Success;
         }

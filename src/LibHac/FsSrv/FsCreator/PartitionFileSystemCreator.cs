@@ -13,8 +13,8 @@ public class PartitionFileSystemCreator : IPartitionFileSystemCreator
         using var partitionFs =
             new SharedRef<PartitionFileSystemCore<StandardEntry>>(new PartitionFileSystemCore<StandardEntry>());
 
-        Result rc = partitionFs.Get.Initialize(ref baseStorage);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = partitionFs.Get.Initialize(ref baseStorage);
+        if (res.IsFailure()) return res.Miss();
 
         outFileSystem.SetByMove(ref partitionFs.Ref());
         return Result.Success;

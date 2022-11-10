@@ -41,40 +41,40 @@ public class SwitchStorage : IStorage
 
     public override Result Read(long offset, Span<byte> destination)
     {
-        Result rc = SelectStorage().Read(offset, destination);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = SelectStorage().Read(offset, destination);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
 
     public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
-        Result rc = SelectStorage().Write(offset, source);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = SelectStorage().Write(offset, source);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
 
     public override Result Flush()
     {
-        Result rc = SelectStorage().Flush();
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = SelectStorage().Flush();
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
 
     public override Result GetSize(out long size)
     {
-        Result rc = SelectStorage().GetSize(out size);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = SelectStorage().GetSize(out size);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
 
     public override Result SetSize(long size)
     {
-        Result rc = SelectStorage().SetSize(size);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = SelectStorage().SetSize(size);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -86,18 +86,18 @@ public class SwitchStorage : IStorage
         {
             case OperationId.InvalidateCache:
             {
-                Result rc = _trueStorage.Get.OperateRange(outBuffer, operationId, offset, size, inBuffer);
-                if (rc.IsFailure()) return rc.Miss();
+                Result res = _trueStorage.Get.OperateRange(outBuffer, operationId, offset, size, inBuffer);
+                if (res.IsFailure()) return res.Miss();
 
-                rc = _falseStorage.Get.OperateRange(outBuffer, operationId, offset, size, inBuffer);
-                if (rc.IsFailure()) return rc.Miss();
+                res = _falseStorage.Get.OperateRange(outBuffer, operationId, offset, size, inBuffer);
+                if (res.IsFailure()) return res.Miss();
 
                 return Result.Success;
             }
             case OperationId.QueryRange:
             {
-                Result rc = SelectStorage().OperateRange(outBuffer, operationId, offset, size, inBuffer);
-                if (rc.IsFailure()) return rc.Miss();
+                Result res = SelectStorage().OperateRange(outBuffer, operationId, offset, size, inBuffer);
+                if (res.IsFailure()) return res.Miss();
 
                 return Result.Success;
             }
@@ -199,15 +199,15 @@ public class RegionSwitchStorage : IStorage
         {
             if (CheckRegions(out long currentSize, offset + bytesRead, destination.Length - bytesRead))
             {
-                Result rc = _insideRegionStorage.Get.Read(offset + bytesRead,
+                Result res = _insideRegionStorage.Get.Read(offset + bytesRead,
                     destination.Slice(bytesRead, (int)currentSize));
-                if (rc.IsFailure()) return rc.Miss();
+                if (res.IsFailure()) return res.Miss();
             }
             else
             {
-                Result rc = _outsideRegionStorage.Get.Read(offset + bytesRead,
+                Result res = _outsideRegionStorage.Get.Read(offset + bytesRead,
                     destination.Slice(bytesRead, (int)currentSize));
-                if (rc.IsFailure()) return rc.Miss();
+                if (res.IsFailure()) return res.Miss();
             }
 
             bytesRead += (int)currentSize;
@@ -223,15 +223,15 @@ public class RegionSwitchStorage : IStorage
         {
             if (CheckRegions(out long currentSize, offset + bytesWritten, source.Length - bytesWritten))
             {
-                Result rc = _insideRegionStorage.Get.Write(offset + bytesWritten,
+                Result res = _insideRegionStorage.Get.Write(offset + bytesWritten,
                     source.Slice(bytesWritten, (int)currentSize));
-                if (rc.IsFailure()) return rc.Miss();
+                if (res.IsFailure()) return res.Miss();
             }
             else
             {
-                Result rc = _outsideRegionStorage.Get.Write(offset + bytesWritten,
+                Result res = _outsideRegionStorage.Get.Write(offset + bytesWritten,
                     source.Slice(bytesWritten, (int)currentSize));
-                if (rc.IsFailure()) return rc.Miss();
+                if (res.IsFailure()) return res.Miss();
             }
 
             bytesWritten += (int)currentSize;
@@ -242,30 +242,30 @@ public class RegionSwitchStorage : IStorage
 
     public override Result Flush()
     {
-        Result rc = _insideRegionStorage.Get.Flush();
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _insideRegionStorage.Get.Flush();
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _outsideRegionStorage.Get.Flush();
-        if (rc.IsFailure()) return rc.Miss();
+        res = _outsideRegionStorage.Get.Flush();
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
 
     public override Result GetSize(out long size)
     {
-        Result rc = _insideRegionStorage.Get.GetSize(out size);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _insideRegionStorage.Get.GetSize(out size);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
 
     public override Result SetSize(long size)
     {
-        Result rc = _insideRegionStorage.Get.SetSize(size);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _insideRegionStorage.Get.SetSize(size);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _outsideRegionStorage.Get.SetSize(size);
-        if (rc.IsFailure()) return rc.Miss();
+        res = _outsideRegionStorage.Get.SetSize(size);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -276,11 +276,11 @@ public class RegionSwitchStorage : IStorage
         {
             case OperationId.InvalidateCache:
             {
-                Result rc = _insideRegionStorage.Get.OperateRange(outBuffer, operationId, offset, size, inBuffer);
-                if (rc.IsFailure()) return rc.Miss();
+                Result res = _insideRegionStorage.Get.OperateRange(outBuffer, operationId, offset, size, inBuffer);
+                if (res.IsFailure()) return res.Miss();
 
-                rc = _outsideRegionStorage.Get.OperateRange(outBuffer, operationId, offset, size, inBuffer);
-                if (rc.IsFailure()) return rc.Miss();
+                res = _outsideRegionStorage.Get.OperateRange(outBuffer, operationId, offset, size, inBuffer);
+                if (res.IsFailure()) return res.Miss();
 
                 return Result.Success;
             }
@@ -296,15 +296,15 @@ public class RegionSwitchStorage : IStorage
 
                     if (CheckRegions(out long currentSize, offset + bytesProcessed, size - bytesProcessed))
                     {
-                        Result rc = _insideRegionStorage.Get.OperateRange(SpanHelpers.AsByteSpan(ref currentInfo),
+                        Result res = _insideRegionStorage.Get.OperateRange(SpanHelpers.AsByteSpan(ref currentInfo),
                             operationId, offset + bytesProcessed, currentSize, inBuffer);
-                        if (rc.IsFailure()) return rc.Miss();
+                        if (res.IsFailure()) return res.Miss();
                     }
                     else
                     {
-                        Result rc = _outsideRegionStorage.Get.OperateRange(SpanHelpers.AsByteSpan(ref currentInfo),
+                        Result res = _outsideRegionStorage.Get.OperateRange(SpanHelpers.AsByteSpan(ref currentInfo),
                             operationId, offset + bytesProcessed, currentSize, inBuffer);
-                        if (rc.IsFailure()) return rc.Miss();
+                        if (res.IsFailure()) return res.Miss();
                     }
 
                     mergedInfo.Merge(in currentInfo);

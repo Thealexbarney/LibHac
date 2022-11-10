@@ -29,11 +29,11 @@ public class InMemoryFileSystem : IAttributeFileSystem
 
     protected override Result DoCreateDirectory(in Path path, NxFileAttributes archiveAttribute)
     {
-        Result rc = FsTable.AddDirectory(new U8Span(path.GetString()));
-        if (rc.IsFailure()) return rc;
+        Result res = FsTable.AddDirectory(new U8Span(path.GetString()));
+        if (res.IsFailure()) return res.Miss();
 
-        rc = FsTable.GetDirectory(new U8Span(path.GetString()), out DirectoryNode dir);
-        if (rc.IsFailure()) return rc;
+        res = FsTable.GetDirectory(new U8Span(path.GetString()), out DirectoryNode dir);
+        if (res.IsFailure()) return res.Miss();
 
         dir.Attributes = archiveAttribute;
         return Result.Success;
@@ -41,11 +41,11 @@ public class InMemoryFileSystem : IAttributeFileSystem
 
     protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
     {
-        Result rc = FsTable.AddFile(new U8Span(path.GetString()));
-        if (rc.IsFailure()) return rc;
+        Result res = FsTable.AddFile(new U8Span(path.GetString()));
+        if (res.IsFailure()) return res.Miss();
 
-        rc = FsTable.GetFile(new U8Span(path.GetString()), out FileNode file);
-        if (rc.IsFailure()) return rc;
+        res = FsTable.GetFile(new U8Span(path.GetString()), out FileNode file);
+        if (res.IsFailure()) return res.Miss();
 
         return file.File.SetSize(size);
     }
@@ -73,8 +73,8 @@ public class InMemoryFileSystem : IAttributeFileSystem
     protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
         OpenDirectoryMode mode)
     {
-        Result rc = FsTable.GetDirectory(new U8Span(path.GetString()), out DirectoryNode dirNode);
-        if (rc.IsFailure()) return rc;
+        Result res = FsTable.GetDirectory(new U8Span(path.GetString()), out DirectoryNode dirNode);
+        if (res.IsFailure()) return res.Miss();
 
         outDirectory.Reset(new MemoryDirectory(dirNode, mode));
         return Result.Success;
@@ -82,8 +82,8 @@ public class InMemoryFileSystem : IAttributeFileSystem
 
     protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
     {
-        Result rc = FsTable.GetFile(new U8Span(path.GetString()), out FileNode fileNode);
-        if (rc.IsFailure()) return rc;
+        Result res = FsTable.GetFile(new U8Span(path.GetString()), out FileNode fileNode);
+        if (res.IsFailure()) return res.Miss();
 
         outFile.Reset(new MemoryFile(mode, fileNode.File));
 
@@ -276,11 +276,11 @@ public class InMemoryFileSystem : IAttributeFileSystem
                     entry.Type = DirectoryEntryType.File;
                     entry.Attributes = CurrentFile.Attributes;
 
-                    Result rc = CurrentFile.File.GetSize(out entry.Size);
-                    if (rc.IsFailure())
+                    Result res = CurrentFile.File.GetSize(out entry.Size);
+                    if (res.IsFailure())
                     {
                         entriesRead = 0;
-                        return rc;
+                        return res;
                     }
 
                     i++;
@@ -446,8 +446,8 @@ public class InMemoryFileSystem : IAttributeFileSystem
         {
             var parentPath = new U8Span(PathTools.GetParentDirectory(path));
 
-            Result rc = FindDirectory(parentPath, out DirectoryNode parent);
-            if (rc.IsFailure()) return rc;
+            Result res = FindDirectory(parentPath, out DirectoryNode parent);
+            if (res.IsFailure()) return res.Miss();
             var fileName = new U8Span(PathTools.GetLastSegment(path));
 
 
@@ -458,8 +458,8 @@ public class InMemoryFileSystem : IAttributeFileSystem
         {
             var parentPath = new U8Span(PathTools.GetParentDirectory(path));
 
-            Result rc = FindDirectory(parentPath, out DirectoryNode parent);
-            if (rc.IsFailure()) return rc;
+            Result res = FindDirectory(parentPath, out DirectoryNode parent);
+            if (res.IsFailure()) return res.Miss();
 
             var dirName = new U8Span(PathTools.GetLastSegment(path));
 
@@ -478,13 +478,13 @@ public class InMemoryFileSystem : IAttributeFileSystem
 
         public Result RenameDirectory(U8Span oldPath, U8Span newPath)
         {
-            Result rc = FindDirectory(oldPath, out DirectoryNode directory);
-            if (rc.IsFailure()) return rc;
+            Result res = FindDirectory(oldPath, out DirectoryNode directory);
+            if (res.IsFailure()) return res.Miss();
 
             var newParentPath = new U8Span(PathTools.GetParentDirectory(newPath));
 
-            rc = FindDirectory(newParentPath, out DirectoryNode newParent);
-            if (rc.IsFailure()) return rc;
+            res = FindDirectory(newParentPath, out DirectoryNode newParent);
+            if (res.IsFailure()) return res.Miss();
 
             var newName = new U8Span(PathTools.GetLastSegment(newPath));
 
@@ -513,13 +513,13 @@ public class InMemoryFileSystem : IAttributeFileSystem
 
         public Result RenameFile(U8Span oldPath, U8Span newPath)
         {
-            Result rc = FindFile(oldPath, out FileNode file);
-            if (rc.IsFailure()) return rc;
+            Result res = FindFile(oldPath, out FileNode file);
+            if (res.IsFailure()) return res.Miss();
 
             var newParentPath = new U8Span(PathTools.GetParentDirectory(newPath));
 
-            rc = FindDirectory(newParentPath, out DirectoryNode newParent);
-            if (rc.IsFailure()) return rc;
+            res = FindDirectory(newParentPath, out DirectoryNode newParent);
+            if (res.IsFailure()) return res.Miss();
 
             var newName = new U8Span(PathTools.GetLastSegment(newPath));
 
@@ -549,8 +549,8 @@ public class InMemoryFileSystem : IAttributeFileSystem
 
         public Result DeleteDirectory(U8Span path, bool recursive)
         {
-            Result rc = FindDirectory(path, out DirectoryNode directory);
-            if (rc.IsFailure()) return rc;
+            Result res = FindDirectory(path, out DirectoryNode directory);
+            if (res.IsFailure()) return res.Miss();
 
             if (!recursive && (directory.ChildDirectory != null || directory.ChildFile != null))
             {
@@ -563,8 +563,8 @@ public class InMemoryFileSystem : IAttributeFileSystem
 
         public Result DeleteFile(U8Span path)
         {
-            Result rc = FindFile(path, out FileNode file);
-            if (rc.IsFailure()) return rc;
+            Result res = FindFile(path, out FileNode file);
+            if (res.IsFailure()) return res.Miss();
 
             UnlinkFile(file);
             return Result.Success;
@@ -572,8 +572,8 @@ public class InMemoryFileSystem : IAttributeFileSystem
 
         public Result CleanDirectory(U8Span path)
         {
-            Result rc = FindDirectory(path, out DirectoryNode directory);
-            if (rc.IsFailure()) return rc;
+            Result res = FindDirectory(path, out DirectoryNode directory);
+            if (res.IsFailure()) return res.Miss();
 
             directory.ChildDirectory = null;
             directory.ChildFile = null;
@@ -625,11 +625,11 @@ public class InMemoryFileSystem : IAttributeFileSystem
         {
             var parentPath = new U8Span(PathTools.GetParentDirectory(path));
 
-            Result rc = FindDirectory(parentPath, out DirectoryNode parentNode);
-            if (rc.IsFailure())
+            Result res = FindDirectory(parentPath, out DirectoryNode parentNode);
+            if (res.IsFailure())
             {
                 UnsafeHelpers.SkipParamInit(out file);
-                return rc;
+                return res;
             }
 
             var fileName = new U8Span(PathTools.GetLastSegment(path));

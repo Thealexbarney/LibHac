@@ -137,8 +137,8 @@ public class SaveDataFileSystemCacheManager : IDisposable
         }
         else
         {
-            Result rc = fileSystem.Get.RollbackOnlyModified();
-            if (rc.IsSuccess())
+            Result res = fileSystem.Get.RollbackOnlyModified();
+            if (res.IsSuccess())
             {
                 using ScopedLock<SdkRecursiveMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 

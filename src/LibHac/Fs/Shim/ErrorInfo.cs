@@ -14,9 +14,9 @@ public static class ErrorInfo
     {
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-        Result rc = fileSystemProxy.Get.GetAndClearErrorInfo(out outErrorInfo);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fileSystemProxy.Get.GetAndClearErrorInfo(out outErrorInfo);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }

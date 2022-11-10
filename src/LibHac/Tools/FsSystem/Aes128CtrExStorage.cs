@@ -32,9 +32,9 @@ public class Aes128CtrExStorage : Aes128CtrStorage
         using var valueNodeStorage = new ValueSubStorage(nodeStorage, 0, nodeStorageSize);
         using var valueEntryStorage = new ValueSubStorage(entryStorage, 0, entryStorageSize);
 
-        Result rc = Table.Initialize(new ArrayPoolMemoryResource(), in valueNodeStorage, in valueEntryStorage, NodeSize,
+        Result res = Table.Initialize(new ArrayPoolMemoryResource(), in valueNodeStorage, in valueEntryStorage, NodeSize,
             Unsafe.SizeOf<Entry>(), entryCount);
-        rc.ThrowIfFailure();
+        res.ThrowIfFailure();
     }
 
     public override Result Read(long offset, Span<byte> destination)
@@ -42,16 +42,16 @@ public class Aes128CtrExStorage : Aes128CtrStorage
         if (destination.Length == 0)
             return Result.Success;
 
-        Result rc = Table.GetOffsets(out BucketTree.Offsets offsets);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = Table.GetOffsets(out BucketTree.Offsets offsets);
+        if (res.IsFailure()) return res.Miss();
 
         if (!offsets.IsInclude(offset, destination.Length))
             return ResultFs.OutOfRange.Log();
 
         using var visitor = new BucketTree.Visitor();
 
-        rc = Table.Find(ref visitor.Ref, offset);
-        if (rc.IsFailure()) return rc;
+        res = Table.Find(ref visitor.Ref, offset);
+        if (res.IsFailure()) return res.Miss();
 
         long inPos = offset;
         int outPos = 0;
@@ -65,8 +65,8 @@ public class Aes128CtrExStorage : Aes128CtrStorage
             long nextEntryOffset;
             if (visitor.CanMoveNext())
             {
-                rc = visitor.MoveNext();
-                if (rc.IsFailure()) return rc;
+                res = visitor.MoveNext();
+                if (res.IsFailure()) return res.Miss();
 
                 nextEntryOffset = visitor.Get<Entry>().Offset;
                 if (!offsets.IsInclude(nextEntryOffset))
@@ -83,8 +83,8 @@ public class Aes128CtrExStorage : Aes128CtrStorage
             {
                 UpdateCounterSubsection((uint)currentEntry.Generation);
 
-                rc = base.Read(inPos, destination.Slice(outPos, bytesToRead));
-                if (rc.IsFailure()) return rc;
+                res = base.Read(inPos, destination.Slice(outPos, bytesToRead));
+                if (res.IsFailure()) return res.Miss();
             }
 
             outPos += bytesToRead;

@@ -83,8 +83,8 @@ public abstract class IFile : IDisposable
         {
             if (option.HasFlushFlag())
             {
-                Result rc = Flush();
-                if (rc.IsFailure()) return rc;
+                Result res = Flush();
+                if (res.IsFailure()) return res.Miss();
             }
 
             return Result.Success;
@@ -167,8 +167,8 @@ public abstract class IFile : IDisposable
             return ResultFs.ReadUnpermitted.Log();
 
         // Get the file size, and validate our offset.
-        Result rc = GetSize(out long fileSize);
-        if (rc.IsFailure()) return rc;
+        Result res = GetSize(out long fileSize);
+        if (res.IsFailure()) return res.Miss();
 
         if (offset > fileSize)
             return ResultFs.OutOfRange.Log();
@@ -187,8 +187,8 @@ public abstract class IFile : IDisposable
             return ResultFs.WriteUnpermitted.Log();
 
         // Get the file size.
-        Result rc = GetSize(out long fileSize);
-        if (rc.IsFailure()) return rc;
+        Result res = GetSize(out long fileSize);
+        if (res.IsFailure()) return res.Miss();
 
         needsAppend = false;
 

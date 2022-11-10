@@ -237,8 +237,8 @@ public partial class BucketTree : IDisposable
                 Offset mid = pos + half;
 
                 long offset = 0;
-                Result rc = storage.Read(mid.Get(), SpanHelpers.AsByteSpan(ref offset));
-                if (rc.IsFailure()) return rc.Miss();
+                Result res = storage.Read(mid.Get(), SpanHelpers.AsByteSpan(ref offset));
+                if (res.IsFailure()) return res.Miss();
 
                 if (offset <= virtualAddress)
                 {
@@ -481,8 +481,8 @@ public partial class BucketTree : IDisposable
     {
         UnsafeHelpers.SkipParamInit(out offsets);
 
-        Result rc = EnsureOffsetCache();
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = EnsureOffsetCache();
+        if (res.IsFailure()) return res.Miss();
 
         offsets = _offsetCache.Offsets;
         return Result.Success;
@@ -510,12 +510,12 @@ public partial class BucketTree : IDisposable
         try
         {
             // Read node.
-            Result rc = nodeStorage.Read(0, _nodeL1.GetBuffer());
-            if (rc.IsFailure()) return rc;
+            Result res = nodeStorage.Read(0, _nodeL1.GetBuffer());
+            if (res.IsFailure()) return res.Miss();
 
             // Verify node.
-            rc = _nodeL1.GetHeader().Verify(0, nodeSize, sizeof(long));
-            if (rc.IsFailure()) return rc;
+            res = _nodeL1.GetHeader().Verify(0, nodeSize, sizeof(long));
+            if (res.IsFailure()) return res.Miss();
 
             // Validate offsets.
             int offsetCount = GetOffsetCount(nodeSize);
@@ -604,22 +604,22 @@ public partial class BucketTree : IDisposable
         if (IsEmpty())
             return ResultFs.OutOfRange.Log();
 
-        Result rc = GetOffsets(out Offsets offsets);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetOffsets(out Offsets offsets);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = visitor.Initialize(this, in offsets);
-        if (rc.IsFailure()) return rc.Miss();
+        res = visitor.Initialize(this, in offsets);
+        if (res.IsFailure()) return res.Miss();
 
         return visitor.Find(virtualAddress);
     }
 
     public Result InvalidateCache()
     {
-        Result rc = _nodeStorage.OperateRange(OperationId.InvalidateCache, 0, long.MaxValue);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _nodeStorage.OperateRange(OperationId.InvalidateCache, 0, long.MaxValue);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _entryStorage.OperateRange(OperationId.InvalidateCache, 0, long.MaxValue);
-        if (rc.IsFailure()) return rc.Miss();
+        res = _entryStorage.OperateRange(OperationId.InvalidateCache, 0, long.MaxValue);
+        if (res.IsFailure()) return res.Miss();
 
         _offsetCache.IsInitialized = false;
         return Result.Success;
@@ -635,11 +635,11 @@ public partial class BucketTree : IDisposable
         if (_offsetCache.IsInitialized)
             return Result.Success;
 
-        Result rc = _nodeStorage.Read(0, _nodeL1.GetBuffer());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _nodeStorage.Read(0, _nodeL1.GetBuffer());
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _nodeL1.GetHeader().Verify(0, _nodeSize, sizeof(long));
-        if (rc.IsFailure()) return rc.Miss();
+        res = _nodeL1.GetHeader().Verify(0, _nodeSize, sizeof(long));
+        if (res.IsFailure()) return res.Miss();
 
         BucketTreeNode<long> node = _nodeL1.GetNode<long>();
 
@@ -705,8 +705,8 @@ public partial class BucketTree : IDisposable
         using var pool = new PooledBuffer((int)_nodeSize, 1);
         var buffer = Span<byte>.Empty;
 
-        Result rc = _entryStorage.GetSize(out long entryStorageSize);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _entryStorage.GetSize(out long entryStorageSize);
+        if (res.IsFailure()) return res.Miss();
 
         // Read the node.
         if (_nodeSize <= pool.GetSize())
@@ -717,8 +717,8 @@ public partial class BucketTree : IDisposable
             if (_nodeSize + ofs > entryStorageSize)
                 return ResultFs.InvalidBucketTreeNodeEntryCount.Log();
 
-            rc = _entryStorage.Read(ofs, buffer.Slice(0, (int)_nodeSize));
-            if (rc.IsFailure()) return rc.Miss();
+            res = _entryStorage.Read(ofs, buffer.Slice(0, (int)_nodeSize));
+            if (res.IsFailure()) return res.Miss();
         }
 
         // Calculate extents.
@@ -758,8 +758,8 @@ public partial class BucketTree : IDisposable
                     if (_entrySize + ofs > entryStorageSize)
                         return ResultFs.InvalidBucketTreeEntryOffset.Log();
 
-                    rc = _entryStorage.Read(ofs, SpanHelpers.AsByteSpan(ref nextEntry));
-                    if (rc.IsFailure()) return rc.Miss();
+                    res = _entryStorage.Read(ofs, SpanHelpers.AsByteSpan(ref nextEntry));
+                    if (res.IsFailure()) return res.Miss();
                 }
                 else
                 {
@@ -940,7 +940,7 @@ public partial class BucketTree : IDisposable
         {
             Assert.SdkRequiresNotNull(_tree);
 
-            Result rc;
+            Result res;
 
             // Get the L1 node.
             BucketTreeNode<long> nodeL1 = _tree._nodeL1.GetNode<long>();
@@ -983,8 +983,8 @@ public partial class BucketTree : IDisposable
                     if (index >= _tree._offsetCount)
                         return ResultFs.InvalidBucketTreeNodeOffset.Log();
 
-                    rc = FindEntrySet(out entrySetIndex, virtualAddress, index);
-                    if (rc.IsFailure()) return rc;
+                    res = FindEntrySet(out entrySetIndex, virtualAddress, index);
+                    if (res.IsFailure()) return res.Miss();
                 }
                 else
                 {
@@ -997,8 +997,8 @@ public partial class BucketTree : IDisposable
                 return ResultFs.InvalidBucketTreeNodeOffset.Log();
 
             // Find the entry.
-            rc = FindEntry(virtualAddress, entrySetIndex);
-            if (rc.IsFailure()) return rc;
+            res = FindEntry(virtualAddress, entrySetIndex);
+            if (res.IsFailure()) return res.Miss();
 
             // Set count.
             _entrySetCount = _tree._entrySetCount;
@@ -1033,13 +1033,13 @@ public partial class BucketTree : IDisposable
             ref ValueSubStorage storage = ref _tree._nodeStorage;
 
             // Read the node.
-            Result rc = storage.Read(nodeOffset, buffer.Slice(0, (int)nodeSize));
-            if (rc.IsFailure()) return rc;
+            Result res = storage.Read(nodeOffset, buffer.Slice(0, (int)nodeSize));
+            if (res.IsFailure()) return res.Miss();
 
             // Validate the header.
             NodeHeader header = MemoryMarshal.Cast<byte, NodeHeader>(buffer)[0];
-            rc = header.Verify(nodeIndex, nodeSize, sizeof(long));
-            if (rc.IsFailure()) return rc;
+            res = header.Verify(nodeIndex, nodeSize, sizeof(long));
+            if (res.IsFailure()) return res.Miss();
 
             // Create the node and find.
             var node = new StorageNode(sizeof(long), header.EntryCount);
@@ -1064,16 +1064,16 @@ public partial class BucketTree : IDisposable
 
             // Read and validate the header.
             Unsafe.SkipInit(out NodeHeader header);
-            Result rc = storage.Read(nodeOffset, SpanHelpers.AsByteSpan(ref header));
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = storage.Read(nodeOffset, SpanHelpers.AsByteSpan(ref header));
+            if (res.IsFailure()) return res.Miss();
 
-            rc = header.Verify(nodeIndex, nodeSize, sizeof(long));
-            if (rc.IsFailure()) return rc.Miss();
+            res = header.Verify(nodeIndex, nodeSize, sizeof(long));
+            if (res.IsFailure()) return res.Miss();
 
             // Create the node, and find.
             var node = new StorageNode(nodeOffset, sizeof(long), header.EntryCount);
-            rc = node.Find(in storage, virtualAddress);
-            if (rc.IsFailure()) return rc.Miss();
+            res = node.Find(in storage, virtualAddress);
+            if (res.IsFailure()) return res.Miss();
 
             if (node.GetIndex() < 0)
                 return ResultFs.InvalidBucketTreeVirtualOffset.Log();
@@ -1109,13 +1109,13 @@ public partial class BucketTree : IDisposable
             ref ValueSubStorage storage = ref _tree._entryStorage;
 
             // Read the entry set.
-            Result rc = storage.Read(entrySetOffset, buffer.Slice(0, (int)entrySetSize));
-            if (rc.IsFailure()) return rc;
+            Result res = storage.Read(entrySetOffset, buffer.Slice(0, (int)entrySetSize));
+            if (res.IsFailure()) return res.Miss();
 
             // Validate the entry set.
             EntrySetHeader entrySet = MemoryMarshal.Cast<byte, EntrySetHeader>(buffer)[0];
-            rc = entrySet.Header.Verify(entrySetIndex, entrySetSize, entrySize);
-            if (rc.IsFailure()) return rc;
+            res = entrySet.Header.Verify(entrySetIndex, entrySetSize, entrySize);
+            if (res.IsFailure()) return res.Miss();
 
             // Create the node, and find.
             var node = new StorageNode(entrySize, entrySet.Info.Count);
@@ -1146,16 +1146,16 @@ public partial class BucketTree : IDisposable
 
             // Read and validate the entry set.
             Unsafe.SkipInit(out EntrySetHeader entrySet);
-            Result rc = storage.Read(entrySetOffset, SpanHelpers.AsByteSpan(ref entrySet));
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = storage.Read(entrySetOffset, SpanHelpers.AsByteSpan(ref entrySet));
+            if (res.IsFailure()) return res.Miss();
 
-            rc = entrySet.Header.Verify(entrySetIndex, entrySetSize, entrySize);
-            if (rc.IsFailure()) return rc.Miss();
+            res = entrySet.Header.Verify(entrySetIndex, entrySetSize, entrySize);
+            if (res.IsFailure()) return res.Miss();
 
             // Create the node, and find.
             var node = new StorageNode(entrySetOffset, entrySize, entrySet.Info.Count);
-            rc = node.Find(in storage, virtualAddress);
-            if (rc.IsFailure()) return rc.Miss();
+            res = node.Find(in storage, virtualAddress);
+            if (res.IsFailure()) return res.Miss();
 
             if (node.GetIndex() < 0)
                 return ResultFs.InvalidBucketTreeVirtualOffset.Log();
@@ -1165,8 +1165,8 @@ public partial class BucketTree : IDisposable
             int entryIndex = node.GetIndex();
             long entryOffset = GetBucketTreeEntryOffset(entrySetOffset, entrySize, entryIndex);
 
-            rc = storage.Read(entryOffset, _entry.Span);
-            if (rc.IsFailure()) return rc.Miss();
+            res = storage.Read(entryOffset, _entry.Span);
+            if (res.IsFailure()) return res.Miss();
 
             // Set our entry set/index.
             _entrySet = entrySet;
@@ -1177,7 +1177,7 @@ public partial class BucketTree : IDisposable
 
         public Result MoveNext()
         {
-            Result rc;
+            Result res;
 
             if (!IsValid())
                 return ResultFs.OutOfRange.Log();
@@ -1198,11 +1198,11 @@ public partial class BucketTree : IDisposable
                 long entrySetSize = _tree._nodeSize;
                 long entrySetOffset = entrySetIndex * entrySetSize;
 
-                rc = _tree._entryStorage.Read(entrySetOffset, SpanHelpers.AsByteSpan(ref _entrySet));
-                if (rc.IsFailure()) return rc;
+                res = _tree._entryStorage.Read(entrySetOffset, SpanHelpers.AsByteSpan(ref _entrySet));
+                if (res.IsFailure()) return res.Miss();
 
-                rc = _entrySet.Header.Verify(entrySetIndex, entrySetSize, _tree._entrySize);
-                if (rc.IsFailure()) return rc;
+                res = _entrySet.Header.Verify(entrySetIndex, entrySetSize, _tree._entrySize);
+                if (res.IsFailure()) return res.Miss();
 
                 if (_entrySet.Info.Start != end || _entrySet.Info.Start >= _entrySet.Info.End)
                     return ResultFs.InvalidBucketTreeEntrySetOffset.Log();
@@ -1218,8 +1218,8 @@ public partial class BucketTree : IDisposable
             long entrySize = _tree._entrySize;
             long entryOffset = GetBucketTreeEntryOffset(_entrySet.Info.Index, _tree._nodeSize, entrySize, entryIndex);
 
-            rc = _tree._entryStorage.Read(entryOffset, _entry.Span);
-            if (rc.IsFailure()) return rc;
+            res = _tree._entryStorage.Read(entryOffset, _entry.Span);
+            if (res.IsFailure()) return res.Miss();
 
             // Note that we changed index.
             _entryIndex = entryIndex;
@@ -1228,7 +1228,7 @@ public partial class BucketTree : IDisposable
 
         public Result MovePrevious()
         {
-            Result rc;
+            Result res;
 
             if (!IsValid())
                 return ResultFs.OutOfRange.Log();
@@ -1248,11 +1248,11 @@ public partial class BucketTree : IDisposable
                 int entrySetIndex = _entrySet.Info.Index - 1;
                 long entrySetOffset = entrySetIndex * entrySetSize;
 
-                rc = _tree._entryStorage.Read(entrySetOffset, SpanHelpers.AsByteSpan(ref _entrySet));
-                if (rc.IsFailure()) return rc;
+                res = _tree._entryStorage.Read(entrySetOffset, SpanHelpers.AsByteSpan(ref _entrySet));
+                if (res.IsFailure()) return res.Miss();
 
-                rc = _entrySet.Header.Verify(entrySetIndex, entrySetSize, _tree._entrySize);
-                if (rc.IsFailure()) return rc;
+                res = _entrySet.Header.Verify(entrySetIndex, entrySetSize, _tree._entrySize);
+                if (res.IsFailure()) return res.Miss();
 
                 if (_entrySet.Info.End != start || _entrySet.Info.Start >= _entrySet.Info.End)
                     return ResultFs.InvalidBucketTreeEntrySetOffset.Log();
@@ -1270,8 +1270,8 @@ public partial class BucketTree : IDisposable
             long entrySize = _tree._entrySize;
             long entryOffset = GetBucketTreeEntryOffset(_entrySet.Info.Index, _tree._nodeSize, entrySize, entryIndex);
 
-            rc = _tree._entryStorage.Read(entryOffset, _entry.Span);
-            if (rc.IsFailure()) return rc;
+            res = _tree._entryStorage.Read(entryOffset, _entry.Span);
+            if (res.IsFailure()) return res.Miss();
 
             // Note that we changed index.
             _entryIndex = entryIndex;

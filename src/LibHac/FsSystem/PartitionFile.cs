@@ -24,8 +24,8 @@ public class PartitionFile : IFile
     {
         bytesRead = 0;
 
-        Result rc = DryRead(out long toRead, offset, destination.Length, in option, Mode);
-        if (rc.IsFailure()) return rc;
+        Result res = DryRead(out long toRead, offset, destination.Length, in option, Mode);
+        if (res.IsFailure()) return res.Miss();
 
         long storageOffset = Offset + offset;
         BaseStorage.Read(storageOffset, destination.Slice(0, (int)toRead));
@@ -36,15 +36,15 @@ public class PartitionFile : IFile
 
     protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
     {
-        Result rc = DryWrite(out bool isResizeNeeded, offset, source.Length, in option, Mode);
-        if (rc.IsFailure()) return rc;
+        Result res = DryWrite(out bool isResizeNeeded, offset, source.Length, in option, Mode);
+        if (res.IsFailure()) return res.Miss();
 
         if (isResizeNeeded) return ResultFs.UnsupportedWriteForPartitionFile.Log();
 
         if (offset > Size) return ResultFs.OutOfRange.Log();
 
-        rc = BaseStorage.Write(offset, source);
-        if (rc.IsFailure()) return rc;
+        res = BaseStorage.Write(offset, source);
+        if (res.IsFailure()) return res.Miss();
 
         // N doesn't flush if the flag is set
         if (option.HasFlushFlag())

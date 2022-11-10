@@ -22,8 +22,8 @@ public class NullFile : IFile
     {
         bytesRead = 0;
 
-        Result rc = DryRead(out long toRead, offset, destination.Length, in option, Mode);
-        if (rc.IsFailure()) return rc;
+        Result res = DryRead(out long toRead, offset, destination.Length, in option, Mode);
+        if (res.IsFailure()) return res.Miss();
 
         destination.Slice(0, (int)toRead).Clear();
 

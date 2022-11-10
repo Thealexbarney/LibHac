@@ -130,11 +130,11 @@ public class AesCtrCounterExtendedStorage : IStorage
     {
         Unsafe.SkipInit(out BucketTree.Header header);
 
-        Result rc = tableStorage.Read(0, SpanHelpers.AsByteSpan(ref header));
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = tableStorage.Read(0, SpanHelpers.AsByteSpan(ref header));
+        if (res.IsFailure()) return res.Miss();
 
-        rc = header.Verify();
-        if (rc.IsFailure()) return rc.Miss();
+        res = header.Verify();
+        if (res.IsFailure()) return res.Miss();
 
         long nodeStorageSize = QueryNodeStorageSize(header.EntryCount);
         long entryStorageSize = QueryEntryStorageSize(header.EntryCount);
@@ -142,11 +142,11 @@ public class AesCtrCounterExtendedStorage : IStorage
         long entryStorageOffset = nodeStorageOffset + nodeStorageSize;
 
         using var decryptor = new UniqueRef<IDecryptor>();
-        rc = CreateSoftwareDecryptor(ref decryptor.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        res = CreateSoftwareDecryptor(ref decryptor.Ref());
+        if (res.IsFailure()) return res.Miss();
 
-        rc = tableStorage.GetSize(out long storageSize);
-        if (rc.IsFailure()) return rc.Miss();
+        res = tableStorage.GetSize(out long storageSize);
+        if (res.IsFailure()) return res.Miss();
 
         if (nodeStorageOffset + nodeStorageSize + entryStorageSize > storageSize)
             return ResultFs.InvalidAesCtrCounterExtendedMetaStorageSize.Log();
@@ -166,24 +166,24 @@ public class AesCtrCounterExtendedStorage : IStorage
         Assert.SdkRequiresGreaterEqual(counterOffset, 0);
         Assert.SdkRequiresNotNull(in decryptor);
 
-        Result rc;
+        Result res;
 
         if (entryCount > 0)
         {
-            rc = _table.Initialize(allocator, in nodeStorage, in entryStorage, NodeSize, Unsafe.SizeOf<Entry>(),
+            res = _table.Initialize(allocator, in nodeStorage, in entryStorage, NodeSize, Unsafe.SizeOf<Entry>(),
                 entryCount);
-            if (rc.IsFailure()) return rc.Miss();
+            if (res.IsFailure()) return res.Miss();
         }
         else
         {
             _table.Initialize(NodeSize, 0);
         }
 
-        rc = dataStorage.GetSize(out long dataStorageSize);
-        if (rc.IsFailure()) return rc.Miss();
+        res = dataStorage.GetSize(out long dataStorageSize);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _table.GetOffsets(out BucketTree.Offsets offsets);
-        if (rc.IsFailure()) return rc.Miss();
+        res = _table.GetOffsets(out BucketTree.Offsets offsets);
+        if (res.IsFailure()) return res.Miss();
 
         if (offsets.EndOffset > dataStorageSize)
             return ResultFs.InvalidAesCtrCounterExtendedDataStorageSize.Log();
@@ -224,23 +224,23 @@ public class AesCtrCounterExtendedStorage : IStorage
             return ResultFs.InvalidSize.Log();
 
         // Ensure the the requested range is within the bounds of the table.
-        Result rc = _table.GetOffsets(out BucketTree.Offsets offsets);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _table.GetOffsets(out BucketTree.Offsets offsets);
+        if (res.IsFailure()) return res.Miss();
 
         if (!offsets.IsInclude(offset, destination.Length))
             return ResultFs.OutOfRange.Log();
 
         // Fill the destination buffer with the encrypted data.
-        rc = _dataStorage.Read(offset, destination);
-        if (rc.IsFailure()) return rc.Miss();
+        res = _dataStorage.Read(offset, destination);
+        if (res.IsFailure()) return res.Miss();
 
         // Temporarily increase our thread priority.
         using var changePriority = new ScopedThreadPriorityChanger(1, ScopedThreadPriorityChanger.Mode.Relative);
 
         // Find the entry in the table that contains our current offset.
         using var visitor = new BucketTree.Visitor();
-        rc = _table.Find(ref visitor.Ref, offset);
-        if (rc.IsFailure()) return rc.Miss();
+        res = _table.Find(ref visitor.Ref, offset);
+        if (res.IsFailure()) return res.Miss();
 
         // Verify that the entry's offset is aligned to an AES block and within the bounds of the table.
         long entryOffset = visitor.Get<Entry>().GetOffset();
@@ -270,8 +270,8 @@ public class AesCtrCounterExtendedStorage : IStorage
             {
                 // Advance to the next entry so we know where our current entry ends.
                 // The current entry's end offset is the next entry's start offset.
-                rc = visitor.MoveNext();
-                if (rc.IsFailure()) return rc.Miss();
+                res = visitor.MoveNext();
+                if (res.IsFailure()) return res.Miss();
 
                 entryEndOffset = visitor.Get<Entry>().GetOffset();
                 if (!offsets.IsInclude(entryEndOffset))
@@ -309,8 +309,8 @@ public class AesCtrCounterExtendedStorage : IStorage
                 AesCtrStorage.MakeIv(counter.Items, upperIv.Value, counterOffset);
 
                 // Decrypt the data from the current entry.
-                rc = _decryptor.Get.Decrypt(currentData.Slice(0, (int)dataSize), _key, counter);
-                if (rc.IsFailure()) return rc.Miss();
+                res = _decryptor.Get.Decrypt(currentData.Slice(0, (int)dataSize), _key, counter);
+                if (res.IsFailure()) return res.Miss();
             }
 
             // Advance the current offsets.
@@ -335,8 +335,8 @@ public class AesCtrCounterExtendedStorage : IStorage
     {
         UnsafeHelpers.SkipParamInit(out size);
 
-        Result rc = _table.GetOffsets(out BucketTree.Offsets offsets);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _table.GetOffsets(out BucketTree.Offsets offsets);
+        if (res.IsFailure()) return res.Miss();
 
         size = offsets.EndOffset;
         return Result.Success;
@@ -357,12 +357,12 @@ public class AesCtrCounterExtendedStorage : IStorage
                 Assert.SdkRequires(IsInitialized());
 
                 // Invalidate the table's cache.
-                Result rc = _table.InvalidateCache();
-                if (rc.IsFailure()) return rc.Miss();
+                Result res = _table.InvalidateCache();
+                if (res.IsFailure()) return res.Miss();
 
                 // Invalidate the data storage's cache.
-                rc = _dataStorage.OperateRange(OperationId.InvalidateCache, offset: 0, size: long.MaxValue);
-                if (rc.IsFailure()) return rc.Miss();
+                res = _dataStorage.OperateRange(OperationId.InvalidateCache, offset: 0, size: long.MaxValue);
+                if (res.IsFailure()) return res.Miss();
 
                 return Result.Success;
             }
@@ -390,15 +390,15 @@ public class AesCtrCounterExtendedStorage : IStorage
                     return ResultFs.InvalidSize.Log();
 
                 // Ensure the storage contains the provided offset and size.
-                Result rc = _table.GetOffsets(out BucketTree.Offsets offsets);
-                if (rc.IsFailure()) return rc.Miss();
+                Result res = _table.GetOffsets(out BucketTree.Offsets offsets);
+                if (res.IsFailure()) return res.Miss();
 
                 if (!offsets.IsInclude(offset, size))
                     return ResultFs.OutOfRange.Log();
 
                 // Get the QueryRangeInfo of the underlying data storage.
-                rc = _dataStorage.OperateRange(outBuffer, operationId, offset, size, inBuffer);
-                if (rc.IsFailure()) return rc.Miss();
+                res = _dataStorage.OperateRange(outBuffer, operationId, offset, size, inBuffer);
+                if (res.IsFailure()) return res.Miss();
 
                 // Set the key type in the info and merge it with the output info.
                 Unsafe.SkipInit(out QueryRangeInfo info);
@@ -456,8 +456,8 @@ public class AesCtrCounterExtendedStorage : IStorage
                 Span<byte> dstBuffer = destination.Slice(currentOffset, currentSize);
                 Span<byte> workBuffer = pooledBuffer.GetBuffer().Slice(0, currentSize);
 
-                Result rc = _decryptFunction(workBuffer, _keyIndex, _keyGeneration, encryptedKey, counter, dstBuffer);
-                if (rc.IsFailure()) return rc.Miss();
+                Result res = _decryptFunction(workBuffer, _keyIndex, _keyGeneration, encryptedKey, counter, dstBuffer);
+                if (res.IsFailure()) return res.Miss();
 
                 workBuffer.CopyTo(dstBuffer);
 

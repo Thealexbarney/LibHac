@@ -32,8 +32,8 @@ internal static class SdCardService
         ref SharedRef<IStorageDeviceOperator> outDeviceOperator)
     {
         using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
-        Result rc = service.GetSdCardManager(ref storageDeviceManager.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetSdCardManager(ref storageDeviceManager.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         return storageDeviceManager.Get.OpenOperator(ref outDeviceOperator);
     }
@@ -42,12 +42,12 @@ internal static class SdCardService
         ref SharedRef<IStorageDeviceOperator> outSdCardOperator)
     {
         using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
-        Result rc = service.GetSdCardManager(ref storageDeviceManager.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetSdCardManager(ref storageDeviceManager.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         using var storageDevice = new SharedRef<IStorageDevice>();
-        rc = storageDeviceManager.Get.OpenDevice(ref storageDevice.Ref(), 0);
-        if (rc.IsFailure()) return rc;
+        res = storageDeviceManager.Get.OpenDevice(ref storageDevice.Ref(), 0);
+        if (res.IsFailure()) return res.Miss();
 
         return storageDevice.Get.OpenOperator(ref outSdCardOperator);
     }
@@ -55,12 +55,12 @@ internal static class SdCardService
     public static Result OpenSdStorage(this StorageService service, ref SharedRef<IStorage> outStorage)
     {
         using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
-        Result rc = service.GetSdCardManager(ref storageDeviceManager.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetSdCardManager(ref storageDeviceManager.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         using var sdCardStorage = new SharedRef<IStorageSf>();
-        rc = storageDeviceManager.Get.OpenStorage(ref sdCardStorage.Ref(), 0);
-        if (rc.IsFailure()) return rc;
+        res = storageDeviceManager.Get.OpenStorage(ref sdCardStorage.Ref(), 0);
+        if (res.IsFailure()) return res.Miss();
 
         using var storage = new SharedRef<IStorage>(new StorageServiceObjectAdapter(ref sdCardStorage.Ref()));
 
@@ -80,15 +80,15 @@ internal static class SdCardService
         UnsafeHelpers.SkipParamInit(out handle);
 
         using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
-        Result rc = service.GetSdCardManager(ref storageDeviceManager.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetSdCardManager(ref storageDeviceManager.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         using var sdCardStorageDevice = new SharedRef<IStorageDevice>();
-        rc = storageDeviceManager.Get.OpenDevice(ref sdCardStorageDevice.Ref(), 0);
-        if (rc.IsFailure()) return rc;
+        res = storageDeviceManager.Get.OpenDevice(ref sdCardStorageDevice.Ref(), 0);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = sdCardStorageDevice.Get.GetHandle(out uint handleValue);
-        if (rc.IsFailure()) return rc;
+        res = sdCardStorageDevice.Get.GetHandle(out uint handleValue);
+        if (res.IsFailure()) return res.Miss();
 
         handle = new StorageDeviceHandle(handleValue, StorageDevicePortId.SdCard);
         return Result.Success;
@@ -100,8 +100,8 @@ internal static class SdCardService
         UnsafeHelpers.SkipParamInit(out isValid);
 
         using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
-        Result rc = service.GetSdCardManager(ref storageDeviceManager.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetSdCardManager(ref storageDeviceManager.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         // Note: I don't know why the official code doesn't check the handle port
         return storageDeviceManager.Get.IsHandleValid(out isValid, handle.Value);
@@ -110,8 +110,8 @@ internal static class SdCardService
     public static Result InvalidateSdCard(this StorageService service)
     {
         using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
-        Result rc = service.GetSdCardManager(ref storageDeviceManager.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetSdCardManager(ref storageDeviceManager.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         return storageDeviceManager.Get.Invalidate();
     }
@@ -121,11 +121,11 @@ internal static class SdCardService
         UnsafeHelpers.SkipParamInit(out isInserted);
 
         using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
-        Result rc = service.GetSdCardManager(ref storageDeviceManager.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetSdCardManager(ref storageDeviceManager.Ref());
+        if (res.IsFailure()) return res.Miss();
 
-        rc = storageDeviceManager.Get.IsInserted(out bool actualState);
-        if (rc.IsFailure()) return rc.Miss();
+        res = storageDeviceManager.Get.IsInserted(out bool actualState);
+        if (res.IsFailure()) return res.Miss();
 
         isInserted = service.FsSrv.Impl.GetSdCardEventSimulator().FilterDetectionState(actualState);
         return Result.Success;
@@ -136,15 +136,15 @@ internal static class SdCardService
         UnsafeHelpers.SkipParamInit(out speedMode);
 
         using var sdCardOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetSdCardOperator(ref sdCardOperator.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetSdCardOperator(ref sdCardOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         Unsafe.SkipInit(out SpeedMode sdmmcSpeedMode);
         OutBuffer outBuffer = OutBuffer.FromStruct(ref sdmmcSpeedMode);
         int operationId = MakeOperationId(SdCardOperationIdValue.GetSpeedMode);
 
-        rc = sdCardOperator.Get.OperateOut(out _, outBuffer, operationId);
-        if (rc.IsFailure()) return rc;
+        res = sdCardOperator.Get.OperateOut(out _, outBuffer, operationId);
+        if (res.IsFailure()) return res.Miss();
 
         speedMode = sdmmcSpeedMode switch
         {
@@ -165,8 +165,8 @@ internal static class SdCardService
     public static Result GetSdCardCid(this StorageService service, Span<byte> cidBuffer)
     {
         using var sdCardOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetSdCardOperator(ref sdCardOperator.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetSdCardOperator(ref sdCardOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         int operationId = MakeOperationId(SdCardOperationIdValue.GetCid);
         var outBuffer = new OutBuffer(cidBuffer);
@@ -179,8 +179,8 @@ internal static class SdCardService
         UnsafeHelpers.SkipParamInit(out count);
 
         using var sdCardOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetSdCardOperator(ref sdCardOperator.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetSdCardOperator(ref sdCardOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         int operationId = MakeOperationId(SdCardOperationIdValue.GetUserAreaNumSectors);
         OutBuffer outBuffer = OutBuffer.FromStruct(ref count);
@@ -193,8 +193,8 @@ internal static class SdCardService
         UnsafeHelpers.SkipParamInit(out size);
 
         using var sdCardOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetSdCardOperator(ref sdCardOperator.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetSdCardOperator(ref sdCardOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         int operationId = MakeOperationId(SdCardOperationIdValue.GetUserAreaSize);
         OutBuffer outBuffer = OutBuffer.FromStruct(ref size);
@@ -207,8 +207,8 @@ internal static class SdCardService
         UnsafeHelpers.SkipParamInit(out count);
 
         using var sdCardOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetSdCardOperator(ref sdCardOperator.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetSdCardOperator(ref sdCardOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         int operationId = MakeOperationId(SdCardOperationIdValue.GetProtectedAreaNumSectors);
         OutBuffer outBuffer = OutBuffer.FromStruct(ref count);
@@ -221,8 +221,8 @@ internal static class SdCardService
         UnsafeHelpers.SkipParamInit(out size);
 
         using var sdCardOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetSdCardOperator(ref sdCardOperator.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetSdCardOperator(ref sdCardOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         int operationId = MakeOperationId(SdCardOperationIdValue.GetProtectedAreaSize);
         OutBuffer outBuffer = OutBuffer.FromStruct(ref size);
@@ -236,8 +236,8 @@ internal static class SdCardService
         UnsafeHelpers.SkipParamInit(out errorInfo, out logSize);
 
         using var sdCardOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetSdCardManagerOperator(ref sdCardOperator.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetSdCardManagerOperator(ref sdCardOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         OutBuffer errorInfoOutBuffer = OutBuffer.FromStruct(ref errorInfo);
         var logOutBuffer = new OutBuffer(logBuffer);
@@ -250,8 +250,8 @@ internal static class SdCardService
         ref SharedRef<IEventNotifier> outEventNotifier)
     {
         using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
-        Result rc = service.GetSdCardManager(ref storageDeviceManager.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetSdCardManager(ref storageDeviceManager.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         return storageDeviceManager.Get.OpenDetectionEvent(ref outEventNotifier);
     }
@@ -259,8 +259,8 @@ internal static class SdCardService
     public static Result SimulateSdCardDetectionEventSignaled(this StorageService service)
     {
         using var sdCardOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetSdCardManagerOperator(ref sdCardOperator.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetSdCardManagerOperator(ref sdCardOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         return sdCardOperator.Get.Operate(
             MakeOperationId(SdCardManagerOperationIdValue.SimulateDetectionEventSignaled));
@@ -269,8 +269,8 @@ internal static class SdCardService
     public static Result SuspendSdCardControl(this StorageService service)
     {
         using var sdCardOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetSdCardManagerOperator(ref sdCardOperator.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetSdCardManagerOperator(ref sdCardOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         return sdCardOperator.Get.Operate(MakeOperationId(SdCardManagerOperationIdValue.SuspendControl));
     }
@@ -278,8 +278,8 @@ internal static class SdCardService
     public static Result ResumeSdCardControl(this StorageService service)
     {
         using var sdCardOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetSdCardManagerOperator(ref sdCardOperator.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = service.GetSdCardManagerOperator(ref sdCardOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         return sdCardOperator.Get.Operate(MakeOperationId(SdCardManagerOperationIdValue.ResumeControl));
     }

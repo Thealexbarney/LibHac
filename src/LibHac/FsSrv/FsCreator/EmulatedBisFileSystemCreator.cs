@@ -75,17 +75,17 @@ public class EmulatedBisFileSystemCreator : IBuiltInStorageFileSystemCreator
         }
 
         using var bisRootPath = new Path();
-        Result rc = bisRootPath.Initialize(GetPartitionPath(partitionId).ToU8String());
-        if (rc.IsFailure()) return rc;
+        Result res = bisRootPath.Initialize(GetPartitionPath(partitionId).ToU8String());
+        if (res.IsFailure()) return res.Miss();
 
         var pathFlags = new PathFlags();
         pathFlags.AllowEmptyPath();
-        rc = bisRootPath.Normalize(pathFlags);
-        if (rc.IsFailure()) return rc;
+        res = bisRootPath.Normalize(pathFlags);
+        if (res.IsFailure()) return res.Miss();
 
         using var partitionFileSystem = new SharedRef<IFileSystem>();
-        rc = Utility.WrapSubDirectory(ref partitionFileSystem.Ref(), ref rootFileSystem.Ref(), in bisRootPath, true);
-        if (rc.IsFailure()) return rc;
+        res = Utility.WrapSubDirectory(ref partitionFileSystem.Ref(), ref rootFileSystem.Ref(), in bisRootPath, true);
+        if (res.IsFailure()) return res.Miss();
 
         outFileSystem.SetByMove(ref partitionFileSystem.Ref());
         return Result.Success;

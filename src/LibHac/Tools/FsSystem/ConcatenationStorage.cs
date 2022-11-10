@@ -34,8 +34,8 @@ public class ConcatenationStorage : IStorage
         int outPos = 0;
         int remaining = destination.Length;
 
-        Result rc = CheckAccessRange(offset, destination.Length, Length);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = CheckAccessRange(offset, destination.Length, Length);
+        if (res.IsFailure()) return res.Miss();
 
         int sourceIndex = FindSource(inPos);
 
@@ -47,8 +47,8 @@ public class ConcatenationStorage : IStorage
 
             int bytesToRead = (int)Math.Min(entryRemain, remaining);
 
-            rc = entry.Storage.Read(entryPos, destination.Slice(outPos, bytesToRead));
-            if (rc.IsFailure()) return rc;
+            res = entry.Storage.Read(entryPos, destination.Slice(outPos, bytesToRead));
+            if (res.IsFailure()) return res.Miss();
 
             outPos += bytesToRead;
             inPos += bytesToRead;
@@ -65,8 +65,8 @@ public class ConcatenationStorage : IStorage
         int outPos = 0;
         int remaining = source.Length;
 
-        Result rc = CheckAccessRange(offset, source.Length, Length);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = CheckAccessRange(offset, source.Length, Length);
+        if (res.IsFailure()) return res.Miss();
 
         int sourceIndex = FindSource(inPos);
 
@@ -78,8 +78,8 @@ public class ConcatenationStorage : IStorage
 
             int bytesToWrite = (int)Math.Min(entryRemain, remaining);
 
-            rc = entry.Storage.Write(entryPos, source.Slice(outPos, bytesToWrite));
-            if (rc.IsFailure()) return rc;
+            res = entry.Storage.Write(entryPos, source.Slice(outPos, bytesToWrite));
+            if (res.IsFailure()) return res.Miss();
 
             outPos += bytesToWrite;
             inPos += bytesToWrite;
@@ -94,8 +94,8 @@ public class ConcatenationStorage : IStorage
     {
         foreach (ConcatSource source in Sources)
         {
-            Result rc = source.Storage.Flush();
-            if (rc.IsFailure()) return rc;
+            Result res = source.Storage.Flush();
+            if (res.IsFailure()) return res.Miss();
         }
 
         return Result.Success;

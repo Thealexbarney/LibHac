@@ -21,13 +21,13 @@ namespace LibHac.Fs.Shim
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
             using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-            Result rc = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
-            fs.Impl.AbortIfNeeded(rc);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+            fs.Impl.AbortIfNeeded(res);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = deviceOperator.Get.SetSpeedEmulationMode((int)mode);
-            fs.Impl.AbortIfNeeded(rc);
-            if (rc.IsFailure()) return rc.Miss();
+            res = deviceOperator.Get.SetSpeedEmulationMode((int)mode);
+            fs.Impl.AbortIfNeeded(res);
+            if (res.IsFailure()) return res.Miss();
 
             return Result.Success;
         }
@@ -39,13 +39,13 @@ namespace LibHac.Fs.Shim
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
             using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-            Result rc = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
-            fs.Impl.AbortIfNeeded(rc);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+            fs.Impl.AbortIfNeeded(res);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = deviceOperator.Get.GetSpeedEmulationMode(out int mode);
-            fs.Impl.AbortIfNeeded(rc);
-            if (rc.IsFailure()) return rc.Miss();
+            res = deviceOperator.Get.GetSpeedEmulationMode(out int mode);
+            fs.Impl.AbortIfNeeded(res);
+            if (res.IsFailure()) return res.Miss();
 
             outMode = (SpeedEmulationMode)mode;
 

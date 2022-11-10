@@ -74,8 +74,8 @@ public class ReadOnlyBlockCacheStorage : IStorage
             }
 
             // The block wasn't in the cache. Read from the base storage.
-            Result rc = _baseStorage.Get.Read(offset, destination);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = _baseStorage.Get.Read(offset, destination);
+            if (res.IsFailure()) return res.Miss();
 
             // Add the block to the cache.
             using (new ScopedLock<SdkMutexType>(ref _mutex))

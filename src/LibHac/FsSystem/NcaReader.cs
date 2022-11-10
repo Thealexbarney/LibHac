@@ -90,8 +90,8 @@ public class NcaReader : IDisposable
             return ResultFs.AllocationMemoryFailedInNcaReaderA.Log();
 
         // Read the decrypted header.
-        Result rc = headerStorage.Get.Read(0, SpanHelpers.AsByteSpan(ref _header));
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = headerStorage.Get.Read(0, SpanHelpers.AsByteSpan(ref _header));
+        if (res.IsFailure()) return res.Miss();
 
         // Check if the NCA magic value is correct.
         Result signatureResult = CheckSignature(in _header);
@@ -101,16 +101,16 @@ public class NcaReader : IDisposable
             if (cryptoConfig.IsDev)
             {
                 // Read the header without decrypting it and check the magic value again.
-                rc = baseStorage.Get.Read(0, SpanHelpers.AsByteSpan(ref _header));
-                if (rc.IsFailure()) return rc.Miss();
+                res = baseStorage.Get.Read(0, SpanHelpers.AsByteSpan(ref _header));
+                if (res.IsFailure()) return res.Miss();
 
-                rc = CheckSignature(in _header);
-                if (rc.IsFailure())
+                res = CheckSignature(in _header);
+                if (res.IsFailure())
                     return signatureResult.Miss();
 
                 // We have a plaintext header. Get an IStorage of just the header.
-                rc = baseStorage.Get.GetSize(out long baseStorageSize);
-                if (rc.IsFailure()) return rc.Miss();
+                res = baseStorage.Get.GetSize(out long baseStorageSize);
+                if (res.IsFailure()) return res.Miss();
 
                 headerStorage.Reset(new SubStorage(in baseStorage, 0, baseStorageSize));
 
@@ -500,8 +500,8 @@ public class NcaFsHeaderReader
     {
         _fsIndex = -1;
 
-        Result rc = reader.ReadHeader(out _header, index);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = reader.ReadHeader(out _header, index);
+        if (res.IsFailure()) return res.Miss();
 
         Unsafe.SkipInit(out Hash hash);
         IHash256GeneratorFactory generator = reader.GetHashGeneratorFactorySelector().GetFactory(HashAlgorithmType.Sha2);
@@ -568,8 +568,8 @@ public class NcaFsHeaderReader
     {
         Assert.SdkRequires(IsInitialized());
 
-        Result rc = _header.GetHashTargetOffset(out outOffset);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _header.GetHashTargetOffset(out outOffset);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }

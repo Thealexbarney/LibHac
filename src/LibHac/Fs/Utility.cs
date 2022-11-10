@@ -31,16 +31,16 @@ public static class Utility
 
         for (int i = 0; i < maxTryCount; i++)
         {
-            Result rc = listGetter();
+            Result res = listGetter();
 
-            if (rc.IsSuccess())
-                return rc;
+            if (res.IsSuccess())
+                return res;
 
             // Try again if any save data were added or removed while getting the list
-            if (!ResultFs.InvalidHandle.Includes(rc))
-                return rc.Miss();
+            if (!ResultFs.InvalidHandle.Includes(res))
+                return res.Miss();
 
-            lastResult = rc;
+            lastResult = res;
             hos.Os.SleepThread(TimeSpan.FromMilliSeconds(sleepTime));
             sleepTime *= sleepTimeMultiplier;
         }

@@ -60,18 +60,18 @@ internal class DeliveryCacheStorageService : IDeliveryCacheStorageService
         lock (Locker)
         {
             var metaReader = new DeliveryCacheDirectoryMetaAccessor(Server);
-            Result rc = metaReader.ReadApplicationDirectoryMeta(ApplicationId, true);
-            if (rc.IsFailure()) return rc;
+            Result res = metaReader.ReadApplicationDirectoryMeta(ApplicationId, true);
+            if (res.IsFailure()) return res.Miss();
 
             int i;
             for (i = 0; i < nameBuffer.Length; i++)
             {
-                rc = metaReader.GetEntry(out DeliveryCacheDirectoryMetaEntry entry, i);
+                res = metaReader.GetEntry(out DeliveryCacheDirectoryMetaEntry entry, i);
 
-                if (rc.IsFailure())
+                if (res.IsFailure())
                 {
-                    if (!ResultBcat.NotFound.Includes(rc))
-                        return rc;
+                    if (!ResultBcat.NotFound.Includes(res))
+                        return res;
 
                     break;
                 }

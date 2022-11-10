@@ -28,8 +28,8 @@ public class StreamFile : IFile
     {
         UnsafeHelpers.SkipParamInit(out bytesRead);
 
-        Result rc = DryRead(out long toRead, offset, destination.Length, in option, Mode);
-        if (rc.IsFailure()) return rc;
+        Result res = DryRead(out long toRead, offset, destination.Length, in option, Mode);
+        if (res.IsFailure()) return res.Miss();
 
         lock (Locker)
         {
@@ -45,8 +45,8 @@ public class StreamFile : IFile
 
     protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
     {
-        Result rc = DryWrite(out _, offset, source.Length, in option, Mode);
-        if (rc.IsFailure()) return rc;
+        Result res = DryWrite(out _, offset, source.Length, in option, Mode);
+        if (res.IsFailure()) return res.Miss();
 
         lock (Locker)
         {

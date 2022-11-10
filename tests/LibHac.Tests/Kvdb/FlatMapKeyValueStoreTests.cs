@@ -65,8 +65,8 @@ public class FlatMapKeyValueStoreTests
         {
             for (TTest i = 0; i < count; i++)
             {
-                Result rc = kvStore.Set(in i, values[i]);
-                if (rc.IsFailure()) return rc;
+                Result res = kvStore.Set(in i, values[i]);
+                if (res.IsFailure()) return res.Miss();
             }
         }
         else
@@ -76,8 +76,8 @@ public class FlatMapKeyValueStoreTests
             for (int i = 0; i < count; i++)
             {
                 TTest index = rng.Next();
-                Result rc = kvStore.Set(in index, values[index]);
-                if (rc.IsFailure()) return rc;
+                Result res = kvStore.Set(in index, values[index]);
+                if (res.IsFailure()) return res.Miss();
             }
         }
 
@@ -193,8 +193,8 @@ public class FlatMapKeyValueStoreTests
         TTest key = 20;
         byte[] value = new byte[20];
 
-        Result rc = kvStore.Get(out int _, in key, value);
-        Assert.Result(ResultKvdb.KeyNotFound, rc);
+        Result res = kvStore.Get(out int _, in key, value);
+        Assert.Result(ResultKvdb.KeyNotFound, res);
     }
 
     [Fact]
@@ -248,9 +248,9 @@ public class FlatMapKeyValueStoreTests
         Assert.Success(PopulateKvStore(kvStore, out byte[][] values, count));
 
         TTest key = count;
-        Result rc = kvStore.Set(in key, values[0]);
+        Result res = kvStore.Set(in key, values[0]);
 
-        Assert.Result(ResultKvdb.OutOfKeyResource, rc);
+        Assert.Result(ResultKvdb.OutOfKeyResource, res);
     }
 
     [Theory]
@@ -316,8 +316,8 @@ public class FlatMapKeyValueStoreTests
 
         (FlatMapKeyValueStore<TTest> kvStore, FileSystemClient _) = Create<TTest>(count);
 
-        Result rc = kvStore.Delete(in keyToDelete);
-        Assert.Result(ResultKvdb.KeyNotFound, rc);
+        Result res = kvStore.Delete(in keyToDelete);
+        Assert.Result(ResultKvdb.KeyNotFound, res);
     }
 
     [Fact]
@@ -329,8 +329,8 @@ public class FlatMapKeyValueStoreTests
         (FlatMapKeyValueStore<TTest> kvStore, FileSystemClient _) = Create<TTest>(count);
         Assert.Success(PopulateKvStore(kvStore, out _, count));
 
-        Result rc = kvStore.Delete(in keyToDelete);
-        Assert.Result(ResultKvdb.KeyNotFound, rc);
+        Result res = kvStore.Delete(in keyToDelete);
+        Assert.Result(ResultKvdb.KeyNotFound, res);
     }
 
     [Theory]
@@ -351,8 +351,8 @@ public class FlatMapKeyValueStoreTests
 
         byte[] value = new byte[20];
 
-        Result rc = kvStore.Get(out int _, in keyToDelete, value);
-        Assert.Result(ResultKvdb.KeyNotFound, rc);
+        Result res = kvStore.Get(out int _, in keyToDelete, value);
+        Assert.Result(ResultKvdb.KeyNotFound, res);
     }
 
     [Theory]

@@ -56,9 +56,9 @@ public static class PathUtility
         if (length >= PathTool.EntryNameLengthMax + 1)
             return ResultFs.TooLongPath.Log();
 
-        Result rc = PathFormatter.SkipMountName(out ReadOnlySpan<byte> pathWithoutMountName, out int skipLength,
+        Result res = PathFormatter.SkipMountName(out ReadOnlySpan<byte> pathWithoutMountName, out int skipLength,
             new U8Span(path));
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         if (!WindowsPath.IsWindowsPath(pathWithoutMountName, true))
         {

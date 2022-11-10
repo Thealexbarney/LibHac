@@ -95,8 +95,8 @@ public class RemapStorage : IStorage
 
             int bytesToWrite = (int)Math.Min(entry.VirtualOffsetEnd - inPos, remaining);
 
-            Result rc = BaseStorage.Write(entry.PhysicalOffset + entryPos, source.Slice(outPos, bytesToWrite));
-            if (rc.IsFailure()) return rc;
+            Result res = BaseStorage.Write(entry.PhysicalOffset + entryPos, source.Slice(outPos, bytesToWrite));
+            if (res.IsFailure()) return res.Miss();
 
             outPos += bytesToWrite;
             inPos += bytesToWrite;

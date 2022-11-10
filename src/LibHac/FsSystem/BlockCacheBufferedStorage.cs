@@ -101,8 +101,8 @@ public class BlockCacheBufferedStorage : IStorage
         Assert.SdkNull(_storageData);
         Assert.SdkGreater(maxCacheEntries, 0);
 
-        Result rc = _cacheManager.Initialize(bufferManager, maxCacheEntries);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _cacheManager.Initialize(bufferManager, maxCacheEntries);
+        if (res.IsFailure()) return res.Miss();
 
         _mutex = mutex;
         _storageData = data;

@@ -56,13 +56,13 @@ public static class ContentStorage
 
     public static Result MountContentStorage(this FileSystemClient fs, U8Span mountName, ContentStorageId storageId)
     {
-        Result rc;
+        Result res;
         Span<byte> logBuffer = stackalloc byte[0x40];
 
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = Mount(fs, mountName, storageId);
+            res = Mount(fs, mountName, storageId);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var idString = new IdString();
@@ -71,15 +71,15 @@ public static class ContentStorage
             sb.Append(LogName).Append(mountName).Append(LogQuote)
                 .Append(LogContentStorageId).Append(idString.ToString(storageId));
 
-            fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+            fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(sb.Buffer));
         }
         else
         {
-            rc = Mount(fs, mountName, storageId);
+            res = Mount(fs, mountName, storageId);
         }
 
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc;
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
             fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
@@ -93,26 +93,26 @@ public static class ContentStorage
             const int maxRetries = 10;
             const int retryInterval = 1000;
 
-            Result rc = fs.Impl.CheckMountNameAcceptingReservedMountName(mountName);
-            if (rc.IsFailure()) return rc;
+            Result res = fs.Impl.CheckMountNameAcceptingReservedMountName(mountName);
+            if (res.IsFailure()) return res.Miss();
 
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
             using var fileSystem = new SharedRef<IFileSystemSf>();
 
             for (int i = 0; i < maxRetries; i++)
             {
-                rc = fileSystemProxy.Get.OpenContentStorageFileSystem(ref fileSystem.Ref(), storageId);
+                res = fileSystemProxy.Get.OpenContentStorageFileSystem(ref fileSystem.Ref(), storageId);
 
-                if (rc.IsSuccess())
+                if (res.IsSuccess())
                     break;
 
-                if (!ResultFs.SystemPartitionNotReady.Includes(rc))
-                    return rc;
+                if (!ResultFs.SystemPartitionNotReady.Includes(res))
+                    return res;
 
                 // Note: Nintendo has an off-by-one error where they check if
                 // "i == maxRetries" instead of "i == maxRetries - 1"
                 if (i == maxRetries - 1)
-                    return rc;
+                    return res;
 
                 fs.Hos.Os.SleepThread(TimeSpan.FromMilliSeconds(retryInterval));
             }
@@ -129,8 +129,8 @@ public static class ContentStorage
             if (!mountNameGenerator.HasValue)
                 return ResultFs.AllocationMemoryFailedInContentStorageB.Log();
 
-            rc = fs.Register(mountName, ref fileSystemAdapter.Ref(), ref mountNameGenerator.Ref());
-            if (rc.IsFailure()) return rc.Miss();
+            res = fs.Register(mountName, ref fileSystemAdapter.Ref(), ref mountNameGenerator.Ref());
+            if (res.IsFailure()) return res.Miss();
 
             return Result.Success;
         }

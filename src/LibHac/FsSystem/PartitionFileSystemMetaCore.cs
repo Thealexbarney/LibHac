@@ -26,8 +26,8 @@ public class PartitionFileSystemMetaCore<T> where T : unmanaged, IPartitionFileS
     {
         var header = new Header();
 
-        Result rc = baseStorage.Read(0, SpanHelpers.AsByteSpan(ref header));
-        if (rc.IsFailure()) return rc;
+        Result res = baseStorage.Read(0, SpanHelpers.AsByteSpan(ref header));
+        if (res.IsFailure()) return res.Miss();
 
         int pfsMetaSize = HeaderSize + header.EntryCount * EntrySize + header.StringTableSize;
         Buffer = new byte[pfsMetaSize];
@@ -41,8 +41,8 @@ public class PartitionFileSystemMetaCore<T> where T : unmanaged, IPartitionFileS
         if (buffer.Length < HeaderSize)
             return ResultFs.InvalidSize.Log();
 
-        Result rc = baseStorage.Read(0, buffer.Slice(0, HeaderSize));
-        if (rc.IsFailure()) return rc;
+        Result res = baseStorage.Read(0, buffer.Slice(0, HeaderSize));
+        if (res.IsFailure()) return res.Miss();
 
         ref Header header = ref Unsafe.As<byte, Header>(ref MemoryMarshal.GetReference(buffer));
 
@@ -62,15 +62,15 @@ public class PartitionFileSystemMetaCore<T> where T : unmanaged, IPartitionFileS
         if (buffer.Length < pfsMetaSize)
             return ResultFs.InvalidSize.Log();
 
-        rc = baseStorage.Read(entryTableOffset,
+        res = baseStorage.Read(entryTableOffset,
             buffer.Slice(entryTableOffset, entryTableSize + StringTableSize));
 
-        if (rc.IsSuccess())
+        if (res.IsSuccess())
         {
             IsInitialized = true;
         }
 
-        return rc;
+        return res;
     }
 
     public int GetEntryCount()

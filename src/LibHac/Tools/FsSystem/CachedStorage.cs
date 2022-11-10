@@ -39,8 +39,8 @@ public class CachedStorage : IStorage
         long inOffset = offset;
         int outOffset = 0;
 
-        Result rc = CheckAccessRange(offset, destination.Length, Length);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = CheckAccessRange(offset, destination.Length, Length);
+        if (res.IsFailure()) return res.Miss();
 
         lock (Blocks)
         {
@@ -69,8 +69,8 @@ public class CachedStorage : IStorage
         long inOffset = offset;
         int outOffset = 0;
 
-        Result rc = CheckAccessRange(offset, source.Length, Length);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = CheckAccessRange(offset, source.Length, Length);
+        if (res.IsFailure()) return res.Miss();
 
         lock (Blocks)
         {
@@ -116,11 +116,11 @@ public class CachedStorage : IStorage
 
     public override Result SetSize(long size)
     {
-        Result rc = BaseStorage.SetSize(size);
-        if (rc.IsFailure()) return rc;
+        Result res = BaseStorage.SetSize(size);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = BaseStorage.GetSize(out long newSize);
-        if (rc.IsFailure()) return rc;
+        res = BaseStorage.GetSize(out long newSize);
+        if (res.IsFailure()) return res.Miss();
 
         Length = newSize;
 

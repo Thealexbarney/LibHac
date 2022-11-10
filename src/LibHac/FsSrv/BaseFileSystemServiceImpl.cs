@@ -53,8 +53,8 @@ public class BaseFileSystemServiceImpl
     public Result OpenBisFileSystem(ref SharedRef<IFileSystem> outFileSystem, BisPartitionId partitionId,
         bool caseSensitive)
     {
-        Result rc = _config.BisFileSystemCreator.Create(ref outFileSystem, partitionId, caseSensitive);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _config.BisFileSystemCreator.Create(ref outFileSystem, partitionId, caseSensitive);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -73,17 +73,17 @@ public class BaseFileSystemServiceImpl
         GameCardPartition partitionId)
     {
         const int maxTries = 2;
-        Result rc = Result.Success;
+        Result res = Result.Success;
 
         for (int i = 0; i < maxTries; i++)
         {
-            rc = _config.GameCardFileSystemCreator.Create(ref outFileSystem, handle, partitionId);
+            res = _config.GameCardFileSystemCreator.Create(ref outFileSystem, handle, partitionId);
 
-            if (!ResultFs.DataCorrupted.Includes(rc))
+            if (!ResultFs.DataCorrupted.Includes(res))
                 break;
         }
 
-        return rc;
+        return res;
     }
 
     public Result OpenSdCardProxyFileSystem(ref SharedRef<IFileSystem> outFileSystem)

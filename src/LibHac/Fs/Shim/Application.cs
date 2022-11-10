@@ -20,12 +20,12 @@ public static class Application
 {
     public static Result MountApplicationPackage(this FileSystemClient fs, U8Span mountName, U8Span path)
     {
-        Result rc;
+        Result res;
 
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = Mount(fs, mountName, path);
+            res = Mount(fs, mountName, path);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             Span<byte> logBuffer = stackalloc byte[0x300];
@@ -34,15 +34,15 @@ public static class Application
             sb.Append(LogName).Append(mountName).Append(LogQuote)
                 .Append(LogPath).Append(path).Append(LogQuote);
 
-            fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+            fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(sb.Buffer));
         }
         else
         {
-            rc = Mount(fs, mountName, path);
+            res = Mount(fs, mountName, path);
         }
 
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc;
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
             fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
@@ -51,18 +51,18 @@ public static class Application
 
         static Result Mount(FileSystemClient fs, U8Span mountName, U8Span path)
         {
-            Result rc = fs.Impl.CheckMountName(mountName);
-            if (rc.IsFailure()) return rc;
+            Result res = fs.Impl.CheckMountName(mountName);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = PathUtility.ConvertToFspPath(out FspPath sfPath, path);
-            if (rc.IsFailure()) return rc;
+            res = PathUtility.ConvertToFspPath(out FspPath sfPath, path);
+            if (res.IsFailure()) return res.Miss();
 
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
             using var fileSystem = new SharedRef<IFileSystemSf>();
 
-            rc = fileSystemProxy.Get.OpenFileSystemWithId(ref fileSystem.Ref(), in sfPath,
+            res = fileSystemProxy.Get.OpenFileSystemWithId(ref fileSystem.Ref(), in sfPath,
                 Ncm.ProgramId.InvalidId.Value, FileSystemProxyType.Package);
-            if (rc.IsFailure()) return rc;
+            if (res.IsFailure()) return res.Miss();
 
             using var fileSystemAdapter =
                 new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
@@ -70,8 +70,8 @@ public static class Application
             if (!fileSystemAdapter.HasValue)
                 return ResultFs.AllocationMemoryFailedInApplicationA.Log();
 
-            rc = fs.Register(mountName, ref fileSystemAdapter.Ref());
-            if (rc.IsFailure()) return rc.Miss();
+            res = fs.Register(mountName, ref fileSystemAdapter.Ref());
+            if (res.IsFailure()) return res.Miss();
 
             return Result.Success;
         }

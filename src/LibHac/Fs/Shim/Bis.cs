@@ -55,12 +55,12 @@ public static class Bis
     private static Result MountBis(this FileSystemClientImpl fs, U8Span mountName, BisPartitionId partitionId,
         U8Span rootPath)
     {
-        Result rc;
+        Result res;
 
         if (fs.IsEnabledAccessLog(AccessLogTarget.System))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = Mount(fs, mountName, partitionId);
+            res = Mount(fs, mountName, partitionId);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             Span<byte> logBuffer = stackalloc byte[0x300];
@@ -71,15 +71,15 @@ public static class Bis
                 .Append(LogBisPartitionId).Append(idString.ToString(partitionId))
                 .Append(LogPath).Append(rootPath).Append(LogQuote);
 
-            fs.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+            fs.OutputAccessLog(res, start, end, null, new U8Span(sb.Buffer));
         }
         else
         {
-            rc = Mount(fs, mountName, partitionId);
+            res = Mount(fs, mountName, partitionId);
         }
 
-        fs.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc;
+        fs.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         if (fs.IsEnabledAccessLog(AccessLogTarget.System))
             fs.EnableFileSystemAccessorAccessLog(mountName);
@@ -88,8 +88,8 @@ public static class Bis
 
         static Result Mount(FileSystemClientImpl fs, U8Span mountName, BisPartitionId partitionId)
         {
-            Result rc = fs.CheckMountNameAcceptingReservedMountName(mountName);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = fs.CheckMountNameAcceptingReservedMountName(mountName);
+            if (res.IsFailure()) return res.Miss();
 
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
 
@@ -98,8 +98,8 @@ public static class Bis
 
             using var fileSystem = new SharedRef<IFileSystemSf>();
 
-            rc = fileSystemProxy.Get.OpenBisFileSystem(ref fileSystem.Ref(), in sfPath, partitionId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = fileSystemProxy.Get.OpenBisFileSystem(ref fileSystem.Ref(), in sfPath, partitionId);
+            if (res.IsFailure()) return res.Miss();
 
             using var mountNameGenerator =
                 new UniqueRef<ICommonMountNameGenerator>(new BisCommonMountNameGenerator(partitionId));
@@ -113,8 +113,8 @@ public static class Bis
             if (!fileSystemAdapter.HasValue)
                 return ResultFs.AllocationMemoryFailedInBisB.Log();
 
-            rc = fs.Fs.Register(mountName, ref fileSystemAdapter.Ref(), ref mountNameGenerator.Ref());
-            if (rc.IsFailure()) return rc.Miss();
+            res = fs.Fs.Register(mountName, ref fileSystemAdapter.Ref(), ref mountNameGenerator.Ref());
+            if (res.IsFailure()) return res.Miss();
 
             return Result.Success;
         }
@@ -170,17 +170,17 @@ public static class Bis
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var storage = new SharedRef<IStorageSf>();
 
-        Result rc = fileSystemProxy.Get.OpenBisStorage(ref storage.Ref(), partitionId);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fileSystemProxy.Get.OpenBisStorage(ref storage.Ref(), partitionId);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         using var storageAdapter = new UniqueRef<IStorage>(new StorageServiceObjectAdapter(ref storage.Ref()));
 
         if (!storageAdapter.HasValue)
         {
-            rc = ResultFs.AllocationMemoryFailedInBisC.Value;
-            fs.Impl.AbortIfNeeded(rc);
-            if (rc.IsFailure()) return rc.Log();
+            res = ResultFs.AllocationMemoryFailedInBisC.Value;
+            fs.Impl.AbortIfNeeded(res);
+            if (res.IsFailure()) return res.Log();
         }
 
         outPartitionStorage.Set(ref storageAdapter.Ref());
@@ -191,9 +191,9 @@ public static class Bis
     {
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-        Result rc = fileSystemProxy.Get.InvalidateBisCache();
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fileSystemProxy.Get.InvalidateBisCache();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }

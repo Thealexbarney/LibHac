@@ -61,11 +61,11 @@ public class ArpClient : IDisposable
                 return;
 
             using var reader = new SharedRef<IReader>();
-            Result rc = _hosClient.Sm.GetService(ref reader.Ref(), "arp:r");
+            Result res = _hosClient.Sm.GetService(ref reader.Ref(), "arp:r");
 
-            if (rc.IsFailure())
+            if (res.IsFailure())
             {
-                throw new HorizonResultException(rc, "Failed to initialize arp reader.");
+                throw new HorizonResultException(res, "Failed to initialize arp reader.");
             }
 
             _reader.SetByMove(ref reader.Ref());

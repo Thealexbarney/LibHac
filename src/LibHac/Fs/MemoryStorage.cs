@@ -22,8 +22,8 @@ public class MemoryStorage : IStorage
         if (destination.Length == 0)
             return Result.Success;
 
-        Result rc = CheckAccessRange(offset, destination.Length, _storageBuffer.Length);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = CheckAccessRange(offset, destination.Length, _storageBuffer.Length);
+        if (res.IsFailure()) return res.Miss();
 
         _storageBuffer.AsSpan((int)offset, destination.Length).CopyTo(destination);
 
@@ -35,8 +35,8 @@ public class MemoryStorage : IStorage
         if (source.Length == 0)
             return Result.Success;
 
-        Result rc = CheckAccessRange(offset, source.Length, _storageBuffer.Length);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = CheckAccessRange(offset, source.Length, _storageBuffer.Length);
+        if (res.IsFailure()) return res.Miss();
 
         source.CopyTo(_storageBuffer.AsSpan((int)offset));
 

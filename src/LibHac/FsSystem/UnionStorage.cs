@@ -84,8 +84,8 @@ public class UnionStorage : IStorage
     {
         Assert.SdkRequiresNull(_buffer);
 
-        Result rc = logStorage.Read(0, SpanHelpers.AsByteSpan(ref _blockSize));
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = logStorage.Read(0, SpanHelpers.AsByteSpan(ref _blockSize));
+        if (res.IsFailure()) return res.Miss();
 
         if (blockSize <= 1 || !BitUtil.IsPowerOfTwo(blockSize) || blockSize != _blockSize)
             return ResultFs.InvalidLogBlockSize.Log();
@@ -94,8 +94,8 @@ public class UnionStorage : IStorage
         for (long offset = LogHeaderSize; ; offset += GetLogSize(_blockSize))
         {
             long offsetOriginal = 0;
-            rc = logStorage.Read(offset, SpanHelpers.AsByteSpan(ref offsetOriginal));
-            if (rc.IsFailure()) return rc.Miss();
+            res = logStorage.Read(offset, SpanHelpers.AsByteSpan(ref offsetOriginal));
+            if (res.IsFailure()) return res.Miss();
 
             if (offsetOriginal == Sentinel)
                 break;
@@ -121,11 +121,11 @@ public class UnionStorage : IStorage
 
         long tailOffset = GetLogTailOffset(_blockSize, _blockCount);
         long value = Sentinel;
-        Result rc = _logStorage.Write(tailOffset, SpanHelpers.AsReadOnlyByteSpan(in value));
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _logStorage.Write(tailOffset, SpanHelpers.AsReadOnlyByteSpan(in value));
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _logStorage.Flush();
-        if (rc.IsFailure()) return rc.Miss();
+        res = _logStorage.Flush();
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -143,17 +143,17 @@ public class UnionStorage : IStorage
         for (long offset = LogHeaderSize; offset < tailOffset; offset += logSize)
         {
             long offsetOriginal = 0;
-            Result rc = _logStorage.Read(offset, SpanHelpers.AsByteSpan(ref offsetOriginal));
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = _logStorage.Read(offset, SpanHelpers.AsByteSpan(ref offsetOriginal));
+            if (res.IsFailure()) return res.Miss();
 
             if (offsetOriginal == Sentinel)
                 return ResultFs.UnexpectedEndOfLog.Log();
 
-            rc = _logStorage.Read(GetDataOffset(offset), _buffer);
-            if (rc.IsFailure()) return rc.Miss();
+            res = _logStorage.Read(GetDataOffset(offset), _buffer);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = _baseStorage.Write(offsetOriginal, _buffer);
-            if (rc.IsFailure()) return rc.Miss();
+            res = _baseStorage.Write(offsetOriginal, _buffer);
+            if (res.IsFailure()) return res.Miss();
         }
 
         return _baseStorage.Flush();
@@ -180,19 +180,19 @@ public class UnionStorage : IStorage
             Span<byte> currentDestination = destination.Slice((int)offsetBuffer, (int)sizeToRead);
 
             // Check if the log contains the block we need
-            Result rc = FindLog(out bool found, out long offsetLog, offsetOriginal);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = FindLog(out bool found, out long offsetLog, offsetOriginal);
+            if (res.IsFailure()) return res.Miss();
 
             // If it does, read from the log; otherwise read from the base storage
             if (found)
             {
-                rc = _logStorage.Read(GetDataOffset(offsetLog) + sizeSkipBlock, currentDestination);
-                if (rc.IsFailure()) return rc.Miss();
+                res = _logStorage.Read(GetDataOffset(offsetLog) + sizeSkipBlock, currentDestination);
+                if (res.IsFailure()) return res.Miss();
             }
             else
             {
-                rc = _baseStorage.Read(offsetOriginal + sizeSkipBlock, currentDestination);
-                if (rc.IsFailure()) return rc.Miss();
+                res = _baseStorage.Read(offsetOriginal + sizeSkipBlock, currentDestination);
+                if (res.IsFailure()) return res.Miss();
             }
 
             offsetBuffer += sizeToRead;
@@ -227,40 +227,40 @@ public class UnionStorage : IStorage
             ReadOnlySpan<byte> currentSource = source.Slice((int)offsetBuffer, (int)sizeToWrite);
 
             // Check if the log contains the block we need.
-            Result rc = FindLog(out bool found, out long offsetLog, offsetOriginal);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = FindLog(out bool found, out long offsetLog, offsetOriginal);
+            if (res.IsFailure()) return res.Miss();
 
             if (found)
             {
                 // If it does, write directly to the log.
                 _logStorage.Write(GetDataOffset(offsetLog) + sizeSkipBlock, currentSource);
-                if (rc.IsFailure()) return rc.Miss();
+                if (res.IsFailure()) return res.Miss();
             }
             else
             {
                 // Otherwise we need to add a new entry to the log.
                 _logStorage.Write(offsetLog, SpanHelpers.AsReadOnlyByteSpan(in offsetOriginal));
-                if (rc.IsFailure()) return rc.Miss();
+                if (res.IsFailure()) return res.Miss();
 
                 if (sizeToWrite == _blockSize)
                 {
                     // If we're writing a complete block we can write the entire block directly to the log.
                     _logStorage.Write(GetDataOffset(offsetLog) + sizeSkipBlock, currentSource);
-                    if (rc.IsFailure()) return rc.Miss();
+                    if (res.IsFailure()) return res.Miss();
                 }
                 else
                 {
                     // If we're writing a partial block we need to read the existing data block from the base storage
                     // into a buffer first.
                     _baseStorage.Read(offsetOriginal, _buffer);
-                    if (rc.IsFailure()) return rc.Miss();
+                    if (res.IsFailure()) return res.Miss();
 
                     // Fill in the appropriate parts of the buffer with our new data.
                     currentSource.CopyTo(_buffer.AsSpan((int)sizeSkipBlock, (int)sizeToWrite));
 
                     // Write the entire modified block to the new log entry.
                     _logStorage.Write(GetDataOffset(offsetLog), _buffer);
-                    if (rc.IsFailure()) return rc.Miss();
+                    if (res.IsFailure()) return res.Miss();
                 }
 
                 _blockCount++;
@@ -278,11 +278,11 @@ public class UnionStorage : IStorage
     {
         Assert.SdkRequiresNotNull(_buffer);
 
-        Result rc = _baseStorage.Flush();
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _baseStorage.Flush();
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _logStorage.Flush();
-        if (rc.IsFailure()) return rc.Miss();
+        res = _logStorage.Flush();
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -306,13 +306,13 @@ public class UnionStorage : IStorage
              currentOffset < offset + size;
              currentOffset += _blockSize)
         {
-            Result rc = FindLog(out bool found, out long offsetLog, currentOffset);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = FindLog(out bool found, out long offsetLog, currentOffset);
+            if (res.IsFailure()) return res.Miss();
 
             if (found)
             {
                 _logStorage.OperateRange(outBuffer, operationId, offsetLog, _blockSize, inBuffer);
-                if (rc.IsFailure()) return rc.Miss();
+                if (res.IsFailure()) return res.Miss();
             }
         }
 
@@ -333,8 +333,8 @@ public class UnionStorage : IStorage
         for (long logOffset = LogHeaderSize; logOffset < logTailOffset; logOffset += logSize)
         {
             long offset = 0;
-            Result rc = _logStorage.Read(logOffset, SpanHelpers.AsByteSpan(ref offset));
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = _logStorage.Read(logOffset, SpanHelpers.AsByteSpan(ref offset));
+            if (res.IsFailure()) return res.Miss();
 
             if (offset == Sentinel)
                 return ResultFs.LogNotFound.Log();

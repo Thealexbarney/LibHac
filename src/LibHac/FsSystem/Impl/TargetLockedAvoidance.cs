@@ -13,9 +13,9 @@ internal static class TargetLockedAvoidance
     // Allow usage outside of a Horizon context by using standard .NET APIs
     public static Result RetryToAvoidTargetLocked(Func<Result> func, FileSystemClient? fs = null)
     {
-        Result rc = func();
+        Result res = func();
 
-        for (int i = 0; i < RetryCount && ResultFs.TargetLocked.Includes(rc); i++)
+        for (int i = 0; i < RetryCount && ResultFs.TargetLocked.Includes(res); i++)
         {
             if (fs is null)
             {
@@ -26,9 +26,9 @@ internal static class TargetLockedAvoidance
                 fs.Hos.Os.SleepThread(TimeSpan.FromMilliSeconds(SleepTimeMs));
             }
 
-            rc = func();
+            res = func();
         }
 
-        return rc;
+        return res;
     }
 }

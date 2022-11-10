@@ -64,11 +64,11 @@ public readonly struct BaseStorageService
         var storageFlag = StorageLayoutType.Bis;
         using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetAccessibilityForOpenBisPartition(out Accessibility accessibility, programInfo, id);
-        if (rc.IsFailure()) return rc;
+        res = GetAccessibilityForOpenBisPartition(out Accessibility accessibility, programInfo, id);
+        if (res.IsFailure()) return res.Miss();
 
         bool canAccess = accessibility.CanRead && accessibility.CanWrite;
 
@@ -76,8 +76,8 @@ public readonly struct BaseStorageService
             return ResultFs.PermissionDenied.Log();
 
         using var storage = new SharedRef<IStorage>();
-        rc = _serviceImpl.OpenBisStorage(ref storage.Ref(), id);
-        if (rc.IsFailure()) return rc;
+        res = _serviceImpl.OpenBisStorage(ref storage.Ref(), id);
+        if (res.IsFailure()) return res.Miss();
 
         using var typeSetStorage =
             new SharedRef<IStorage>(new StorageLayoutTypeSetStorage(ref storage.Ref(), storageFlag));
@@ -94,8 +94,8 @@ public readonly struct BaseStorageService
 
     public Result InvalidateBisCache()
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.InvalidateBisCache))
             return ResultFs.PermissionDenied.Log();
@@ -106,8 +106,8 @@ public readonly struct BaseStorageService
     public Result OpenGameCardStorage(ref SharedRef<IStorageSf> outStorage, GameCardHandle handle,
         GameCardPartitionRaw partitionId)
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         Accessibility accessibility =
             programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.OpenGameCardStorage);
@@ -118,8 +118,8 @@ public readonly struct BaseStorageService
             return ResultFs.PermissionDenied.Log();
 
         using var storage = new SharedRef<IStorage>();
-        rc = _serviceImpl.OpenGameCardPartition(ref storage.Ref(), handle, partitionId);
-        if (rc.IsFailure()) return rc;
+        res = _serviceImpl.OpenGameCardPartition(ref storage.Ref(), handle, partitionId);
+        if (res.IsFailure()) return res.Miss();
 
         // Todo: Async storage
 
@@ -133,19 +133,19 @@ public readonly struct BaseStorageService
 
     public Result OpenDeviceOperator(ref SharedRef<IDeviceOperator> outDeviceOperator)
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _serviceImpl.OpenDeviceOperator(ref outDeviceOperator, programInfo.AccessControl);
-        if (rc.IsFailure()) return rc.Miss();
+        res = _serviceImpl.OpenDeviceOperator(ref outDeviceOperator, programInfo.AccessControl);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
 
     public Result OpenSdCardDetectionEventNotifier(ref SharedRef<IEventNotifier> outEventNotifier)
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.OpenSdCardDetectionEventNotifier))
             return ResultFs.PermissionDenied.Log();
@@ -155,8 +155,8 @@ public readonly struct BaseStorageService
 
     public Result OpenGameCardDetectionEventNotifier(ref SharedRef<IEventNotifier> outEventNotifier)
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.OpenGameCardDetectionEventNotifier))
             return ResultFs.PermissionDenied.Log();
@@ -166,8 +166,8 @@ public readonly struct BaseStorageService
 
     public Result SimulateDeviceDetectionEvent(SdmmcPort port, SimulatingDeviceDetectionMode mode, bool signalEvent)
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.SimulateDevice))
             return ResultFs.PermissionDenied.Log();

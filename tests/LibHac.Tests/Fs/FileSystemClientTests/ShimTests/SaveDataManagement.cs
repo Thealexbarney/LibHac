@@ -685,8 +685,8 @@ public class SaveDataManagement
             for (int i = 1; i <= count; i++)
             {
                 var applicationId = new Ncm.ApplicationId((uint)i);
-                Result rc = fs.CreateSaveData(applicationId, InvalidUserId, 0, 0x4000, 0x4000, SaveDataFlags.None);
-                if (rc.IsFailure()) return rc;
+                Result res = fs.CreateSaveData(applicationId, InvalidUserId, 0, 0x4000, 0x4000, SaveDataFlags.None);
+                if (res.IsFailure()) return res.Miss();
             }
         }
         else
@@ -696,8 +696,8 @@ public class SaveDataManagement
             for (int i = 1; i <= count; i++)
             {
                 var applicationId = new Ncm.ApplicationId((uint)rng.Next());
-                Result rc = fs.CreateSaveData(applicationId, InvalidUserId, 0, 0x4000, 0x4000, SaveDataFlags.None);
-                if (rc.IsFailure()) return rc;
+                Result res = fs.CreateSaveData(applicationId, InvalidUserId, 0, 0x4000, 0x4000, SaveDataFlags.None);
+                if (res.IsFailure()) return res.Miss();
             }
         }
 

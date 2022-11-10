@@ -13,8 +13,8 @@ public static class FileSystemClientUtils
     public static Result CopyDirectory(this FileSystemClient fs, string sourcePath, string destPath,
         CreateFileOptions options = CreateFileOptions.None, IProgressReport logger = null)
     {
-        Result rc = fs.OpenDirectory(out DirectoryHandle sourceHandle, sourcePath.ToU8Span(), OpenDirectoryMode.All);
-        if (rc.IsFailure()) return rc;
+        Result res = fs.OpenDirectory(out DirectoryHandle sourceHandle, sourcePath.ToU8Span(), OpenDirectoryMode.All);
+        if (res.IsFailure()) return res.Miss();
 
         try
         {
@@ -27,8 +27,8 @@ public static class FileSystemClientUtils
                 {
                     fs.EnsureDirectoryExists(subDstPath);
 
-                    rc = fs.CopyDirectory(subSrcPath, subDstPath, options, logger);
-                    if (rc.IsFailure()) return rc;
+                    res = fs.CopyDirectory(subSrcPath, subDstPath, options, logger);
+                    if (res.IsFailure()) return res.Miss();
                 }
 
                 if (entry.Type == DirectoryEntryType.File)
@@ -36,8 +36,8 @@ public static class FileSystemClientUtils
                     logger?.LogMessage(subSrcPath);
                     fs.CreateOrOverwriteFile(subDstPath, entry.Size, options);
 
-                    rc = fs.CopyFile(subSrcPath, subDstPath, logger);
-                    if (rc.IsFailure()) return rc;
+                    res = fs.CopyFile(subSrcPath, subDstPath, logger);
+                    if (res.IsFailure()) return res.Miss();
                 }
             }
         }
@@ -52,21 +52,21 @@ public static class FileSystemClientUtils
 
     public static Result CopyFile(this FileSystemClient fs, string sourcePath, string destPath, IProgressReport logger = null)
     {
-        Result rc = fs.OpenFile(out FileHandle sourceHandle, sourcePath.ToU8Span(), OpenMode.Read);
-        if (rc.IsFailure()) return rc;
+        Result res = fs.OpenFile(out FileHandle sourceHandle, sourcePath.ToU8Span(), OpenMode.Read);
+        if (res.IsFailure()) return res.Miss();
 
         try
         {
-            rc = fs.OpenFile(out FileHandle destHandle, destPath.ToU8Span(),
+            res = fs.OpenFile(out FileHandle destHandle, destPath.ToU8Span(),
                 OpenMode.Write | OpenMode.AllowAppend);
-            if (rc.IsFailure()) return rc;
+            if (res.IsFailure()) return res.Miss();
 
             try
             {
                 const int maxBufferSize = 0x10000;
 
-                rc = fs.GetFileSize(out long fileSize, sourceHandle);
-                if (rc.IsFailure()) return rc;
+                res = fs.GetFileSize(out long fileSize, sourceHandle);
+                if (res.IsFailure()) return res.Miss();
 
                 int bufferSize = (int)Math.Min(maxBufferSize, fileSize);
 
@@ -80,11 +80,11 @@ public static class FileSystemClientUtils
                         int toRead = (int)Math.Min(fileSize - offset, bufferSize);
                         Span<byte> buf = buffer.AsSpan(0, toRead);
 
-                        rc = fs.ReadFile(out long _, sourceHandle, offset, buf);
-                        if (rc.IsFailure()) return rc;
+                        res = fs.ReadFile(out long _, sourceHandle, offset, buf);
+                        if (res.IsFailure()) return res.Miss();
 
-                        rc = fs.WriteFile(destHandle, offset, buf, WriteOption.None);
-                        if (rc.IsFailure()) return rc;
+                        res = fs.WriteFile(destHandle, offset, buf, WriteOption.None);
+                        if (res.IsFailure()) return res.Miss();
 
                         logger?.ReportAdd(toRead);
                     }
@@ -95,8 +95,8 @@ public static class FileSystemClientUtils
                     logger?.SetTotal(0);
                 }
 
-                rc = fs.FlushFile(destHandle);
-                if (rc.IsFailure()) return rc;
+                res = fs.FlushFile(destHandle);
+                if (res.IsFailure()) return res.Miss();
             }
             finally
             {
@@ -166,16 +166,16 @@ public static class FileSystemClientUtils
 
     public static bool DirectoryExists(this FileSystemClient fs, string path)
     {
-        Result rc = fs.GetEntryType(out DirectoryEntryType type, path.ToU8Span());
+        Result res = fs.GetEntryType(out DirectoryEntryType type, path.ToU8Span());
 
-        return (rc.IsSuccess() && type == DirectoryEntryType.Directory);
+        return (res.IsSuccess() && type == DirectoryEntryType.Directory);
     }
 
     public static bool FileExists(this FileSystemClient fs, string path)
     {
-        Result rc = fs.GetEntryType(out DirectoryEntryType type, path.ToU8Span());
+        Result res = fs.GetEntryType(out DirectoryEntryType type, path.ToU8Span());
 
-        return (rc.IsSuccess() && type == DirectoryEntryType.File);
+        return (res.IsSuccess() && type == DirectoryEntryType.File);
     }
 
     public static void EnsureDirectoryExists(this FileSystemClient fs, string path)
@@ -230,8 +230,8 @@ public static class FileSystemClientUtils
 
         if (fs.FileExists(path))
         {
-            Result rc = fs.DeleteFile(u8Path);
-            if (rc.IsFailure()) return rc;
+            Result res = fs.DeleteFile(u8Path);
+            if (res.IsFailure()) return res.Miss();
         }
 
         return fs.CreateFile(u8Path, size, CreateFileOptions.None);

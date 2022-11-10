@@ -18,13 +18,13 @@ public static class Mmc
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result rc = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = deviceOperator.Get.GetMmcSpeedMode(out long speedMode);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        res = deviceOperator.Get.GetMmcSpeedMode(out long speedMode);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         outSpeedMode = (MmcSpeedMode)speedMode;
         return Result.Success;
@@ -35,13 +35,13 @@ public static class Mmc
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result rc = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = deviceOperator.Get.GetMmcCid(new OutBuffer(outCidBuffer), outCidBuffer.Length);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        res = deviceOperator.Get.GetMmcCid(new OutBuffer(outCidBuffer), outCidBuffer.Length);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -51,13 +51,13 @@ public static class Mmc
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result rc = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = deviceOperator.Get.EraseMmc((uint)partition);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        res = deviceOperator.Get.EraseMmc((uint)partition);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -70,13 +70,13 @@ public static class Mmc
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result rc = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = deviceOperator.Get.GetMmcPartitionSize(out outPartitionSize, (uint)partition);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        res = deviceOperator.Get.GetMmcPartitionSize(out outPartitionSize, (uint)partition);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -88,13 +88,13 @@ public static class Mmc
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result rc = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = deviceOperator.Get.GetMmcPatrolCount(out outPatrolCount);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        res = deviceOperator.Get.GetMmcPatrolCount(out outPatrolCount);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -107,14 +107,14 @@ public static class Mmc
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result rc = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = deviceOperator.Get.GetAndClearMmcErrorInfo(out outErrorInfo, out long logSize, new OutBuffer(logBuffer),
+        res = deviceOperator.Get.GetAndClearMmcErrorInfo(out outErrorInfo, out long logSize, new OutBuffer(logBuffer),
             logBuffer.Length);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         outLogSize = logSize;
 
@@ -126,13 +126,13 @@ public static class Mmc
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result rc = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = deviceOperator.Get.GetMmcExtendedCsd(new OutBuffer(outBuffer), outBuffer.Length);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        res = deviceOperator.Get.GetMmcExtendedCsd(new OutBuffer(outBuffer), outBuffer.Length);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -142,13 +142,13 @@ public static class Mmc
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result rc = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = deviceOperator.Get.SuspendMmcPatrol();
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        res = deviceOperator.Get.SuspendMmcPatrol();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -158,13 +158,13 @@ public static class Mmc
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result rc = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = deviceOperator.Get.ResumeMmcPatrol();
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        res = deviceOperator.Get.ResumeMmcPatrol();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }

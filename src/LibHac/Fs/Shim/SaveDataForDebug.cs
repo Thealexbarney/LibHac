@@ -23,36 +23,36 @@ public static class SaveDataForDebug
 
     public static void SetSaveDataRootPath(this FileSystemClient fs, U8Span path)
     {
-        Result rc;
+        Result res;
         Span<byte> logBuffer = stackalloc byte[0x300];
 
         if (fs.Impl.IsEnabledAccessLog() && fs.Impl.IsEnabledHandleAccessLog(null))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = SetRootPath(fs, path);
+            res = SetRootPath(fs, path);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
             sb.Append(LogPath).Append(path).Append(LogQuote);
 
-            fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+            fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(sb.Buffer));
         }
         else
         {
-            rc = SetRootPath(fs, path);
+            res = SetRootPath(fs, path);
         }
 
-        fs.Impl.LogResultErrorMessage(rc);
-        Abort.DoAbortUnlessSuccess(rc);
+        fs.Impl.LogResultErrorMessage(res);
+        Abort.DoAbortUnlessSuccess(res);
 
         static Result SetRootPath(FileSystemClient fs, U8Span path)
         {
-            Result rc = PathUtility.ConvertToFspPath(out FspPath sfPath, path);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = PathUtility.ConvertToFspPath(out FspPath sfPath, path);
+            if (res.IsFailure()) return res.Miss();
 
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
-            rc = fileSystemProxy.Get.SetSaveDataRootPath(in sfPath);
-            if (rc.IsFailure()) return rc.Miss();
+            res = fileSystemProxy.Get.SetSaveDataRootPath(in sfPath);
+            if (res.IsFailure()) return res.Miss();
 
             return Result.Success;
         }
@@ -60,25 +60,25 @@ public static class SaveDataForDebug
 
     public static void UnsetSaveDataRootPath(this FileSystemClient fs)
     {
-        Result rc;
+        Result res;
 
         if (fs.Impl.IsEnabledAccessLog() && fs.Impl.IsEnabledHandleAccessLog(null))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
-            rc = fileSystemProxy.Get.UnsetSaveDataRootPath();
+            res = fileSystemProxy.Get.UnsetSaveDataRootPath();
             Tick end = fs.Hos.Os.GetSystemTick();
 
-            fs.Impl.OutputAccessLog(rc, start, end, null, U8Span.Empty);
+            fs.Impl.OutputAccessLog(res, start, end, null, U8Span.Empty);
         }
         else
         {
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
-            rc = fileSystemProxy.Get.UnsetSaveDataRootPath();
+            res = fileSystemProxy.Get.UnsetSaveDataRootPath();
         }
 
-        fs.Impl.LogResultErrorMessage(rc);
-        Abort.DoAbortUnlessSuccess(rc);
+        fs.Impl.LogResultErrorMessage(res);
+        Abort.DoAbortUnlessSuccess(res);
     }
 
     /// <summary>
@@ -96,27 +96,27 @@ public static class SaveDataForDebug
     /// <see cref="ResultFs.PermissionDenied"/>: Insufficient permissions.</returns>
     public static Result EnsureSaveDataForDebug(this FileSystemClient fs, long saveDataSize, long saveDataJournalSize)
     {
-        Result rc;
+        Result res;
         Span<byte> logBuffer = stackalloc byte[0x60];
 
         if (fs.Impl.IsEnabledAccessLog() && fs.Impl.IsEnabledHandleAccessLog(null))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = Ensure(fs, saveDataSize, saveDataJournalSize);
+            res = Ensure(fs, saveDataSize, saveDataJournalSize);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
             sb.Append(LogSaveDataSize).AppendFormat(saveDataSize, 'd')
                 .Append(LogSaveDataJournalSize).AppendFormat(saveDataJournalSize, 'd');
 
-            fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+            fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(sb.Buffer));
         }
         else
         {
-            rc = Ensure(fs, saveDataSize, saveDataJournalSize);
+            res = Ensure(fs, saveDataSize, saveDataJournalSize);
         }
 
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
 
@@ -124,9 +124,9 @@ public static class SaveDataForDebug
         {
             UserId userIdForDebug = InvalidUserId;
 
-            Result rc = fs.Impl.EnsureSaveDataImpl(userIdForDebug, saveDataSize, saveDataJournalSize,
+            Result res = fs.Impl.EnsureSaveDataImpl(userIdForDebug, saveDataSize, saveDataJournalSize,
                 extendIfNeeded: true);
-            if (rc.IsFailure()) return rc.Miss();
+            if (res.IsFailure()) return res.Miss();
 
             return Result.Success;
         }
@@ -146,26 +146,26 @@ public static class SaveDataForDebug
     /// <see cref="ResultFs.PermissionDenied"/>: Insufficient permissions.</returns>
     public static Result MountSaveDataForDebug(this FileSystemClient fs, U8Span mountName)
     {
-        Result rc;
+        Result res;
         Span<byte> logBuffer = stackalloc byte[0x30];
 
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = Mount(fs, mountName);
+            res = Mount(fs, mountName);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
             sb.Append(LogName).Append(mountName).Append(LogQuote);
 
-            fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+            fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(sb.Buffer));
         }
         else
         {
-            rc = Mount(fs, mountName);
+            res = Mount(fs, mountName);
         }
 
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
             fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
@@ -176,12 +176,12 @@ public static class SaveDataForDebug
         {
             UserId userIdForDebug = InvalidUserId;
 
-            Result rc = fs.Impl.EnsureSaveDataImpl(userIdForDebug, SaveDataSizeForDebug, SaveDataJournalSizeForDebug,
+            Result res = fs.Impl.EnsureSaveDataImpl(userIdForDebug, SaveDataSizeForDebug, SaveDataJournalSizeForDebug,
                 extendIfNeeded: false);
-            if (rc.IsFailure()) return rc.Miss();
+            if (res.IsFailure()) return res.Miss();
 
-            rc = fs.Impl.MountSaveDataImpl(mountName, userIdForDebug);
-            if (rc.IsFailure()) return rc.Miss();
+            res = fs.Impl.MountSaveDataImpl(mountName, userIdForDebug);
+            if (res.IsFailure()) return res.Miss();
 
             return Result.Success;
         }

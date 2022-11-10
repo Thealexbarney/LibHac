@@ -108,40 +108,40 @@ public class Package1
         _baseStorage.SetByCopy(in storage);
 
         // Read what might be a mariko header and check if it actually is a mariko header
-        Result rc = _baseStorage.Get.Read(0, SpanHelpers.AsByteSpan(ref _marikoOemHeader));
-        if (rc.IsFailure()) return rc;
+        Result res = _baseStorage.Get.Read(0, SpanHelpers.AsByteSpan(ref _marikoOemHeader));
+        if (res.IsFailure()) return res.Miss();
 
         IsMariko = IsMarikoImpl();
 
         if (IsMariko)
         {
-            rc = InitMarikoBodyStorage();
-            if (rc.IsFailure()) return rc;
+            res = InitMarikoBodyStorage();
+            if (res.IsFailure()) return res.Miss();
         }
         else
         {
-            rc = _baseStorage.Get.GetSize(out long baseStorageSize);
-            if (rc.IsFailure()) return rc.Miss();
+            res = _baseStorage.Get.GetSize(out long baseStorageSize);
+            if (res.IsFailure()) return res.Miss();
 
             _bodyStorage = new SubStorage(in _baseStorage, 0, baseStorageSize);
-            rc = _bodyStorage.Read(0, SpanHelpers.AsByteSpan(ref _metaData));
-            if (rc.IsFailure()) return rc;
+            res = _bodyStorage.Read(0, SpanHelpers.AsByteSpan(ref _metaData));
+            if (res.IsFailure()) return res.Miss();
         }
 
-        rc = ParseStage1();
-        if (rc.IsFailure()) return rc;
+        res = ParseStage1();
+        if (res.IsFailure()) return res.Miss();
 
-        rc = ReadPk11Header();
-        if (rc.IsFailure()) return rc;
+        res = ReadPk11Header();
+        if (res.IsFailure()) return res.Miss();
 
         if (!IsMariko && IsModern)
         {
-            rc = ReadModernEristaMac();
-            if (rc.IsFailure()) return rc;
+            res = ReadModernEristaMac();
+            if (res.IsFailure()) return res.Miss();
         }
 
-        rc = SetPk11Storage();
-        if (rc.IsFailure()) return rc;
+        res = SetPk11Storage();
+        if (res.IsFailure()) return res.Miss();
 
         // Make sure the PK11 section sizes add up to the expected size
         if (IsDecrypted && !VerifyPk11Sizes())
@@ -165,8 +165,8 @@ public class Package1
             return ResultLibHac.InvalidPackage1MarikoBodySize.Log();
 
         // Verify the body storage size is not smaller than the size in the header
-        Result rc = _baseStorage.Get.GetSize(out long totalSize);
-        if (rc.IsFailure()) return rc;
+        Result res = _baseStorage.Get.GetSize(out long totalSize);
+        if (res.IsFailure()) return res.Miss();
 
         long bodySize = totalSize - Unsafe.SizeOf<Package1MarikoOemHeader>();
         if (bodySize < MarikoOemHeader.Size)
@@ -180,8 +180,8 @@ public class Package1
         Span<byte> metaData2 = SpanHelpers.AsByteSpan(ref metaData[1]);
 
         // Read both the plaintext metadata and encrypted metadata
-        rc = bodySubStorage.Read(0, MemoryMarshal.Cast<Package1MetaData, byte>(metaData));
-        if (rc.IsFailure()) return rc;
+        res = bodySubStorage.Read(0, MemoryMarshal.Cast<Package1MetaData, byte>(metaData));
+        if (res.IsFailure()) return res.Miss();
 
         // Set the body storage and decrypted metadata
         _metaData = metaData[0];
@@ -233,8 +233,8 @@ public class Package1
         // Read the package1ldr footer
         int footerOffset = stage1Size - Unsafe.SizeOf<Package1Stage1Footer>();
 
-        Result rc = _bodyStorage.Read(footerOffset, SpanHelpers.AsByteSpan(ref _stage1Footer));
-        if (rc.IsFailure()) return rc;
+        Result res = _bodyStorage.Read(footerOffset, SpanHelpers.AsByteSpan(ref _stage1Footer));
+        if (res.IsFailure()) return res.Miss();
 
         // Get the PK11 size from the field in the unencrypted stage 1 footer
         Pk11Size = _stage1Footer.Pk11Size;
@@ -259,8 +259,8 @@ public class Package1
         // Read the PK11 header from the body storage
         int pk11Offset = IsModern ? ModernStage1Size : LegacyStage1Size;
 
-        Result rc = _bodyStorage.Read(pk11Offset, SpanHelpers.AsByteSpan(ref _pk11Header));
-        if (rc.IsFailure()) return rc;
+        Result res = _bodyStorage.Read(pk11Offset, SpanHelpers.AsByteSpan(ref _pk11Header));
+        if (res.IsFailure()) return res.Miss();
 
         // Check if PK11 is already decrypted, creating the PK11 storage if it is
         IsDecrypted = _pk11Header.Magic == Package1Pk11Header.ExpectedMagic;

@@ -27,8 +27,8 @@ public class StorageFile : IFile
 
         Assert.SdkRequiresNotNull(_baseStorage);
 
-        Result rc = DryRead(out long readSize, offset, destination.Length, in option, _mode);
-        if (rc.IsFailure()) return rc;
+        Result res = DryRead(out long readSize, offset, destination.Length, in option, _mode);
+        if (res.IsFailure()) return res.Miss();
 
         if (readSize == 0)
         {
@@ -36,8 +36,8 @@ public class StorageFile : IFile
             return Result.Success;
         }
 
-        rc = _baseStorage.Read(offset, destination.Slice(0, (int)readSize));
-        if (rc.IsFailure()) return rc;
+        res = _baseStorage.Read(offset, destination.Slice(0, (int)readSize));
+        if (res.IsFailure()) return res.Miss();
 
         bytesRead = readSize;
         return Result.Success;
@@ -47,22 +47,22 @@ public class StorageFile : IFile
     {
         Assert.SdkRequiresNotNull(_baseStorage);
 
-        Result rc = DryWrite(out bool isAppendNeeded, offset, source.Length, in option, _mode);
-        if (rc.IsFailure()) return rc;
+        Result res = DryWrite(out bool isAppendNeeded, offset, source.Length, in option, _mode);
+        if (res.IsFailure()) return res.Miss();
 
         if (isAppendNeeded)
         {
-            rc = DoSetSize(offset + source.Length);
-            if (rc.IsFailure()) return rc;
+            res = DoSetSize(offset + source.Length);
+            if (res.IsFailure()) return res.Miss();
         }
 
-        rc = _baseStorage.Write(offset, source);
-        if (rc.IsFailure()) return rc;
+        res = _baseStorage.Write(offset, source);
+        if (res.IsFailure()) return res.Miss();
 
         if (option.HasFlushFlag())
         {
-            rc = Flush();
-            if (rc.IsFailure()) return rc.Miss();
+            res = Flush();
+            if (res.IsFailure()) return res.Miss();
         }
 
         return Result.Success;
@@ -89,8 +89,8 @@ public class StorageFile : IFile
     {
         Assert.SdkRequiresNotNull(_baseStorage);
 
-        Result rc = DrySetSize(size, _mode);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = DrySetSize(size, _mode);
+        if (res.IsFailure()) return res.Miss();
 
         return _baseStorage.SetSize(size);
     }
@@ -107,8 +107,8 @@ public class StorageFile : IFile
                 if (!_mode.HasFlag(OpenMode.Read))
                     return ResultFs.ReadUnpermitted.Log();
 
-                Result rc = _baseStorage.OperateRange(OperationId.InvalidateCache, offset, size);
-                if (rc.IsFailure()) return rc.Miss();
+                Result res = _baseStorage.OperateRange(OperationId.InvalidateCache, offset, size);
+                if (res.IsFailure()) return res.Miss();
 
                 break;
             }
@@ -117,14 +117,14 @@ public class StorageFile : IFile
                 if (offset < 0)
                     return ResultFs.InvalidOffset.Log();
 
-                Result rc = GetSize(out long fileSize);
-                if (rc.IsFailure()) return rc.Miss();
+                Result res = GetSize(out long fileSize);
+                if (res.IsFailure()) return res.Miss();
 
                 long operableSize = Math.Max(0, fileSize - offset);
                 long operateSize = Math.Min(operableSize, size);
 
-                rc = _baseStorage.OperateRange(outBuffer, operationId, offset, operateSize, inBuffer);
-                if (rc.IsFailure()) return rc.Miss();
+                res = _baseStorage.OperateRange(outBuffer, operationId, offset, operateSize, inBuffer);
+                if (res.IsFailure()) return res.Miss();
 
                 break;
             }

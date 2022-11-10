@@ -150,70 +150,70 @@ internal class FileSystemServiceObjectAdapter : IFileSystem, IMultiCommitTarget
 
     protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
     {
-        Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
-        if (rc.IsFailure()) return rc;
+        Result res = GetPathForServiceObject(out PathSf sfPath, in path);
+        if (res.IsFailure()) return res.Miss();
 
         return _baseFs.Get.CreateFile(in sfPath, size, (int)option);
     }
 
     protected override Result DoDeleteFile(in Path path)
     {
-        Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
-        if (rc.IsFailure()) return rc;
+        Result res = GetPathForServiceObject(out PathSf sfPath, in path);
+        if (res.IsFailure()) return res.Miss();
 
         return _baseFs.Get.DeleteFile(in sfPath);
     }
 
     protected override Result DoCreateDirectory(in Path path)
     {
-        Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
-        if (rc.IsFailure()) return rc;
+        Result res = GetPathForServiceObject(out PathSf sfPath, in path);
+        if (res.IsFailure()) return res.Miss();
 
         return _baseFs.Get.CreateDirectory(in sfPath);
     }
 
     protected override Result DoDeleteDirectory(in Path path)
     {
-        Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
-        if (rc.IsFailure()) return rc;
+        Result res = GetPathForServiceObject(out PathSf sfPath, in path);
+        if (res.IsFailure()) return res.Miss();
 
         return _baseFs.Get.DeleteDirectory(in sfPath);
     }
 
     protected override Result DoDeleteDirectoryRecursively(in Path path)
     {
-        Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
-        if (rc.IsFailure()) return rc;
+        Result res = GetPathForServiceObject(out PathSf sfPath, in path);
+        if (res.IsFailure()) return res.Miss();
 
         return _baseFs.Get.DeleteDirectoryRecursively(in sfPath);
     }
 
     protected override Result DoCleanDirectoryRecursively(in Path path)
     {
-        Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
-        if (rc.IsFailure()) return rc;
+        Result res = GetPathForServiceObject(out PathSf sfPath, in path);
+        if (res.IsFailure()) return res.Miss();
 
         return _baseFs.Get.CleanDirectoryRecursively(in sfPath);
     }
 
     protected override Result DoRenameFile(in Path currentPath, in Path newPath)
     {
-        Result rc = GetPathForServiceObject(out PathSf currentSfPath, in currentPath);
-        if (rc.IsFailure()) return rc;
+        Result res = GetPathForServiceObject(out PathSf currentSfPath, in currentPath);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetPathForServiceObject(out PathSf newSfPath, in newPath);
-        if (rc.IsFailure()) return rc;
+        res = GetPathForServiceObject(out PathSf newSfPath, in newPath);
+        if (res.IsFailure()) return res.Miss();
 
         return _baseFs.Get.RenameFile(in currentSfPath, in newSfPath);
     }
 
     protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
     {
-        Result rc = GetPathForServiceObject(out PathSf currentSfPath, in currentPath);
-        if (rc.IsFailure()) return rc;
+        Result res = GetPathForServiceObject(out PathSf currentSfPath, in currentPath);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GetPathForServiceObject(out PathSf newSfPath, in newPath);
-        if (rc.IsFailure()) return rc;
+        res = GetPathForServiceObject(out PathSf newSfPath, in newPath);
+        if (res.IsFailure()) return res.Miss();
 
         return _baseFs.Get.RenameDirectory(in currentSfPath, in newSfPath);
     }
@@ -222,8 +222,8 @@ internal class FileSystemServiceObjectAdapter : IFileSystem, IMultiCommitTarget
     {
         UnsafeHelpers.SkipParamInit(out entryType);
 
-        Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
-        if (rc.IsFailure()) return rc;
+        Result res = GetPathForServiceObject(out PathSf sfPath, in path);
+        if (res.IsFailure()) return res.Miss();
 
         ref uint sfEntryType = ref Unsafe.As<DirectoryEntryType, uint>(ref entryType);
 
@@ -234,8 +234,8 @@ internal class FileSystemServiceObjectAdapter : IFileSystem, IMultiCommitTarget
     {
         UnsafeHelpers.SkipParamInit(out freeSpace);
 
-        Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
-        if (rc.IsFailure()) return rc;
+        Result res = GetPathForServiceObject(out PathSf sfPath, in path);
+        if (res.IsFailure()) return res.Miss();
 
         return _baseFs.Get.GetFreeSpaceSize(out freeSpace, in sfPath);
     }
@@ -244,21 +244,21 @@ internal class FileSystemServiceObjectAdapter : IFileSystem, IMultiCommitTarget
     {
         UnsafeHelpers.SkipParamInit(out totalSpace);
 
-        Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
-        if (rc.IsFailure()) return rc;
+        Result res = GetPathForServiceObject(out PathSf sfPath, in path);
+        if (res.IsFailure()) return res.Miss();
 
         return _baseFs.Get.GetTotalSpaceSize(out totalSpace, in sfPath);
     }
 
     protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
     {
-        Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
-        if (rc.IsFailure()) return rc;
+        Result res = GetPathForServiceObject(out PathSf sfPath, in path);
+        if (res.IsFailure()) return res.Miss();
 
         using var fileServiceObject = new SharedRef<IFileSf>();
 
-        rc = _baseFs.Get.OpenFile(ref fileServiceObject.Ref(), in sfPath, (uint)mode);
-        if (rc.IsFailure()) return rc;
+        res = _baseFs.Get.OpenFile(ref fileServiceObject.Ref(), in sfPath, (uint)mode);
+        if (res.IsFailure()) return res.Miss();
 
         outFile.Reset(new FileServiceObjectAdapter(ref fileServiceObject.Ref()));
         return Result.Success;
@@ -267,13 +267,13 @@ internal class FileSystemServiceObjectAdapter : IFileSystem, IMultiCommitTarget
     protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
         OpenDirectoryMode mode)
     {
-        Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
-        if (rc.IsFailure()) return rc;
+        Result res = GetPathForServiceObject(out PathSf sfPath, in path);
+        if (res.IsFailure()) return res.Miss();
 
         using var directoryServiceObject = new SharedRef<IDirectorySf>();
 
-        rc = _baseFs.Get.OpenDirectory(ref directoryServiceObject.Ref(), in sfPath, (uint)mode);
-        if (rc.IsFailure()) return rc;
+        res = _baseFs.Get.OpenDirectory(ref directoryServiceObject.Ref(), in sfPath, (uint)mode);
+        if (res.IsFailure()) return res.Miss();
 
         outDirectory.Reset(new DirectoryServiceObjectAdapter(ref directoryServiceObject.Ref()));
         return Result.Success;
@@ -288,8 +288,8 @@ internal class FileSystemServiceObjectAdapter : IFileSystem, IMultiCommitTarget
     {
         UnsafeHelpers.SkipParamInit(out timeStamp);
 
-        Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
-        if (rc.IsFailure()) return rc;
+        Result res = GetPathForServiceObject(out PathSf sfPath, in path);
+        if (res.IsFailure()) return res.Miss();
 
         return _baseFs.Get.GetFileTimeStampRaw(out timeStamp, in sfPath);
     }
@@ -297,8 +297,8 @@ internal class FileSystemServiceObjectAdapter : IFileSystem, IMultiCommitTarget
     protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
         in Path path)
     {
-        Result rc = GetPathForServiceObject(out PathSf sfPath, in path);
-        if (rc.IsFailure()) return rc;
+        Result res = GetPathForServiceObject(out PathSf sfPath, in path);
+        if (res.IsFailure()) return res.Miss();
 
         return _baseFs.Get.QueryEntry(new OutBuffer(outBuffer), new InBuffer(inBuffer), (int)queryId, in sfPath);
     }

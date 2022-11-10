@@ -55,9 +55,9 @@ public abstract class IAttributeFileSystemTests : IFileSystemTests
     {
         IAttributeFileSystem fs = CreateAttributeFileSystem();
 
-        Result rc = fs.GetFileAttributes(out _, "/path");
+        Result res = fs.GetFileAttributes(out _, "/path");
 
-        Assert.Result(ResultFs.PathNotFound, rc);
+        Assert.Result(ResultFs.PathNotFound, res);
     }
 
     [Fact]
@@ -65,9 +65,9 @@ public abstract class IAttributeFileSystemTests : IFileSystemTests
     {
         IAttributeFileSystem fs = CreateAttributeFileSystem();
 
-        Result rc = fs.SetFileAttributes("/path", NxFileAttributes.None);
+        Result res = fs.SetFileAttributes("/path", NxFileAttributes.None);
 
-        Assert.Result(ResultFs.PathNotFound, rc);
+        Assert.Result(ResultFs.PathNotFound, res);
     }
 
     [Fact]
@@ -76,11 +76,11 @@ public abstract class IAttributeFileSystemTests : IFileSystemTests
         IAttributeFileSystem fs = CreateAttributeFileSystem();
         fs.CreateFile("/file", 0, CreateFileOptions.None);
 
-        Result rcSet = fs.SetFileAttributes("/file", NxFileAttributes.Archive);
-        Result rcGet = fs.GetFileAttributes(out NxFileAttributes attributes, "/file");
+        Result resultSet = fs.SetFileAttributes("/file", NxFileAttributes.Archive);
+        Result resultGet = fs.GetFileAttributes(out NxFileAttributes attributes, "/file");
 
-        Assert.Success(rcSet);
-        Assert.Success(rcGet);
+        Assert.Success(resultSet);
+        Assert.Success(resultGet);
         Assert.Equal(NxFileAttributes.Archive, attributes);
     }
 
@@ -90,11 +90,11 @@ public abstract class IAttributeFileSystemTests : IFileSystemTests
         IAttributeFileSystem fs = CreateAttributeFileSystem();
         fs.CreateDirectory("/dir");
 
-        Result rcSet = fs.SetFileAttributes("/dir", NxFileAttributes.Archive);
-        Result rcGet = fs.GetFileAttributes(out NxFileAttributes attributes, "/dir");
+        Result resultSet = fs.SetFileAttributes("/dir", NxFileAttributes.Archive);
+        Result resultGet = fs.GetFileAttributes(out NxFileAttributes attributes, "/dir");
 
-        Assert.Success(rcSet);
-        Assert.Success(rcGet);
+        Assert.Success(resultSet);
+        Assert.Success(resultGet);
         Assert.Equal(NxFileAttributes.Directory | NxFileAttributes.Archive, attributes);
     }
 
@@ -114,9 +114,9 @@ public abstract class IAttributeFileSystemTests : IFileSystemTests
     {
         IAttributeFileSystem fs = CreateAttributeFileSystem();
 
-        Result rc = fs.GetFileSize(out _, "/path");
+        Result res = fs.GetFileSize(out _, "/path");
 
-        Assert.Result(ResultFs.PathNotFound, rc);
+        Assert.Result(ResultFs.PathNotFound, res);
     }
 
     [Fact]
@@ -125,8 +125,8 @@ public abstract class IAttributeFileSystemTests : IFileSystemTests
         IAttributeFileSystem fs = CreateAttributeFileSystem();
         fs.CreateDirectory("/dir");
 
-        Result rc = fs.GetFileSize(out _, "/dir");
+        Result res = fs.GetFileSize(out _, "/dir");
 
-        Assert.Result(ResultFs.PathNotFound, rc);
+        Assert.Result(ResultFs.PathNotFound, res);
     }
 }

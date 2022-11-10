@@ -159,11 +159,11 @@ public class SubStorage : IStorage
         if (!IsValid()) return ResultFs.NotInitialized.Log();
         if (destination.Length == 0) return Result.Success;
 
-        Result rc = CheckAccessRange(offset, destination.Length, _size);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = CheckAccessRange(offset, destination.Length, _size);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = BaseStorage.Read(_offset + offset, destination);
-        if (rc.IsFailure()) return rc.Miss();
+        res = BaseStorage.Read(_offset + offset, destination);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -173,11 +173,11 @@ public class SubStorage : IStorage
         if (!IsValid()) return ResultFs.NotInitialized.Log();
         if (source.Length == 0) return Result.Success;
 
-        Result rc = CheckAccessRange(offset, source.Length, _size);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = CheckAccessRange(offset, source.Length, _size);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = BaseStorage.Write(_offset + offset, source);
-        if (rc.IsFailure()) return rc.Miss();
+        res = BaseStorage.Write(_offset + offset, source);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -186,8 +186,8 @@ public class SubStorage : IStorage
     {
         if (!IsValid()) return ResultFs.NotInitialized.Log();
 
-        Result rc = BaseStorage.Flush();
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = BaseStorage.Flush();
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -197,11 +197,11 @@ public class SubStorage : IStorage
         if (!IsValid()) return ResultFs.NotInitialized.Log();
         if (!_isResizable) return ResultFs.UnsupportedSetSizeForNotResizableSubStorage.Log();
 
-        Result rc = CheckOffsetAndSize(_offset, size);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = CheckOffsetAndSize(_offset, size);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = BaseStorage.GetSize(out long currentSize);
-        if (rc.IsFailure()) return rc;
+        res = BaseStorage.GetSize(out long currentSize);
+        if (res.IsFailure()) return res.Miss();
 
         if (currentSize != _offset + _size)
         {
@@ -209,8 +209,8 @@ public class SubStorage : IStorage
             return ResultFs.UnsupportedSetSizeForResizableSubStorage.Log();
         }
 
-        rc = BaseStorage.SetSize(_offset + size);
-        if (rc.IsFailure()) return rc;
+        res = BaseStorage.SetSize(_offset + size);
+        if (res.IsFailure()) return res.Miss();
 
         _size = size;
 
@@ -235,8 +235,8 @@ public class SubStorage : IStorage
         {
             if (size == 0) return Result.Success;
 
-            Result rc = CheckOffsetAndSize(_offset, size);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = CheckOffsetAndSize(_offset, size);
+            if (res.IsFailure()) return res.Miss();
         }
 
         return BaseStorage.OperateRange(outBuffer, operationId, _offset + offset, size, inBuffer);

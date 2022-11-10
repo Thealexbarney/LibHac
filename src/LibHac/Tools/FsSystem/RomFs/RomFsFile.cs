@@ -23,13 +23,13 @@ public class RomFsFile : IFile
     {
         UnsafeHelpers.SkipParamInit(out bytesRead);
 
-        Result rc = DryRead(out long toRead, offset, destination.Length, in option, OpenMode.Read);
-        if (rc.IsFailure()) return rc;
+        Result res = DryRead(out long toRead, offset, destination.Length, in option, OpenMode.Read);
+        if (res.IsFailure()) return res.Miss();
 
         long storageOffset = Offset + offset;
 
-        rc = ConvertToApplicationResult(BaseStorage.Read(storageOffset, destination.Slice(0, (int)toRead)));
-        if (rc.IsFailure()) return rc;
+        res = ConvertToApplicationResult(BaseStorage.Read(storageOffset, destination.Slice(0, (int)toRead)));
+        if (res.IsFailure()) return res.Miss();
 
         bytesRead = toRead;
 

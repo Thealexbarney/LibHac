@@ -32,8 +32,8 @@ public static class FsUtils
         string sourcePathStr = sourcePath.ToString();
         string destPathStr = destPath.ToString();
 
-        Result rc = fs.OpenDirectory(out DirectoryHandle sourceHandle, sourcePath, OpenDirectoryMode.All);
-        if (rc.IsFailure()) return rc;
+        Result res = fs.OpenDirectory(out DirectoryHandle sourceHandle, sourcePath, OpenDirectoryMode.All);
+        if (res.IsFailure()) return res.Miss();
 
         try
         {
@@ -46,19 +46,19 @@ public static class FsUtils
                 {
                     fs.EnsureDirectoryExists(subDstPath);
 
-                    rc = CopyDirectoryWithProgressInternal(fs, subSrcPath.ToU8Span(), subDstPath.ToU8Span(), options, logger);
-                    if (rc.IsFailure()) return rc;
+                    res = CopyDirectoryWithProgressInternal(fs, subSrcPath.ToU8Span(), subDstPath.ToU8Span(), options, logger);
+                    if (res.IsFailure()) return res.Miss();
                 }
 
                 if (entry.Type == DirectoryEntryType.File)
                 {
                     logger?.LogMessage(subSrcPath);
 
-                    rc = fs.CreateOrOverwriteFile(subDstPath, entry.Size, options);
-                    if (rc.IsFailure()) return rc;
+                    res = fs.CreateOrOverwriteFile(subDstPath, entry.Size, options);
+                    if (res.IsFailure()) return res.Miss();
 
-                    rc = CopyFileWithProgress(fs, subSrcPath.ToU8Span(), subDstPath.ToU8Span(), logger);
-                    if (rc.IsFailure()) return rc;
+                    res = CopyFileWithProgress(fs, subSrcPath.ToU8Span(), subDstPath.ToU8Span(), logger);
+                    if (res.IsFailure()) return res.Miss();
                 }
             }
         }
@@ -85,20 +85,20 @@ public static class FsUtils
 
     public static Result CopyFileWithProgress(FileSystemClient fs, U8Span sourcePath, U8Span destPath, IProgressReport logger = null)
     {
-        Result rc = fs.OpenFile(out FileHandle sourceHandle, sourcePath, OpenMode.Read);
-        if (rc.IsFailure()) return rc;
+        Result res = fs.OpenFile(out FileHandle sourceHandle, sourcePath, OpenMode.Read);
+        if (res.IsFailure()) return res.Miss();
 
         try
         {
-            rc = fs.OpenFile(out FileHandle destHandle, destPath, OpenMode.Write | OpenMode.AllowAppend);
-            if (rc.IsFailure()) return rc;
+            res = fs.OpenFile(out FileHandle destHandle, destPath, OpenMode.Write | OpenMode.AllowAppend);
+            if (res.IsFailure()) return res.Miss();
 
             try
             {
                 const int maxBufferSize = 1024 * 1024;
 
-                rc = fs.GetFileSize(out long fileSize, sourceHandle);
-                if (rc.IsFailure()) return rc;
+                res = fs.GetFileSize(out long fileSize, sourceHandle);
+                if (res.IsFailure()) return res.Miss();
 
                 int bufferSize = (int)Math.Min(maxBufferSize, fileSize);
 
@@ -110,11 +110,11 @@ public static class FsUtils
                         int toRead = (int)Math.Min(fileSize - offset, bufferSize);
                         Span<byte> buf = buffer.AsSpan(0, toRead);
 
-                        rc = fs.ReadFile(out long _, sourceHandle, offset, buf);
-                        if (rc.IsFailure()) return rc;
+                        res = fs.ReadFile(out long _, sourceHandle, offset, buf);
+                        if (res.IsFailure()) return res.Miss();
 
-                        rc = fs.WriteFile(destHandle, offset, buf, WriteOption.None);
-                        if (rc.IsFailure()) return rc;
+                        res = fs.WriteFile(destHandle, offset, buf, WriteOption.None);
+                        if (res.IsFailure()) return res.Miss();
 
                         logger?.ReportAdd(toRead);
                     }
@@ -124,8 +124,8 @@ public static class FsUtils
                     ArrayPool<byte>.Shared.Return(buffer);
                 }
 
-                rc = fs.FlushFile(destHandle);
-                if (rc.IsFailure()) return rc;
+                res = fs.FlushFile(destHandle);
+                if (res.IsFailure()) return res.Miss();
             }
             finally
             {

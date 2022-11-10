@@ -34,8 +34,8 @@ public abstract partial class IFileSystemTests
         using var file = new UniqueRef<IFile>();
         fs.OpenFile(ref file.Ref(), "/file", OpenMode.Read);
 
-        Result rc = file.Get.Read(out _, 1, buffer, ReadOption.None);
-        Assert.Result(ResultFs.OutOfRange, rc);
+        Result res = file.Get.Read(out _, 1, buffer, ReadOption.None);
+        Assert.Result(ResultFs.OutOfRange, res);
     }
 
     [Fact]
@@ -49,8 +49,8 @@ public abstract partial class IFileSystemTests
         using var file = new UniqueRef<IFile>();
         fs.OpenFile(ref file.Ref(), "/file", OpenMode.Write);
 
-        Result rc = file.Get.Read(out _, 0, buffer, ReadOption.None);
-        Assert.Result(ResultFs.ReadUnpermitted, rc);
+        Result res = file.Get.Read(out _, 0, buffer, ReadOption.None);
+        Assert.Result(ResultFs.ReadUnpermitted, res);
     }
 
     [Fact]
@@ -64,8 +64,8 @@ public abstract partial class IFileSystemTests
         using var file = new UniqueRef<IFile>();
         fs.OpenFile(ref file.Ref(), "/file", OpenMode.Write);
 
-        Result rc = file.Get.Read(out _, -5, buffer, ReadOption.None);
-        Assert.Result(ResultFs.OutOfRange, rc);
+        Result res = file.Get.Read(out _, -5, buffer, ReadOption.None);
+        Assert.Result(ResultFs.OutOfRange, res);
     }
 
     [Fact]
@@ -79,8 +79,8 @@ public abstract partial class IFileSystemTests
         using var file = new UniqueRef<IFile>();
         fs.OpenFile(ref file.Ref(), "/file", OpenMode.Write);
 
-        Result rc = file.Get.Read(out _, long.MaxValue - 5, buffer, ReadOption.None);
-        Assert.Result(ResultFs.OutOfRange, rc);
+        Result res = file.Get.Read(out _, long.MaxValue - 5, buffer, ReadOption.None);
+        Assert.Result(ResultFs.OutOfRange, res);
     }
 
     [Fact]

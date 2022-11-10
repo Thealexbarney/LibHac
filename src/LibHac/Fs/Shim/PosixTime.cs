@@ -14,9 +14,9 @@ public static class PosixTimeShim
     {
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-        Result rc = fileSystemProxy.Get.SetCurrentPosixTimeWithTimeDifference(currentPosixTime.Value,
+        Result res = fileSystemProxy.Get.SetCurrentPosixTimeWithTimeDifference(currentPosixTime.Value,
             timeDifferenceSeconds);
-        fs.Impl.AbortIfNeeded(rc);
-        return rc;
+        fs.Impl.AbortIfNeeded(res);
+        return res;
     }
 }

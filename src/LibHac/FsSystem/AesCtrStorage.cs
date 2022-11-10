@@ -82,8 +82,8 @@ public class AesCtrStorage : IStorage
         if (!Alignment.IsAlignedPow2(destination.Length, (uint)BlockSize))
             return ResultFs.InvalidArgument.Log();
 
-        Result rc = _baseStorage.Read(offset, destination);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _baseStorage.Read(offset, destination);
+        if (res.IsFailure()) return res.Miss();
 
         using var changePriority = new ScopedThreadPriorityChanger(1, ScopedThreadPriorityChanger.Mode.Relative);
 
@@ -144,8 +144,8 @@ public class AesCtrStorage : IStorage
             }
 
             // Write the encrypted data.
-            Result rc = _baseStorage.Write(offset + currentOffset, writeBuffer);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = _baseStorage.Write(offset + currentOffset, writeBuffer);
+            if (res.IsFailure()) return res.Miss();
 
             // Advance.
             currentOffset += writeSize;
@@ -210,8 +210,8 @@ public class AesCtrStorage : IStorage
                     ref Unsafe.As<byte, QueryRangeInfo>(ref MemoryMarshal.GetReference(outBuffer));
 
                 // Get the QueryRangeInfo of the underlying base storage.
-                Result rc = _baseStorage.OperateRange(outBuffer, operationId, offset, size, inBuffer);
-                if (rc.IsFailure()) return rc.Miss();
+                Result res = _baseStorage.OperateRange(outBuffer, operationId, offset, size, inBuffer);
+                if (res.IsFailure()) return res.Miss();
 
                 Unsafe.SkipInit(out QueryRangeInfo info);
                 info.Clear();
@@ -223,8 +223,8 @@ public class AesCtrStorage : IStorage
             }
             default:
             {
-                Result rc = _baseStorage.OperateRange(outBuffer, operationId, offset, size, inBuffer);
-                if (rc.IsFailure()) return rc.Miss();
+                Result res = _baseStorage.OperateRange(outBuffer, operationId, offset, size, inBuffer);
+                if (res.IsFailure()) return res.Miss();
 
                 break;
             }

@@ -39,18 +39,18 @@ public class StorageInterfaceAdapter : IStorageSf
         if (destination.Size < size)
             return ResultFs.InvalidSize.Log();
 
-        Result rc = Result.Success;
+        Result res = Result.Success;
 
         for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
         {
-            rc = _baseStorage.Get.Read(offset, destination.Buffer.Slice(0, (int)size));
+            res = _baseStorage.Get.Read(offset, destination.Buffer.Slice(0, (int)size));
 
             // Retry on ResultDataCorrupted
-            if (!ResultFs.DataCorrupted.Includes(rc))
+            if (!ResultFs.DataCorrupted.Includes(res))
                 break;
         }
 
-        return rc;
+        return res;
     }
 
     public Result Write(long offset, InBuffer source, long size)
@@ -94,17 +94,17 @@ public class StorageInterfaceAdapter : IStorageSf
         {
             Unsafe.SkipInit(out QueryRangeInfo info);
 
-            Result rc = _baseStorage.Get.OperateRange(SpanHelpers.AsByteSpan(ref info), OperationId.QueryRange,
+            Result res = _baseStorage.Get.OperateRange(SpanHelpers.AsByteSpan(ref info), OperationId.QueryRange,
                 offset, size, ReadOnlySpan<byte>.Empty);
-            if (rc.IsFailure()) return rc;
+            if (res.IsFailure()) return res.Miss();
 
             rangeInfo.Merge(in info);
         }
         else if (operationId == (int)OperationId.InvalidateCache)
         {
-            Result rc = _baseStorage.Get.OperateRange(Span<byte>.Empty, OperationId.InvalidateCache, offset, size,
+            Result res = _baseStorage.Get.OperateRange(Span<byte>.Empty, OperationId.InvalidateCache, offset, size,
                 ReadOnlySpan<byte>.Empty);
-            if (rc.IsFailure()) return rc;
+            if (res.IsFailure()) return res.Miss();
         }
 
         return Result.Success;

@@ -63,11 +63,11 @@ public class AesXtsFile : IFile
     {
         UnsafeHelpers.SkipParamInit(out bytesRead);
 
-        Result rc = DryRead(out long toRead, offset, destination.Length, in option, Mode);
-        if (rc.IsFailure()) return rc;
+        Result res = DryRead(out long toRead, offset, destination.Length, in option, Mode);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = BaseStorage.Read(offset, destination.Slice(0, (int)toRead));
-        if (rc.IsFailure()) return rc;
+        res = BaseStorage.Read(offset, destination.Slice(0, (int)toRead));
+        if (res.IsFailure()) return res.Miss();
 
         bytesRead = toRead;
         return Result.Success;
@@ -75,17 +75,17 @@ public class AesXtsFile : IFile
 
     protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
     {
-        Result rc = DryWrite(out bool isResizeNeeded, offset, source.Length, in option, Mode);
-        if (rc.IsFailure()) return rc;
+        Result res = DryWrite(out bool isResizeNeeded, offset, source.Length, in option, Mode);
+        if (res.IsFailure()) return res.Miss();
 
         if (isResizeNeeded)
         {
-            rc = DoSetSize(offset + source.Length);
-            if (rc.IsFailure()) return rc;
+            res = DoSetSize(offset + source.Length);
+            if (res.IsFailure()) return res.Miss();
         }
 
-        rc = BaseStorage.Write(offset, source);
-        if (rc.IsFailure()) return rc;
+        res = BaseStorage.Write(offset, source);
+        if (res.IsFailure()) return res.Miss();
 
         if (option.HasFlushFlag())
         {
@@ -116,8 +116,8 @@ public class AesXtsFile : IFile
     {
         Header.SetSize(size, VerificationKey);
 
-        Result rc = _baseFile.Get.Write(0, Header.ToBytes(false));
-        if (rc.IsFailure()) return rc;
+        Result res = _baseFile.Get.Write(0, Header.ToBytes(false));
+        if (res.IsFailure()) return res.Miss();
 
         return BaseStorage.SetSize(Alignment.AlignUp(size, 0x10));
     }

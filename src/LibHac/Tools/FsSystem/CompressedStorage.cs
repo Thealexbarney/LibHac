@@ -46,9 +46,9 @@ internal class CompressedStorage : IStorage
     public Result Initialize(MemoryResource allocatorForBucketTree, in ValueSubStorage dataStorage,
         in ValueSubStorage nodeStorage, in ValueSubStorage entryStorage, int bucketTreeEntryCount)
     {
-        Result rc = _bucketTree.Initialize(allocatorForBucketTree, in nodeStorage, in entryStorage, NodeSize,
+        Result res = _bucketTree.Initialize(allocatorForBucketTree, in nodeStorage, in entryStorage, NodeSize,
             Unsafe.SizeOf<Entry>(), bucketTreeEntryCount);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         _dataStorage.Set(in dataStorage);
 
@@ -58,8 +58,8 @@ internal class CompressedStorage : IStorage
     public override Result Read(long offset, Span<byte> destination)
     {
         // Validate arguments
-        Result rc = _bucketTree.GetOffsets(out BucketTree.Offsets offsets);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _bucketTree.GetOffsets(out BucketTree.Offsets offsets);
+        if (res.IsFailure()) return res.Miss();
 
         if (!offsets.IsInclude(offset, destination.Length))
             return ResultFs.OutOfRange.Log();
@@ -67,8 +67,8 @@ internal class CompressedStorage : IStorage
         // Find the offset in our tree
         using var visitor = new BucketTree.Visitor();
 
-        rc = _bucketTree.Find(ref visitor.Ref, offset);
-        if (rc.IsFailure()) return rc;
+        res = _bucketTree.Find(ref visitor.Ref, offset);
+        if (res.IsFailure()) return res.Miss();
 
         long entryOffset = visitor.Get<Entry>().VirtualOffset;
         if (entryOffset < 0 || !offsets.IsInclude(entryOffset))
@@ -95,8 +95,8 @@ internal class CompressedStorage : IStorage
             long nextEntryOffset;
             if (visitor.CanMoveNext())
             {
-                rc = visitor.MoveNext();
-                if (rc.IsFailure()) return rc;
+                res = visitor.MoveNext();
+                if (res.IsFailure()) return res.Miss();
 
                 nextEntryOffset = visitor.Get<Entry>().VirtualOffset;
                 if (!offsets.IsInclude(nextEntryOffset))
@@ -129,8 +129,8 @@ internal class CompressedStorage : IStorage
                 Span<byte> encBuffer = workBufferEnc.AsSpan(0, (int)currentEntry.PhysicalSize);
                 Span<byte> decBuffer = workBufferDec.AsSpan(0, (int)currentEntrySize);
 
-                rc = _dataStorage.Read(currentEntry.PhysicalOffset, encBuffer);
-                if (rc.IsFailure()) return rc.Miss();
+                res = _dataStorage.Read(currentEntry.PhysicalOffset, encBuffer);
+                if (res.IsFailure()) return res.Miss();
 
                 Lz4.Decompress(encBuffer, decBuffer);
 
@@ -138,8 +138,8 @@ internal class CompressedStorage : IStorage
             }
             else if (currentEntry.CompressionType == CompressionType.None)
             {
-                rc = _dataStorage.Read(currentEntry.PhysicalOffset + dataOffsetInEntry, entryDestination);
-                if (rc.IsFailure()) return rc.Miss();
+                res = _dataStorage.Read(currentEntry.PhysicalOffset + dataOffsetInEntry, entryDestination);
+                if (res.IsFailure()) return res.Miss();
             }
             else if (currentEntry.CompressionType == CompressionType.Zeroed)
             {
@@ -192,8 +192,8 @@ internal class CompressedStorage : IStorage
     {
         UnsafeHelpers.SkipParamInit(out size);
 
-        Result rc = _bucketTree.GetOffsets(out BucketTree.Offsets offsets);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _bucketTree.GetOffsets(out BucketTree.Offsets offsets);
+        if (res.IsFailure()) return res.Miss();
 
         size = offsets.EndOffset;
         return Result.Success;

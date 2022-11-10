@@ -17,10 +17,10 @@ public abstract partial class IFileSystemTests
         Assert.Success(fs.RenameFile("/file1", "/file2"));
 
         Assert.Success(fs.GetEntryType(out DirectoryEntryType type, "/file2"));
-        Result rc = fs.GetEntryType(out _, "/file1");
+        Result res = fs.GetEntryType(out _, "/file1");
 
         Assert.Equal(DirectoryEntryType.File, type);
-        Assert.Result(ResultFs.PathNotFound, rc);
+        Assert.Result(ResultFs.PathNotFound, res);
     }
     [Fact]
     public void RenameFile_DifferentParentDirectory_EntryIsRenamed()
@@ -33,10 +33,10 @@ public abstract partial class IFileSystemTests
         Assert.Success(fs.RenameFile("/file1", "/dir/file2"));
 
         Assert.Success(fs.GetEntryType(out DirectoryEntryType type, "/dir/file2"));
-        Result rc = fs.GetEntryType(out _, "/file1");
+        Result res = fs.GetEntryType(out _, "/file1");
 
         Assert.Equal(DirectoryEntryType.File, type);
-        Assert.Result(ResultFs.PathNotFound, rc);
+        Assert.Result(ResultFs.PathNotFound, res);
     }
 
     [Fact]
@@ -47,9 +47,9 @@ public abstract partial class IFileSystemTests
         fs.CreateFile("/file1", 0, CreateFileOptions.None);
         fs.CreateFile("/file2", 0, CreateFileOptions.None);
 
-        Result rc = fs.RenameFile("/file1", "/file2");
+        Result res = fs.RenameFile("/file1", "/file2");
 
-        Assert.Result(ResultFs.PathAlreadyExists, rc);
+        Assert.Result(ResultFs.PathAlreadyExists, res);
     }
 
     [Fact]
@@ -60,9 +60,9 @@ public abstract partial class IFileSystemTests
         fs.CreateFile("/file", 0, CreateFileOptions.None);
         fs.CreateDirectory("/dir");
 
-        Result rc = fs.RenameFile("/file", "/dir");
+        Result res = fs.RenameFile("/file", "/dir");
 
-        Assert.Result(ResultFs.PathAlreadyExists, rc);
+        Assert.Result(ResultFs.PathAlreadyExists, res);
     }
 
     [Fact]
@@ -107,9 +107,9 @@ public abstract partial class IFileSystemTests
         byte[] readData = new byte[data.Length];
 
         fs.OpenFile(ref file.Ref(), "/renamed", OpenMode.Read);
-        Result rc = file.Get.Read(out long bytesRead, 0, readData, ReadOption.None);
+        Result res = file.Get.Read(out long bytesRead, 0, readData, ReadOption.None);
 
-        Assert.Success(rc);
+        Assert.Success(res);
         Assert.Equal(data.Length, bytesRead);
         Assert.Equal(data, readData);
     }

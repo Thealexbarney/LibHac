@@ -47,9 +47,9 @@ public class LayeredFileSystem : IFileSystem
 
         foreach (IFileSystem fs in Sources)
         {
-            Result rc = fs.GetEntryType(out DirectoryEntryType entryType, in path);
+            Result res = fs.GetEntryType(out DirectoryEntryType entryType, in path);
 
-            if (rc.IsSuccess())
+            if (res.IsSuccess())
             {
                 // There were no directories with this path in higher levels, so the entry is a file
                 if (entryType == DirectoryEntryType.File && singleSource is null)
@@ -73,36 +73,36 @@ public class LayeredFileSystem : IFileSystem
                     }
                 }
             }
-            else if (!ResultFs.PathNotFound.Includes(rc))
+            else if (!ResultFs.PathNotFound.Includes(res))
             {
-                return rc;
+                return res;
             }
         }
 
         if (!(multipleSources is null))
         {
             using var dir = new UniqueRef<MergedDirectory>(new MergedDirectory(multipleSources, mode));
-            Result rc = dir.Get.Initialize(in path);
+            Result res = dir.Get.Initialize(in path);
 
-            if (rc.IsSuccess())
+            if (res.IsSuccess())
             {
                 outDirectory.Set(ref dir.Ref());
             }
 
-            return rc;
+            return res;
         }
 
         if (!(singleSource is null))
         {
             using var dir = new UniqueRef<IDirectory>();
-            Result rc = singleSource.OpenDirectory(ref dir.Ref(), in path, mode);
+            Result res = singleSource.OpenDirectory(ref dir.Ref(), in path, mode);
 
-            if (rc.IsSuccess())
+            if (res.IsSuccess())
             {
                 outDirectory.Set(ref dir.Ref());
             }
 
-            return rc;
+            return res;
         }
 
         return ResultFs.PathNotFound.Log();
@@ -112,9 +112,9 @@ public class LayeredFileSystem : IFileSystem
     {
         foreach (IFileSystem fs in Sources)
         {
-            Result rc = fs.GetEntryType(out DirectoryEntryType type, path);
+            Result res = fs.GetEntryType(out DirectoryEntryType type, path);
 
-            if (rc.IsSuccess())
+            if (res.IsSuccess())
             {
                 if (type == DirectoryEntryType.File)
                 {
@@ -126,9 +126,9 @@ public class LayeredFileSystem : IFileSystem
                     return ResultFs.PathNotFound.Log();
                 }
             }
-            else if (!ResultFs.PathNotFound.Includes(rc))
+            else if (!ResultFs.PathNotFound.Includes(res))
             {
-                return rc;
+                return res;
             }
         }
 
@@ -220,15 +220,15 @@ public class LayeredFileSystem : IFileSystem
 
         public Result Initialize(in Path path)
         {
-            Result rc = _path.Initialize(in path);
-            if (rc.IsFailure()) return rc;
+            Result res = _path.Initialize(in path);
+            if (res.IsFailure()) return res.Miss();
 
             using var dir = new UniqueRef<IDirectory>();
 
             foreach (IFileSystem fs in SourceFileSystems)
             {
-                rc = fs.OpenDirectory(ref dir.Ref(), in path, Mode);
-                if (rc.IsFailure()) return rc;
+                res = fs.OpenDirectory(ref dir.Ref(), in path, Mode);
+                if (res.IsFailure()) return res.Miss();
 
                 SourceDirs.Add(dir.Release());
             }
@@ -247,8 +247,8 @@ public class LayeredFileSystem : IFileSystem
 
                 do
                 {
-                    Result rs = SourceDirs[i].Read(out subEntriesRead, entryBuffer.Slice(entryIndex, 1));
-                    if (rs.IsFailure()) return rs;
+                    Result res = SourceDirs[i].Read(out subEntriesRead, entryBuffer.Slice(entryIndex, 1));
+                    if (res.IsFailure()) return res;
 
                     if (subEntriesRead == 1 && Names.Add(StringUtils.Utf8ZToString(entryBuffer[entryIndex].Name)))
                     {
@@ -276,14 +276,14 @@ public class LayeredFileSystem : IFileSystem
             // Open new directories for each source because we need to remove duplicate entries
             foreach (IFileSystem fs in SourceFileSystems)
             {
-                Result rc = fs.OpenDirectory(ref dir.Ref(), in path, Mode);
-                if (rc.IsFailure()) return rc;
+                Result res = fs.OpenDirectory(ref dir.Ref(), in path, Mode);
+                if (res.IsFailure()) return res.Miss();
 
                 long entriesRead;
                 do
                 {
-                    rc = dir.Get.Read(out entriesRead, SpanHelpers.AsSpan(ref entry));
-                    if (rc.IsFailure()) return rc;
+                    res = dir.Get.Read(out entriesRead, SpanHelpers.AsSpan(ref entry));
+                    if (res.IsFailure()) return res.Miss();
 
                     if (entriesRead == 1 && names.Add(StringUtils.Utf8ZToString(entry.Name)))
                     {

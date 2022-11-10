@@ -22,11 +22,11 @@ public static class Code
     public static Result MountCode(this FileSystemClient fs, out CodeVerificationData verificationData,
         U8Span mountName, U8Span path, ProgramId programId)
     {
-        Result rc;
+        Result res;
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = Mount(fs, out verificationData, mountName, path, programId);
+            res = Mount(fs, out verificationData, mountName, path, programId);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             Span<byte> logBuffer = stackalloc byte[0x300];
@@ -36,15 +36,15 @@ public static class Code
                 .Append(LogPath).Append(path).Append(LogQuote)
                 .Append(LogProgramId).AppendFormat(programId.Value, 'X');
 
-            fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+            fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(sb.Buffer));
         }
         else
         {
-            rc = Mount(fs, out verificationData, mountName, path, programId);
+            res = Mount(fs, out verificationData, mountName, path, programId);
         }
 
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc;
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
             fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
@@ -56,24 +56,24 @@ public static class Code
         {
             UnsafeHelpers.SkipParamInit(out verificationData);
 
-            Result rc = fs.Impl.CheckMountName(mountName);
-            if (rc.IsFailure()) return rc;
+            Result res = fs.Impl.CheckMountName(mountName);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = PathUtility.ConvertToFspPath(out FspPath sfPath, path);
-            if (rc.IsFailure()) return rc;
+            res = PathUtility.ConvertToFspPath(out FspPath sfPath, path);
+            if (res.IsFailure()) return res.Miss();
 
             using SharedRef<IFileSystemProxyForLoader> fileSystemProxy =
                 fs.Impl.GetFileSystemProxyForLoaderServiceObject();
 
             // Todo: IPC code should automatically set process ID
-            rc = fileSystemProxy.Get.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value);
-            if (rc.IsFailure()) return rc.Miss();
+            res = fileSystemProxy.Get.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value);
+            if (res.IsFailure()) return res.Miss();
 
             using var fileSystem = new SharedRef<IFileSystemSf>();
 
-            rc = fileSystemProxy.Get.OpenCodeFileSystem(ref fileSystem.Ref(), out verificationData, in sfPath,
+            res = fileSystemProxy.Get.OpenCodeFileSystem(ref fileSystem.Ref(), out verificationData, in sfPath,
                 programId);
-            if (rc.IsFailure()) return rc;
+            if (res.IsFailure()) return res.Miss();
 
             using var fileSystemAdapter =
                 new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
@@ -81,8 +81,8 @@ public static class Code
             if (!fileSystemAdapter.HasValue)
                 return ResultFs.AllocationMemoryFailedInCodeA.Log();
 
-            rc = fs.Register(mountName, ref fileSystemAdapter.Ref());
-            if (rc.IsFailure()) return rc.Miss();
+            res = fs.Register(mountName, ref fileSystemAdapter.Ref());
+            if (res.IsFailure()) return res.Miss();
 
             return Result.Success;
         }

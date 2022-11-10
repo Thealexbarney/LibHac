@@ -15,13 +15,13 @@ public abstract partial class IFileSystemTests
 
         using var file = new UniqueRef<IFile>();
         fs.OpenFile(ref file.Ref(), "/file", OpenMode.All);
-        Result rc = file.Get.SetSize(54321);
+        Result res = file.Get.SetSize(54321);
         file.Reset();
 
         fs.OpenFile(ref file.Ref(), "/file", OpenMode.All);
         file.Get.GetSize(out long fileSize);
 
-        Assert.Success(rc);
+        Assert.Success(res);
         Assert.Equal(54321, fileSize);
     }
 }

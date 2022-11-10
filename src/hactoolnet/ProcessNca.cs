@@ -293,8 +293,8 @@ internal static class ProcessNca
             IFileSystem fs = nca.OpenFileSystem(NcaSectionType.Code, IntegrityCheckLevel.None);
 
             using var file = new UniqueRef<IFile>();
-            Result r = fs.OpenFile(ref file.Ref(), "/main.npdm".ToU8String(), OpenMode.Read);
-            if (r.IsSuccess())
+            Result res = fs.OpenFile(ref file.Ref(), "/main.npdm".ToU8String(), OpenMode.Read);
+            if (res.IsSuccess())
             {
                 var npdm = new NpdmBinary(file.Release().AsStream(), null);
                 PrintItem(sb, colLen, "Title Name:", npdm.TitleName);

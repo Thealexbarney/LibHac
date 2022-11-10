@@ -28,18 +28,18 @@ public class StorageOnNcaCreator : IStorageOnNcaCreator
     {
         UnsafeHelpers.SkipParamInit(out fsHeader);
 
-        Result rc = OpenStorage(out IStorage storageTemp, nca, fsIndex);
-        if (rc.IsFailure()) return rc;
+        Result res = OpenStorage(out IStorage storageTemp, nca, fsIndex);
+        if (res.IsFailure()) return res.Miss();
 
         if (isCodeFs)
         {
             using (var codeFs = new PartitionFileSystemCore<StandardEntry>())
             {
-                rc = codeFs.Initialize(storageTemp);
-                if (rc.IsFailure()) return rc;
+                res = codeFs.Initialize(storageTemp);
+                if (res.IsFailure()) return res.Miss();
 
-                rc = VerifyAcidSignature(codeFs, nca);
-                if (rc.IsFailure()) return rc;
+                res = VerifyAcidSignature(codeFs, nca);
+                if (res.IsFailure()) return res.Miss();
             }
         }
 

@@ -134,8 +134,8 @@ public class IntegrityVerificationStorage : SectorStorage
         long blockIndex = offset / SectorSize;
         long hashPos = blockIndex * DigestSize;
 
-        Result rc = GetSize(out long storageSize);
-        if (rc.IsFailure()) return rc;
+        Result res = GetSize(out long storageSize);
+        if (res.IsFailure()) return res.Miss();
 
         int toWrite = (int)Math.Min(source.Length, storageSize - offset);
 
@@ -191,8 +191,8 @@ public class IntegrityVerificationStorage : SectorStorage
 
     public override Result Flush()
     {
-        Result rc = HashStorage.Flush();
-        if (rc.IsFailure()) return rc;
+        Result res = HashStorage.Flush();
+        if (res.IsFailure()) return res.Miss();
 
         return base.Flush();
     }

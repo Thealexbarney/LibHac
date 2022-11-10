@@ -14,8 +14,8 @@ public static class UserFileSystemForDebug
     {
         UnsafeHelpers.SkipParamInit(out timeStamp);
 
-        Result rc = fs.FindFileSystem(out FileSystemAccessor fileSystem, out U8Span subPath, path);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fs.FindFileSystem(out FileSystemAccessor fileSystem, out U8Span subPath, path);
+        if (res.IsFailure()) return res.Miss();
 
         return fileSystem.GetFileTimeStampRaw(out timeStamp, subPath);
     }
@@ -23,8 +23,8 @@ public static class UserFileSystemForDebug
     public static Result GetFileTimeStampRawForDebug(this FileSystemClient fs, out FileTimeStampRaw timeStamp,
         U8Span path)
     {
-        Result rc = fs.Impl.GetFileTimeStampRawForDebug(out timeStamp, path);
-        fs.Impl.AbortIfNeeded(rc);
-        return rc;
+        Result res = fs.Impl.GetFileTimeStampRawForDebug(out timeStamp, path);
+        fs.Impl.AbortIfNeeded(res);
+        return res;
     }
 }

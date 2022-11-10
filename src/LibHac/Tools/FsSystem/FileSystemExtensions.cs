@@ -24,12 +24,12 @@ public static class FileSystemExtensions
         var directoryEntryBuffer = new DirectoryEntry();
 
         using var sourcePathNormalized = new Path();
-        Result rc = InitializeFromString(ref sourcePathNormalized.Ref(), sourcePath);
-        if (rc.IsFailure()) return rc;
+        Result res = InitializeFromString(ref sourcePathNormalized.Ref(), sourcePath);
+        if (res.IsFailure()) return res.Miss();
 
         using var destPathNormalized = new Path();
-        rc = InitializeFromString(ref destPathNormalized.Ref(), destPath);
-        if (rc.IsFailure()) return rc;
+        res = InitializeFromString(ref destPathNormalized.Ref(), destPath);
+        if (res.IsFailure()) return res.Miss();
 
         byte[] workBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
         try
@@ -51,11 +51,11 @@ public static class FileSystemExtensions
         static Result OnEnterDir(in Path path, in DirectoryEntry entry,
             ref Utility.FsIterationTaskClosure closure)
         {
-            Result rc = closure.DestinationPathBuffer.AppendChild(entry.Name);
-            if (rc.IsFailure()) return rc;
+            Result res = closure.DestinationPathBuffer.AppendChild(entry.Name);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = closure.DestFileSystem.CreateDirectory(in closure.DestinationPathBuffer);
-            if (rc.IsFailure() && !ResultFs.PathAlreadyExists.Includes(rc)) return rc.Miss();
+            res = closure.DestFileSystem.CreateDirectory(in closure.DestinationPathBuffer);
+            if (res.IsFailure() && !ResultFs.PathAlreadyExists.Includes(res)) return res.Miss();
 
             return Result.Success;
         }
@@ -84,14 +84,14 @@ public static class FileSystemExtensions
         taskClosure.SourceFileSystem = sourceFileSystem;
         taskClosure.DestFileSystem = destinationFileSystem;
 
-        Result rc = taskClosure.DestinationPathBuffer.Initialize(destinationPath);
-        if (rc.IsFailure()) return rc;
+        Result res = taskClosure.DestinationPathBuffer.Initialize(destinationPath);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = Utility.IterateDirectoryRecursively(sourceFileSystem, in sourcePath, ref dirEntry, OnEnterDir,
+        res = Utility.IterateDirectoryRecursively(sourceFileSystem, in sourcePath, ref dirEntry, OnEnterDir,
             OnExitDir, OnFile, ref taskClosure);
 
         taskClosure.DestinationPathBuffer.Dispose();
-        return rc;
+        return res;
     }
 
     public static Result CopyFile(IFileSystem destFileSystem, IFileSystem sourceFileSystem, in Path destPath,
@@ -100,18 +100,18 @@ public static class FileSystemExtensions
     {
         // Open source file.
         using var sourceFile = new UniqueRef<IFile>();
-        Result rc = sourceFileSystem.OpenFile(ref sourceFile.Ref(), sourcePath, OpenMode.Read);
-        if (rc.IsFailure()) return rc;
+        Result res = sourceFileSystem.OpenFile(ref sourceFile.Ref(), sourcePath, OpenMode.Read);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = sourceFile.Get.GetSize(out long fileSize);
-        if (rc.IsFailure()) return rc;
+        res = sourceFile.Get.GetSize(out long fileSize);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = CreateOrOverwriteFile(destFileSystem, in destPath, fileSize, option);
-        if (rc.IsFailure()) return rc;
+        res = CreateOrOverwriteFile(destFileSystem, in destPath, fileSize, option);
+        if (res.IsFailure()) return res.Miss();
 
         using var destFile = new UniqueRef<IFile>();
-        rc = destFileSystem.OpenFile(ref destFile.Ref(), in destPath, OpenMode.Write);
-        if (rc.IsFailure()) return rc;
+        res = destFileSystem.OpenFile(ref destFile.Ref(), in destPath, OpenMode.Write);
+        if (res.IsFailure()) return res.Miss();
 
         // Read/Write file in work buffer sized chunks.
         long remaining = fileSize;
@@ -121,11 +121,11 @@ public static class FileSystemExtensions
 
         while (remaining > 0)
         {
-            rc = sourceFile.Get.Read(out long bytesRead, offset, workBuffer, ReadOption.None);
-            if (rc.IsFailure()) return rc;
+            res = sourceFile.Get.Read(out long bytesRead, offset, workBuffer, ReadOption.None);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = destFile.Get.Write(offset, workBuffer.Slice(0, (int)bytesRead), WriteOption.None);
-            if (rc.IsFailure()) return rc;
+            res = destFile.Get.Write(offset, workBuffer.Slice(0, (int)bytesRead), WriteOption.None);
+            if (res.IsFailure()) return res.Miss();
 
             remaining -= bytesRead;
             offset += bytesRead;
@@ -331,23 +331,23 @@ public static class FileSystemExtensions
 
     public static bool DirectoryExists(this IFileSystem fs, string path)
     {
-        Result rc = fs.GetEntryType(out DirectoryEntryType type, path.ToU8Span());
+        Result res = fs.GetEntryType(out DirectoryEntryType type, path.ToU8Span());
 
-        return (rc.IsSuccess() && type == DirectoryEntryType.Directory);
+        return (res.IsSuccess() && type == DirectoryEntryType.Directory);
     }
 
     public static bool FileExists(this IFileSystem fs, string path)
     {
-        Result rc = fs.GetEntryType(out DirectoryEntryType type, path.ToU8Span());
+        Result res = fs.GetEntryType(out DirectoryEntryType type, path.ToU8Span());
 
-        return (rc.IsSuccess() && type == DirectoryEntryType.File);
+        return (res.IsSuccess() && type == DirectoryEntryType.File);
     }
 
     public static Result EnsureDirectoryExists(this IFileSystem fs, string path)
     {
         using var pathNormalized = new Path();
-        Result rc = InitializeFromString(ref pathNormalized.Ref(), path);
-        if (rc.IsFailure()) return rc;
+        Result res = InitializeFromString(ref pathNormalized.Ref(), path);
+        if (res.IsFailure()) return res.Miss();
 
         return Utility.EnsureDirectory(fs, in pathNormalized);
     }
@@ -355,18 +355,18 @@ public static class FileSystemExtensions
     public static Result CreateOrOverwriteFile(IFileSystem fileSystem, in Path path, long size,
         CreateFileOptions option = CreateFileOptions.None)
     {
-        Result rc = fileSystem.CreateFile(in path, size, option);
+        Result res = fileSystem.CreateFile(in path, size, option);
 
-        if (rc.IsFailure())
+        if (res.IsFailure())
         {
-            if (!ResultFs.PathAlreadyExists.Includes(rc))
-                return rc;
+            if (!ResultFs.PathAlreadyExists.Includes(res))
+                return res;
 
-            rc = fileSystem.DeleteFile(in path);
-            if (rc.IsFailure()) return rc;
+            res = fileSystem.DeleteFile(in path);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = fileSystem.CreateFile(in path, size, option);
-            if (rc.IsFailure()) return rc;
+            res = fileSystem.CreateFile(in path, size, option);
+            if (res.IsFailure()) return res.Miss();
         }
 
         return Result.Success;
@@ -376,13 +376,13 @@ public static class FileSystemExtensions
     {
         ReadOnlySpan<byte> utf8Path = StringUtils.StringToUtf8(path);
 
-        Result rc = outPath.Initialize(utf8Path);
-        if (rc.IsFailure()) return rc;
+        Result res = outPath.Initialize(utf8Path);
+        if (res.IsFailure()) return res.Miss();
 
         var pathFlags = new PathFlags();
         pathFlags.AllowEmptyPath();
         outPath.Normalize(pathFlags);
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }

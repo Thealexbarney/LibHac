@@ -38,8 +38,8 @@ internal class DeliveryCacheDirectoryService : IDeliveryCacheDirectoryService
                 return ResultBcat.AlreadyOpen.Log();
 
             var metaReader = new DeliveryCacheFileMetaAccessor(Server);
-            Result rc = metaReader.ReadApplicationFileMeta(ApplicationId, ref name, false);
-            if (rc.IsFailure()) return rc;
+            Result res = metaReader.ReadApplicationFileMeta(ApplicationId, ref name, false);
+            if (res.IsFailure()) return res.Miss();
 
             Count = metaReader.Count;
             _name = name;
@@ -59,18 +59,18 @@ internal class DeliveryCacheDirectoryService : IDeliveryCacheDirectoryService
                 return ResultBcat.NotOpen.Log();
 
             var metaReader = new DeliveryCacheFileMetaAccessor(Server);
-            Result rc = metaReader.ReadApplicationFileMeta(ApplicationId, ref _name, true);
-            if (rc.IsFailure()) return rc;
+            Result res = metaReader.ReadApplicationFileMeta(ApplicationId, ref _name, true);
+            if (res.IsFailure()) return res.Miss();
 
             int i;
             for (i = 0; i < entryBuffer.Length; i++)
             {
-                rc = metaReader.GetEntry(out DeliveryCacheFileMetaEntry entry, i);
+                res = metaReader.GetEntry(out DeliveryCacheFileMetaEntry entry, i);
 
-                if (rc.IsFailure())
+                if (res.IsFailure())
                 {
-                    if (!ResultBcat.NotFound.Includes(rc))
-                        return rc;
+                    if (!ResultBcat.NotFound.Includes(res))
+                        return res;
 
                     break;
                 }

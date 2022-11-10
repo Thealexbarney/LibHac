@@ -27,9 +27,9 @@ public static class ProgramIndexMapInfoShim
 
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-        Result rc = fileSystemProxy.Get.RegisterProgramIndexMapInfo(InBuffer.FromSpan(mapInfo), mapInfo.Length);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fileSystemProxy.Get.RegisterProgramIndexMapInfo(InBuffer.FromSpan(mapInfo), mapInfo.Length);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }

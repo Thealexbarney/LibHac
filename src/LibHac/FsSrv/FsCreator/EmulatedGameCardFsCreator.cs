@@ -22,8 +22,8 @@ public class EmulatedGameCardFsCreator : IGameCardFileSystemCreator
     {
         // Use the old xci code temporarily
 
-        Result rc = _gameCard.GetXci(out Xci xci, handle);
-        if (rc.IsFailure()) return rc;
+        Result res = _gameCard.GetXci(out Xci xci, handle);
+        if (res.IsFailure()) return res.Miss();
 
         if (!xci.HasPartition((XciPartitionType)partitionType))
         {

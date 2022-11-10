@@ -52,11 +52,11 @@ public class SectorStorage : IStorage
 
     public override Result SetSize(long size)
     {
-        Result rc = BaseStorage.SetSize(size);
-        if (rc.IsFailure()) return rc;
+        Result res = BaseStorage.SetSize(size);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = BaseStorage.GetSize(out long newSize);
-        if (rc.IsFailure()) return rc;
+        res = BaseStorage.GetSize(out long newSize);
+        if (res.IsFailure()) return res.Miss();
 
         SectorCount = (int)BitUtil.DivideUp(newSize, SectorSize);
         Length = newSize;

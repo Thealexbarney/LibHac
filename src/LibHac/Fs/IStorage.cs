@@ -93,8 +93,8 @@ public abstract class IStorage : IDisposable
 
     public static Result CheckAccessRange(long offset, ulong size, long totalSize)
     {
-        Result rc = CheckAccessRange(offset, unchecked((long)size), totalSize);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = CheckAccessRange(offset, unchecked((long)size), totalSize);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -115,17 +115,17 @@ public abstract class IStorage : IDisposable
 
     public static Result CheckOffsetAndSize(long offset, ulong size)
     {
-        Result rc = CheckOffsetAndSize(offset, unchecked((long)size));
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = CheckOffsetAndSize(offset, unchecked((long)size));
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
 
     public static Result CheckOffsetAndSizeWithResult(long offset, long size, Result resultOnFailure)
     {
-        Result rc = CheckOffsetAndSize(offset, size);
+        Result res = CheckOffsetAndSize(offset, size);
 
-        if (rc.IsFailure())
+        if (res.IsFailure())
             return resultOnFailure.Log();
 
         return Result.Success;
@@ -133,9 +133,9 @@ public abstract class IStorage : IDisposable
 
     public static Result CheckOffsetAndSizeWithResult(long offset, ulong size, Result resultOnFailure)
     {
-        Result rc = CheckOffsetAndSize(offset, size);
+        Result res = CheckOffsetAndSize(offset, size);
 
-        if (rc.IsFailure())
+        if (res.IsFailure())
             return resultOnFailure.Log();
 
         return Result.Success;

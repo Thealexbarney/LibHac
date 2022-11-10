@@ -68,8 +68,8 @@ public class DeviceOperator : IDeviceOperator
     {
         UnsafeHelpers.SkipParamInit(out outSpeedMode);
 
-        Result rc = _fsServer.Storage.GetSdCardSpeedMode(out SdCardSpeedMode speedMode);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _fsServer.Storage.GetSdCardSpeedMode(out SdCardSpeedMode speedMode);
+        if (res.IsFailure()) return res.Miss();
 
         outSpeedMode = (long)speedMode;
         return Result.Success;
@@ -79,8 +79,8 @@ public class DeviceOperator : IDeviceOperator
     {
         UnsafeHelpers.SkipParamInit(out outSize);
 
-        Result rc = _fsServer.Storage.GetSdCardUserAreaSize(out long size);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _fsServer.Storage.GetSdCardUserAreaSize(out long size);
+        if (res.IsFailure()) return res.Miss();
 
         outSize = size;
         return Result.Success;
@@ -90,8 +90,8 @@ public class DeviceOperator : IDeviceOperator
     {
         UnsafeHelpers.SkipParamInit(out outSize);
 
-        Result rc = _fsServer.Storage.GetSdCardProtectedAreaSize(out long size);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _fsServer.Storage.GetSdCardProtectedAreaSize(out long size);
+        if (res.IsFailure()) return res.Miss();
 
         outSize = size;
         return Result.Success;
@@ -105,9 +105,9 @@ public class DeviceOperator : IDeviceOperator
         if (logBuffer.Size < logBufferSize)
             return ResultFs.InvalidSize.Log();
 
-        Result rc = _fsServer.Storage.GetAndClearSdCardErrorInfo(out StorageErrorInfo storageErrorInfo,
+        Result res = _fsServer.Storage.GetAndClearSdCardErrorInfo(out StorageErrorInfo storageErrorInfo,
             out long logSize, GetSpan(logBuffer, logBufferSize));
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         outStorageErrorInfo = storageErrorInfo;
         outLogSize = logSize;
@@ -126,8 +126,8 @@ public class DeviceOperator : IDeviceOperator
     {
         UnsafeHelpers.SkipParamInit(out outSpeedMode);
 
-        Result rc = _fsServer.Storage.GetMmcSpeedMode(out MmcSpeedMode speedMode);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _fsServer.Storage.GetMmcSpeedMode(out MmcSpeedMode speedMode);
+        if (res.IsFailure()) return res.Miss();
 
         outSpeedMode = (long)speedMode;
         return Result.Success;
@@ -145,8 +145,8 @@ public class DeviceOperator : IDeviceOperator
     {
         UnsafeHelpers.SkipParamInit(out outSize);
 
-        Result rc = _fsServer.Storage.GetMmcPartitionSize(out long mmcPartitionSize, (MmcPartition)partitionId);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _fsServer.Storage.GetMmcPartitionSize(out long mmcPartitionSize, (MmcPartition)partitionId);
+        if (res.IsFailure()) return res.Miss();
 
         outSize = mmcPartitionSize;
         return Result.Success;
@@ -156,8 +156,8 @@ public class DeviceOperator : IDeviceOperator
     {
         UnsafeHelpers.SkipParamInit(out outCount);
 
-        Result rc = _fsServer.Storage.GetMmcPatrolCount(out uint mmcPatrolCount);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _fsServer.Storage.GetMmcPatrolCount(out uint mmcPatrolCount);
+        if (res.IsFailure()) return res.Miss();
 
         outCount = mmcPatrolCount;
         return Result.Success;
@@ -171,9 +171,9 @@ public class DeviceOperator : IDeviceOperator
         if (logBuffer.Size < logBufferSize)
             return ResultFs.InvalidSize.Log();
 
-        Result rc = _fsServer.Storage.GetAndClearMmcErrorInfo(out StorageErrorInfo storageErrorInfo, out long logSize,
+        Result res = _fsServer.Storage.GetAndClearMmcErrorInfo(out StorageErrorInfo storageErrorInfo, out long logSize,
             GetSpan(logBuffer, logBufferSize));
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         outStorageErrorInfo = storageErrorInfo;
         outLogSize = logSize;
@@ -208,8 +208,8 @@ public class DeviceOperator : IDeviceOperator
     {
         UnsafeHelpers.SkipParamInit(out outIsInserted);
 
-        Result rc = _fsServer.Storage.IsGameCardInserted(out bool isInserted);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _fsServer.Storage.IsGameCardInserted(out bool isInserted);
+        if (res.IsFailure()) return res.Miss();
 
         outIsInserted = isInserted;
         return Result.Success;
@@ -229,15 +229,15 @@ public class DeviceOperator : IDeviceOperator
     {
         UnsafeHelpers.SkipParamInit(out outHandle);
 
-        Result rc = _fsServer.Storage.GetInitializationResult();
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _fsServer.Storage.GetInitializationResult();
+        if (res.IsFailure()) return res.Miss();
 
         _fsServer.Storage.IsGameCardInserted(out bool isInserted).IgnoreResult();
         if (!isInserted)
             return ResultFs.GameCardFsGetHandleFailure.Log();
 
-        rc = _fsServer.Storage.GetGameCardHandle(out GameCardHandle handle);
-        if (rc.IsFailure()) return rc.Miss();
+        res = _fsServer.Storage.GetGameCardHandle(out GameCardHandle handle);
+        if (res.IsFailure()) return res.Miss();
 
         outHandle = handle;
         return Result.Success;
@@ -247,8 +247,8 @@ public class DeviceOperator : IDeviceOperator
     {
         UnsafeHelpers.SkipParamInit(out outCupVersion, out outCupId);
 
-        Result rc = _fsServer.Storage.GetGameCardStatus(out GameCardStatus gameCardStatus, handle);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _fsServer.Storage.GetGameCardStatus(out GameCardStatus gameCardStatus, handle);
+        if (res.IsFailure()) return res.Miss();
 
         outCupVersion = gameCardStatus.UpdatePartitionVersion;
         outCupId = gameCardStatus.UpdatePartitionId;
@@ -269,8 +269,8 @@ public class DeviceOperator : IDeviceOperator
     {
         UnsafeHelpers.SkipParamInit(out outAttribute);
 
-        Result rc = _fsServer.Storage.GetGameCardStatus(out GameCardStatus gameCardStatus, handle);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _fsServer.Storage.GetGameCardStatus(out GameCardStatus gameCardStatus, handle);
+        if (res.IsFailure()) return res.Miss();
 
         outAttribute = gameCardStatus.GameCardAttribute;
         return Result.Success;
@@ -280,8 +280,8 @@ public class DeviceOperator : IDeviceOperator
     {
         UnsafeHelpers.SkipParamInit(out outCompatibilityType);
 
-        Result rc = _fsServer.Storage.GetGameCardStatus(out GameCardStatus gameCardStatus, handle);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _fsServer.Storage.GetGameCardStatus(out GameCardStatus gameCardStatus, handle);
+        if (res.IsFailure()) return res.Miss();
 
         outCompatibilityType = gameCardStatus.CompatibilityType;
         return Result.Success;
@@ -323,9 +323,9 @@ public class DeviceOperator : IDeviceOperator
         if (rmaInfoBufferSize != Unsafe.SizeOf<RmaInformation>())
             return ResultFs.InvalidArgument.Log();
 
-        Result rc = _fsServer.Storage.GetGameCardAsicInfo(out RmaInformation rmaInfo,
+        Result res = _fsServer.Storage.GetGameCardAsicInfo(out RmaInformation rmaInfo,
             GetSpan(asicFirmwareBuffer, asicFirmwareBufferSize));
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         SpanHelpers.AsReadOnlyByteSpan(in rmaInfo).CopyTo(outRmaInfoBuffer.Buffer);
         return Result.Success;
@@ -339,8 +339,8 @@ public class DeviceOperator : IDeviceOperator
         if (outBufferSize != Unsafe.SizeOf<GameCardIdSet>())
             return ResultFs.InvalidArgument.Log();
 
-        Result rc = _fsServer.Storage.GetGameCardIdSet(out GameCardIdSet gcIdSet);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _fsServer.Storage.GetGameCardIdSet(out GameCardIdSet gcIdSet);
+        if (res.IsFailure()) return res.Miss();
 
         SpanHelpers.AsReadOnlyByteSpan(in gcIdSet).CopyTo(outBuffer.Buffer);
         return Result.Success;
@@ -436,8 +436,8 @@ public class DeviceOperator : IDeviceOperator
     {
         UnsafeHelpers.SkipParamInit(out outErrorInfo);
 
-        Result rc = _fsServer.Storage.GetGameCardErrorInfo(out GameCardErrorInfo gameCardErrorInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _fsServer.Storage.GetGameCardErrorInfo(out GameCardErrorInfo gameCardErrorInfo);
+        if (res.IsFailure()) return res.Miss();
 
         outErrorInfo = gameCardErrorInfo;
         return Result.Success;
@@ -447,8 +447,8 @@ public class DeviceOperator : IDeviceOperator
     {
         UnsafeHelpers.SkipParamInit(out outErrorInfo);
 
-        Result rc = _fsServer.Storage.GetGameCardErrorReportInfo(out GameCardErrorReportInfo gameCardErrorReportInfo);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _fsServer.Storage.GetGameCardErrorReportInfo(out GameCardErrorReportInfo gameCardErrorReportInfo);
+        if (res.IsFailure()) return res.Miss();
 
         outErrorInfo = gameCardErrorReportInfo;
         return Result.Success;
@@ -479,13 +479,13 @@ public class DeviceOperator : IDeviceOperator
 
     public Result SuspendSdmmcControl()
     {
-        Result rc = _fsServer.Storage.SuspendSdCardControl();
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _fsServer.Storage.SuspendSdCardControl();
+        if (res.IsFailure()) return res.Miss();
 
         // Missing: Detach SD card device buffer
 
-        rc = _fsServer.Storage.SuspendMmcControl();
-        if (rc.IsFailure()) return rc.Miss();
+        res = _fsServer.Storage.SuspendMmcControl();
+        if (res.IsFailure()) return res.Miss();
 
         // Missing: Detach MMC device buffer
 
@@ -496,13 +496,13 @@ public class DeviceOperator : IDeviceOperator
     {
         // Missing: Attach MMC device buffer
 
-        Result rc = _fsServer.Storage.ResumeMmcControl();
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _fsServer.Storage.ResumeMmcControl();
+        if (res.IsFailure()) return res.Miss();
 
         // Missing: Attach SD card device buffer
 
-        rc = _fsServer.Storage.ResumeSdCardControl();
-        if (rc.IsFailure()) return rc.Miss();
+        res = _fsServer.Storage.ResumeSdCardControl();
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -514,8 +514,8 @@ public class DeviceOperator : IDeviceOperator
         if ((uint)port > (uint)Port.GcAsic0)
             return ResultFs.InvalidArgument.Log();
 
-        Result rc = SdmmcSrv.Common.CheckConnection(out SpeedMode speedMode, out BusWidth busWidth, (Port)port);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = SdmmcSrv.Common.CheckConnection(out SpeedMode speedMode, out BusWidth busWidth, (Port)port);
+        if (res.IsFailure()) return res.Miss();
 
         SdmmcSpeedMode sdmmcSpeedMode = speedMode switch
         {

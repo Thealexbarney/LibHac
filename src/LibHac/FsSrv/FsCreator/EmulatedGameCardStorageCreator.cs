@@ -22,8 +22,8 @@ public class EmulatedGameCardStorageCreator : IGameCardStorageCreator
 
         using var baseStorage = new SharedRef<IStorage>(new ReadOnlyGameCardStorage(GameCard, handle));
 
-        Result rc = GameCard.GetCardInfo(out GameCardInfo cardInfo, handle);
-        if (rc.IsFailure()) return rc;
+        Result res = GameCard.GetCardInfo(out GameCardInfo cardInfo, handle);
+        if (res.IsFailure()) return res.Miss();
 
         outStorage.Reset(new SubStorage(in baseStorage, 0, cardInfo.SecureAreaOffset));
         return Result.Success;
@@ -39,17 +39,17 @@ public class EmulatedGameCardStorageCreator : IGameCardStorageCreator
         Span<byte> deviceId = stackalloc byte[0x10];
         Span<byte> imageHash = stackalloc byte[0x20];
 
-        Result rc = GameCard.GetGameCardDeviceId(deviceId);
-        if (rc.IsFailure()) return rc;
+        Result res = GameCard.GetGameCardDeviceId(deviceId);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = GameCard.GetGameCardImageHash(imageHash);
-        if (rc.IsFailure()) return rc;
+        res = GameCard.GetGameCardImageHash(imageHash);
+        if (res.IsFailure()) return res.Miss();
 
         using var baseStorage =
             new SharedRef<IStorage>(new ReadOnlyGameCardStorage(GameCard, handle, deviceId, imageHash));
 
-        rc = GameCard.GetCardInfo(out GameCardInfo cardInfo, handle);
-        if (rc.IsFailure()) return rc;
+        res = GameCard.GetCardInfo(out GameCardInfo cardInfo, handle);
+        if (res.IsFailure()) return res.Miss();
 
         outStorage.Reset(new SubStorage(in baseStorage, cardInfo.SecureAreaOffset, cardInfo.SecureAreaSize));
         return Result.Success;
@@ -113,8 +113,8 @@ public class EmulatedGameCardStorageCreator : IGameCardStorageCreator
         {
             UnsafeHelpers.SkipParamInit(out size);
 
-            Result rc = GameCard.GetCardInfo(out GameCardInfo info, Handle);
-            if (rc.IsFailure()) return rc;
+            Result res = GameCard.GetCardInfo(out GameCardInfo info, Handle);
+            if (res.IsFailure()) return res.Miss();
 
             size = info.Size;
             return Result.Success;

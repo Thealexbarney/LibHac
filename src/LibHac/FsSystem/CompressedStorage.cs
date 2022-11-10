@@ -43,8 +43,8 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
         {
             Assert.SdkRequiresNotNullOut(out size);
 
-            Result rc = _bucketTree.GetOffsets(out BucketTree.Offsets offsets);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = _bucketTree.GetOffsets(out BucketTree.Offsets offsets);
+            if (res.IsFailure()) return res.Miss();
 
             size = offsets.EndOffset;
             return Result.Success;
@@ -74,9 +74,9 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
             Assert.SdkRequiresLessEqual(blockSizeMax, continuousReadingSizeMax);
             Assert.SdkRequiresNotNull(getDecompressorFunc);
 
-            Result rc = _bucketTree.Initialize(allocatorForBucketTree, in nodeStorage, in entryStorage, NodeSize,
+            Result res = _bucketTree.Initialize(allocatorForBucketTree, in nodeStorage, in entryStorage, NodeSize,
                 Unsafe.SizeOf<Entry>(), bucketTreeEntryCount);
-            if (rc.IsFailure()) return rc.Miss();
+            if (res.IsFailure()) return res.Miss();
 
             _blockSizeMax = blockSizeMax;
             _continuousReadingSizeMax = continuousReadingSizeMax;
@@ -197,8 +197,8 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
         public Result Initialize(IBufferManager allocator, long storageSize, long cacheSize0, long cacheSize1,
             int maxCacheEntries)
         {
-            Result rc = _cacheManager.Initialize(allocator, maxCacheEntries);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = _cacheManager.Initialize(allocator, maxCacheEntries);
+            if (res.IsFailure()) return res.Miss();
 
             _storageSize = storageSize;
             _cacheSize0 = cacheSize0;
@@ -299,15 +299,15 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
         int bucketTreeEntryCount, long blockSizeMax, long continuousReadingSizeMax,
         GetDecompressorFunction getDecompressorFunc, long cacheSize0, long cacheSize1, int maxCacheEntries)
     {
-        Result rc = _core.Initialize(allocatorForBucketTree, in dataStorage, in nodeStorage, in entryStorage,
+        Result res = _core.Initialize(allocatorForBucketTree, in dataStorage, in nodeStorage, in entryStorage,
             bucketTreeEntryCount, blockSizeMax, continuousReadingSizeMax, getDecompressorFunc);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _core.GetSize(out long size);
-        if (rc.IsFailure()) return rc.Miss();
+        res = _core.GetSize(out long size);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _cacheManager.Initialize(allocatorForCacheManager, size, cacheSize0, cacheSize1, maxCacheEntries);
-        if (rc.IsFailure()) return rc.Miss();
+        res = _cacheManager.Initialize(allocatorForCacheManager, size, cacheSize0, cacheSize1, maxCacheEntries);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
 
@@ -321,8 +321,8 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
 
     public override Result Read(long offset, Span<byte> destination)
     {
-        Result rc = _cacheManager.Read(_core, offset, destination);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _cacheManager.Read(_core, offset, destination);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -344,8 +344,8 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
 
     public override Result GetSize(out long size)
     {
-        Result rc = _core.GetSize(out size);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _core.GetSize(out size);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -361,14 +361,14 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
             case OperationId.InvalidateCache:
             {
                 _cacheManager.Invalidate();
-                Result rc = _core.Invalidate();
-                if (rc.IsFailure()) return rc.Miss();
+                Result res = _core.Invalidate();
+                if (res.IsFailure()) return res.Miss();
                 break;
             }
             case OperationId.QueryRange:
             {
-                Result rc = _core.QueryRange(outBuffer, offset, size);
-                if (rc.IsFailure()) return rc.Miss();
+                Result res = _core.QueryRange(outBuffer, offset, size);
+                if (res.IsFailure()) return res.Miss();
                 break;
             }
             default:
@@ -381,9 +381,9 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
     public Result QueryAppropriateOffset(out long offsetAppropriate, long startOffset, long accessSize,
         long alignmentSize)
     {
-        Result rc = _core.QueryAppropriateOffsetForAsynchronousAccess(out offsetAppropriate, startOffset, accessSize,
+        Result res = _core.QueryAppropriateOffsetForAsynchronousAccess(out offsetAppropriate, startOffset, accessSize,
             alignmentSize);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }

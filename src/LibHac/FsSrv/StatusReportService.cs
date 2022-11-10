@@ -89,8 +89,8 @@ public class StatusReportServiceImpl
 
         Assert.SdkRequiresNotNull(_config.SaveDataFileSystemServiceImpl);
 
-        Result rc = _config.SaveDataFileSystemServiceImpl.GetSaveDataIndexCount(out int count);
-        if (rc.IsFailure()) return rc;
+        Result res = _config.SaveDataFileSystemServiceImpl.GetSaveDataIndexCount(out int count);
+        if (res.IsFailure()) return res.Miss();
 
         errorInfo.SaveDataIndexCount = count;
         return Result.Success;

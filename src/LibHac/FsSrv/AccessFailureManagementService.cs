@@ -25,16 +25,16 @@ public readonly struct AccessFailureManagementService
     public Result OpenAccessFailureDetectionEventNotifier(ref SharedRef<IEventNotifier> outNotifier,
         ulong processId, bool notifyOnDeepRetry)
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.OpenAccessFailureDetectionEventNotifier))
             return ResultFs.PermissionDenied.Log();
 
         using var notifier = new UniqueRef<IEventNotifier>();
 
-        rc = _serviceImpl.CreateNotifier(ref notifier.Ref(), processId, notifyOnDeepRetry);
-        if (rc.IsFailure()) return rc;
+        res = _serviceImpl.CreateNotifier(ref notifier.Ref(), processId, notifyOnDeepRetry);
+        if (res.IsFailure()) return res.Miss();
 
         outNotifier.Set(ref notifier.Ref());
         return Result.Success;
@@ -44,8 +44,8 @@ public readonly struct AccessFailureManagementService
     {
         UnsafeHelpers.SkipParamInit(out eventHandle);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.GetAccessFailureDetectionEvent))
             return ResultFs.PermissionDenied.Log();
@@ -60,8 +60,8 @@ public readonly struct AccessFailureManagementService
     {
         UnsafeHelpers.SkipParamInit(out isDetected);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.IsAccessFailureDetected))
             return ResultFs.PermissionDenied.Log();
@@ -72,8 +72,8 @@ public readonly struct AccessFailureManagementService
 
     public Result ResolveAccessFailure(ulong processId)
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.ResolveAccessFailure))
             return ResultFs.PermissionDenied.Log();
@@ -87,8 +87,8 @@ public readonly struct AccessFailureManagementService
 
     public Result AbandonAccessFailure(ulong processId)
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.AbandonAccessFailure))
             return ResultFs.PermissionDenied.Log();

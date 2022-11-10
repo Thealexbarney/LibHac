@@ -191,16 +191,16 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
 
         while (true)
         {
-            Result rc = function(in closure);
+            Result res = function(in closure);
 
-            if (rc.IsSuccess())
-                return rc;
+            if (res.IsSuccess())
+                return res;
 
-            if (!ResultFs.TargetLocked.Includes(rc))
-                return rc;
+            if (!ResultFs.TargetLocked.Includes(res))
+                return res;
 
             if (remainingRetries <= 0)
-                return rc;
+                return res;
 
             remainingRetries--;
 
@@ -225,75 +225,75 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         _randomGenerator = randomGenerator;
 
         // Open the lock file
-        Result rc = AcquireLockFile();
-        if (rc.IsFailure()) return rc;
+        Result res = AcquireLockFile();
+        if (res.IsFailure()) return res.Miss();
 
         using var pathModifiedDirectory = new Path();
-        rc = PathFunctions.SetUpFixedPath(ref pathModifiedDirectory.Ref(), ModifiedDirectoryName);
-        if (rc.IsFailure()) return rc;
+        res = PathFunctions.SetUpFixedPath(ref pathModifiedDirectory.Ref(), ModifiedDirectoryName);
+        if (res.IsFailure()) return res.Miss();
 
         using var pathCommittedDirectory = new Path();
-        rc = PathFunctions.SetUpFixedPath(ref pathCommittedDirectory.Ref(), CommittedDirectoryName);
-        if (rc.IsFailure()) return rc;
+        res = PathFunctions.SetUpFixedPath(ref pathCommittedDirectory.Ref(), CommittedDirectoryName);
+        if (res.IsFailure()) return res.Miss();
 
         using var pathSynchronizingDirectory = new Path();
-        rc = PathFunctions.SetUpFixedPath(ref pathSynchronizingDirectory.Ref(), SynchronizingDirectoryName);
-        if (rc.IsFailure()) return rc;
+        res = PathFunctions.SetUpFixedPath(ref pathSynchronizingDirectory.Ref(), SynchronizingDirectoryName);
+        if (res.IsFailure()) return res.Miss();
 
         // Ensure the working directory exists
-        rc = _baseFs.GetEntryType(out _, in pathModifiedDirectory);
+        res = _baseFs.GetEntryType(out _, in pathModifiedDirectory);
 
-        if (rc.IsFailure())
+        if (res.IsFailure())
         {
-            if (!ResultFs.PathNotFound.Includes(rc))
-                return rc;
+            if (!ResultFs.PathNotFound.Includes(res))
+                return res;
 
-            rc = _baseFs.CreateDirectory(in pathModifiedDirectory);
-            if (rc.IsFailure()) return rc;
+            res = _baseFs.CreateDirectory(in pathModifiedDirectory);
+            if (res.IsFailure()) return res.Miss();
 
             if (_isJournalingSupported)
             {
-                rc = _baseFs.CreateDirectory(in pathCommittedDirectory);
+                res = _baseFs.CreateDirectory(in pathCommittedDirectory);
 
                 // Changed: Nintendo returns on all failures, but we'll keep going if committed already
                 // exists to avoid confusing people manually creating savedata in emulators
-                if (rc.IsFailure() && !ResultFs.PathAlreadyExists.Includes(rc))
-                    return rc;
+                if (res.IsFailure() && !ResultFs.PathAlreadyExists.Includes(res))
+                    return res;
             }
         }
 
         // Only the working directory is needed for non-journaling savedata
         if (_isJournalingSupported)
         {
-            rc = _baseFs.GetEntryType(out _, in pathCommittedDirectory);
+            res = _baseFs.GetEntryType(out _, in pathCommittedDirectory);
 
-            if (rc.IsSuccess())
+            if (res.IsSuccess())
             {
                 // The previous commit successfully completed. Copy the committed dir to the working dir.
                 if (_isJournalingEnabled)
                 {
-                    rc = SynchronizeDirectory(in pathModifiedDirectory, in pathCommittedDirectory);
-                    if (rc.IsFailure()) return rc;
+                    res = SynchronizeDirectory(in pathModifiedDirectory, in pathCommittedDirectory);
+                    if (res.IsFailure()) return res.Miss();
                 }
             }
-            else if (ResultFs.PathNotFound.Includes(rc))
+            else if (ResultFs.PathNotFound.Includes(res))
             {
                 // If a previous commit failed, the committed dir may be missing.
                 // Finish that commit by copying the working dir to the committed dir
-                rc = SynchronizeDirectory(in pathSynchronizingDirectory, in pathModifiedDirectory);
-                if (rc.IsFailure()) return rc;
+                res = SynchronizeDirectory(in pathSynchronizingDirectory, in pathModifiedDirectory);
+                if (res.IsFailure()) return res.Miss();
 
-                rc = _baseFs.RenameDirectory(in pathSynchronizingDirectory, in pathCommittedDirectory);
-                if (rc.IsFailure()) return rc;
+                res = _baseFs.RenameDirectory(in pathSynchronizingDirectory, in pathCommittedDirectory);
+                if (res.IsFailure()) return res.Miss();
             }
             else
             {
-                return rc;
+                return res;
             }
         }
 
-        rc = InitializeExtraData();
-        if (rc.IsFailure()) return rc;
+        res = InitializeExtraData();
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -305,25 +305,25 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
             return Result.Success;
 
         using var pathLockFile = new Path();
-        Result rc = PathFunctions.SetUpFixedPath(ref pathLockFile.Ref(), LockFileName);
-        if (rc.IsFailure()) return rc;
+        Result res = PathFunctions.SetUpFixedPath(ref pathLockFile.Ref(), LockFileName);
+        if (res.IsFailure()) return res.Miss();
 
         using var lockFile = new UniqueRef<IFile>();
-        rc = _baseFs.OpenFile(ref lockFile.Ref(), in pathLockFile, OpenMode.ReadWrite);
+        res = _baseFs.OpenFile(ref lockFile.Ref(), in pathLockFile, OpenMode.ReadWrite);
 
-        if (rc.IsFailure())
+        if (res.IsFailure())
         {
-            if (ResultFs.PathNotFound.Includes(rc))
+            if (ResultFs.PathNotFound.Includes(res))
             {
-                rc = _baseFs.CreateFile(in pathLockFile, 0);
-                if (rc.IsFailure()) return rc;
+                res = _baseFs.CreateFile(in pathLockFile, 0);
+                if (res.IsFailure()) return res.Miss();
 
-                rc = _baseFs.OpenFile(ref lockFile.Ref(), in pathLockFile, OpenMode.ReadWrite);
-                if (rc.IsFailure()) return rc;
+                res = _baseFs.OpenFile(ref lockFile.Ref(), in pathLockFile, OpenMode.ReadWrite);
+                if (res.IsFailure()) return res.Miss();
             }
             else
             {
-                return rc.Miss();
+                return res.Miss();
             }
         }
 
@@ -340,11 +340,11 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
             ? CommittedDirectoryName
             : ModifiedDirectoryName;
 
-        Result rc = PathFunctions.SetUpFixedPath(ref pathDirectoryName.Ref(), directoryName);
-        if (rc.IsFailure()) return rc;
+        Result res = PathFunctions.SetUpFixedPath(ref pathDirectoryName.Ref(), directoryName);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = outFullPath.Combine(in pathDirectoryName, in path);
-        if (rc.IsFailure()) return rc;
+        res = outFullPath.Combine(in pathDirectoryName, in path);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -352,13 +352,13 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
     protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
     {
         using var fullPath = new Path();
-        Result rc = ResolvePath(ref fullPath.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolvePath(ref fullPath.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        rc = _baseFs.CreateFile(in fullPath, size, option);
-        if (rc.IsFailure()) return rc;
+        res = _baseFs.CreateFile(in fullPath, size, option);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -366,13 +366,13 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
     protected override Result DoDeleteFile(in Path path)
     {
         using var fullPath = new Path();
-        Result rc = ResolvePath(ref fullPath.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolvePath(ref fullPath.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        rc = _baseFs.DeleteFile(in fullPath);
-        if (rc.IsFailure()) return rc;
+        res = _baseFs.DeleteFile(in fullPath);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -380,13 +380,13 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
     protected override Result DoCreateDirectory(in Path path)
     {
         using var fullPath = new Path();
-        Result rc = ResolvePath(ref fullPath.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolvePath(ref fullPath.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        rc = _baseFs.CreateDirectory(in fullPath);
-        if (rc.IsFailure()) return rc;
+        res = _baseFs.CreateDirectory(in fullPath);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -394,13 +394,13 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
     protected override Result DoDeleteDirectory(in Path path)
     {
         using var fullPath = new Path();
-        Result rc = ResolvePath(ref fullPath.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolvePath(ref fullPath.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        rc = _baseFs.DeleteDirectory(in fullPath);
-        if (rc.IsFailure()) return rc;
+        res = _baseFs.DeleteDirectory(in fullPath);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -408,13 +408,13 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
     protected override Result DoDeleteDirectoryRecursively(in Path path)
     {
         using var fullPath = new Path();
-        Result rc = ResolvePath(ref fullPath.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolvePath(ref fullPath.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        rc = _baseFs.DeleteDirectoryRecursively(in fullPath);
-        if (rc.IsFailure()) return rc;
+        res = _baseFs.DeleteDirectoryRecursively(in fullPath);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -422,13 +422,13 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
     protected override Result DoCleanDirectoryRecursively(in Path path)
     {
         using var fullPath = new Path();
-        Result rc = ResolvePath(ref fullPath.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolvePath(ref fullPath.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        rc = _baseFs.CleanDirectoryRecursively(in fullPath);
-        if (rc.IsFailure()) return rc;
+        res = _baseFs.CleanDirectoryRecursively(in fullPath);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -438,16 +438,16 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         using var currentFullPath = new Path();
         using var newFullPath = new Path();
 
-        Result rc = ResolvePath(ref currentFullPath.Ref(), in currentPath);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolvePath(ref currentFullPath.Ref(), in currentPath);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = ResolvePath(ref newFullPath.Ref(), in newPath);
-        if (rc.IsFailure()) return rc;
+        res = ResolvePath(ref newFullPath.Ref(), in newPath);
+        if (res.IsFailure()) return res.Miss();
 
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        rc = _baseFs.RenameFile(in currentFullPath, in newFullPath);
-        if (rc.IsFailure()) return rc;
+        res = _baseFs.RenameFile(in currentFullPath, in newFullPath);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -457,16 +457,16 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         using var currentFullPath = new Path();
         using var newFullPath = new Path();
 
-        Result rc = ResolvePath(ref currentFullPath.Ref(), in currentPath);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolvePath(ref currentFullPath.Ref(), in currentPath);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = ResolvePath(ref newFullPath.Ref(), in newPath);
-        if (rc.IsFailure()) return rc;
+        res = ResolvePath(ref newFullPath.Ref(), in newPath);
+        if (res.IsFailure()) return res.Miss();
 
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        rc = _baseFs.RenameDirectory(in currentFullPath, in newFullPath);
-        if (rc.IsFailure()) return rc;
+        res = _baseFs.RenameDirectory(in currentFullPath, in newFullPath);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -476,13 +476,13 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         UnsafeHelpers.SkipParamInit(out entryType);
 
         using var fullPath = new Path();
-        Result rc = ResolvePath(ref fullPath.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolvePath(ref fullPath.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        rc = _baseFs.GetEntryType(out entryType, in fullPath);
-        if (rc.IsFailure()) return rc;
+        res = _baseFs.GetEntryType(out entryType, in fullPath);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -490,14 +490,14 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
     protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
     {
         using var fullPath = new Path();
-        Result rc = ResolvePath(ref fullPath.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolvePath(ref fullPath.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
         using var baseFile = new UniqueRef<IFile>();
-        rc = _baseFs.OpenFile(ref baseFile.Ref(), in fullPath, mode);
-        if (rc.IsFailure()) return rc;
+        res = _baseFs.OpenFile(ref baseFile.Ref(), in fullPath, mode);
+        if (res.IsFailure()) return res.Miss();
 
         using var file = new UniqueRef<IFile>(new DirectorySaveDataFile(ref baseFile.Ref(), this, mode));
 
@@ -514,13 +514,13 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         OpenDirectoryMode mode)
     {
         using var fullPath = new Path();
-        Result rc = ResolvePath(ref fullPath.Ref(), in path);
-        if (rc.IsFailure()) return rc;
+        Result res = ResolvePath(ref fullPath.Ref(), in path);
+        if (res.IsFailure()) return res.Miss();
 
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        rc = _baseFs.OpenDirectory(ref outDirectory, in fullPath, mode);
-        if (rc.IsFailure()) return rc;
+        res = _baseFs.OpenDirectory(ref outDirectory, in fullPath, mode);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -534,16 +534,16 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
     private Result SynchronizeDirectory(in Path destPath, in Path sourcePath)
     {
         // Delete destination dir and recreate it.
-        Result rc = _baseFs.DeleteDirectoryRecursively(destPath);
+        Result res = _baseFs.DeleteDirectoryRecursively(destPath);
 
         // Changed: Nintendo returns all errors unconditionally because SynchronizeDirectory is always called 
         // in situations where a PathNotFound error would mean the save directory was in an invalid state.
         // We'll ignore PathNotFound errors to be more user-friendly to users who might accidentally
         // put the save directory in an invalid state.
-        if (rc.IsFailure() && !ResultFs.PathNotFound.Includes(rc)) return rc;
+        if (res.IsFailure() && !ResultFs.PathNotFound.Includes(res)) return res;
 
-        rc = _baseFs.CreateDirectory(destPath);
-        if (rc.IsFailure()) return rc;
+        res = _baseFs.CreateDirectory(destPath);
+        if (res.IsFailure()) return res.Miss();
 
         var directoryEntry = new DirectoryEntry();
 
@@ -578,23 +578,23 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
 
         using var closure = new RetryClosure(this);
 
-        Result rc = PathFunctions.SetUpFixedPath(ref closure.ModifiedPath.Ref(), ModifiedDirectoryName);
-        if (rc.IsFailure()) return rc;
+        Result res = PathFunctions.SetUpFixedPath(ref closure.ModifiedPath.Ref(), ModifiedDirectoryName);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = PathFunctions.SetUpFixedPath(ref closure.CommittedPath.Ref(), CommittedDirectoryName);
-        if (rc.IsFailure()) return rc;
+        res = PathFunctions.SetUpFixedPath(ref closure.CommittedPath.Ref(), CommittedDirectoryName);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = PathFunctions.SetUpFixedPath(ref closure.SynchronizingPath.Ref(), SynchronizingDirectoryName);
-        if (rc.IsFailure()) return rc;
+        res = PathFunctions.SetUpFixedPath(ref closure.SynchronizingPath.Ref(), SynchronizingDirectoryName);
+        if (res.IsFailure()) return res.Miss();
 
         // All files must be closed before commiting save data.
         if (_openWritableFileCount > 0)
             return ResultFs.WriteModeFileNotClosed.Log();
 
         // Get rid of the previous commit by renaming the folder.
-        rc = RetryFinitelyForTargetLocked(in closure,
+        res = RetryFinitelyForTargetLocked(in closure,
             (in RetryClosure c) => c.This._baseFs.RenameDirectory(in c.CommittedPath, in c.SynchronizingPath));
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         // If something goes wrong beyond this point, the commit of the main data
         // will be completed the next time the savedata is opened.
@@ -603,28 +603,28 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         {
             Assert.SdkNotNull(_randomGenerator);
 
-            rc = UpdateExtraDataTimeStamp();
-            if (rc.IsFailure()) return rc.Miss();
+            res = UpdateExtraDataTimeStamp();
+            if (res.IsFailure()) return res.Miss();
         }
 
-        rc = CommitExtraDataImpl();
-        if (rc.IsFailure()) return rc.Miss();
+        res = CommitExtraDataImpl();
+        if (res.IsFailure()) return res.Miss();
 
-        rc = RetryFinitelyForTargetLocked(in closure,
+        res = RetryFinitelyForTargetLocked(in closure,
             (in RetryClosure c) => c.This.SynchronizeDirectory(in c.SynchronizingPath, in c.ModifiedPath));
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
-        rc = RetryFinitelyForTargetLocked(in closure,
+        res = RetryFinitelyForTargetLocked(in closure,
             (in RetryClosure c) => c.This._baseFs.RenameDirectory(in c.SynchronizingPath, in c.CommittedPath));
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
 
     protected override Result DoCommit()
     {
-        Result rc = DoCommit(updateTimeStamp: true);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = DoCommit(updateTimeStamp: true);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -642,9 +642,9 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         // No old data is kept for non-journaling save data, so there's nothing to rollback to in that case
         if (_isJournalingSupported)
         {
-            Result rc = Initialize(_isJournalingSupported, _isMultiCommitSupported, _isJournalingEnabled,
+            Result res = Initialize(_isJournalingSupported, _isMultiCommitSupported, _isJournalingEnabled,
                 _timeStampGetter, _randomGenerator);
-            if (rc.IsFailure()) return rc.Miss();
+            if (res.IsFailure()) return res.Miss();
         }
 
         return Result.Success;
@@ -657,11 +657,11 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
         using var pathModifiedDirectory = new Path();
-        Result rc = PathFunctions.SetUpFixedPath(ref pathModifiedDirectory.Ref(), ModifiedDirectoryName);
-        if (rc.IsFailure()) return rc;
+        Result res = PathFunctions.SetUpFixedPath(ref pathModifiedDirectory.Ref(), ModifiedDirectoryName);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _baseFs.GetFreeSpaceSize(out freeSpace, in pathModifiedDirectory);
-        if (rc.IsFailure()) return rc;
+        res = _baseFs.GetFreeSpaceSize(out freeSpace, in pathModifiedDirectory);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -673,11 +673,11 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
         using var pathModifiedDirectory = new Path();
-        Result rc = PathFunctions.SetUpFixedPath(ref pathModifiedDirectory.Ref(), ModifiedDirectoryName);
-        if (rc.IsFailure()) return rc;
+        Result res = PathFunctions.SetUpFixedPath(ref pathModifiedDirectory.Ref(), ModifiedDirectoryName);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _baseFs.GetTotalSpaceSize(out totalSpace, in pathModifiedDirectory);
-        if (rc.IsFailure()) return rc;
+        res = _baseFs.GetTotalSpaceSize(out totalSpace, in pathModifiedDirectory);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -701,8 +701,8 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
 
     public override Result CommitExtraData(bool updateTimeStamp)
     {
-        Result rc = DoCommit(updateTimeStamp);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = DoCommit(updateTimeStamp);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -777,54 +777,54 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
     private Result InitializeExtraData()
     {
         using var pathModifiedExtraData = new Path();
-        Result rc = PathFunctions.SetUpFixedPath(ref pathModifiedExtraData.Ref(), ModifiedExtraDataName);
-        if (rc.IsFailure()) return rc;
+        Result res = PathFunctions.SetUpFixedPath(ref pathModifiedExtraData.Ref(), ModifiedExtraDataName);
+        if (res.IsFailure()) return res.Miss();
 
         using var pathCommittedExtraData = new Path();
-        rc = PathFunctions.SetUpFixedPath(ref pathCommittedExtraData.Ref(), CommittedExtraDataName);
-        if (rc.IsFailure()) return rc;
+        res = PathFunctions.SetUpFixedPath(ref pathCommittedExtraData.Ref(), CommittedExtraDataName);
+        if (res.IsFailure()) return res.Miss();
 
         using var pathSynchronizingExtraData = new Path();
-        rc = PathFunctions.SetUpFixedPath(ref pathSynchronizingExtraData.Ref(), SynchronizingExtraDataName);
-        if (rc.IsFailure()) return rc;
+        res = PathFunctions.SetUpFixedPath(ref pathSynchronizingExtraData.Ref(), SynchronizingExtraDataName);
+        if (res.IsFailure()) return res.Miss();
 
         // Ensure the extra data files exist.
         // We don't currently handle the case where some of the extra data paths are directories instead of files.
-        rc = _baseFs.GetEntryType(out _, in pathModifiedExtraData);
+        res = _baseFs.GetEntryType(out _, in pathModifiedExtraData);
 
-        if (rc.IsFailure())
+        if (res.IsFailure())
         {
-            if (!ResultFs.PathNotFound.Includes(rc))
-                return rc;
+            if (!ResultFs.PathNotFound.Includes(res))
+                return res;
 
             // The Modified file doesn't exist. Create it.
-            rc = _baseFs.CreateFile(in pathModifiedExtraData, Unsafe.SizeOf<SaveDataExtraData>());
-            if (rc.IsFailure()) return rc;
+            res = _baseFs.CreateFile(in pathModifiedExtraData, Unsafe.SizeOf<SaveDataExtraData>());
+            if (res.IsFailure()) return res.Miss();
 
             if (_isJournalingSupported)
             {
-                rc = _baseFs.GetEntryType(out _, in pathCommittedExtraData);
+                res = _baseFs.GetEntryType(out _, in pathCommittedExtraData);
 
-                if (rc.IsFailure())
+                if (res.IsFailure())
                 {
-                    if (!ResultFs.PathNotFound.Includes(rc))
-                        return rc;
+                    if (!ResultFs.PathNotFound.Includes(res))
+                        return res;
 
                     // Neither the modified or committed files existed.
                     // Check if the synchronizing file exists and use it if it does.
-                    rc = _baseFs.GetEntryType(out _, in pathSynchronizingExtraData);
+                    res = _baseFs.GetEntryType(out _, in pathSynchronizingExtraData);
 
-                    if (rc.IsSuccess())
+                    if (res.IsSuccess())
                     {
-                        rc = _baseFs.RenameFile(in pathSynchronizingExtraData, in pathCommittedExtraData);
-                        if (rc.IsFailure()) return rc;
+                        res = _baseFs.RenameFile(in pathSynchronizingExtraData, in pathCommittedExtraData);
+                        if (res.IsFailure()) return res.Miss();
                     }
                     else
                     {
                         // The synchronizing file did not exist. Create an empty committed extra data file.
-                        rc = _baseFs.CreateFile(in pathCommittedExtraData, Unsafe.SizeOf<SaveDataExtraData>());
-                        if (rc.IsFailure() && !ResultFs.PathAlreadyExists.Includes(rc))
-                            return rc;
+                        res = _baseFs.CreateFile(in pathCommittedExtraData, Unsafe.SizeOf<SaveDataExtraData>());
+                        if (res.IsFailure() && !ResultFs.PathAlreadyExists.Includes(res))
+                            return res;
                     }
                 }
             }
@@ -832,27 +832,27 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         else
         {
             // If the working file exists make sure it's the right size
-            rc = EnsureExtraDataSize(in pathModifiedExtraData);
-            if (rc.IsFailure()) return rc;
+            res = EnsureExtraDataSize(in pathModifiedExtraData);
+            if (res.IsFailure()) return res.Miss();
         }
 
         // Only the working extra data is needed for non-journaling savedata
         if (_isJournalingSupported)
         {
-            rc = _baseFs.GetEntryType(out _, in pathCommittedExtraData);
+            res = _baseFs.GetEntryType(out _, in pathCommittedExtraData);
 
-            if (rc.IsSuccess())
+            if (res.IsSuccess())
             {
-                rc = EnsureExtraDataSize(in pathCommittedExtraData);
-                if (rc.IsFailure()) return rc;
+                res = EnsureExtraDataSize(in pathCommittedExtraData);
+                if (res.IsFailure()) return res.Miss();
 
                 if (_isJournalingEnabled)
                 {
-                    rc = SynchronizeExtraData(in pathModifiedExtraData, in pathCommittedExtraData);
-                    if (rc.IsFailure()) return rc;
+                    res = SynchronizeExtraData(in pathModifiedExtraData, in pathCommittedExtraData);
+                    if (res.IsFailure()) return res.Miss();
                 }
             }
-            else if (ResultFs.PathNotFound.Includes(rc))
+            else if (ResultFs.PathNotFound.Includes(res))
             {
                 // The committed file doesn't exist. Try to recover from whatever invalid state we're in.
 
@@ -860,29 +860,29 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
                 // Finish that commit by copying the working extra data to the committed extra data
                 if (_baseFs.GetEntryType(out _, in pathSynchronizingExtraData).IsSuccess())
                 {
-                    rc = SynchronizeExtraData(in pathSynchronizingExtraData, in pathModifiedExtraData);
-                    if (rc.IsFailure()) return rc;
+                    res = SynchronizeExtraData(in pathSynchronizingExtraData, in pathModifiedExtraData);
+                    if (res.IsFailure()) return res.Miss();
 
-                    rc = _baseFs.RenameFile(in pathSynchronizingExtraData, in pathCommittedExtraData);
-                    if (rc.IsFailure()) return rc;
+                    res = _baseFs.RenameFile(in pathSynchronizingExtraData, in pathCommittedExtraData);
+                    if (res.IsFailure()) return res.Miss();
                 }
                 else
                 {
                     // The only existing file is the modified file.
                     // Copy the working extra data to the committed extra data.
-                    rc = _baseFs.CreateFile(in pathSynchronizingExtraData, Unsafe.SizeOf<SaveDataExtraData>());
-                    if (rc.IsFailure()) return rc;
+                    res = _baseFs.CreateFile(in pathSynchronizingExtraData, Unsafe.SizeOf<SaveDataExtraData>());
+                    if (res.IsFailure()) return res.Miss();
 
-                    rc = SynchronizeExtraData(in pathSynchronizingExtraData, in pathModifiedExtraData);
-                    if (rc.IsFailure()) return rc;
+                    res = SynchronizeExtraData(in pathSynchronizingExtraData, in pathModifiedExtraData);
+                    if (res.IsFailure()) return res.Miss();
 
-                    rc = _baseFs.RenameFile(in pathSynchronizingExtraData, in pathCommittedExtraData);
-                    if (rc.IsFailure()) return rc;
+                    res = _baseFs.RenameFile(in pathSynchronizingExtraData, in pathCommittedExtraData);
+                    if (res.IsFailure()) return res.Miss();
                 }
             }
             else
             {
-                return rc;
+                return res;
             }
         }
 
@@ -901,11 +901,11 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
     private Result EnsureExtraDataSize(in Path path)
     {
         using var file = new UniqueRef<IFile>();
-        Result rc = _baseFs.OpenFile(ref file.Ref(), in path, OpenMode.ReadWrite);
-        if (rc.IsFailure()) return rc;
+        Result res = _baseFs.OpenFile(ref file.Ref(), in path, OpenMode.ReadWrite);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = file.Get.GetSize(out long fileSize);
-        if (rc.IsFailure()) return rc;
+        res = file.Get.GetSize(out long fileSize);
+        if (res.IsFailure()) return res.Miss();
 
         if (fileSize == Unsafe.SizeOf<SaveDataExtraData>())
             return Result.Success;
@@ -919,22 +919,22 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
 
         using (var sourceFile = new UniqueRef<IFile>())
         {
-            Result rc = _baseFs.OpenFile(ref sourceFile.Ref(), in sourcePath, OpenMode.Read);
-            if (rc.IsFailure()) return rc;
+            Result res = _baseFs.OpenFile(ref sourceFile.Ref(), in sourcePath, OpenMode.Read);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = sourceFile.Get.Read(out long bytesRead, 0, workBuffer);
-            if (rc.IsFailure()) return rc;
+            res = sourceFile.Get.Read(out long bytesRead, 0, workBuffer);
+            if (res.IsFailure()) return res.Miss();
 
             Assert.SdkEqual(bytesRead, Unsafe.SizeOf<SaveDataExtraData>());
         }
 
         using (var destFile = new UniqueRef<IFile>())
         {
-            Result rc = _baseFs.OpenFile(ref destFile.Ref(), in destPath, OpenMode.Write);
-            if (rc.IsFailure()) return rc;
+            Result res = _baseFs.OpenFile(ref destFile.Ref(), in destPath, OpenMode.Write);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = destFile.Get.Write(0, workBuffer, WriteOption.Flush);
-            if (rc.IsFailure()) return rc;
+            res = destFile.Get.Write(0, workBuffer, WriteOption.Flush);
+            if (res.IsFailure()) return res.Miss();
         }
 
         return Result.Success;
@@ -944,8 +944,8 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
     {
         Assert.SdkRequires(_mutex.IsLockedByCurrentThread());
 
-        Result rc = ReadExtraDataImpl(out SaveDataExtraData extraData);
-        if (rc.IsFailure()) return rc;
+        Result res = ReadExtraDataImpl(out SaveDataExtraData extraData);
+        if (res.IsFailure()) return res.Miss();
 
         if (_timeStampGetter.Get(out long timeStamp).IsSuccess())
         {
@@ -969,15 +969,15 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         Assert.SdkRequires(_mutex.IsLockedByCurrentThread());
 
         using var pathExtraData = new Path();
-        Result rc = GetExtraDataPath(ref pathExtraData.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = GetExtraDataPath(ref pathExtraData.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         using var file = new UniqueRef<IFile>();
-        rc = _baseFs.OpenFile(ref file.Ref(), in pathExtraData, OpenMode.Write);
-        if (rc.IsFailure()) return rc;
+        res = _baseFs.OpenFile(ref file.Ref(), in pathExtraData, OpenMode.Write);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = file.Get.Write(0, SpanHelpers.AsReadOnlyByteSpan(in extraData), WriteOption.Flush);
-        if (rc.IsFailure()) return rc;
+        res = file.Get.Write(0, SpanHelpers.AsReadOnlyByteSpan(in extraData), WriteOption.Flush);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -991,30 +991,30 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
 
         using var closure = new RetryClosure(this);
 
-        Result rc = PathFunctions.SetUpFixedPath(ref closure.ModifiedPath.Ref(), ModifiedExtraDataName);
-        if (rc.IsFailure()) return rc;
+        Result res = PathFunctions.SetUpFixedPath(ref closure.ModifiedPath.Ref(), ModifiedExtraDataName);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = PathFunctions.SetUpFixedPath(ref closure.CommittedPath.Ref(), CommittedExtraDataName);
-        if (rc.IsFailure()) return rc;
+        res = PathFunctions.SetUpFixedPath(ref closure.CommittedPath.Ref(), CommittedExtraDataName);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = PathFunctions.SetUpFixedPath(ref closure.SynchronizingPath.Ref(), SynchronizingExtraDataName);
-        if (rc.IsFailure()) return rc;
+        res = PathFunctions.SetUpFixedPath(ref closure.SynchronizingPath.Ref(), SynchronizingExtraDataName);
+        if (res.IsFailure()) return res.Miss();
 
         // Get rid of the previous commit by renaming the file.
-        rc = RetryFinitelyForTargetLocked(in closure,
+        res = RetryFinitelyForTargetLocked(in closure,
             (in RetryClosure c) => c.This._baseFs.RenameFile(in c.CommittedPath, in c.SynchronizingPath));
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         // If something goes wrong beyond this point, the commit will be
         // completed the next time the savedata is opened.
 
-        rc = RetryFinitelyForTargetLocked(in closure,
+        res = RetryFinitelyForTargetLocked(in closure,
             (in RetryClosure c) => c.This.SynchronizeExtraData(in c.SynchronizingPath, in c.ModifiedPath));
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
-        rc = RetryFinitelyForTargetLocked(in closure,
+        res = RetryFinitelyForTargetLocked(in closure,
             (in RetryClosure c) => c.This._baseFs.RenameFile(in c.SynchronizingPath, in c.CommittedPath));
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -1026,15 +1026,15 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         Assert.SdkRequires(_mutex.IsLockedByCurrentThread());
 
         using var pathExtraData = new Path();
-        Result rc = GetExtraDataPath(ref pathExtraData.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = GetExtraDataPath(ref pathExtraData.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         using var file = new UniqueRef<IFile>();
-        rc = _baseFs.OpenFile(ref file.Ref(), in pathExtraData, OpenMode.Read);
-        if (rc.IsFailure()) return rc;
+        res = _baseFs.OpenFile(ref file.Ref(), in pathExtraData, OpenMode.Read);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = file.Get.Read(out long bytesRead, 0, SpanHelpers.AsByteSpan(ref extraData));
-        if (rc.IsFailure()) return rc;
+        res = file.Get.Read(out long bytesRead, 0, SpanHelpers.AsByteSpan(ref extraData));
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkEqual(bytesRead, Unsafe.SizeOf<SaveDataExtraData>());
 

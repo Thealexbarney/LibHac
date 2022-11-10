@@ -167,8 +167,8 @@ public abstract class IFileSystem : IDisposable
             return ResultFs.NullptrArgument.Log();
 
         using var pathNormalized = new Path();
-        Result rs = pathNormalized.InitializeWithNormalization(path);
-        if (rs.IsFailure()) return rs;
+        Result res = pathNormalized.InitializeWithNormalization(path);
+        if (res.IsFailure()) return res;
 
         return DoGetEntryType(out entryType, in pathNormalized);
     }
@@ -209,8 +209,8 @@ public abstract class IFileSystem : IDisposable
             return ResultFs.NullptrArgument.Log();
 
         using var pathNormalized = new Path();
-        Result rs = pathNormalized.InitializeWithNormalization(path);
-        if (rs.IsFailure()) return rs;
+        Result res = pathNormalized.InitializeWithNormalization(path);
+        if (res.IsFailure()) return res;
 
         return DoOpenFile(ref file, in pathNormalized, mode);
     }

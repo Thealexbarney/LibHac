@@ -52,16 +52,16 @@ internal static class GameCardService
         ref SharedRef<IStorageDevice> outStorageDevice, OpenGameCardAttribute attribute)
     {
         using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
-        Result rc = service.GetGameCardManager(ref storageDeviceManager.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardManager(ref storageDeviceManager.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         ref GameCardServiceGlobals g = ref service.Globals.GameCardService;
 
         using var gameCardStorageDevice = new SharedRef<IStorageDevice>();
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref g.StorageDeviceMutex);
 
-        rc = storageDeviceManager.Get.OpenDevice(ref gameCardStorageDevice.Ref(), MakeAttributeId(attribute));
-        if (rc.IsFailure()) return rc.Miss();
+        res = storageDeviceManager.Get.OpenDevice(ref gameCardStorageDevice.Ref(), MakeAttributeId(attribute));
+        if (res.IsFailure()) return res.Miss();
 
         g.CachedStorageDevice.SetByCopy(in gameCardStorageDevice);
         outStorageDevice.SetByCopy(in gameCardStorageDevice);
@@ -73,8 +73,8 @@ internal static class GameCardService
         ref SharedRef<IStorageDeviceOperator> outDeviceOperator)
     {
         using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
-        Result rc = service.GetGameCardManager(ref storageDeviceManager.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardManager(ref storageDeviceManager.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         return storageDeviceManager.Get.OpenOperator(ref outDeviceOperator);
     }
@@ -83,8 +83,8 @@ internal static class GameCardService
         ref SharedRef<IStorageDeviceOperator> outDeviceOperator, OpenGameCardAttribute attribute)
     {
         using var storageDevice = new SharedRef<IStorageDevice>();
-        Result rc = service.OpenAndCacheGameCardDevice(ref storageDevice.Ref(), attribute);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.OpenAndCacheGameCardDevice(ref storageDevice.Ref(), attribute);
+        if (res.IsFailure()) return res.Miss();
 
         return storageDevice.Get.OpenOperator(ref outDeviceOperator.Ref());
     }
@@ -110,12 +110,12 @@ internal static class GameCardService
     {
         using var gameCardStorageDevice = new SharedRef<IStorageDevice>();
 
-        Result rc = service.OpenAndCacheGameCardDevice(ref gameCardStorageDevice.Ref(), attribute);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.OpenAndCacheGameCardDevice(ref gameCardStorageDevice.Ref(), attribute);
+        if (res.IsFailure()) return res.Miss();
 
         // Verify that the game card handle hasn't changed.
-        rc = service.GetCurrentGameCardHandle(out StorageDeviceHandle newHandle);
-        if (rc.IsFailure()) return rc.Miss();
+        res = service.GetCurrentGameCardHandle(out StorageDeviceHandle newHandle);
+        if (res.IsFailure()) return res.Miss();
 
         if (newHandle.Value != handle)
         {
@@ -153,8 +153,8 @@ internal static class GameCardService
         {
             if (g.CachedStorageDevice.HasValue)
             {
-                Result rc = g.CachedStorageDevice.Get.GetHandle(out GameCardHandle handle);
-                if (rc.IsFailure()) return rc.Miss();
+                Result res = g.CachedStorageDevice.Get.GetHandle(out GameCardHandle handle);
+                if (res.IsFailure()) return res.Miss();
 
                 outHandle = new StorageDeviceHandle(handle, StorageDevicePortId.GameCard);
                 return Result.Success;
@@ -163,12 +163,12 @@ internal static class GameCardService
 
         {
             using var gameCardStorageDevice = new SharedRef<IStorageDevice>();
-            Result rc = service.OpenAndCacheGameCardDevice(ref gameCardStorageDevice.Ref(),
+            Result res = service.OpenAndCacheGameCardDevice(ref gameCardStorageDevice.Ref(),
                 OpenGameCardAttribute.ReadOnly);
-            if (rc.IsFailure()) return rc.Miss();
+            if (res.IsFailure()) return res.Miss();
 
-            rc = gameCardStorageDevice.Get.GetHandle(out GameCardHandle handleValue);
-            if (rc.IsFailure()) return rc.Miss();
+            res = gameCardStorageDevice.Get.GetHandle(out GameCardHandle handleValue);
+            if (res.IsFailure()) return res.Miss();
 
             outHandle = new StorageDeviceHandle(handleValue, StorageDevicePortId.GameCard);
             return Result.Success;
@@ -181,8 +181,8 @@ internal static class GameCardService
         UnsafeHelpers.SkipParamInit(out isValid);
 
         using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
-        Result rc = service.GetGameCardManager(ref storageDeviceManager.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardManager(ref storageDeviceManager.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         return storageDeviceManager.Get.IsHandleValid(out isValid, handle.Value);
     }
@@ -192,12 +192,12 @@ internal static class GameCardService
         UnsafeHelpers.SkipParamInit(out outIsInserted);
 
         using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
-        Result rc = service.GetGameCardManager(ref storageDeviceManager.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardManager(ref storageDeviceManager.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         // Get the actual state of the game card.
-        rc = storageDeviceManager.Get.IsInserted(out bool isInserted);
-        if (rc.IsFailure()) return rc.Miss();
+        res = storageDeviceManager.Get.IsInserted(out bool isInserted);
+        if (res.IsFailure()) return res.Miss();
 
         // Get the simulated state of the game card based on the actual state.
         outIsInserted = service.FsSrv.Impl.GetGameCardEventSimulator().FilterDetectionState(isInserted);
@@ -207,8 +207,8 @@ internal static class GameCardService
     public static Result EraseGameCard(this StorageService service, uint gameCardSize, ulong romAreaStartPageAddress)
     {
         using var gcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetGameCardOperator(ref gcOperator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardOperator(ref gcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         InBuffer inBuffer = InBuffer.FromStruct(in romAreaStartPageAddress);
         int operationId = MakeOperationId(GameCardOperationIdValue.EraseGameCard);
@@ -219,8 +219,8 @@ internal static class GameCardService
     public static Result GetInitializationResult(this StorageService service)
     {
         using var gcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetGameCardManagerOperator(ref gcOperator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardManagerOperator(ref gcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         int operationId = MakeOperationId(GameCardManagerOperationIdValue.GetInitializationResult);
 
@@ -233,13 +233,13 @@ internal static class GameCardService
         UnsafeHelpers.SkipParamInit(out outGameCardStatus);
 
         using var gcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetGameCardOperator(ref gcOperator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardOperator(ref gcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         // Verify that the game card handle hasn't changed.
         var deviceHandle = new StorageDeviceHandle(handle, StorageDevicePortId.GameCard);
-        rc = service.IsGameCardHandleValid(out bool isValidHandle, in deviceHandle);
-        if (rc.IsFailure()) return rc.Miss();
+        res = service.IsGameCardHandleValid(out bool isValidHandle, in deviceHandle);
+        if (res.IsFailure()) return res.Miss();
 
         if (!isValidHandle)
             return ResultFs.GameCardFsCheckHandleInGetStatusFailure.Log();
@@ -248,8 +248,8 @@ internal static class GameCardService
         OutBuffer outCardStatusBuffer = OutBuffer.FromStruct(ref outGameCardStatus);
         int operationId = MakeOperationId(GameCardOperationIdValue.GetGameCardStatus);
 
-        rc = gcOperator.Get.OperateOut(out long bytesWritten, outCardStatusBuffer, operationId);
-        if (rc.IsFailure()) return rc.Miss();
+        res = gcOperator.Get.OperateOut(out long bytesWritten, outCardStatusBuffer, operationId);
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkEqual(Unsafe.SizeOf<GameCardStatus>(), bytesWritten);
 
@@ -259,8 +259,8 @@ internal static class GameCardService
     public static Result FinalizeGameCardLibrary(this StorageService service)
     {
         using var gcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetGameCardManagerOperator(ref gcOperator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardManagerOperator(ref gcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         int operationId = MakeOperationId(GameCardManagerOperationIdValue.Finalize);
 
@@ -271,13 +271,13 @@ internal static class GameCardService
         GameCardHandle handle)
     {
         using var gcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetGameCardOperator(ref gcOperator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardOperator(ref gcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         // Verify that the game card handle hasn't changed.
         var deviceHandle = new StorageDeviceHandle(handle, StorageDevicePortId.GameCard);
-        rc = service.IsGameCardHandleValid(out bool isValidHandle, in deviceHandle);
-        if (rc.IsFailure()) return rc.Miss();
+        res = service.IsGameCardHandleValid(out bool isValidHandle, in deviceHandle);
+        if (res.IsFailure()) return res.Miss();
 
         if (!isValidHandle)
             return ResultFs.GameCardFsCheckHandleInGetDeviceCertFailure.Log();
@@ -286,8 +286,8 @@ internal static class GameCardService
         var outCertBuffer = new OutBuffer(outBuffer);
         int operationId = MakeOperationId(GameCardOperationIdValue.GetGameCardDeviceCertificate);
 
-        rc = gcOperator.Get.OperateOut(out long bytesWritten, outCertBuffer, operationId);
-        if (rc.IsFailure()) return rc.Miss();
+        res = gcOperator.Get.OperateOut(out long bytesWritten, outCertBuffer, operationId);
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkEqual(GcDeviceCertificateSize, bytesWritten);
 
@@ -298,13 +298,13 @@ internal static class GameCardService
         ReadOnlySpan<byte> challengeSeed, ReadOnlySpan<byte> challengeValue, GameCardHandle handle)
     {
         using var gcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetGameCardOperator(ref gcOperator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardOperator(ref gcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         // Verify that the game card handle hasn't changed.
         var deviceHandle = new StorageDeviceHandle(handle, StorageDevicePortId.GameCard);
-        rc = service.IsGameCardHandleValid(out bool isValidHandle, in deviceHandle);
-        if (rc.IsFailure()) return rc.Miss();
+        res = service.IsGameCardHandleValid(out bool isValidHandle, in deviceHandle);
+        if (res.IsFailure()) return res.Miss();
 
         if (!isValidHandle)
             return ResultFs.GameCardFsCheckHandleInChallengeCardExistence.Log();
@@ -315,9 +315,9 @@ internal static class GameCardService
         var responseBuffer = new OutBuffer(outResponseBuffer);
         int operationId = MakeOperationId(GameCardOperationIdValue.ChallengeCardExistence);
 
-        rc = gcOperator.Get.OperateIn2Out(out long bytesWritten, responseBuffer, valueBuffer, seedBuffer, offset: 0,
+        res = gcOperator.Get.OperateIn2Out(out long bytesWritten, responseBuffer, valueBuffer, seedBuffer, offset: 0,
             size: 0, operationId);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkEqual(GcCardExistenceResponseDataSize, bytesWritten);
 
@@ -329,15 +329,15 @@ internal static class GameCardService
         UnsafeHelpers.SkipParamInit(out outHandle);
 
         using var gcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetGameCardManagerOperator(ref gcOperator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardManagerOperator(ref gcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         // Get the current handle.
         OutBuffer handleOutBuffer = OutBuffer.FromStruct(ref outHandle);
         int operationId = MakeOperationId(GameCardManagerOperationIdValue.GetHandle);
 
-        rc = gcOperator.Get.OperateOut(out long bytesWritten, handleOutBuffer, operationId);
-        if (rc.IsFailure()) return rc.Miss();
+        res = gcOperator.Get.OperateOut(out long bytesWritten, handleOutBuffer, operationId);
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkEqual(Unsafe.SizeOf<GameCardHandle>(), bytesWritten);
 
@@ -348,11 +348,11 @@ internal static class GameCardService
         if (g.CachedStorageDevice.HasValue)
         {
             g.CachedStorageDevice.Get.GetHandle(out GameCardHandle handleValue);
-            if (rc.IsFailure()) return rc.Miss();
+            if (res.IsFailure()) return res.Miss();
 
             var currentHandle = new StorageDeviceHandle(handleValue, StorageDevicePortId.GameCard);
-            rc = service.IsGameCardHandleValid(out bool isHandleValid, in currentHandle);
-            if (rc.IsFailure()) return rc.Miss();
+            res = service.IsGameCardHandleValid(out bool isHandleValid, in currentHandle);
+            if (res.IsFailure()) return res.Miss();
 
             if (!isHandleValid)
                 g.CachedStorageDevice.Reset();
@@ -367,16 +367,16 @@ internal static class GameCardService
         UnsafeHelpers.SkipParamInit(out rmaInfo);
 
         using var gcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetGameCardManagerOperator(ref gcOperator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardManagerOperator(ref gcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         var inFirmwareBuffer = new InBuffer(firmwareBuffer);
         OutBuffer outRmaInfoBuffer = OutBuffer.FromStruct(ref rmaInfo);
         int operationId = MakeOperationId(GameCardManagerOperationIdValue.GetGameCardAsicInfo);
 
-        rc = gcOperator.Get.OperateInOut(out long bytesWritten, outRmaInfoBuffer, inFirmwareBuffer, offset: 0,
+        res = gcOperator.Get.OperateInOut(out long bytesWritten, outRmaInfoBuffer, inFirmwareBuffer, offset: 0,
             size: firmwareBuffer.Length, operationId);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkEqual(Unsafe.SizeOf<RmaInformation>(), bytesWritten);
 
@@ -388,14 +388,14 @@ internal static class GameCardService
         UnsafeHelpers.SkipParamInit(out outIdSet);
 
         using var gcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetGameCardOperator(ref gcOperator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardOperator(ref gcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         OutBuffer outIdSetBuffer = OutBuffer.FromStruct(ref outIdSet);
         int operationId = MakeOperationId(GameCardOperationIdValue.GetGameCardIdSet);
 
-        rc = gcOperator.Get.OperateOut(out long bytesWritten, outIdSetBuffer, operationId);
-        if (rc.IsFailure()) return rc.Miss();
+        res = gcOperator.Get.OperateOut(out long bytesWritten, outIdSetBuffer, operationId);
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkEqual(Unsafe.SizeOf<GameCardIdSet>(), bytesWritten);
 
@@ -405,8 +405,8 @@ internal static class GameCardService
     public static Result WriteToGameCardDirectly(this StorageService service, long offset, Span<byte> buffer)
     {
         using var gcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetGameCardManagerOperator(ref gcOperator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardManagerOperator(ref gcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         var outBuffer = new OutBuffer(buffer);
         var inUnusedBuffer = new InBuffer();
@@ -414,18 +414,18 @@ internal static class GameCardService
 
         // Missing: Register device buffer
 
-        rc = gcOperator.Get.OperateInOut(out _, outBuffer, inUnusedBuffer, offset, buffer.Length, operationId);
+        res = gcOperator.Get.OperateInOut(out _, outBuffer, inUnusedBuffer, offset, buffer.Length, operationId);
 
         // Missing: Unregister device buffer
 
-        return rc;
+        return res;
     }
 
     public static Result SetVerifyWriteEnableFlag(this StorageService service, bool isEnabled)
     {
         using var gcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetGameCardManagerOperator(ref gcOperator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardManagerOperator(ref gcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         InBuffer inIsEnabledBuffer = InBuffer.FromStruct(in isEnabled);
         int operationId = MakeOperationId(GameCardManagerOperationIdValue.SetVerifyEnableFlag);
@@ -436,13 +436,13 @@ internal static class GameCardService
     public static Result GetGameCardImageHash(this StorageService service, Span<byte> outBuffer, GameCardHandle handle)
     {
         using var gcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetGameCardOperator(ref gcOperator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardOperator(ref gcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         // Verify that the game card handle hasn't changed.
         var deviceHandle = new StorageDeviceHandle(handle, StorageDevicePortId.GameCard);
-        rc = service.IsGameCardHandleValid(out bool isValidHandle, in deviceHandle);
-        if (rc.IsFailure()) return rc.Miss();
+        res = service.IsGameCardHandleValid(out bool isValidHandle, in deviceHandle);
+        if (res.IsFailure()) return res.Miss();
 
         if (!isValidHandle)
             return ResultFs.GameCardFsCheckHandleInGetCardImageHashFailure.Log();
@@ -451,8 +451,8 @@ internal static class GameCardService
         var outImageHashBuffer = new OutBuffer(outBuffer);
         int operationId = MakeOperationId(GameCardOperationIdValue.GetGameCardImageHash);
 
-        rc = gcOperator.Get.OperateOut(out long bytesWritten, outImageHashBuffer, operationId);
-        if (rc.IsFailure()) return rc.Miss();
+        res = gcOperator.Get.OperateOut(out long bytesWritten, outImageHashBuffer, operationId);
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkEqual(GcCardImageHashSize, bytesWritten);
 
@@ -463,16 +463,16 @@ internal static class GameCardService
         ReadOnlySpan<byte> devHeaderBuffer)
     {
         using var gcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetGameCardManagerOperator(ref gcOperator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardManagerOperator(ref gcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         var inDevHeaderBuffer = new InBuffer(devHeaderBuffer);
         var outDeviceIdBuffer = new OutBuffer(outBuffer);
         int operationId = MakeOperationId(GameCardManagerOperationIdValue.GetGameCardDeviceIdForProdCard);
 
-        rc = gcOperator.Get.OperateInOut(out long bytesWritten, outDeviceIdBuffer, inDevHeaderBuffer, offset: 0,
+        res = gcOperator.Get.OperateInOut(out long bytesWritten, outDeviceIdBuffer, inDevHeaderBuffer, offset: 0,
             size: 0, operationId);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkEqual(GcPageSize, bytesWritten);
 
@@ -482,8 +482,8 @@ internal static class GameCardService
     public static Result EraseAndWriteParamDirectly(this StorageService service, ReadOnlySpan<byte> devParamBuffer)
     {
         using var gcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetGameCardManagerOperator(ref gcOperator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardManagerOperator(ref gcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         var inDevParamBuffer = new InBuffer(devParamBuffer);
         int operationId = MakeOperationId(GameCardManagerOperationIdValue.EraseAndWriteParamDirectly);
@@ -494,13 +494,13 @@ internal static class GameCardService
     public static Result ReadParamDirectly(this StorageService service, Span<byte> outDevParamBuffer)
     {
         using var gcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetGameCardManagerOperator(ref gcOperator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardManagerOperator(ref gcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         int operationId = MakeOperationId(GameCardManagerOperationIdValue.ReadParamDirectly);
 
-        rc = gcOperator.Get.OperateOut(out long bytesWritten, new OutBuffer(outDevParamBuffer), operationId);
-        if (rc.IsFailure()) return rc.Miss();
+        res = gcOperator.Get.OperateOut(out long bytesWritten, new OutBuffer(outDevParamBuffer), operationId);
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkEqual(GcPageSize, bytesWritten);
 
@@ -510,8 +510,8 @@ internal static class GameCardService
     public static Result ForceEraseGameCard(this StorageService service)
     {
         using var gcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetGameCardManagerOperator(ref gcOperator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardManagerOperator(ref gcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         int operationId = MakeOperationId(GameCardManagerOperationIdValue.ForceErase);
 
@@ -523,14 +523,14 @@ internal static class GameCardService
         UnsafeHelpers.SkipParamInit(out errorInfo);
 
         using var gcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetGameCardManagerOperator(ref gcOperator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardManagerOperator(ref gcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         OutBuffer outErrorInfoBuffer = OutBuffer.FromStruct(ref errorInfo);
         int operationId = MakeOperationId(GameCardManagerOperationIdValue.GetGameCardErrorInfo);
 
-        rc = gcOperator.Get.OperateOut(out long bytesWritten, outErrorInfoBuffer, operationId);
-        if (rc.IsFailure()) return rc.Miss();
+        res = gcOperator.Get.OperateOut(out long bytesWritten, outErrorInfoBuffer, operationId);
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkEqual(Unsafe.SizeOf<GameCardErrorInfo>(), bytesWritten);
 
@@ -543,14 +543,14 @@ internal static class GameCardService
         UnsafeHelpers.SkipParamInit(out errorReportInfo);
 
         using var gcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetGameCardManagerOperator(ref gcOperator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardManagerOperator(ref gcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         OutBuffer outErrorReportInfoBuffer = OutBuffer.FromStruct(ref errorReportInfo);
         int operationId = MakeOperationId(GameCardManagerOperationIdValue.GetGameCardErrorReportInfo);
 
-        rc = gcOperator.Get.OperateOut(out long bytesWritten, outErrorReportInfoBuffer, operationId);
-        if (rc.IsFailure()) return rc.Miss();
+        res = gcOperator.Get.OperateOut(out long bytesWritten, outErrorReportInfoBuffer, operationId);
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkEqual(Unsafe.SizeOf<GameCardErrorReportInfo>(), bytesWritten);
 
@@ -560,14 +560,14 @@ internal static class GameCardService
     public static Result GetGameCardDeviceId(this StorageService service, Span<byte> outBuffer)
     {
         using var gcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetGameCardOperator(ref gcOperator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardOperator(ref gcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         var outDeviceIdBuffer = new OutBuffer(outBuffer);
         int operationId = MakeOperationId(GameCardOperationIdValue.GetGameCardDeviceId);
 
-        rc = gcOperator.Get.OperateOut(out long bytesWritten, outDeviceIdBuffer, operationId);
-        if (rc.IsFailure()) return rc.Miss();
+        res = gcOperator.Get.OperateOut(out long bytesWritten, outDeviceIdBuffer, operationId);
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkEqual(GcCardDeviceIdSize, bytesWritten);
 
@@ -577,17 +577,17 @@ internal static class GameCardService
     public static bool IsGameCardActivationValid(this StorageService service, GameCardHandle handle)
     {
         using var gcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetGameCardManagerOperator(ref gcOperator.Ref());
-        if (rc.IsFailure()) return Result.ConvertResultToReturnType<bool>(rc);
+        Result res = service.GetGameCardManagerOperator(ref gcOperator.Ref());
+        if (res.IsFailure()) return Result.ConvertResultToReturnType<bool>(res);
 
         bool isValid = false;
         InBuffer inHandleBuffer = InBuffer.FromStruct(in handle);
         OutBuffer outIsValidBuffer = OutBuffer.FromStruct(ref isValid);
         int operationId = MakeOperationId(GameCardManagerOperationIdValue.IsGameCardActivationValid);
 
-        rc = gcOperator.Get.OperateInOut(out long bytesWritten, outIsValidBuffer, inHandleBuffer, offset: 0, size: 0,
+        res = gcOperator.Get.OperateInOut(out long bytesWritten, outIsValidBuffer, inHandleBuffer, offset: 0, size: 0,
             operationId);
-        if (rc.IsFailure()) return Result.ConvertResultToReturnType<bool>(rc);
+        if (res.IsFailure()) return Result.ConvertResultToReturnType<bool>(res);
 
         Assert.SdkEqual(Unsafe.SizeOf<bool>(), bytesWritten);
 
@@ -598,8 +598,8 @@ internal static class GameCardService
         ref SharedRef<IEventNotifier> outEventNotifier)
     {
         using var storageDeviceManager = new SharedRef<IStorageDeviceManager>();
-        Result rc = service.GetGameCardManager(ref storageDeviceManager.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardManager(ref storageDeviceManager.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         return storageDeviceManager.Get.OpenDetectionEvent(ref outEventNotifier);
     }
@@ -607,8 +607,8 @@ internal static class GameCardService
     public static Result SimulateGameCardDetectionEventSignaled(this StorageService service)
     {
         using var gcOperator = new SharedRef<IStorageDeviceOperator>();
-        Result rc = service.GetGameCardManagerOperator(ref gcOperator.Ref());
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = service.GetGameCardManagerOperator(ref gcOperator.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         int operationId = MakeOperationId(GameCardManagerOperationIdValue.SimulateDetectionEventSignaled);
 

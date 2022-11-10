@@ -461,12 +461,12 @@ public static class PathTools
 
     public static Result GetMountName(string path, out string mountName)
     {
-        Result rc = GetMountNameLength(path, out int length);
+        Result res = GetMountNameLength(path, out int length);
 
-        if (rc.IsFailure())
+        if (res.IsFailure())
         {
             UnsafeHelpers.SkipParamInit(out mountName);
-            return rc;
+            return res;
         }
 
         mountName = path.Substring(0, length);

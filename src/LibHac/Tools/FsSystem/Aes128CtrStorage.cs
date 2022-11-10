@@ -61,8 +61,8 @@ public class Aes128CtrStorage : SectorStorage
 
     public override Result Read(long offset, Span<byte> destination)
     {
-        Result rc = base.Read(offset, destination);
-        if (rc.IsFailure()) return rc;
+        Result res = base.Read(offset, destination);
+        if (res.IsFailure()) return res.Miss();
 
         lock (_locker)
         {
@@ -87,8 +87,8 @@ public class Aes128CtrStorage : SectorStorage
                 _decryptor.TransformBlock(encryptedSpan);
             }
 
-            Result rc = base.Write(offset, encryptedSpan);
-            if (rc.IsFailure()) return rc;
+            Result res = base.Write(offset, encryptedSpan);
+            if (res.IsFailure()) return res.Miss();
         }
         finally
         {

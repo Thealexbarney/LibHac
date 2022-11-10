@@ -19,8 +19,8 @@ public class PartitionFileSystemCore<T> : IFileSystem where T : unmanaged, IPart
 
     public Result Initialize(ref SharedRef<IStorage> baseStorage)
     {
-        Result rc = Initialize(baseStorage.Get);
-        if (rc.IsFailure()) return rc;
+        Result res = Initialize(baseStorage.Get);
+        if (res.IsFailure()) return res.Miss();
 
         _baseStorageShared.SetByMove(ref baseStorage);
         return Result.Success;
@@ -33,8 +33,8 @@ public class PartitionFileSystemCore<T> : IFileSystem where T : unmanaged, IPart
 
         _metaData = new PartitionFileSystemMetaCore<T>();
 
-        Result rc = _metaData.Initialize(baseStorage);
-        if (rc.IsFailure()) return rc;
+        Result res = _metaData.Initialize(baseStorage);
+        if (res.IsFailure()) return res.Miss();
 
         _baseStorage = baseStorage;
         _dataOffset = _metaData.Size;
@@ -145,8 +145,8 @@ public class PartitionFileSystemCore<T> : IFileSystem where T : unmanaged, IPart
         {
             UnsafeHelpers.SkipParamInit(out bytesRead);
 
-            Result rc = DryRead(out long bytesToRead, offset, destination.Length, in option, Mode);
-            if (rc.IsFailure()) return rc;
+            Result res = DryRead(out long bytesToRead, offset, destination.Length, in option, Mode);
+            if (res.IsFailure()) return res.Miss();
 
             bool hashNeeded = false;
             long fileStorageOffset = ParentFs._dataOffset + _entry.Offset;
@@ -164,7 +164,7 @@ public class PartitionFileSystemCore<T> : IFileSystem where T : unmanaged, IPart
 
             if (!hashNeeded)
             {
-                rc = ParentFs._baseStorage.Read(fileStorageOffset + offset, destination.Slice(0, (int)bytesToRead));
+                res = ParentFs._baseStorage.Read(fileStorageOffset + offset, destination.Slice(0, (int)bytesToRead));
             }
             else
             {
@@ -192,8 +192,8 @@ public class PartitionFileSystemCore<T> : IFileSystem where T : unmanaged, IPart
                 // If the area to read contains the entire hashed area
                 if (entry.HashOffset >= offset && hashEnd <= readEnd)
                 {
-                    rc = ParentFs._baseStorage.Read(storageOffset, destination.Slice(0, (int)bytesToRead));
-                    if (rc.IsFailure()) return rc;
+                    res = ParentFs._baseStorage.Read(storageOffset, destination.Slice(0, (int)bytesToRead));
+                    if (res.IsFailure()) return res.Miss();
 
                     Span<byte> hashedArea = destination.Slice((int)(entry.HashOffset - offset), entry.HashSize);
                     sha256.Update(hashedArea);
@@ -219,8 +219,8 @@ public class PartitionFileSystemCore<T> : IFileSystem where T : unmanaged, IPart
                         int toRead = Math.Min(hashRemaining, hashBufferSize);
                         Span<byte> hashBufferSliced = hashBuffer.Slice(0, toRead);
 
-                        rc = ParentFs._baseStorage.Read(readPos, hashBufferSliced);
-                        if (rc.IsFailure()) return rc;
+                        res = ParentFs._baseStorage.Read(readPos, hashBufferSliced);
+                        if (res.IsFailure()) return res.Miss();
 
                         sha256.Update(hashBufferSliced);
 
@@ -249,19 +249,19 @@ public class PartitionFileSystemCore<T> : IFileSystem where T : unmanaged, IPart
                     return ResultFs.Sha256PartitionHashVerificationFailed.Log();
                 }
 
-                rc = Result.Success;
+                res = Result.Success;
             }
 
-            if (rc.IsSuccess())
+            if (res.IsSuccess())
                 bytesRead = bytesToRead;
 
-            return rc;
+            return res;
         }
 
         protected override Result DoWrite(long offset, ReadOnlySpan<byte> source, in WriteOption option)
         {
-            Result rc = DryWrite(out bool isResizeNeeded, offset, source.Length, in option, Mode);
-            if (rc.IsFailure()) return rc;
+            Result res = DryWrite(out bool isResizeNeeded, offset, source.Length, in option, Mode);
+            if (res.IsFailure()) return res.Miss();
 
             if (isResizeNeeded)
                 return ResultFs.UnsupportedWriteForPartitionFile.Log();

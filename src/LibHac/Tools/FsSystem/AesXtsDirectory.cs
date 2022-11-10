@@ -30,8 +30,8 @@ public class AesXtsDirectory : IDirectory
 
     protected override Result DoRead(out long entriesRead, Span<DirectoryEntry> entryBuffer)
     {
-        Result rc = _baseDirectory.Get.Read(out entriesRead, entryBuffer);
-        if (rc.IsFailure()) return rc;
+        Result res = _baseDirectory.Get.Read(out entriesRead, entryBuffer);
+        if (res.IsFailure()) return res.Miss();
 
         for (int i = 0; i < entriesRead; i++)
         {
@@ -73,8 +73,8 @@ public class AesXtsDirectory : IDirectory
         try
         {
             using var file = new UniqueRef<IFile>();
-            Result rc = _baseFileSystem.OpenFile(ref file.Ref(), path, OpenMode.Read);
-            if (rc.IsFailure()) return 0;
+            Result res = _baseFileSystem.OpenFile(ref file.Ref(), path, OpenMode.Read);
+            if (res.IsFailure()) return 0;
 
             uint magic = 0;
             long fileSize = 0;

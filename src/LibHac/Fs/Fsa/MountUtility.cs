@@ -124,8 +124,8 @@ public static class MountUtility
             return ResultFs.NotMounted.Log();
         }
 
-        Result rc = GetMountNameAndSubPath(out MountName mountName, out subPath, path);
-        if (rc.IsFailure()) return rc;
+        Result res = GetMountNameAndSubPath(out MountName mountName, out subPath, path);
+        if (res.IsFailure()) return res.Miss();
 
         return fs.Find(out fileSystem, new U8Span(mountName.Name));
     }
@@ -157,8 +157,8 @@ public static class MountUtility
 
     public static Result Unmount(this FileSystemClientImpl fs, U8Span mountName)
     {
-        Result rc = fs.Find(out FileSystemAccessor fileSystem, mountName);
-        if (rc.IsFailure()) return rc;
+        Result res = fs.Find(out FileSystemAccessor fileSystem, mountName);
+        if (res.IsFailure()) return res.Miss();
 
         if (fileSystem.IsFileDataCacheAttachable())
         {
@@ -178,11 +178,11 @@ public static class MountUtility
     {
         UnsafeHelpers.SkipParamInit(out isMounted);
 
-        Result rc = fs.Find(out _, mountName);
-        if (rc.IsFailure())
+        Result res = fs.Find(out _, mountName);
+        if (res.IsFailure())
         {
-            if (!ResultFs.NotMounted.Includes(rc))
-                return rc;
+            if (!ResultFs.NotMounted.Includes(res))
+                return res;
 
             isMounted = false;
         }
@@ -196,52 +196,52 @@ public static class MountUtility
 
     public static void Unmount(this FileSystemClient fs, U8Span mountName)
     {
-        Result rc;
+        Result res;
         Span<byte> logBuffer = stackalloc byte[0x30];
 
         if (fs.Impl.IsEnabledAccessLog() && fs.Impl.IsEnabledFileSystemAccessorAccessLog(mountName))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = fs.Impl.Unmount(mountName);
+            res = fs.Impl.Unmount(mountName);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
             sb.Append(LogName).Append(mountName).Append((byte)'"');
 
-            fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+            fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(sb.Buffer));
         }
         else
         {
-            rc = fs.Impl.Unmount(mountName);
+            res = fs.Impl.Unmount(mountName);
         }
-        fs.Impl.LogResultErrorMessage(rc);
-        Abort.DoAbortUnless(rc.IsSuccess());
+        fs.Impl.LogResultErrorMessage(res);
+        Abort.DoAbortUnless(res.IsSuccess());
     }
 
     public static bool IsMounted(this FileSystemClient fs, U8Span mountName)
     {
-        Result rc;
+        Result res;
         bool isMounted;
         Span<byte> logBuffer = stackalloc byte[0x30];
 
         if (fs.Impl.IsEnabledAccessLog() && fs.Impl.IsEnabledFileSystemAccessorAccessLog(mountName))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = fs.Impl.IsMounted(out isMounted, mountName);
+            res = fs.Impl.IsMounted(out isMounted, mountName);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
             ReadOnlySpan<byte> boolString = AccessLogImpl.ConvertFromBoolToAccessLogBooleanValue(isMounted);
             sb.Append(LogName).Append(mountName).Append(LogIsMounted).Append(boolString).Append((byte)'"');
 
-            fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+            fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(sb.Buffer));
         }
         else
         {
-            rc = fs.Impl.IsMounted(out isMounted, mountName);
+            res = fs.Impl.IsMounted(out isMounted, mountName);
         }
-        fs.Impl.LogResultErrorMessage(rc);
-        Abort.DoAbortUnless(rc.IsSuccess());
+        fs.Impl.LogResultErrorMessage(res);
+        Abort.DoAbortUnless(res.IsSuccess());
 
         return isMounted;
     }
@@ -249,33 +249,33 @@ public static class MountUtility
     public static Result ConvertToFsCommonPath(this FileSystemClient fs, U8SpanMutable commonPathBuffer,
         U8Span path)
     {
-        Result rc;
+        Result res;
 
         if (commonPathBuffer.IsNull())
         {
-            rc = ResultFs.NullptrArgument.Value;
-            fs.Impl.AbortIfNeeded(rc);
-            return rc;
+            res = ResultFs.NullptrArgument.Value;
+            fs.Impl.AbortIfNeeded(res);
+            return res;
         }
 
         if (path.IsNull())
         {
-            rc = ResultFs.NullptrArgument.Value;
-            fs.Impl.AbortIfNeeded(rc);
-            return rc;
+            res = ResultFs.NullptrArgument.Value;
+            fs.Impl.AbortIfNeeded(res);
+            return res;
         }
 
-        rc = GetMountNameAndSubPath(out MountName mountName, out U8Span subPath, path);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc;
+        res = GetMountNameAndSubPath(out MountName mountName, out U8Span subPath, path);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = fs.Impl.Find(out FileSystemAccessor fileSystem, new U8Span(mountName.Name));
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc;
+        res = fs.Impl.Find(out FileSystemAccessor fileSystem, new U8Span(mountName.Name));
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = fileSystem.GetCommonMountName(commonPathBuffer.Value);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc;
+        res = fileSystem.GetCommonMountName(commonPathBuffer.Value);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         int mountNameLength = StringUtils.GetLength(commonPathBuffer);
         int commonPathLength = StringUtils.GetLength(subPath);

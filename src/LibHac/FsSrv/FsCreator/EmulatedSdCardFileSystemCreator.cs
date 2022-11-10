@@ -58,19 +58,19 @@ public class EmulatedSdCardFileSystemCreator : ISdCardProxyFileSystemCreator, ID
         string path = _path ?? DefaultPath;
 
         using var sdCardPath = new Path();
-        Result rc = sdCardPath.Initialize(StringUtils.StringToUtf8(path));
-        if (rc.IsFailure()) return rc;
+        Result res = sdCardPath.Initialize(StringUtils.StringToUtf8(path));
+        if (res.IsFailure()) return res.Miss();
 
         var pathFlags = new PathFlags();
         pathFlags.AllowEmptyPath();
-        rc = sdCardPath.Normalize(pathFlags);
-        if (rc.IsFailure()) return rc;
+        res = sdCardPath.Normalize(pathFlags);
+        if (res.IsFailure()) return res.Miss();
 
         // Todo: Add ProxyFileSystem?
 
         using SharedRef<IFileSystem> fileSystem = SharedRef<IFileSystem>.CreateCopy(in _rootFileSystem);
-        rc = Utility.WrapSubDirectory(ref _sdCardFileSystem, ref fileSystem.Ref(), in sdCardPath, true);
-        if (rc.IsFailure()) return rc;
+        res = Utility.WrapSubDirectory(ref _sdCardFileSystem, ref fileSystem.Ref(), in sdCardPath, true);
+        if (res.IsFailure()) return res.Miss();
 
         outFileSystem.SetByCopy(in _sdCardFileSystem);
 

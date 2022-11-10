@@ -48,10 +48,10 @@ public class DirectorySaveDataFileSystemTests : CommittableIFileSystemTests
         FileSystemClient fsClient)
     {
         var obj = new DirectorySaveDataFileSystem(baseFileSystem, fsClient);
-        Result rc = obj.Initialize(isJournalingSupported, isMultiCommitSupported, isJournalingEnabled, timeStampGetter,
+        Result res = obj.Initialize(isJournalingSupported, isMultiCommitSupported, isJournalingEnabled, timeStampGetter,
             randomGenerator);
 
-        if (rc.IsSuccess())
+        if (res.IsSuccess())
         {
             created = obj;
             return Result.Success;
@@ -59,7 +59,7 @@ public class DirectorySaveDataFileSystemTests : CommittableIFileSystemTests
 
         obj.Dispose();
         UnsafeHelpers.SkipParamInit(out created);
-        return rc;
+        return res;
     }
 
     public static Result CreateDirSaveFs(out DirectorySaveDataFileSystem created, IFileSystem baseFileSystem,
@@ -536,18 +536,18 @@ public class DirectorySaveDataFileSystemTests : CommittableIFileSystemTests
     {
         fileSystem.DeleteFile(path).IgnoreResult();
 
-        Result rc = fileSystem.CreateFile(path, Unsafe.SizeOf<SaveDataExtraData>());
-        if (rc.IsFailure()) return rc;
+        Result res = fileSystem.CreateFile(path, Unsafe.SizeOf<SaveDataExtraData>());
+        if (res.IsFailure()) return res.Miss();
 
         var extraData = new SaveDataExtraData();
         extraData.DataSize = saveDataSize;
 
         using var file = new UniqueRef<IFile>();
-        rc = fileSystem.OpenFile(ref file.Ref(), path, OpenMode.ReadWrite);
-        if (rc.IsFailure()) return rc;
+        res = fileSystem.OpenFile(ref file.Ref(), path, OpenMode.ReadWrite);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = file.Get.Write(0, SpanHelpers.AsByteSpan(ref extraData), WriteOption.Flush);
-        if (rc.IsFailure()) return rc;
+        res = file.Get.Write(0, SpanHelpers.AsByteSpan(ref extraData), WriteOption.Flush);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }

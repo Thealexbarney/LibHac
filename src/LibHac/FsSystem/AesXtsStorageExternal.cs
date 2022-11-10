@@ -85,8 +85,8 @@ public class AesXtsStorageExternal : IStorage
             return ResultFs.InvalidArgument.Log();
 
         // Read the encrypted data.
-        Result rc = _baseStorage.Read(offset, destination);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _baseStorage.Read(offset, destination);
+        if (res.IsFailure()) return res.Miss();
 
         // Temporarily increase our thread priority while decrypting.
         using var changePriority = new ScopedThreadPriorityChanger(1, ScopedThreadPriorityChanger.Mode.Relative);
@@ -115,8 +115,8 @@ public class AesXtsStorageExternal : IStorage
                 Span<byte> decryptionBuffer = tmpBuffer.GetBuffer().Slice(0, (int)_blockSize);
 
                 // Decrypt and copy the partial block to the output buffer.
-                rc = _decryptFunction(decryptionBuffer, _key[0], _key[1], counter, decryptionBuffer);
-                if (rc.IsFailure()) return rc.Miss();
+                res = _decryptFunction(decryptionBuffer, _key[0], _key[1], counter, decryptionBuffer);
+                if (res.IsFailure()) return res.Miss();
 
                 tmpBuffer.GetBuffer().Slice(skipSize, dataSize).CopyTo(destination);
             }
@@ -134,8 +134,8 @@ public class AesXtsStorageExternal : IStorage
         {
             Span<byte> currentBlock = currentOutput.Slice(0, Math.Min((int)_blockSize, remainingSize));
 
-            rc = _decryptFunction(currentBlock, _key[0], _key[1], counter, currentBlock);
-            if (rc.IsFailure()) return rc.Miss();
+            res = _decryptFunction(currentBlock, _key[0], _key[1], counter, currentBlock);
+            if (res.IsFailure()) return res.Miss();
 
             remainingSize -= currentBlock.Length;
             currentOutput = currentBlock.Slice(currentBlock.Length);
@@ -148,7 +148,7 @@ public class AesXtsStorageExternal : IStorage
 
     public override Result Write(long offset, ReadOnlySpan<byte> source)
     {
-        Result rc;
+        Result res;
 
         // Allow zero-size writes.
         if (source.Length == 0)
@@ -199,11 +199,11 @@ public class AesXtsStorageExternal : IStorage
                 source.Slice(0, dataSize).CopyTo(tmpBuffer.GetBuffer().Slice(skipSize, dataSize));
                 Span<byte> encryptionBuffer = tmpBuffer.GetBuffer().Slice(0, (int)_blockSize);
 
-                rc = _encryptFunction(encryptionBuffer, _key[0], _key[1], counter, encryptionBuffer);
-                if (rc.IsFailure()) return rc.Miss();
+                res = _encryptFunction(encryptionBuffer, _key[0], _key[1], counter, encryptionBuffer);
+                if (res.IsFailure()) return res.Miss();
 
-                rc = _baseStorage.Write(offset, tmpBuffer.GetBuffer().Slice(skipSize, dataSize));
-                if (rc.IsFailure()) return rc.Miss();
+                res = _baseStorage.Write(offset, tmpBuffer.GetBuffer().Slice(skipSize, dataSize));
+                if (res.IsFailure()) return res.Miss();
             }
 
             Utility.AddCounter(counter, 1);
@@ -237,8 +237,8 @@ public class AesXtsStorageExternal : IStorage
                         ? pooledBuffer.GetBuffer().Slice(encryptOffset, currentSize)
                         : MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(encryptSource), encryptSource.Length);
 
-                    rc = _encryptFunction(encryptDest, _key[0], _key[1], counter, encryptSource);
-                    if (rc.IsFailure()) return rc.Miss();
+                    res = _encryptFunction(encryptDest, _key[0], _key[1], counter, encryptSource);
+                    if (res.IsFailure()) return res.Miss();
 
                     Utility.AddCounter(counter, 1);
 
@@ -252,8 +252,8 @@ public class AesXtsStorageExternal : IStorage
                 ? pooledBuffer.GetBuffer().Slice(0, writeSize)
                 : source.Slice(processedSize, writeSize);
 
-            rc = _baseStorage.Write(currentOffset, writeBuffer);
-            if (rc.IsFailure()) return rc.Miss();
+            res = _baseStorage.Write(currentOffset, writeBuffer);
+            if (res.IsFailure()) return res.Miss();
 
             // Advance.
             currentOffset += writeSize;
@@ -296,8 +296,8 @@ public class AesXtsStorageExternal : IStorage
                 return ResultFs.InvalidArgument.Log();
         }
 
-        Result rc = _baseStorage.OperateRange(outBuffer, operationId, offset, size, inBuffer);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = _baseStorage.OperateRange(outBuffer, operationId, offset, size, inBuffer);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }

@@ -77,8 +77,8 @@ internal ref struct KeyValueArchiveBufferReader
         // Read and validate header.
         var header = new KeyValueArchiveHeader();
 
-        Result rc = Read(SpanHelpers.AsByteSpan(ref header));
-        if (rc.IsFailure()) return rc;
+        Result res = Read(SpanHelpers.AsByteSpan(ref header));
+        if (res.IsFailure()) return res.Miss();
 
         if (!header.IsValid())
             return ResultKvdb.InvalidKeyValue.Log();
@@ -97,8 +97,8 @@ internal ref struct KeyValueArchiveBufferReader
         // Peek the next entry header.
         Unsafe.SkipInit(out KeyValueArchiveEntryHeader header);
 
-        Result rc = Peek(SpanHelpers.AsByteSpan(ref header));
-        if (rc.IsFailure()) return rc;
+        Result res = Peek(SpanHelpers.AsByteSpan(ref header));
+        if (res.IsFailure()) return res.Miss();
 
         if (!header.IsValid())
             return ResultKvdb.InvalidKeyValue.Log();
@@ -117,8 +117,8 @@ internal ref struct KeyValueArchiveBufferReader
         // Read the next entry header.
         Unsafe.SkipInit(out KeyValueArchiveEntryHeader header);
 
-        Result rc = Read(SpanHelpers.AsByteSpan(ref header));
-        if (rc.IsFailure()) return rc;
+        Result res = Read(SpanHelpers.AsByteSpan(ref header));
+        if (res.IsFailure()) return res.Miss();
 
         if (!header.IsValid())
             return ResultKvdb.InvalidKeyValue.Log();
@@ -127,11 +127,11 @@ internal ref struct KeyValueArchiveBufferReader
         Assert.SdkEqual(keyBuffer.Length, header.KeySize);
         Assert.SdkEqual(valueBuffer.Length, header.ValueSize);
 
-        rc = Read(keyBuffer);
-        if (rc.IsFailure()) return rc;
+        res = Read(keyBuffer);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = Read(valueBuffer);
-        if (rc.IsFailure()) return rc;
+        res = Read(valueBuffer);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -151,8 +151,8 @@ internal ref struct KeyValueArchiveBufferReader
 
     private Result Read(Span<byte> destBuffer)
     {
-        Result rc = Peek(destBuffer);
-        if (rc.IsFailure()) return rc;
+        Result res = Peek(destBuffer);
+        if (res.IsFailure()) return res.Miss();
 
         _offset += destBuffer.Length;
         return Result.Success;

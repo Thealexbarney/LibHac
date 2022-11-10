@@ -38,11 +38,11 @@ public static class ApplicationSaveDataManagement
         // ReSharper disable HeuristicUnreachableCode
 
         // Get the current save data size
-        Result rc = fs.Impl.GetSaveDataAvailableSize(out long availableSize, spaceId, saveDataId);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fs.Impl.GetSaveDataAvailableSize(out long availableSize, spaceId, saveDataId);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = fs.Impl.GetSaveDataJournalSize(out long journalSize, spaceId, saveDataId);
-        if (rc.IsFailure()) return rc.Miss();
+        res = fs.Impl.GetSaveDataJournalSize(out long journalSize, spaceId, saveDataId);
+        if (res.IsFailure()) return res.Miss();
 
         // Check if the save data needs to be extended
         if (availableSize < saveDataSize || journalSize < saveDataJournalSize)
@@ -57,18 +57,18 @@ public static class ApplicationSaveDataManagement
             long newSaveDataSize = Math.Max(saveDataSize, availableSize);
             long newSaveDataJournalSize = Math.Max(saveDataJournalSize, journalSize);
 
-            rc = fs.Impl.ExtendSaveData(spaceId, saveDataId, newSaveDataSize, newSaveDataJournalSize);
+            res = fs.Impl.ExtendSaveData(spaceId, saveDataId, newSaveDataSize, newSaveDataJournalSize);
 
-            if (rc.IsFailure())
+            if (res.IsFailure())
             {
-                if (ResultFs.UsableSpaceNotEnough.Includes(rc))
+                if (ResultFs.UsableSpaceNotEnough.Includes(res))
                 {
                     // Calculate how much space we need to extend the save data
-                    rc = fs.QuerySaveDataTotalSize(out long currentSaveDataTotalSize, availableSize, journalSize);
-                    if (rc.IsFailure()) return rc.Miss();
+                    res = fs.QuerySaveDataTotalSize(out long currentSaveDataTotalSize, availableSize, journalSize);
+                    if (res.IsFailure()) return res.Miss();
 
-                    rc = fs.QuerySaveDataTotalSize(out long newSaveDataTotalSize, newSaveDataSize, newSaveDataJournalSize);
-                    if (rc.IsFailure()) return rc.Miss();
+                    res = fs.QuerySaveDataTotalSize(out long newSaveDataTotalSize, newSaveDataSize, newSaveDataJournalSize);
+                    if (res.IsFailure()) return res.Miss();
 
                     long newSaveDataSizeDifference = RoundUpOccupationSize(newSaveDataTotalSize) -
                                                      RoundUpOccupationSize(currentSaveDataTotalSize);
@@ -80,7 +80,7 @@ public static class ApplicationSaveDataManagement
                     return ResultFs.UsableSpaceNotEnough.Log();
                 }
 
-                return rc.Miss();
+                return res.Miss();
             }
         }
 
@@ -92,21 +92,21 @@ public static class ApplicationSaveDataManagement
     private static Result CreateSaveData(FileSystemClient fs, ref long inOutRequiredSize, Func<Result> createFunc,
         long saveDataSize, long saveDataJournalSize, long saveDataBaseSize)
     {
-        Result rc = createFunc();
+        Result res = createFunc();
 
-        if (rc.IsSuccess())
+        if (res.IsSuccess())
             return Result.Success;
 
-        if (ResultFs.UsableSpaceNotEnough.Includes(rc))
+        if (ResultFs.UsableSpaceNotEnough.Includes(res))
         {
-            rc = fs.QuerySaveDataTotalSize(out long saveDataTotalSize, saveDataSize, saveDataJournalSize);
-            if (rc.IsFailure()) return rc;
+            res = fs.QuerySaveDataTotalSize(out long saveDataTotalSize, saveDataSize, saveDataJournalSize);
+            if (res.IsFailure()) return res.Miss();
 
             inOutRequiredSize += RoundUpOccupationSize(saveDataTotalSize) + saveDataBaseSize;
         }
-        else if (!ResultFs.PathAlreadyExists.Includes(rc))
+        else if (!ResultFs.PathAlreadyExists.Includes(res))
         {
-            return rc.Miss();
+            return res.Miss();
         }
 
         return Result.Success;
@@ -116,30 +116,30 @@ public static class ApplicationSaveDataManagement
         in SaveDataFilter filter, Func<Result> createFunc, long saveDataSize, long saveDataJournalSize,
         long saveDataBaseSize)
     {
-        Result rc = fs.FindSaveDataWithFilter(out SaveDataInfo info, SaveDataSpaceId.User, in filter);
+        Result res = fs.FindSaveDataWithFilter(out SaveDataInfo info, SaveDataSpaceId.User, in filter);
 
-        if (rc.IsFailure())
+        if (res.IsFailure())
         {
-            if (ResultFs.TargetNotFound.Includes(rc))
+            if (ResultFs.TargetNotFound.Includes(res))
             {
-                rc = CreateSaveData(fs, ref inOutRequiredSize, createFunc, saveDataSize, saveDataJournalSize,
+                res = CreateSaveData(fs, ref inOutRequiredSize, createFunc, saveDataSize, saveDataJournalSize,
                     saveDataBaseSize);
-                if (rc.IsFailure()) return rc.Miss();
+                if (res.IsFailure()) return res.Miss();
 
                 return Result.Success;
             }
 
-            return rc.Miss();
+            return res.Miss();
         }
 
         long requiredSize = 0;
-        rc = ExtendSaveDataIfNeeded(fs, ref requiredSize, SaveDataSpaceId.User, info.SaveDataId, saveDataSize,
+        res = ExtendSaveDataIfNeeded(fs, ref requiredSize, SaveDataSpaceId.User, info.SaveDataId, saveDataSize,
             saveDataJournalSize);
 
-        if (rc.IsFailure())
+        if (res.IsFailure())
         {
-            if (!ResultFs.UsableSpaceNotEnough.Includes(rc))
-                return rc.Miss();
+            if (!ResultFs.UsableSpaceNotEnough.Includes(res))
+                return res.Miss();
 
             inOutRequiredSize += requiredSize;
         }
@@ -210,15 +210,15 @@ public static class ApplicationSaveDataManagement
 
         if (bcatDeliveryCacheStorageSize > 0)
         {
-            Result rc = SaveDataFilter.Make(out SaveDataFilter filter, programId: default, SaveDataType.Bcat,
+            Result res = SaveDataFilter.Make(out SaveDataFilter filter, programId: default, SaveDataType.Bcat,
                 userId: default, saveDataId: default, index: default);
-            if (rc.IsFailure()) return rc.Miss();
+            if (res.IsFailure()) return res.Miss();
 
             Result CreateBcatStorageFunc() => fs.CreateBcatSaveData(applicationId, bcatDeliveryCacheStorageSize);
 
-            rc = EnsureAndExtendSaveData(fs, ref requiredSize, in filter, CreateBcatStorageFunc,
+            res = EnsureAndExtendSaveData(fs, ref requiredSize, in filter, CreateBcatStorageFunc,
                 bcatDeliveryCacheStorageSize, bcatDeliveryCacheJournalSize, 0x4000);
-            if (rc.IsFailure()) return rc.Miss();
+            if (res.IsFailure()) return res.Miss();
         }
 
         if (requiredSize == 0)
@@ -235,12 +235,12 @@ public static class ApplicationSaveDataManagement
         Ncm.ApplicationId applicationId)
     {
         UnsafeHelpers.SkipParamInit(out targetMedia);
-        Result rc;
+        Result res;
 
         if (fs.IsSdCardAccessible())
         {
-            rc = DoesCacheStorageExist(out bool existsOnSd, SaveDataSpaceId.SdUser, fs, applicationId);
-            if (rc.IsFailure()) return rc.Miss();
+            res = DoesCacheStorageExist(out bool existsOnSd, SaveDataSpaceId.SdUser, fs, applicationId);
+            if (res.IsFailure()) return res.Miss();
 
             if (existsOnSd)
             {
@@ -249,8 +249,8 @@ public static class ApplicationSaveDataManagement
             }
         }
 
-        rc = DoesCacheStorageExist(out bool existsOnNand, SaveDataSpaceId.User, fs, applicationId);
-        if (rc.IsFailure()) return rc.Miss();
+        res = DoesCacheStorageExist(out bool existsOnNand, SaveDataSpaceId.User, fs, applicationId);
+        if (res.IsFailure()) return res.Miss();
 
         targetMedia = existsOnNand ? CacheStorageTargetMedia.Nand : CacheStorageTargetMedia.None;
         return Result.Success;
@@ -262,16 +262,16 @@ public static class ApplicationSaveDataManagement
 
             bool doesStorageExist = true;
 
-            Result rc = SaveDataFilter.Make(out SaveDataFilter filter, applicationId.Value, SaveDataType.Cache,
+            Result res = SaveDataFilter.Make(out SaveDataFilter filter, applicationId.Value, SaveDataType.Cache,
                 userId: default, saveDataId: default, index: default);
-            if (rc.IsFailure()) return rc.Miss();
+            if (res.IsFailure()) return res.Miss();
 
-            rc = fs.Impl.FindSaveDataWithFilter(out SaveDataInfo _, spaceId, in filter);
+            res = fs.Impl.FindSaveDataWithFilter(out SaveDataInfo _, spaceId, in filter);
 
-            if (rc.IsFailure())
+            if (res.IsFailure())
             {
-                if (!ResultFs.TargetNotFound.Includes(rc))
-                    return rc.Miss();
+                if (!ResultFs.TargetNotFound.Includes(res))
+                    return res.Miss();
 
                 doesStorageExist = false;
             }
@@ -287,26 +287,26 @@ public static class ApplicationSaveDataManagement
     {
         long requiredSize = 0;
 
-        Result rc = SaveDataFilter.Make(out SaveDataFilter filter, applicationId.Value, SaveDataType.Cache,
+        Result res = SaveDataFilter.Make(out SaveDataFilter filter, applicationId.Value, SaveDataType.Cache,
             userId: default, saveDataId: default, index);
 
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         // Check if the cache storage already exists or not.
         bool doesStorageExist = true;
-        rc = fs.Impl.FindSaveDataWithFilter(out SaveDataInfo info, spaceId, in filter);
+        res = fs.Impl.FindSaveDataWithFilter(out SaveDataInfo info, spaceId, in filter);
 
-        if (rc.IsFailure())
+        if (res.IsFailure())
         {
-            if (ResultFs.TargetNotFound.Includes(rc))
+            if (ResultFs.TargetNotFound.Includes(res))
             {
                 doesStorageExist = false;
             }
             else
             {
-                fs.Impl.AbortIfNeeded(rc);
-                return rc.Miss();
+                fs.Impl.AbortIfNeeded(res);
+                return res.Miss();
             }
         }
 
@@ -315,32 +315,32 @@ public static class ApplicationSaveDataManagement
             // The cache storage already exists. Ensure it's large enough.
             if (!allowExisting)
             {
-                rc = ResultFs.AlreadyExists.Value;
-                fs.Impl.AbortIfNeeded(rc);
-                return rc.Miss();
+                res = ResultFs.AlreadyExists.Value;
+                fs.Impl.AbortIfNeeded(res);
+                return res.Miss();
             }
 
-            rc = ExtendSaveDataIfNeeded(fs, ref requiredSize, spaceId, info.SaveDataId, cacheStorageSize,
+            res = ExtendSaveDataIfNeeded(fs, ref requiredSize, spaceId, info.SaveDataId, cacheStorageSize,
                 cacheStorageJournalSize);
 
-            if (rc.IsFailure())
+            if (res.IsFailure())
             {
-                if (ResultFs.UsableSpaceNotEnough.Includes(rc))
+                if (ResultFs.UsableSpaceNotEnough.Includes(res))
                 {
                     // Don't return this error. If there's not enough space we return Success along with
                     // The amount of space required to create the cache storage.
                 }
-                else if (ResultFs.SaveDataExtending.Includes(rc))
+                else if (ResultFs.SaveDataExtending.Includes(res))
                 {
-                    rc = ResultFs.SaveDataCorrupted.LogConverted(rc);
-                    fs.Impl.AbortIfNeeded(rc);
-                    return rc.Miss();
+                    res = ResultFs.SaveDataCorrupted.LogConverted(res);
+                    fs.Impl.AbortIfNeeded(res);
+                    return res.Miss();
                 }
                 else
                 {
-                    rc.Miss();
-                    fs.Impl.AbortIfNeeded(rc);
-                    return rc;
+                    res.Miss();
+                    fs.Impl.AbortIfNeeded(res);
+                    return res;
                 }
             }
         }
@@ -350,11 +350,11 @@ public static class ApplicationSaveDataManagement
             Result CreateCacheFunc() => fs.CreateCacheStorage(applicationId, spaceId, saveDataOwnerId, index,
                 cacheStorageSize, cacheStorageJournalSize, SaveDataFlags.None);
 
-            rc = CreateSaveData(fs, ref requiredSize, CreateCacheFunc, cacheStorageSize, cacheStorageJournalSize,
+            res = CreateSaveData(fs, ref requiredSize, CreateCacheFunc, cacheStorageSize, cacheStorageJournalSize,
                 0x4000);
 
-            fs.Impl.AbortIfNeeded(rc);
-            if (rc.IsFailure()) return rc.Miss();
+            fs.Impl.AbortIfNeeded(res);
+            if (res.IsFailure()) return res.Miss();
         }
 
         outRequiredSize = requiredSize;
@@ -369,26 +369,26 @@ public static class ApplicationSaveDataManagement
         long requiredSize = 0;
 
         // Check if the cache storage already exists
-        Result rc = GetCacheStorageTargetMediaImpl(fs, out CacheStorageTargetMedia media, applicationId);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetCacheStorageTargetMediaImpl(fs, out CacheStorageTargetMedia media, applicationId);
+        if (res.IsFailure()) return res.Miss();
 
         if (media == CacheStorageTargetMedia.SdCard)
         {
             // If it exists on the SD card, ensure it's large enough.
             targetMedia = CacheStorageTargetMedia.SdCard;
 
-            rc = TryCreateCacheStorage(fs, ref requiredSize, SaveDataSpaceId.SdUser, applicationId, saveDataOwnerId,
+            res = TryCreateCacheStorage(fs, ref requiredSize, SaveDataSpaceId.SdUser, applicationId, saveDataOwnerId,
                 index, cacheStorageSize, cacheStorageJournalSize, allowExisting);
-            if (rc.IsFailure()) return rc.Miss();
+            if (res.IsFailure()) return res.Miss();
         }
         else if (media == CacheStorageTargetMedia.Nand)
         {
             // If it exists on the BIS, ensure it's large enough.
             targetMedia = CacheStorageTargetMedia.Nand;
 
-            rc = TryCreateCacheStorage(fs, ref requiredSize, SaveDataSpaceId.User, applicationId, saveDataOwnerId,
+            res = TryCreateCacheStorage(fs, ref requiredSize, SaveDataSpaceId.User, applicationId, saveDataOwnerId,
                 index, cacheStorageSize, cacheStorageJournalSize, allowExisting);
-            if (rc.IsFailure()) return rc.Miss();
+            if (res.IsFailure()) return res.Miss();
         }
         else
         {
@@ -401,9 +401,9 @@ public static class ApplicationSaveDataManagement
                 Result CreateStorageOnSdCard() => fs.CreateCacheStorage(applicationId, SaveDataSpaceId.SdUser,
                     saveDataOwnerId, index, cacheStorageSize, cacheStorageJournalSize, SaveDataFlags.None);
 
-                rc = CreateSaveData(fs, ref requiredSize, CreateStorageOnSdCard, cacheStorageSize, cacheStorageJournalSize,
+                res = CreateSaveData(fs, ref requiredSize, CreateStorageOnSdCard, cacheStorageSize, cacheStorageJournalSize,
                     0x4000);
-                if (rc.IsFailure()) return rc.Miss();
+                if (res.IsFailure()) return res.Miss();
 
                 // Don't use the SD card if it doesn't have enough space.
                 if (requiredSize != 0)
@@ -419,9 +419,9 @@ public static class ApplicationSaveDataManagement
                 Result CreateStorageOnNand() => fs.CreateCacheStorage(applicationId, SaveDataSpaceId.User, saveDataOwnerId,
                     index, cacheStorageSize, cacheStorageSize, SaveDataFlags.None);
 
-                rc = CreateSaveData(fs, ref requiredSize, CreateStorageOnNand, cacheStorageSize, cacheStorageJournalSize,
+                res = CreateSaveData(fs, ref requiredSize, CreateStorageOnNand, cacheStorageSize, cacheStorageJournalSize,
                     0x4000);
-                if (rc.IsFailure()) return rc.Miss();
+                if (res.IsFailure()) return res.Miss();
 
                 if (requiredSize != 0)
                     targetMedia = CacheStorageTargetMedia.None;
@@ -443,18 +443,18 @@ public static class ApplicationSaveDataManagement
 
         long requiredSize = 0;
 
-        Result rc = SaveDataFilter.Make(out SaveDataFilter filter, applicationId.Value, SaveDataType.Device,
+        Result res = SaveDataFilter.Make(out SaveDataFilter filter, applicationId.Value, SaveDataType.Device,
             userId: default, saveDataId: default, index: default);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         const SaveDataFlags flags = SaveDataFlags.None;
 
         Result CreateSave() =>
             fs.CreateDeviceSaveData(applicationId, applicationId.Value, saveDataSize, saveDataJournalSize, flags);
 
-        rc = EnsureAndExtendSaveData(fs.Fs, ref requiredSize, in filter, CreateSave, saveDataSize, saveDataJournalSize,
+        res = EnsureAndExtendSaveData(fs.Fs, ref requiredSize, in filter, CreateSave, saveDataSize, saveDataJournalSize,
             0x4000);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         outRequiredSize = requiredSize;
         return Result.Success;
@@ -463,9 +463,9 @@ public static class ApplicationSaveDataManagement
     public static Result GetCacheStorageTargetMedia(this FileSystemClient fs, out CacheStorageTargetMedia targetMedia,
         Ncm.ApplicationId applicationId)
     {
-        Result rc = GetCacheStorageTargetMediaImpl(fs, out targetMedia, applicationId);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = GetCacheStorageTargetMediaImpl(fs, out targetMedia, applicationId);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -476,11 +476,11 @@ public static class ApplicationSaveDataManagement
     {
         outRequiredSize = 0;
 
-        Result rc = EnsureApplicationCacheStorageImpl(fs, ref outRequiredSize, out targetMedia, applicationId,
+        Result res = EnsureApplicationCacheStorageImpl(fs, ref outRequiredSize, out targetMedia, applicationId,
             saveDataOwnerId, index, cacheStorageSize, cacheStorageJournalSize, allowExisting);
 
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -490,12 +490,12 @@ public static class ApplicationSaveDataManagement
     {
         outRequiredSize = 0;
 
-        Result rc = EnsureApplicationCacheStorageImpl(fs, ref outRequiredSize, out _, applicationId,
+        Result res = EnsureApplicationCacheStorageImpl(fs, ref outRequiredSize, out _, applicationId,
             controlProperty.SaveDataOwnerId, index: 0, controlProperty.CacheStorageSize,
             controlProperty.CacheStorageJournalSize, true);
 
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -509,12 +509,12 @@ public static class ApplicationSaveDataManagement
 
         if (controlProperty.CacheStorageSize > 0)
         {
-            Result rc = EnsureApplicationCacheStorageImpl(fs, ref outRequiredSize, out targetMedia, applicationId,
+            Result res = EnsureApplicationCacheStorageImpl(fs, ref outRequiredSize, out targetMedia, applicationId,
                 controlProperty.SaveDataOwnerId, index: 0, controlProperty.CacheStorageSize,
                 controlProperty.CacheStorageJournalSize, true);
 
-            fs.Impl.AbortIfNeeded(rc);
-            if (rc.IsFailure()) return rc.Miss();
+            fs.Impl.AbortIfNeeded(res);
+            if (res.IsFailure()) return res.Miss();
         }
 
         return Result.Success;
@@ -527,27 +527,27 @@ public static class ApplicationSaveDataManagement
     {
         UnsafeHelpers.SkipParamInit(out outRequiredSize, out targetMedia);
 
-        Result rc;
+        Result res;
 
         if (index > controlProperty.CacheStorageIndexMax)
         {
-            rc = ResultFs.CacheStorageIndexTooLarge.Value;
-            fs.Impl.AbortIfNeeded(rc);
-            return rc.Miss();
+            res = ResultFs.CacheStorageIndexTooLarge.Value;
+            fs.Impl.AbortIfNeeded(res);
+            return res.Miss();
         }
 
         if (cacheStorageSize + cacheStorageJournalSize > controlProperty.CacheStorageDataAndJournalSizeMax)
         {
-            rc = ResultFs.CacheStorageSizeTooLarge.Value;
-            fs.Impl.AbortIfNeeded(rc);
-            return rc.Miss();
+            res = ResultFs.CacheStorageSizeTooLarge.Value;
+            fs.Impl.AbortIfNeeded(res);
+            return res.Miss();
         }
 
-        rc = EnsureApplicationCacheStorageImpl(fs, ref outRequiredSize, out targetMedia, applicationId,
+        res = EnsureApplicationCacheStorageImpl(fs, ref outRequiredSize, out targetMedia, applicationId,
             controlProperty.SaveDataOwnerId, index, cacheStorageSize, cacheStorageJournalSize, false);
 
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -556,31 +556,31 @@ public static class ApplicationSaveDataManagement
     {
         while (true)
         {
-            Result rc = SaveDataFilter.Make(out SaveDataFilter filter, programId: default, SaveDataType.Temporary,
+            Result res = SaveDataFilter.Make(out SaveDataFilter filter, programId: default, SaveDataType.Temporary,
                 userId: default, saveDataId: default, index: default);
 
-            fs.Impl.AbortIfNeeded(rc);
-            if (rc.IsFailure()) return rc.Miss();
+            fs.Impl.AbortIfNeeded(res);
+            if (res.IsFailure()) return res.Miss();
 
             // Try to find any temporary save data.
-            rc = fs.Impl.FindSaveDataWithFilter(out SaveDataInfo info, SaveDataSpaceId.Temporary, in filter);
+            res = fs.Impl.FindSaveDataWithFilter(out SaveDataInfo info, SaveDataSpaceId.Temporary, in filter);
 
-            if (rc.IsFailure())
+            if (res.IsFailure())
             {
-                if (ResultFs.TargetNotFound.Includes(rc))
+                if (ResultFs.TargetNotFound.Includes(res))
                 {
                     // No more save data found. We're done cleaning.
                     return Result.Success;
                 }
 
-                fs.Impl.AbortIfNeeded(rc);
-                return rc.Miss();
+                fs.Impl.AbortIfNeeded(res);
+                return res.Miss();
             }
 
             // Delete the found save data.
-            rc = fs.Impl.DeleteSaveData(SaveDataSpaceId.Temporary, info.SaveDataId);
-            fs.Impl.AbortIfNeeded(rc);
-            if (rc.IsFailure()) return rc.Miss();
+            res = fs.Impl.DeleteSaveData(SaveDataSpaceId.Temporary, info.SaveDataId);
+            fs.Impl.AbortIfNeeded(res);
+            if (res.IsFailure()) return res.Miss();
         }
     }
 
@@ -589,11 +589,11 @@ public static class ApplicationSaveDataManagement
     {
         outRequiredSize = 0;
 
-        Result rc = EnsureApplicationBcatDeliveryCacheStorageImpl(fs, ref outRequiredSize, applicationId,
+        Result res = EnsureApplicationBcatDeliveryCacheStorageImpl(fs, ref outRequiredSize, applicationId,
             in controlProperty);
 
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -604,9 +604,9 @@ public static class ApplicationSaveDataManagement
         UnsafeHelpers.SkipParamInit(out outRequiredSize);
 
         using var prohibiter = new UniqueRef<SaveDataTransferProhibiterForCloudBackUp>();
-        Result rc = fs.Impl.OpenSaveDataTransferProhibiterForCloudBackUp(ref prohibiter.Ref(), applicationId);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fs.Impl.OpenSaveDataTransferProhibiterForCloudBackUp(ref prohibiter.Ref(), applicationId);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         long requiredSize = 0;
 
@@ -629,20 +629,20 @@ public static class ApplicationSaveDataManagement
             }
 
             UserId userId = Unsafe.As<Uid, UserId>(ref Unsafe.AsRef(in user));
-            rc = SaveDataFilter.Make(out SaveDataFilter filter, applicationId.Value, SaveDataType.Account, userId,
+            res = SaveDataFilter.Make(out SaveDataFilter filter, applicationId.Value, SaveDataType.Account, userId,
                 saveDataId: default, index: default);
 
-            fs.Impl.AbortIfNeeded(rc);
-            if (rc.IsFailure()) return rc.Miss();
+            fs.Impl.AbortIfNeeded(res);
+            if (res.IsFailure()) return res.Miss();
 
             long baseSize = RoundUpOccupationSize(new SaveDataMetaPolicy(SaveDataType.Account).GetSaveDataMetaSize()) +
                             0x8000;
 
-            rc = EnsureAndExtendSaveData(fs, ref requiredSize, in filter, CreateAccountSaveFunc, accountSaveDataSize,
+            res = EnsureAndExtendSaveData(fs, ref requiredSize, in filter, CreateAccountSaveFunc, accountSaveDataSize,
                 accountSaveJournalSize, baseSize);
 
-            fs.Impl.AbortIfNeeded(rc);
-            if (rc.IsFailure()) return rc.Miss();
+            fs.Impl.AbortIfNeeded(res);
+            if (res.IsFailure()) return res.Miss();
         }
 
         // Ensure the device save exists
@@ -651,35 +651,35 @@ public static class ApplicationSaveDataManagement
             Result CreateDeviceSaveFunc() => fs.Impl.CreateDeviceSaveData(applicationId, saveDataOwnerId,
                 deviceSaveDataSize, deviceSaveJournalSize, SaveDataFlags.None);
 
-            rc = SaveDataFilter.Make(out SaveDataFilter filter, applicationId.Value, SaveDataType.Device,
+            res = SaveDataFilter.Make(out SaveDataFilter filter, applicationId.Value, SaveDataType.Device,
                 userId: default, saveDataId: default, index: default);
 
-            fs.Impl.AbortIfNeeded(rc);
-            if (rc.IsFailure()) return rc.Miss();
+            fs.Impl.AbortIfNeeded(res);
+            if (res.IsFailure()) return res.Miss();
 
             long baseSize = RoundUpOccupationSize(new SaveDataMetaPolicy(SaveDataType.Device).GetSaveDataMetaSize()) +
                             0x8000;
 
             long requiredSizeForDeviceSaveData = 0;
-            rc = EnsureAndExtendSaveData(fs, ref requiredSizeForDeviceSaveData, in filter, CreateDeviceSaveFunc,
+            res = EnsureAndExtendSaveData(fs, ref requiredSizeForDeviceSaveData, in filter, CreateDeviceSaveFunc,
                 deviceSaveDataSize, deviceSaveJournalSize, baseSize);
 
-            fs.Impl.AbortIfNeeded(rc);
-            if (rc.IsFailure()) return rc.Miss();
+            fs.Impl.AbortIfNeeded(res);
+            if (res.IsFailure()) return res.Miss();
 
             if (requiredSizeForDeviceSaveData == 0)
             {
-                rc = fs.Impl.CreateDeviceSaveData(applicationId, saveDataOwnerId, deviceSaveDataSize,
+                res = fs.Impl.CreateDeviceSaveData(applicationId, saveDataOwnerId, deviceSaveDataSize,
                     deviceSaveJournalSize, SaveDataFlags.None);
 
-                if (rc.IsFailure())
+                if (res.IsFailure())
                 {
-                    if (ResultFs.PathAlreadyExists.Includes(rc))
+                    if (ResultFs.PathAlreadyExists.Includes(res))
                     {
                         // Nothing to do if the save already exists.
-                        rc.Catch().Handle();
+                        res.Catch().Handle();
                     }
-                    else if (ResultFs.UsableSpaceNotEnough.Includes(rc))
+                    else if (ResultFs.UsableSpaceNotEnough.Includes(res))
                     {
                         requiredSizeForDeviceSaveData +=
                             RoundUpOccupationSize(new SaveDataMetaPolicy(SaveDataType.Device).GetSaveDataMetaSize()) +
@@ -687,8 +687,8 @@ public static class ApplicationSaveDataManagement
                     }
                     else
                     {
-                        fs.Impl.AbortIfNeeded(rc);
-                        return rc.Miss();
+                        fs.Impl.AbortIfNeeded(res);
+                        return res.Miss();
                     }
                 }
             }
@@ -697,19 +697,19 @@ public static class ApplicationSaveDataManagement
         }
 
         long requiredSizeForBcat = 0;
-        rc = EnsureApplicationBcatDeliveryCacheStorageImpl(fs, ref requiredSizeForBcat, applicationId,
+        res = EnsureApplicationBcatDeliveryCacheStorageImpl(fs, ref requiredSizeForBcat, applicationId,
             in controlProperty);
 
-        if (rc.IsFailure())
+        if (res.IsFailure())
         {
-            if (ResultFs.UsableSpaceNotEnough.Includes(rc))
+            if (ResultFs.UsableSpaceNotEnough.Includes(res))
             {
                 requiredSize += requiredSizeForBcat;
             }
             else
             {
-                fs.Impl.AbortIfNeeded(rc);
-                return rc.Miss();
+                fs.Impl.AbortIfNeeded(res);
+                return res.Miss();
             }
         }
 
@@ -720,9 +720,9 @@ public static class ApplicationSaveDataManagement
             {
                 UnsafeHelpers.SkipParamInit(out requiredSize);
 
-                Result rc = fs.Impl.QuerySaveDataTotalSize(out long saveDataTotalSize,
+                Result res = fs.Impl.QuerySaveDataTotalSize(out long saveDataTotalSize,
                     controlProperty.TemporaryStorageSize, saveDataJournalSize: 0);
-                if (rc.IsFailure()) return rc.Miss();
+                if (res.IsFailure()) return res.Miss();
 
                 requiredSize = RoundUpOccupationSize(saveDataTotalSize) + 0x4000;
                 return Result.Success;
@@ -730,30 +730,30 @@ public static class ApplicationSaveDataManagement
 
             if (requiredSize == 0)
             {
-                rc = fs.Impl.CreateTemporaryStorage(applicationId, saveDataOwnerId,
+                res = fs.Impl.CreateTemporaryStorage(applicationId, saveDataOwnerId,
                     controlProperty.TemporaryStorageSize, SaveDataFlags.None);
 
-                if (rc.IsFailure())
+                if (res.IsFailure())
                 {
-                    if (ResultFs.UsableSpaceNotEnough.Includes(rc))
+                    if (ResultFs.UsableSpaceNotEnough.Includes(res))
                     {
-                        rc = CalculateRequiredSizeForTemporaryStorage(fs, out long temporaryStorageSize,
+                        res = CalculateRequiredSizeForTemporaryStorage(fs, out long temporaryStorageSize,
                             in controlProperty);
 
-                        fs.Impl.AbortIfNeeded(rc);
-                        if (rc.IsFailure()) return rc.Miss();
+                        fs.Impl.AbortIfNeeded(res);
+                        if (res.IsFailure()) return res.Miss();
 
                         requiredSize += temporaryStorageSize;
                     }
-                    else if (ResultFs.PathAlreadyExists.Includes(rc))
+                    else if (ResultFs.PathAlreadyExists.Includes(res))
                     {
                         // Nothing to do if the save already exists.
-                        rc.Catch().Handle();
+                        res.Catch().Handle();
                     }
                     else
                     {
-                        fs.Impl.AbortIfNeeded(rc);
-                        return rc.Miss();
+                        fs.Impl.AbortIfNeeded(res);
+                        return res.Miss();
                     }
                 }
             }
@@ -761,32 +761,32 @@ public static class ApplicationSaveDataManagement
             {
                 // If there was already insufficient space to create the previous saves, check if the temp
                 // save already exists instead of trying to create a new one.
-                rc = SaveDataFilter.Make(out SaveDataFilter filter, applicationId.Value, SaveDataType.Temporary,
+                res = SaveDataFilter.Make(out SaveDataFilter filter, applicationId.Value, SaveDataType.Temporary,
                     userId: default, saveDataId: default, index: default);
 
-                fs.Impl.AbortIfNeeded(rc);
-                if (rc.IsFailure()) return rc.Miss();
+                fs.Impl.AbortIfNeeded(res);
+                if (res.IsFailure()) return res.Miss();
 
                 // Check if the temporary save exists
-                rc = fs.Impl.FindSaveDataWithFilter(out SaveDataInfo _, SaveDataSpaceId.Temporary, in filter);
+                res = fs.Impl.FindSaveDataWithFilter(out SaveDataInfo _, SaveDataSpaceId.Temporary, in filter);
 
-                if (rc.IsFailure())
+                if (res.IsFailure())
                 {
-                    if (ResultFs.TargetNotFound.Includes(rc))
+                    if (ResultFs.TargetNotFound.Includes(res))
                     {
                         // If it doesn't exist, calculate the size required to create it
-                        rc = CalculateRequiredSizeForTemporaryStorage(fs, out long temporaryStorageSize,
+                        res = CalculateRequiredSizeForTemporaryStorage(fs, out long temporaryStorageSize,
                             in controlProperty);
 
-                        fs.Impl.AbortIfNeeded(rc);
-                        if (rc.IsFailure()) return rc.Miss();
+                        fs.Impl.AbortIfNeeded(res);
+                        if (res.IsFailure()) return res.Miss();
 
                         requiredSize += temporaryStorageSize;
                     }
                     else
                     {
-                        fs.Impl.AbortIfNeeded(rc);
-                        return rc.Miss();
+                        fs.Impl.AbortIfNeeded(res);
+                        return res.Miss();
                     }
                 }
             }
@@ -800,9 +800,9 @@ public static class ApplicationSaveDataManagement
 
         outRequiredSize = requiredSize;
 
-        rc = ResultFs.UsableSpaceNotEnough.Log();
-        fs.Impl.AbortIfNeeded(rc);
-        return rc;
+        res = ResultFs.UsableSpaceNotEnough.Log();
+        fs.Impl.AbortIfNeeded(res);
+        return res;
     }
 
     public static Result ExtendApplicationSaveData(this FileSystemClient fs, out long outRequiredSize,
@@ -811,40 +811,40 @@ public static class ApplicationSaveDataManagement
     {
         UnsafeHelpers.SkipParamInit(out outRequiredSize);
 
-        Result rc = CheckSaveDataType(type, in user);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = CheckSaveDataType(type, in user);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         UserId userId = Unsafe.As<Uid, UserId>(ref Unsafe.AsRef(in user));
-        rc = SaveDataFilter.Make(out SaveDataFilter filter, applicationId.Value, type, userId, saveDataId: default,
+        res = SaveDataFilter.Make(out SaveDataFilter filter, applicationId.Value, type, userId, saveDataId: default,
             index: default);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = fs.Impl.FindSaveDataWithFilter(out SaveDataInfo info, SaveDataSpaceId.User, in filter);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        res = fs.Impl.FindSaveDataWithFilter(out SaveDataInfo info, SaveDataSpaceId.User, in filter);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = CheckExtensionSizeUnderMax(type, in controlProperty, saveDataSize, saveDataJournalSize);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        res = CheckExtensionSizeUnderMax(type, in controlProperty, saveDataSize, saveDataJournalSize);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         long requiredSize = 0;
-        rc = ExtendSaveDataIfNeeded(fs, ref requiredSize, SaveDataSpaceId.User, info.SaveDataId, saveDataSize,
+        res = ExtendSaveDataIfNeeded(fs, ref requiredSize, SaveDataSpaceId.User, info.SaveDataId, saveDataSize,
             saveDataJournalSize);
 
-        if (rc.IsFailure())
+        if (res.IsFailure())
         {
-            if (ResultFs.UsableSpaceNotEnough.Includes(rc))
+            if (ResultFs.UsableSpaceNotEnough.Includes(res))
             {
                 outRequiredSize = requiredSize;
 
-                fs.Impl.AbortIfNeeded(rc);
-                return rc.Rethrow();
+                fs.Impl.AbortIfNeeded(res);
+                return res.Rethrow();
             }
 
-            fs.Impl.AbortIfNeeded(rc);
-            return rc.Miss();
+            fs.Impl.AbortIfNeeded(res);
+            return res.Miss();
         }
 
         return Result.Success;
@@ -855,27 +855,27 @@ public static class ApplicationSaveDataManagement
     {
         UnsafeHelpers.SkipParamInit(out outSaveDataSize, out outSaveDataJournalSize);
 
-        Result rc = CheckSaveDataType(type, in user);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = CheckSaveDataType(type, in user);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         UserId userId = Unsafe.As<Uid, UserId>(ref Unsafe.AsRef(in user));
-        rc = SaveDataFilter.Make(out SaveDataFilter filter, applicationId.Value, type, userId, saveDataId: default,
+        res = SaveDataFilter.Make(out SaveDataFilter filter, applicationId.Value, type, userId, saveDataId: default,
             index: default);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = fs.Impl.FindSaveDataWithFilter(out SaveDataInfo info, SaveDataSpaceId.User, in filter);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        res = fs.Impl.FindSaveDataWithFilter(out SaveDataInfo info, SaveDataSpaceId.User, in filter);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = fs.Impl.GetSaveDataAvailableSize(out long saveDataSize, info.SaveDataId);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        res = fs.Impl.GetSaveDataAvailableSize(out long saveDataSize, info.SaveDataId);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = fs.Impl.GetSaveDataJournalSize(out long saveDataJournalSize, info.SaveDataId);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        res = fs.Impl.GetSaveDataJournalSize(out long saveDataJournalSize, info.SaveDataId);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         outSaveDataSize = saveDataSize;
         outSaveDataJournalSize = saveDataJournalSize;

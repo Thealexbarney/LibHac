@@ -88,10 +88,10 @@ public class BucketTreeTests : IClassFixture<BucketTreeBuffers>
         {
             if (i != 0)
             {
-                Result rc = visitor.MoveNext();
+                Result res = visitor.MoveNext();
 
-                if (!rc.IsSuccess())
-                    Assert.Success(rc);
+                if (!res.IsSuccess())
+                    Assert.Success(res);
             }
 
             // These tests run about 4x slower if we let Assert.Equal check the values every time
@@ -127,10 +127,10 @@ public class BucketTreeTests : IClassFixture<BucketTreeBuffers>
         {
             if (i != entries.Length - 1)
             {
-                Result rc = visitor.MovePrevious();
+                Result res = visitor.MovePrevious();
 
-                if (!rc.IsSuccess())
-                    Assert.Success(rc);
+                if (!res.IsSuccess())
+                    Assert.Success(res);
             }
 
             if (visitor.CanMovePrevious() != (i != 0))

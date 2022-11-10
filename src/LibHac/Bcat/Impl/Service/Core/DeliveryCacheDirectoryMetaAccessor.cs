@@ -52,11 +52,11 @@ internal class DeliveryCacheDirectoryMetaAccessor
         {
             FileSystemClient fs = Server.GetFsClient();
 
-            Result rc = fs.OpenFile(out FileHandle handle, path, OpenMode.Read);
+            Result res = fs.OpenFile(out FileHandle handle, path, OpenMode.Read);
 
-            if (rc.IsFailure())
+            if (res.IsFailure())
             {
-                if (ResultFs.PathNotFound.Includes(rc))
+                if (ResultFs.PathNotFound.Includes(res))
                 {
                     if (allowMissingMetaFile)
                     {
@@ -64,10 +64,10 @@ internal class DeliveryCacheDirectoryMetaAccessor
                         return Result.Success;
                     }
 
-                    return ResultBcat.NotFound.LogConverted(rc);
+                    return ResultBcat.NotFound.LogConverted(res);
                 }
 
-                return rc;
+                return res;
             }
 
             try
@@ -76,16 +76,16 @@ internal class DeliveryCacheDirectoryMetaAccessor
                 int header = 0;
 
                 // Verify the header value
-                rc = fs.ReadFile(out long bytesRead, handle, 0, SpanHelpers.AsByteSpan(ref header));
-                if (rc.IsFailure()) return rc;
+                res = fs.ReadFile(out long bytesRead, handle, 0, SpanHelpers.AsByteSpan(ref header));
+                if (res.IsFailure()) return res.Miss();
 
                 if (bytesRead != sizeof(int) || header != MetaFileHeaderValue)
                     return ResultBcat.InvalidDeliveryCacheStorageFile.Log();
 
                 // Read all the directory entries
                 Span<byte> buffer = MemoryMarshal.Cast<DeliveryCacheDirectoryMetaEntry, byte>(Entries);
-                rc = fs.ReadFile(out bytesRead, handle, 4, buffer);
-                if (rc.IsFailure()) return rc;
+                res = fs.ReadFile(out bytesRead, handle, 4, buffer);
+                if (res.IsFailure()) return res.Miss();
 
                 Count = (int)((uint)bytesRead / Unsafe.SizeOf<DeliveryCacheDirectoryMetaEntry>());
 

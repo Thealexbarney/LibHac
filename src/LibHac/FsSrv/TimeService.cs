@@ -26,8 +26,8 @@ public readonly struct TimeService
     public Result SetCurrentPosixTimeWithTimeDifference(long currentTime, int timeDifference)
     {
         using var programRegistry = new ProgramRegistryImpl(_serviceImpl.FsServer);
-        Result rc = programRegistry.GetProgramInfo(out ProgramInfo programInfo, _processId);
-        if (rc.IsFailure()) return rc;
+        Result res = programRegistry.GetProgramInfo(out ProgramInfo programInfo, _processId);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.SetCurrentPosixTime))
             return ResultFs.PermissionDenied.Log();

@@ -16,8 +16,8 @@ public class ServiceManagerClient
     {
         using var service = new SharedRef<IDisposable>();
 
-        Result rc = Server.GetService(ref service.Ref(), ServiceName.Encode(name));
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = Server.GetService(ref service.Ref(), ServiceName.Encode(name));
+        if (res.IsFailure()) return res.Miss();
 
         if (serviceObject.TryCastSet(ref service.Ref()))
         {

@@ -138,8 +138,8 @@ internal class SaveDataInfoFilterReader : SaveDataInfoReaderImpl
         while (count < outInfo.Length)
         {
             Unsafe.SkipInit(out SaveDataInfo info);
-            Result rc = _reader.Get.Read(out long baseReadCount, OutBuffer.FromStruct(ref info));
-            if (rc.IsFailure()) return rc;
+            Result res = _reader.Get.Read(out long baseReadCount, OutBuffer.FromStruct(ref info));
+            if (res.IsFailure()) return res.Miss();
 
             if (baseReadCount == 0) break;
 

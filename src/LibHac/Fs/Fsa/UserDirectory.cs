@@ -22,12 +22,12 @@ public static class UserDirectory
     public static Result ReadDirectory(this FileSystemClient fs, out long entriesRead,
         Span<DirectoryEntry> entryBuffer, DirectoryHandle handle)
     {
-        Result rc;
+        Result res;
 
         if (fs.Impl.IsEnabledAccessLog() && fs.Impl.IsEnabledHandleAccessLog(handle))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = Get(handle).Read(out entriesRead, entryBuffer);
+            res = Get(handle).Read(out entriesRead, entryBuffer);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             Span<byte> buffer = stackalloc byte[0x50];
@@ -35,40 +35,40 @@ public static class UserDirectory
 
             sb.Append(LogEntryBufferCount).AppendFormat(entryBuffer.Length)
               .Append(LogEntryCount).AppendFormat(entriesRead);
-            fs.Impl.OutputAccessLog(rc, start, end, handle, new U8Span(sb.Buffer));
+            fs.Impl.OutputAccessLog(res, start, end, handle, new U8Span(sb.Buffer));
         }
         else
         {
-            rc = Get(handle).Read(out entriesRead, entryBuffer);
+            res = Get(handle).Read(out entriesRead, entryBuffer);
         }
 
-        fs.Impl.AbortIfNeeded(rc);
-        return rc;
+        fs.Impl.AbortIfNeeded(res);
+        return res;
     }
 
     public static Result GetDirectoryEntryCount(this FileSystemClient fs, out long count, DirectoryHandle handle)
     {
-        Result rc;
+        Result res;
 
         if (fs.Impl.IsEnabledAccessLog() && fs.Impl.IsEnabledHandleAccessLog(handle))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = Get(handle).GetEntryCount(out count);
+            res = Get(handle).GetEntryCount(out count);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             Span<byte> buffer = stackalloc byte[0x50];
             var sb = new U8StringBuilder(buffer, true);
 
             sb.Append(LogEntryCount).AppendFormat(count);
-            fs.Impl.OutputAccessLog(rc, start, end, handle, new U8Span(sb.Buffer));
+            fs.Impl.OutputAccessLog(res, start, end, handle, new U8Span(sb.Buffer));
         }
         else
         {
-            rc = Get(handle).GetEntryCount(out count);
+            res = Get(handle).GetEntryCount(out count);
         }
 
-        fs.Impl.AbortIfNeeded(rc);
-        return rc;
+        fs.Impl.AbortIfNeeded(res);
+        return res;
     }
 
     public static void CloseDirectory(this FileSystemClient fs, DirectoryHandle handle)

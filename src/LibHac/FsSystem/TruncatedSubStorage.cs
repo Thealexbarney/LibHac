@@ -21,8 +21,8 @@ public class TruncatedSubStorage : SubStorage
         if (destination.Length == 0)
             return Result.Success;
 
-        Result rc = BaseStorage.GetSize(out long baseStorageSize);
-        if (rc.IsFailure()) return rc;
+        Result res = BaseStorage.GetSize(out long baseStorageSize);
+        if (res.IsFailure()) return res.Miss();
 
         long availableSize = baseStorageSize - offset;
         long sizeToRead = Math.Min(destination.Length, availableSize);
@@ -35,8 +35,8 @@ public class TruncatedSubStorage : SubStorage
         if (source.Length == 0)
             return Result.Success;
 
-        Result rc = BaseStorage.GetSize(out long baseStorageSize);
-        if (rc.IsFailure()) return rc;
+        Result res = BaseStorage.GetSize(out long baseStorageSize);
+        if (res.IsFailure()) return res.Miss();
 
         long availableSize = baseStorageSize - offset;
         long sizeToWrite = Math.Min(source.Length, availableSize);

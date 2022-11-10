@@ -98,8 +98,8 @@ public class SparseStorage : IndirectStorage
 
         if (GetEntryTable().IsEmpty())
         {
-            Result rc = GetEntryTable().GetOffsets(out BucketTree.Offsets offsets);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = GetEntryTable().GetOffsets(out BucketTree.Offsets offsets);
+            if (res.IsFailure()) return res.Miss();
 
             if (!offsets.IsInclude(offset, destination.Length))
                 return ResultFs.OutOfRange.Log();
@@ -110,16 +110,16 @@ public class SparseStorage : IndirectStorage
         {
             var closure = new OperatePerEntryClosure { OutBuffer = destination, Offset = offset };
 
-            Result rc = OperatePerEntry(offset, destination.Length, enableContinuousReading: false, verifyEntryRanges: true, ref closure,
+            Result res = OperatePerEntry(offset, destination.Length, enableContinuousReading: false, verifyEntryRanges: true, ref closure,
                 static (ref ValueSubStorage storage, long physicalOffset, long virtualOffset, long size, ref OperatePerEntryClosure closure) =>
                 {
                     int bufferPosition = (int)(virtualOffset - closure.Offset);
-                    Result rc = storage.Read(physicalOffset, closure.OutBuffer.Slice(bufferPosition, (int)size));
-                    if (rc.IsFailure()) return rc.Miss();
+                    Result res = storage.Read(physicalOffset, closure.OutBuffer.Slice(bufferPosition, (int)size));
+                    if (res.IsFailure()) return res.Miss();
 
                     return Result.Success;
                 });
-            if (rc.IsFailure()) return rc.Miss();
+            if (res.IsFailure()) return res.Miss();
         }
 
         return Result.Success;

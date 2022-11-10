@@ -25,11 +25,11 @@ internal class ServiceCreator : IServiceCreator
     public Result CreateDeliveryCacheStorageService(ref SharedRef<IDeliveryCacheStorageService> outService,
         ulong processId)
     {
-        Result rc = Server.Hos.Arp.GetApplicationLaunchProperty(out ApplicationLaunchProperty launchProperty,
+        Result res = Server.Hos.Arp.GetApplicationLaunchProperty(out ApplicationLaunchProperty launchProperty,
             processId);
 
-        if (rc.IsFailure())
-            return ResultBcat.NotFound.LogConverted(rc);
+        if (res.IsFailure())
+            return ResultBcat.NotFound.LogConverted(res);
 
         return CreateDeliveryCacheStorageServiceImpl(ref outService, launchProperty.ApplicationId);
     }
@@ -46,8 +46,8 @@ internal class ServiceCreator : IServiceCreator
     private Result CreateDeliveryCacheStorageServiceImpl(ref SharedRef<IDeliveryCacheStorageService> outService,
         ApplicationId applicationId)
     {
-        Result rc = Server.GetStorageManager().Open(applicationId.Value);
-        if (rc.IsFailure()) return rc;
+        Result res = Server.GetStorageManager().Open(applicationId.Value);
+        if (res.IsFailure()) return res.Miss();
 
         // todo: Check if network account required
 

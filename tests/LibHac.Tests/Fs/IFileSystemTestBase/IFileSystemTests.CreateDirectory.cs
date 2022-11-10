@@ -24,9 +24,9 @@ public abstract partial class IFileSystemTests
 
         fs.CreateDirectory("/dir");
 
-        Result rc = fs.CreateDirectory("/dir");
+        Result res = fs.CreateDirectory("/dir");
 
-        Assert.Result(ResultFs.PathAlreadyExists, rc);
+        Assert.Result(ResultFs.PathAlreadyExists, res);
     }
 
     [Fact]
@@ -36,9 +36,9 @@ public abstract partial class IFileSystemTests
 
         fs.CreateFile("/file", 0, CreateFileOptions.None);
 
-        Result rc = fs.CreateDirectory("/file");
+        Result res = fs.CreateDirectory("/file");
 
-        Assert.Result(ResultFs.PathAlreadyExists, rc);
+        Assert.Result(ResultFs.PathAlreadyExists, res);
     }
 
     [Fact]
@@ -46,9 +46,9 @@ public abstract partial class IFileSystemTests
     {
         IFileSystem fs = CreateFileSystem();
 
-        Result rc = fs.CreateFile("/dir1/dir2", 0, CreateFileOptions.None);
+        Result res = fs.CreateFile("/dir1/dir2", 0, CreateFileOptions.None);
 
-        Assert.Result(ResultFs.PathNotFound, rc);
+        Assert.Result(ResultFs.PathNotFound, res);
     }
 
     [Fact]
@@ -57,9 +57,9 @@ public abstract partial class IFileSystemTests
         IFileSystem fs = CreateFileSystem();
 
         fs.CreateDirectory("/dir/");
-        Result rc = fs.GetEntryType(out DirectoryEntryType type, "/dir/");
+        Result res = fs.GetEntryType(out DirectoryEntryType type, "/dir/");
 
-        Assert.Success(rc);
+        Assert.Success(res);
         Assert.Equal(DirectoryEntryType.Directory, type);
     }
 
@@ -71,11 +71,11 @@ public abstract partial class IFileSystemTests
         fs.CreateDirectory("/dir1");
         fs.CreateDirectory("/dir2");
 
-        Result rc1 = fs.GetEntryType(out DirectoryEntryType type1, "/dir1");
-        Result rc2 = fs.GetEntryType(out DirectoryEntryType type2, "/dir2");
+        Result result1 = fs.GetEntryType(out DirectoryEntryType type1, "/dir1");
+        Result result2 = fs.GetEntryType(out DirectoryEntryType type2, "/dir2");
 
-        Assert.Success(rc1);
-        Assert.Success(rc2);
+        Assert.Success(result1);
+        Assert.Success(result2);
         Assert.Equal(DirectoryEntryType.Directory, type1);
         Assert.Equal(DirectoryEntryType.Directory, type2);
     }
@@ -91,11 +91,11 @@ public abstract partial class IFileSystemTests
         fs.CreateDirectory("/dir1/dir1a");
         fs.CreateDirectory("/dir2/dir2a");
 
-        Result rc1 = fs.GetEntryType(out DirectoryEntryType type1, "/dir1/dir1a");
-        Result rc2 = fs.GetEntryType(out DirectoryEntryType type2, "/dir2/dir2a");
+        Result result1 = fs.GetEntryType(out DirectoryEntryType type1, "/dir1/dir1a");
+        Result result2 = fs.GetEntryType(out DirectoryEntryType type2, "/dir2/dir2a");
 
-        Assert.Success(rc1);
-        Assert.Success(rc2);
+        Assert.Success(result1);
+        Assert.Success(result2);
         Assert.Equal(DirectoryEntryType.Directory, type1);
         Assert.Equal(DirectoryEntryType.Directory, type2);
     }

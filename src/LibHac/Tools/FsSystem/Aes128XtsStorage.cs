@@ -49,8 +49,8 @@ public class Aes128XtsStorage : SectorStorage
 
         if (_readTransform == null) _readTransform = new Aes128XtsTransform(_key1, _key2, _decryptRead);
 
-        Result rc = base.Read(offset, _tempBuffer.AsSpan(0, size));
-        if (rc.IsFailure()) return rc;
+        Result res = base.Read(offset, _tempBuffer.AsSpan(0, size));
+        if (res.IsFailure()) return res.Miss();
 
         _readTransform.TransformBlock(_tempBuffer, 0, size, (ulong)sectorIndex);
         _tempBuffer.AsSpan(0, size).CopyTo(destination);

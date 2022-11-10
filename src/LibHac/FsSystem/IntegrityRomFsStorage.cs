@@ -64,9 +64,9 @@ public class IntegrityRomFsStorage : IStorage
         }
 
         // Initialize our integrity storage.
-        Result rc = _integrityStorage.Initialize(in info, ref storageInfo, _bufferManagerSet, hashGeneratorFactory,
+        Result res = _integrityStorage.Initialize(in info, ref storageInfo, _bufferManagerSet, hashGeneratorFactory,
             false, _mutex, maxDataCacheEntries, maxHashCacheEntries, bufferLevel, false, false);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }

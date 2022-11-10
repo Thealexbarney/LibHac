@@ -37,37 +37,37 @@ public class FileSystemProxyCoreImpl
 
         if (storageId == CustomStorageId.System)
         {
-            Result rc = _baseFileSystemService.OpenBisFileSystem(ref fileSystem.Ref(), BisPartitionId.User);
-            if (rc.IsFailure()) return rc;
+            Result res = _baseFileSystemService.OpenBisFileSystem(ref fileSystem.Ref(), BisPartitionId.User);
+            if (res.IsFailure()) return res.Miss();
 
             using var path = new Path();
-            rc = PathFunctions.SetUpFixedPathSingleEntry(ref path.Ref(), pathBuffer.Items,
+            res = PathFunctions.SetUpFixedPathSingleEntry(ref path.Ref(), pathBuffer.Items,
                 CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.System));
-            if (rc.IsFailure()) return rc;
+            if (res.IsFailure()) return res.Miss();
 
             using SharedRef<IFileSystem> tempFs = SharedRef<IFileSystem>.CreateMove(ref fileSystem.Ref());
-            rc = Utility.WrapSubDirectory(ref fileSystem.Ref(), ref tempFs.Ref(), in path, createIfMissing: true);
-            if (rc.IsFailure()) return rc;
+            res = Utility.WrapSubDirectory(ref fileSystem.Ref(), ref tempFs.Ref(), in path, createIfMissing: true);
+            if (res.IsFailure()) return res.Miss();
         }
         else if (storageId == CustomStorageId.SdCard)
         {
-            Result rc = _baseFileSystemService.OpenSdCardProxyFileSystem(ref fileSystem.Ref());
-            if (rc.IsFailure()) return rc;
+            Result res = _baseFileSystemService.OpenSdCardProxyFileSystem(ref fileSystem.Ref());
+            if (res.IsFailure()) return res.Miss();
 
             using var path = new Path();
-            rc = PathFunctions.SetUpFixedPathDoubleEntry(ref path.Ref(), pathBuffer.Items,
+            res = PathFunctions.SetUpFixedPathDoubleEntry(ref path.Ref(), pathBuffer.Items,
                 CommonPaths.SdCardNintendoRootDirectoryName,
                 CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.System));
-            if (rc.IsFailure()) return rc;
+            if (res.IsFailure()) return res.Miss();
 
             using SharedRef<IFileSystem> tempFs = SharedRef<IFileSystem>.CreateMove(ref fileSystem.Ref());
-            rc = Utility.WrapSubDirectory(ref fileSystem.Ref(), ref tempFs.Ref(), in path, createIfMissing: true);
-            if (rc.IsFailure()) return rc;
+            res = Utility.WrapSubDirectory(ref fileSystem.Ref(), ref tempFs.Ref(), in path, createIfMissing: true);
+            if (res.IsFailure()) return res.Miss();
 
             tempFs.SetByMove(ref fileSystem.Ref());
-            rc = _fsCreators.EncryptedFileSystemCreator.Create(ref fileSystem.Ref(), ref tempFs.Ref(),
+            res = _fsCreators.EncryptedFileSystemCreator.Create(ref fileSystem.Ref(), ref tempFs.Ref(),
                 IEncryptedFileSystemCreator.KeyId.CustomStorage, in _sdEncryptionSeed);
-            if (rc.IsFailure()) return rc;
+            if (res.IsFailure()) return res.Miss();
         }
         else
         {
@@ -81,15 +81,15 @@ public class FileSystemProxyCoreImpl
     private Result OpenHostFileSystem(ref SharedRef<IFileSystem> outFileSystem, in Path path)
     {
         using var pathHost = new Path();
-        Result rc = pathHost.Initialize(in path);
-        if (rc.IsFailure()) return rc;
+        Result res = pathHost.Initialize(in path);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _fsCreators.TargetManagerFileSystemCreator.NormalizeCaseOfPath(out bool isSupported, ref pathHost.Ref());
-        if (rc.IsFailure()) return rc;
+        res = _fsCreators.TargetManagerFileSystemCreator.NormalizeCaseOfPath(out bool isSupported, ref pathHost.Ref());
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _fsCreators.TargetManagerFileSystemCreator.Create(ref outFileSystem, in pathHost, isSupported,
+        res = _fsCreators.TargetManagerFileSystemCreator.Create(ref outFileSystem, in pathHost, isSupported,
             ensureRootPathExists: false, Result.Success);
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -99,14 +99,14 @@ public class FileSystemProxyCoreImpl
     {
         if (!path.IsEmpty() && openCaseSensitive)
         {
-            Result rc = OpenHostFileSystem(ref outFileSystem, in path);
-            if (rc.IsFailure()) return rc;
+            Result res = OpenHostFileSystem(ref outFileSystem, in path);
+            if (res.IsFailure()) return res.Miss();
         }
         else
         {
-            Result rc = _fsCreators.TargetManagerFileSystemCreator.Create(ref outFileSystem, in path,
+            Result res = _fsCreators.TargetManagerFileSystemCreator.Create(ref outFileSystem, in path,
                 openCaseSensitive, ensureRootPathExists: false, Result.Success);
-            if (rc.IsFailure()) return rc;
+            if (res.IsFailure()) return res.Miss();
         }
 
         return Result.Success;

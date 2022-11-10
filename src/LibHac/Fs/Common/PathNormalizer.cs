@@ -49,7 +49,7 @@ public static class PathNormalizer
         var convertedPath = new RentedArray<byte>();
         try
         {
-            Result rc;
+            Result res;
             // Check if parent directory path replacement is needed.
             if (IsParentDirectoryPathReplacementNeeded(currentPath))
             {
@@ -100,8 +100,8 @@ public static class PathNormalizer
                 {
                     if (!allowAllCharacters)
                     {
-                        rc = CheckInvalidCharacter(currentPath[i + dirLen]);
-                        if (rc.IsFailure()) return rc.Miss();
+                        res = CheckInvalidCharacter(currentPath[i + dirLen]);
+                        if (res.IsFailure()) return res.Miss();
                     }
 
                     dirLen++;
@@ -185,8 +185,8 @@ public static class PathNormalizer
 
             outputBuffer[totalLength] = NullTerminator;
 
-            rc = IsNormalized(out bool isNormalized, out _, outputBuffer, allowAllCharacters);
-            if (rc.IsFailure()) return rc;
+            res = IsNormalized(out bool isNormalized, out _, outputBuffer, allowAllCharacters);
+            if (res.IsFailure()) return res.Miss();
 
             Assert.SdkAssert(isNormalized);
 
@@ -238,8 +238,8 @@ public static class PathNormalizer
 
             if (!allowAllCharacters && state != PathState.Initial)
             {
-                Result rc = CheckInvalidCharacter(c);
-                if (rc.IsFailure()) return rc;
+                Result res = CheckInvalidCharacter(c);
+                if (res.IsFailure()) return res.Miss();
             }
 
             switch (state)

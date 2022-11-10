@@ -46,8 +46,8 @@ internal readonly struct ProgramIndexRegistryService
         // Verify the caller's permissions
         using (var programRegistry = new ProgramRegistryImpl(_fsServer))
         {
-            Result rc = programRegistry.GetProgramInfo(out ProgramInfo programInfo, _processId);
-            if (rc.IsFailure()) return rc;
+            Result res = programRegistry.GetProgramInfo(out ProgramInfo programInfo, _processId);
+            if (res.IsFailure()) return res.Miss();
 
             if (!programInfo.AccessControl.CanCall(OperationType.RegisterProgramIndexMapInfo))
                 return ResultFs.PermissionDenied.Log();
@@ -85,8 +85,8 @@ internal readonly struct ProgramIndexRegistryService
         UnsafeHelpers.SkipParamInit(out programIndex, out programCount);
 
         // No permissions are needed to call this method
-        Result rc = GetProgramInfo(out ProgramInfo programInfo, _processId);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo, _processId);
+        if (res.IsFailure()) return res.Miss();
 
         // Try to get map info for this process
         Optional<ProgramIndexMapInfo> mapInfo = _serviceImpl.GetProgramIndexMapInfo(programInfo.ProgramId);

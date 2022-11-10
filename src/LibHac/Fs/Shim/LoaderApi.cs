@@ -15,9 +15,9 @@ public static class LoaderApi
         using SharedRef<IFileSystemProxyForLoader> fileSystemProxy =
             fs.Impl.GetFileSystemProxyForLoaderServiceObject();
 
-        Result rc = fileSystemProxy.Get.IsArchivedProgram(out isArchived, processId.Value);
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = fileSystemProxy.Get.IsArchivedProgram(out isArchived, processId.Value);
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }

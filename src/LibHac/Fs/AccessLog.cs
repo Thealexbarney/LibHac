@@ -66,9 +66,9 @@ namespace LibHac.Fs
 
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-            Result rc = fileSystemProxy.Get.GetGlobalAccessLogMode(out mode);
-            fs.Impl.AbortIfNeeded(rc);
-            return rc;
+            Result res = fileSystemProxy.Get.GetGlobalAccessLogMode(out mode);
+            fs.Impl.AbortIfNeeded(res);
+            return res;
         }
 
         public static Result SetGlobalAccessLogMode(this FileSystemClient fs, GlobalAccessLogMode mode)
@@ -82,9 +82,9 @@ namespace LibHac.Fs
 
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-            Result rc = fileSystemProxy.Get.SetGlobalAccessLogMode(mode);
-            fs.Impl.AbortIfNeeded(rc);
-            return rc;
+            Result res = fileSystemProxy.Get.SetGlobalAccessLogMode(mode);
+            fs.Impl.AbortIfNeeded(res);
+            return res;
         }
 
         public static void SetLocalAccessLog(this FileSystemClient fs, bool enabled)
@@ -503,8 +503,8 @@ namespace LibHac.Fs.Impl
         private static void GetProgramIndexForAccessLog(FileSystemClientImpl fs, out int index, out int count)
         {
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
-            Result rc = fileSystemProxy.Get.GetProgramIndexForAccessLog(out index, out count);
-            Abort.DoAbortUnless(rc.IsSuccess());
+            Result res = fileSystemProxy.Get.GetProgramIndexForAccessLog(out index, out count);
+            Abort.DoAbortUnless(res.IsSuccess());
         }
 
         private static void OutputAccessLogStart(FileSystemClientImpl fs)
@@ -713,9 +713,9 @@ namespace LibHac.Fs.Impl
                 }
                 else
                 {
-                    Result rc = fs.Fs.GetGlobalAccessLogMode(out g.GlobalAccessLogMode);
-                    fs.LogResultErrorMessage(rc);
-                    if (rc.IsFailure()) Abort.DoAbort(rc);
+                    Result res = fs.Fs.GetGlobalAccessLogMode(out g.GlobalAccessLogMode);
+                    fs.LogResultErrorMessage(res);
+                    if (res.IsFailure()) Abort.DoAbort(res);
 
                     if (g.GlobalAccessLogMode != GlobalAccessLogMode.None)
                     {
@@ -771,9 +771,9 @@ namespace LibHac.Fs.Impl
 
         internal static bool IsEnabledFileSystemAccessorAccessLog(this FileSystemClientImpl fs, U8Span mountName)
         {
-            Result rc = fs.Find(out FileSystemAccessor accessor, mountName);
+            Result res = fs.Find(out FileSystemAccessor accessor, mountName);
 
-            if (rc.IsFailure())
+            if (res.IsFailure())
                 return true;
 
             return accessor.IsEnabledAccessLog();
@@ -781,9 +781,9 @@ namespace LibHac.Fs.Impl
 
         public static void EnableFileSystemAccessorAccessLog(this FileSystemClientImpl fs, U8Span mountName)
         {
-            Result rc = fs.Find(out FileSystemAccessor fileSystem, mountName);
-            fs.LogResultErrorMessage(rc);
-            Abort.DoAbortUnless(rc.IsSuccess());
+            Result res = fs.Find(out FileSystemAccessor fileSystem, mountName);
+            fs.LogResultErrorMessage(res);
+            Abort.DoAbortUnless(res.IsSuccess());
 
             fileSystem.SetAccessLog(true);
         }

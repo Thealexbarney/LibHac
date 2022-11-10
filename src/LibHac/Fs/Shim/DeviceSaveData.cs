@@ -29,9 +29,9 @@ public static class DeviceSaveData
 
         public Result GetSaveDataAttribute(out SaveDataAttribute attribute)
         {
-            Result rc = SaveDataAttribute.Make(out attribute, _programId, SaveDataType.Device, InvalidUserId,
+            Result res = SaveDataAttribute.Make(out attribute, _programId, SaveDataType.Device, InvalidUserId,
                 InvalidSystemSaveDataId);
-            if (rc.IsFailure()) return rc.Miss();
+            if (res.IsFailure()) return res.Miss();
 
             return Result.Success;
         }
@@ -42,14 +42,14 @@ public static class DeviceSaveData
     private static Result MountDeviceSaveDataImpl(this FileSystemClientImpl fs, U8Span mountName,
         in SaveDataAttribute attribute)
     {
-        Result rc = fs.CheckMountName(mountName);
-        if (rc.IsFailure()) return rc;
+        Result res = fs.CheckMountName(mountName);
+        if (res.IsFailure()) return res.Miss();
 
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
         using var fileSystem = new SharedRef<IFileSystemSf>();
 
-        rc = fileSystemProxy.Get.OpenSaveDataFileSystem(ref fileSystem.Ref(), DeviceSaveDataSpaceId, in attribute);
-        if (rc.IsFailure()) return rc.Miss();
+        res = fileSystemProxy.Get.OpenSaveDataFileSystem(ref fileSystem.Ref(), DeviceSaveDataSpaceId, in attribute);
+        if (res.IsFailure()) return res.Miss();
 
         var fileSystemAdapterRaw = new FileSystemServiceObjectAdapter(ref fileSystem.Ref());
         using var fileSystemAdapter = new UniqueRef<IFileSystem>(fileSystemAdapterRaw);
@@ -62,10 +62,10 @@ public static class DeviceSaveData
 
         using var mountNameGenerator = new UniqueRef<ICommonMountNameGenerator>();
 
-        rc = fs.Fs.Register(mountName, fileSystemAdapterRaw, ref fileSystemAdapter.Ref(), ref mountNameGenerator.Ref(),
+        res = fs.Fs.Register(mountName, fileSystemAdapterRaw, ref fileSystemAdapter.Ref(), ref mountNameGenerator.Ref(),
             ref saveDataAttributeGetter.Ref(), useDataCache: false, storageForPurgeFileDataCache: null,
             usePathCache: true);
-        if (rc.IsFailure()) return rc.Miss();
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -74,30 +74,30 @@ public static class DeviceSaveData
     {
         Span<byte> logBuffer = stackalloc byte[0x30];
 
-        Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, InvalidProgramId, SaveDataType.Device,
+        Result res = SaveDataAttribute.Make(out SaveDataAttribute attribute, InvalidProgramId, SaveDataType.Device,
             InvalidUserId, InvalidSystemSaveDataId);
 
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = MountDeviceSaveDataImpl(fs.Impl, mountName, in attribute);
+            res = MountDeviceSaveDataImpl(fs.Impl, mountName, in attribute);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
             sb.Append(LogName).Append(mountName).Append(LogQuote);
 
-            fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+            fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(sb.Buffer));
         }
         else
         {
-            rc = MountDeviceSaveDataImpl(fs.Impl, mountName, in attribute);
+            res = MountDeviceSaveDataImpl(fs.Impl, mountName, in attribute);
         }
 
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
             fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
@@ -110,31 +110,31 @@ public static class DeviceSaveData
     {
         Span<byte> logBuffer = stackalloc byte[0x50];
 
-        Result rc = SaveDataAttribute.Make(out SaveDataAttribute attribute, applicationId, SaveDataType.Device,
+        Result res = SaveDataAttribute.Make(out SaveDataAttribute attribute, applicationId, SaveDataType.Device,
             InvalidUserId, InvalidSystemSaveDataId);
 
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = MountDeviceSaveDataImpl(fs.Impl, mountName, in attribute);
+            res = MountDeviceSaveDataImpl(fs.Impl, mountName, in attribute);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
             sb.Append(LogName).Append(mountName).Append(LogQuote)
                 .Append(LogApplicationId).AppendFormat(applicationId.Value, 'X');
 
-            fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+            fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(sb.Buffer));
         }
         else
         {
-            rc = MountDeviceSaveDataImpl(fs.Impl, mountName, in attribute);
+            res = MountDeviceSaveDataImpl(fs.Impl, mountName, in attribute);
         }
 
-        fs.Impl.AbortIfNeeded(rc);
-        if (rc.IsFailure()) return rc.Miss();
+        fs.Impl.AbortIfNeeded(res);
+        if (res.IsFailure()) return res.Miss();
 
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
             fs.Impl.EnableFileSystemAccessorAccessLog(mountName);
@@ -149,7 +149,7 @@ public static class DeviceSaveData
 
     public static bool IsDeviceSaveDataExisting(this FileSystemClient fs, ApplicationId applicationId)
     {
-        Result rc;
+        Result res;
         Span<byte> logBuffer = stackalloc byte[0x30];
 
         bool exists;
@@ -158,21 +158,21 @@ public static class DeviceSaveData
         if (fs.Impl.IsEnabledAccessLog() && fs.Impl.IsEnabledHandleAccessLog(null))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            rc = fs.Impl.IsSaveDataExisting(out exists, appId, SaveDataType.Device, InvalidUserId);
+            res = fs.Impl.IsSaveDataExisting(out exists, appId, SaveDataType.Device, InvalidUserId);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
             sb.Append(LogApplicationId).AppendFormat(applicationId.Value, 'X');
 
-            fs.Impl.OutputAccessLog(rc, start, end, null, new U8Span(sb.Buffer));
+            fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(sb.Buffer));
         }
         else
         {
-            rc = fs.Impl.IsSaveDataExisting(out exists, appId, SaveDataType.Device, InvalidUserId);
+            res = fs.Impl.IsSaveDataExisting(out exists, appId, SaveDataType.Device, InvalidUserId);
         }
 
-        fs.Impl.LogResultErrorMessage(rc);
-        Abort.DoAbortUnless(rc.IsSuccess());
+        fs.Impl.LogResultErrorMessage(res);
+        Abort.DoAbortUnless(res.IsSuccess());
 
         return exists;
     }

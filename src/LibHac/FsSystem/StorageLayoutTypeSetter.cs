@@ -327,8 +327,8 @@ internal class StorageLayoutTypeSetFileSystem : IFileSystem
         using var scopedContext = new ScopedStorageLayoutTypeSetter(_storageFlag);
         using var baseFile = new UniqueRef<IFile>();
 
-        Result rc = _baseFileSystem.Get.OpenFile(ref baseFile.Ref(), in path, mode);
-        if (rc.IsFailure()) return rc;
+        Result res = _baseFileSystem.Get.OpenFile(ref baseFile.Ref(), in path, mode);
+        if (res.IsFailure()) return res.Miss();
 
         outFile.Reset(new StorageLayoutTypeSetFile(ref baseFile.Ref(), _storageFlag));
         return Result.Success;
@@ -340,8 +340,8 @@ internal class StorageLayoutTypeSetFileSystem : IFileSystem
         using var scopedContext = new ScopedStorageLayoutTypeSetter(_storageFlag);
         using var baseDirectory = new UniqueRef<IDirectory>();
 
-        Result rc = _baseFileSystem.Get.OpenDirectory(ref baseDirectory.Ref(), in path, mode);
-        if (rc.IsFailure()) return rc;
+        Result res = _baseFileSystem.Get.OpenDirectory(ref baseDirectory.Ref(), in path, mode);
+        if (res.IsFailure()) return res.Miss();
 
         outDirectory.Reset(new StorageLayoutTypeSetDirectory(ref baseDirectory.Ref(), _storageFlag));
         return Result.Success;

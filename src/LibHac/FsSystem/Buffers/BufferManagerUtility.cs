@@ -62,8 +62,8 @@ internal static class BufferManagerUtility
                 // Todo: Log allocation failure
             }
 
-            Result rc = onFailure();
-            if (rc.IsFailure()) return rc;
+            Result res = onFailure();
+            if (res.IsFailure()) return res.Miss();
 
             Thread.Sleep(RetryWait);
         }
@@ -126,14 +126,14 @@ internal static class BufferManagerUtility
         if (!context.IsNeedBlocking())
         {
             // If we don't need to block, just allocate the buffer.
-            Result rc = AllocateBufferImpl();
-            if (rc.IsFailure()) return rc;
+            Result res = AllocateBufferImpl();
+            if (res.IsFailure()) return res.Miss();
         }
         else
         {
             // Otherwise, try to allocate repeatedly.
-            Result rc = DoContinuouslyUntilBufferIsAllocated(AllocateBufferImpl);
-            if (rc.IsFailure()) return rc;
+            Result res = DoContinuouslyUntilBufferIsAllocated(AllocateBufferImpl);
+            if (res.IsFailure()) return res.Miss();
         }
 
         Assert.SdkAssert(!tempBuffer.IsNull);

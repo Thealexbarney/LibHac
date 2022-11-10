@@ -49,8 +49,8 @@ public ref struct DirectoryPathParser
 
         if (windowsSkipLength != 0)
         {
-            Result rc = CurrentPath.InitializeWithNormalization(pathBuffer, windowsSkipLength + 1);
-            if (rc.IsFailure()) return rc;
+            Result res = CurrentPath.InitializeWithNormalization(pathBuffer, windowsSkipLength + 1);
+            if (res.IsFailure()) return res.Miss();
 
             _buffer = _buffer.Slice(1);
         }
@@ -60,8 +60,8 @@ public ref struct DirectoryPathParser
 
             if (!initialPath.IsEmpty)
             {
-                Result rc = CurrentPath.InitializeWithNormalization(initialPath);
-                if (rc.IsFailure()) return rc;
+                Result res = CurrentPath.InitializeWithNormalization(initialPath);
+                if (res.IsFailure()) return res.Miss();
             }
         }
 

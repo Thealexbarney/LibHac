@@ -104,8 +104,8 @@ internal class SaveDataIndexerManager : ISaveDataIndexerManager, IDisposable
         {
             case SaveDataSpaceId.Temporary:
                 // ReSharper disable once RedundantAssignment
-                Result rc = _tempIndexer.Reset();
-                Assert.SdkAssert(rc.IsSuccess());
+                Result res = _tempIndexer.Reset();
+                Assert.SdkAssert(res.IsSuccess());
                 break;
 
             default:

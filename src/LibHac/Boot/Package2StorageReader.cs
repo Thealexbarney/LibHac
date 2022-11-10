@@ -39,8 +39,8 @@ public class Package2StorageReader : IDisposable
     /// <returns>The <see cref="Result"/> of the operation.</returns>
     public Result Initialize(KeySet keySet, in SharedRef<IStorage> storage)
     {
-        Result rc = storage.Get.Read(0, SpanHelpers.AsByteSpan(ref _header));
-        if (rc.IsFailure()) return rc;
+        Result res = storage.Get.Read(0, SpanHelpers.AsByteSpan(ref _header));
+        if (res.IsFailure()) return res.Miss();
 
         _key = keySet.Package2Keys[_header.Meta.GetKeyGeneration()];
         DecryptHeader(_key, ref _header.Meta, ref _header.Meta);
@@ -105,8 +105,8 @@ public class Package2StorageReader : IDisposable
 
         // Ini is embedded in the kernel
         using var kernelStorage = new UniqueRef<IStorage>();
-        Result rc = OpenKernel(ref kernelStorage.Ref());
-        if (rc.IsFailure()) return rc;
+        Result res = OpenKernel(ref kernelStorage.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         if (!IniExtract.TryGetIni1Offset(out int offset, out int size, kernelStorage.Get))
         {
@@ -124,11 +124,11 @@ public class Package2StorageReader : IDisposable
     /// <returns>The <see cref="Result"/> of the operation.</returns>
     public Result Verify()
     {
-        Result rc = VerifySignature();
-        if (rc.IsFailure()) return rc;
+        Result res = VerifySignature();
+        if (res.IsFailure()) return res.Miss();
 
-        rc = VerifyMeta();
-        if (rc.IsFailure()) return rc;
+        res = VerifyMeta();
+        if (res.IsFailure()) return res.Miss();
 
         return VerifyPayloads();
     }
@@ -143,8 +143,8 @@ public class Package2StorageReader : IDisposable
         Unsafe.SkipInit(out Package2Meta meta);
         Span<byte> metaBytes = SpanHelpers.AsByteSpan(ref meta);
 
-        Result rc = _storage.Get.Read(Package2Header.SignatureSize, metaBytes);
-        if (rc.IsFailure()) return rc;
+        Result res = _storage.Get.Read(Package2Header.SignatureSize, metaBytes);
+        if (res.IsFailure()) return res.Miss();
 
         return _header.VerifySignature(_keySet.Package2SigningKeyParams.Modulus, metaBytes);
     }
@@ -188,8 +188,8 @@ public class Package2StorageReader : IDisposable
                     int toRead = Math.Min(array.Length, size);
                     Span<byte> span = array.AsSpan(0, toRead);
 
-                    Result rc = payloadSubStorage.Read(offset, span);
-                    if (rc.IsFailure()) return rc;
+                    Result res = payloadSubStorage.Read(offset, span);
+                    if (res.IsFailure()) return res.Miss();
 
                     sha.Update(span);
 
@@ -243,8 +243,8 @@ public class Package2StorageReader : IDisposable
                 continue;
 
             using var payloadStorage = new UniqueRef<IStorage>();
-            Result rc = OpenPayload(ref payloadStorage.Ref(), i);
-            if (rc.IsFailure()) return rc.Miss();
+            Result res = OpenPayload(ref payloadStorage.Ref(), i);
+            if (res.IsFailure()) return res.Miss();
 
             storages.Add(payloadStorage.Release());
         }

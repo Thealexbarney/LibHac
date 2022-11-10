@@ -48,14 +48,14 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
         Unsafe.SkipInit(out Array18<byte> saveImageNameBuffer);
 
         using var saveImageName = new Path();
-        Result rc = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer.Items, saveDataId);
-        if (rc.IsFailure()) return rc.Miss();
+        Result res = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer.Items, saveDataId);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = baseFileSystem.Get.GetEntryType(out DirectoryEntryType type, in saveImageName);
+        res = baseFileSystem.Get.GetEntryType(out DirectoryEntryType type, in saveImageName);
 
-        if (rc.IsFailure())
+        if (res.IsFailure())
         {
-            return ResultFs.PathNotFound.Includes(rc) ? ResultFs.TargetNotFound.LogConverted(rc) : rc.Miss();
+            return ResultFs.PathNotFound.Includes(res) ? ResultFs.TargetNotFound.LogConverted(res) : res.Miss();
         }
 
         using var saveDataFs = new SharedRef<ISaveDataFileSystem>();
@@ -74,8 +74,8 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
             if (!baseFs.HasValue)
                 return ResultFs.AllocationMemoryFailedInSaveDataFileSystemCreatorA.Log();
 
-            rc = baseFs.Get.Initialize(in saveImageName);
-            if (rc.IsFailure()) return rc.Miss();
+            res = baseFs.Get.Initialize(in saveImageName);
+            if (res.IsFailure()) return res.Miss();
 
             // Create and initialize the directory save data FS
             using UniqueRef<IFileSystem> tempFs = UniqueRef<IFileSystem>.Create(ref baseFs.Ref());
@@ -85,9 +85,9 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
             if (!saveDirFs.HasValue)
                 return ResultFs.AllocationMemoryFailedInSaveDataFileSystemCreatorB.Log();
 
-            rc = saveDirFs.Get.Initialize(isJournalingSupported, isMultiCommitSupported, !openReadOnly,
+            res = saveDirFs.Get.Initialize(isJournalingSupported, isMultiCommitSupported, !openReadOnly,
                 timeStampGetter, _randomGenerator);
-            if (rc.IsFailure()) return rc.Miss();
+            if (res.IsFailure()) return res.Miss();
 
             saveDataFs.SetByMove(ref saveDirFs.Ref());
         }
@@ -98,9 +98,9 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
             Optional<OpenType> openType =
                 openShared ? new Optional<OpenType>(OpenType.Normal) : new Optional<OpenType>();
 
-            rc = _fsServer.OpenSaveDataStorage(ref fileStorage.Ref(), ref baseFileSystem, spaceId, saveDataId,
+            res = _fsServer.OpenSaveDataStorage(ref fileStorage.Ref(), ref baseFileSystem, spaceId, saveDataId,
                 OpenMode.ReadWrite, openType);
-            if (rc.IsFailure()) return rc;
+            if (res.IsFailure()) return res.Miss();
 
             throw new NotImplementedException();
         }

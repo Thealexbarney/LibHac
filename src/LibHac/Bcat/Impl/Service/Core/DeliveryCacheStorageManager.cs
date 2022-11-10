@@ -35,8 +35,8 @@ internal class DeliveryCacheStorageManager
         lock (_locker)
         {
             // Find an existing storage entry for this application ID or get an empty one
-            Result rc = FindOrGetUnusedEntry(out int index, applicationId);
-            if (rc.IsFailure()) return rc;
+            Result res = FindOrGetUnusedEntry(out int index, applicationId);
+            if (res.IsFailure()) return res.Miss();
 
             ref Entry entry = ref Entries[index];
 
@@ -55,15 +55,15 @@ internal class DeliveryCacheStorageManager
             // Mount the save if enabled
             if (!DisableStorage)
             {
-                rc = Server.GetFsClient()
+                res = Server.GetFsClient()
                     .MountBcatSaveData(new U8Span(mountName.Name), new Ncm.ApplicationId(applicationId));
 
-                if (rc.IsFailure())
+                if (res.IsFailure())
                 {
-                    if (ResultFs.TargetNotFound.Includes(rc))
-                        return ResultBcat.SaveDataNotFound.LogConverted(rc);
+                    if (ResultFs.TargetNotFound.Includes(res))
+                        return ResultBcat.SaveDataNotFound.LogConverted(res);
 
-                    return rc;
+                    return res;
                 }
             }
 
@@ -121,11 +121,11 @@ internal class DeliveryCacheStorageManager
 
             if (!DisableStorage)
             {
-                Result rc = Server.GetFsClient().Commit(new U8Span(mountName.Name));
+                Result res = Server.GetFsClient().Commit(new U8Span(mountName.Name));
 
-                if (rc.IsFailure())
+                if (res.IsFailure())
                 {
-                    throw new HorizonResultException(rc, "Abort");
+                    throw new HorizonResultException(res, "Abort");
                 }
             }
         }
@@ -141,19 +141,19 @@ internal class DeliveryCacheStorageManager
             AppendMountName(ref sb, applicationId);
             sb.Append(RootPath);
 
-            Result rc;
+            Result res;
 
             if (DisableStorage)
             {
                 size = 0x4400000;
-                rc = Result.Success;
+                res = Result.Success;
             }
             else
             {
-                rc = Server.GetFsClient().GetFreeSpaceSize(out size, new U8Span(path));
+                res = Server.GetFsClient().GetFreeSpaceSize(out size, new U8Span(path));
             }
 
-            return rc;
+            return res;
         }
     }
 

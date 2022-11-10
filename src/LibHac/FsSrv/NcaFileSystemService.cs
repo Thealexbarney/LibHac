@@ -77,8 +77,8 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         // Get the program info for the caller and verify permissions
-        Result rc = GetProgramInfo(out ProgramInfo callerProgramInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo callerProgramInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (fsType != FileSystemProxyType.Manual)
         {
@@ -102,8 +102,8 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
             return ResultFs.PermissionDenied.Log();
 
         // Get the program info for the owner of the file system being opened
-        rc = GetProgramInfoByProgramId(out ProgramInfo ownerProgramInfo, programId.Value);
-        if (rc.IsFailure()) return rc;
+        res = GetProgramInfoByProgramId(out ProgramInfo ownerProgramInfo, programId.Value);
+        if (res.IsFailure()) return res.Miss();
 
         // Try to find the path to the original version of the file system
         using var originalPath = new Path();
@@ -127,9 +127,9 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
                 return originalResult;
 
             // There is an original version and no patch version. Open the original directly
-            rc = _serviceImpl.OpenFileSystem(ref fileSystem.Ref(), in originalPath, fsType, programId.Value,
+            res = _serviceImpl.OpenFileSystem(ref fileSystem.Ref(), in originalPath, fsType, programId.Value,
                 isDirectory);
-            if (rc.IsFailure()) return rc;
+            if (res.IsFailure()) return res.Miss();
         }
         else
         {
@@ -141,9 +141,9 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
                 : ref PathExtensions.GetNullRef();
 
             // Open the file system using both the original and patch versions
-            rc = _serviceImpl.OpenFileSystemWithPatch(ref fileSystem.Ref(), in originalNcaPath, in patchPath,
+            res = _serviceImpl.OpenFileSystemWithPatch(ref fileSystem.Ref(), in originalNcaPath, in patchPath,
                 fsType, programId.Value);
-            if (rc.IsFailure()) return rc;
+            if (res.IsFailure()) return res.Miss();
         }
 
         // Add all the file system wrappers
@@ -231,8 +231,8 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         const StorageLayoutType storageFlag = StorageLayoutType.All;
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         AccessControl ac = programInfo.AccessControl;
 
@@ -278,21 +278,21 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         bool canMountSystemDataPrivate = ac.GetAccessibilityFor(AccessibilityType.MountSystemDataPrivate).CanRead;
 
         using var pathNormalized = new Path();
-        rc = pathNormalized.InitializeWithReplaceUnc(path.Str);
-        if (rc.IsFailure()) return rc;
+        res = pathNormalized.InitializeWithReplaceUnc(path.Str);
+        if (res.IsFailure()) return res.Miss();
 
         var pathFlags = new PathFlags();
         pathFlags.AllowWindowsPath();
         pathFlags.AllowMountName();
-        rc = pathNormalized.Normalize(pathFlags);
-        if (rc.IsFailure()) return rc;
+        res = pathNormalized.Normalize(pathFlags);
+        if (res.IsFailure()) return res.Miss();
 
         bool isDirectory = PathUtility.IsDirectoryPath(in path);
 
         using var fileSystem = new SharedRef<IFileSystem>();
-        rc = _serviceImpl.OpenFileSystem(ref fileSystem.Ref(), in pathNormalized, fsType, canMountSystemDataPrivate,
+        res = _serviceImpl.OpenFileSystem(ref fileSystem.Ref(), in pathNormalized, fsType, canMountSystemDataPrivate,
             id, isDirectory);
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         // Add all the wrappers for the file system
         using var typeSetFileSystem =
@@ -321,17 +321,17 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
 
     public Result OpenDataFileSystemWithProgramIndex(ref SharedRef<IFileSystemSf> outFileSystem, byte programIndex)
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         // Get the program ID of the program with the specified index if in a multi-program application
-        rc = _serviceImpl.ResolveRomReferenceProgramId(out ProgramId targetProgramId, programInfo.ProgramId,
+        res = _serviceImpl.ResolveRomReferenceProgramId(out ProgramId targetProgramId, programInfo.ProgramId,
             programIndex);
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         using var fileSystem = new SharedRef<IFileSystem>();
-        rc = OpenDataFileSystemCore(ref fileSystem.Ref(), out _, targetProgramId.Value, programInfo.StorageId);
-        if (rc.IsFailure()) return rc;
+        res = OpenDataFileSystemCore(ref fileSystem.Ref(), out _, targetProgramId.Value, programInfo.StorageId);
+        if (res.IsFailure()) return res.Miss();
 
         // Verify the caller has access to the file system
         if (targetProgramId != programInfo.ProgramId &&
@@ -363,21 +363,21 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
 
         using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.All);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.GetRightsId))
             return ResultFs.PermissionDenied.Log();
 
         using var programPath = new Path();
-        rc = _serviceImpl.ResolveProgramPath(out bool isDirectory, ref programPath.Ref(), programId, storageId);
-        if (rc.IsFailure()) return rc;
+        res = _serviceImpl.ResolveProgramPath(out bool isDirectory, ref programPath.Ref(), programId, storageId);
+        if (res.IsFailure()) return res.Miss();
 
         if (isDirectory)
             return ResultFs.TargetNotFound.Log();
 
-        rc = _serviceImpl.GetRightsId(out RightsId rightsId, out _, in programPath, programId);
-        if (rc.IsFailure()) return rc;
+        res = _serviceImpl.GetRightsId(out RightsId rightsId, out _, in programPath, programId);
+        if (res.IsFailure()) return res.Miss();
 
         outRightsId = rightsId;
 
@@ -391,28 +391,28 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
 
         using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.All);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.GetRightsId))
             return ResultFs.PermissionDenied.Log();
 
         using var pathNormalized = new Path();
-        rc = pathNormalized.Initialize(path.Str);
-        if (rc.IsFailure()) return rc;
+        res = pathNormalized.Initialize(path.Str);
+        if (res.IsFailure()) return res.Miss();
 
         var pathFlags = new PathFlags();
         pathFlags.AllowWindowsPath();
         pathFlags.AllowMountName();
-        rc = pathNormalized.Normalize(pathFlags);
-        if (rc.IsFailure()) return rc;
+        res = pathNormalized.Normalize(pathFlags);
+        if (res.IsFailure()) return res.Miss();
 
         if (PathUtility.IsDirectoryPath(in path))
             return ResultFs.TargetNotFound.Log();
 
-        rc = _serviceImpl.GetRightsId(out RightsId rightsId, out byte keyGeneration, in pathNormalized,
+        res = _serviceImpl.GetRightsId(out RightsId rightsId, out byte keyGeneration, in pathNormalized,
             new ProgramId(checkThroughProgramId));
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         outRightsId = rightsId;
         outKeyGeneration = keyGeneration;
@@ -430,15 +430,15 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         using var programPath = new Path();
-        Result rc = _serviceImpl.ResolveRomPath(out bool isDirectory, ref programPath.Ref(), programId, storageId);
-        if (rc.IsFailure()) return rc;
+        Result res = _serviceImpl.ResolveRomPath(out bool isDirectory, ref programPath.Ref(), programId, storageId);
+        if (res.IsFailure()) return res.Miss();
 
         isHostFs = Utility.IsHostFsMountName(programPath.GetString());
 
         using var fileSystem = new SharedRef<IFileSystem>();
-        rc = _serviceImpl.OpenDataFileSystem(ref fileSystem.Ref(), in programPath, FileSystemProxyType.Rom,
+        res = _serviceImpl.OpenDataFileSystem(ref fileSystem.Ref(), in programPath, FileSystemProxyType.Rom,
             programId, isDirectory);
-        if (rc.IsFailure()) return rc;
+        if (res.IsFailure()) return res.Miss();
 
         // Add all the file system wrappers
         using var typeSetFileSystem =
@@ -455,8 +455,8 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         StorageLayoutType storageFlag = contentStorageId == ContentStorageId.System ? StorageLayoutType.Bis : StorageLayoutType.All;
         using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         Accessibility accessibility =
             programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountContentStorage);
@@ -465,8 +465,8 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
             return ResultFs.PermissionDenied.Log();
 
         using var fileSystem = new SharedRef<IFileSystem>();
-        rc = _serviceImpl.OpenContentStorageFileSystem(ref fileSystem.Ref(), contentStorageId);
-        if (rc.IsFailure()) return rc;
+        res = _serviceImpl.OpenContentStorageFileSystem(ref fileSystem.Ref(), contentStorageId);
+        if (res.IsFailure()) return res.Miss();
 
         // Add all the file system wrappers
         using var typeSetFileSystem =
@@ -485,8 +485,8 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
 
     public Result RegisterExternalKey(in RightsId rightsId, in AccessKey accessKey)
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.RegisterExternalKey))
             return ResultFs.PermissionDenied.Log();
@@ -496,8 +496,8 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
 
     public Result UnregisterExternalKey(in RightsId rightsId)
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.RegisterExternalKey))
             return ResultFs.PermissionDenied.Log();
@@ -507,8 +507,8 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
 
     public Result UnregisterAllExternalKey()
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.RegisterExternalKey))
             return ResultFs.PermissionDenied.Log();
@@ -518,8 +518,8 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
 
     public Result RegisterUpdatePartition()
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.RegisterUpdatePartition))
             return ResultFs.PermissionDenied.Log();
@@ -527,8 +527,8 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         ulong targetProgramId = programInfo.ProgramIdValue;
 
         using var programPath = new Path();
-        rc = _serviceImpl.ResolveRomPath(out _, ref programPath.Ref(), targetProgramId, programInfo.StorageId);
-        if (rc.IsFailure()) return rc;
+        res = _serviceImpl.ResolveRomPath(out _, ref programPath.Ref(), targetProgramId, programInfo.StorageId);
+        if (res.IsFailure()) return res.Miss();
 
         return _serviceImpl.RegisterUpdatePartition(targetProgramId, in programPath);
     }
@@ -538,8 +538,8 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         var storageFlag = StorageLayoutType.All;
         using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
 
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         Accessibility accessibility =
             programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountRegisteredUpdatePartition);
@@ -547,8 +547,8 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
             return ResultFs.PermissionDenied.Log();
 
         using var fileSystem = new SharedRef<IFileSystem>();
-        rc = _serviceImpl.OpenRegisteredUpdatePartition(ref fileSystem.Ref());
-        if (rc.IsFailure()) return rc;
+        res = _serviceImpl.OpenRegisteredUpdatePartition(ref fileSystem.Ref());
+        if (res.IsFailure()) return res.Miss();
 
         // Add all the file system wrappers
         using var typeSetFileSystem =
@@ -572,8 +572,8 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
 
     public Result SetSdCardEncryptionSeed(in EncryptionSeed encryptionSeed)
     {
-        Result rc = GetProgramInfo(out ProgramInfo programInfo);
-        if (rc.IsFailure()) return rc;
+        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.SetEncryptionSeed))
             return ResultFs.PermissionDenied.Log();

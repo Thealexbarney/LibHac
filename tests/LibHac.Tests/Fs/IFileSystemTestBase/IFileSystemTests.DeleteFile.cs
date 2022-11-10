@@ -11,8 +11,8 @@ public abstract partial class IFileSystemTests
     {
         IFileSystem fs = CreateFileSystem();
 
-        Result rc = fs.DeleteFile("/file");
-        Assert.Result(ResultFs.PathNotFound, rc);
+        Result res = fs.DeleteFile("/file");
+        Assert.Result(ResultFs.PathNotFound, res);
     }
 
     [Fact]
@@ -22,11 +22,11 @@ public abstract partial class IFileSystemTests
 
         fs.CreateFile("/file", 0, CreateFileOptions.None);
 
-        Result rcDelete = fs.DeleteFile("/file");
-        Result rcEntry = fs.GetEntryType(out _, "/file");
+        Result resultDelete = fs.DeleteFile("/file");
+        Result resultEntry = fs.GetEntryType(out _, "/file");
 
-        Assert.Success(rcDelete);
-        Assert.Result(ResultFs.PathNotFound, rcEntry);
+        Assert.Success(resultDelete);
+        Assert.Result(ResultFs.PathNotFound, resultEntry);
     }
 
     [Fact]
@@ -36,9 +36,9 @@ public abstract partial class IFileSystemTests
 
         fs.CreateDirectory("/dir");
 
-        Result rc = fs.DeleteFile("/dir");
+        Result res = fs.DeleteFile("/dir");
 
-        Assert.Result(ResultFs.PathNotFound, rc);
+        Assert.Result(ResultFs.PathNotFound, res);
     }
 
     [Fact]
@@ -49,13 +49,13 @@ public abstract partial class IFileSystemTests
         fs.CreateFile("/file1", 0, CreateFileOptions.None);
         fs.CreateFile("/file2", 0, CreateFileOptions.None);
 
-        Result rcDelete = fs.DeleteFile("/file2");
-        Result rcEntry1 = fs.GetEntryType(out DirectoryEntryType dir1Type, "/file1");
-        Result rcEntry2 = fs.GetEntryType(out _, "/file2");
+        Result resultDelete = fs.DeleteFile("/file2");
+        Result resultEntry1 = fs.GetEntryType(out DirectoryEntryType dir1Type, "/file1");
+        Result resultEntry2 = fs.GetEntryType(out _, "/file2");
 
-        Assert.Success(rcDelete);
-        Assert.Success(rcEntry1);
-        Assert.Result(ResultFs.PathNotFound, rcEntry2);
+        Assert.Success(resultDelete);
+        Assert.Success(resultEntry1);
+        Assert.Result(ResultFs.PathNotFound, resultEntry2);
 
         Assert.Equal(DirectoryEntryType.File, dir1Type);
     }
@@ -68,13 +68,13 @@ public abstract partial class IFileSystemTests
         fs.CreateFile("/file2", 0, CreateFileOptions.None);
         fs.CreateFile("/file1", 0, CreateFileOptions.None);
 
-        Result rcDelete = fs.DeleteFile("/file2");
-        Result rcEntry1 = fs.GetEntryType(out DirectoryEntryType dir1Type, "/file1");
-        Result rcEntry2 = fs.GetEntryType(out _, "/file2");
+        Result resultDelete = fs.DeleteFile("/file2");
+        Result resultEntry1 = fs.GetEntryType(out DirectoryEntryType dir1Type, "/file1");
+        Result resultEntry2 = fs.GetEntryType(out _, "/file2");
 
-        Assert.Success(rcDelete);
-        Assert.Success(rcEntry1);
-        Assert.Result(ResultFs.PathNotFound, rcEntry2);
+        Assert.Success(resultDelete);
+        Assert.Success(resultEntry1);
+        Assert.Result(ResultFs.PathNotFound, resultEntry2);
 
         Assert.Equal(DirectoryEntryType.File, dir1Type);
     }

@@ -385,11 +385,11 @@ public class FileSystemBufferManager : IBufferManager
 
     public Result Initialize(int maxCacheCount, Memory<byte> heapBuffer, int blockSize)
     {
-        Result rc = _cacheTable.Initialize(maxCacheCount);
-        if (rc.IsFailure()) return rc;
+        Result res = _cacheTable.Initialize(maxCacheCount);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _buddyHeap.Initialize(heapBuffer, blockSize);
-        if (rc.IsFailure()) return rc;
+        res = _buddyHeap.Initialize(heapBuffer, blockSize);
+        if (res.IsFailure()) return res.Miss();
 
         _totalSize = (int)_buddyHeap.GetTotalFreeSize();
         _peakFreeSize = _totalSize;
@@ -400,11 +400,11 @@ public class FileSystemBufferManager : IBufferManager
 
     public Result Initialize(int maxCacheCount, Memory<byte> heapBuffer, int blockSize, int maxOrder)
     {
-        Result rc = _cacheTable.Initialize(maxCacheCount);
-        if (rc.IsFailure()) return rc;
+        Result res = _cacheTable.Initialize(maxCacheCount);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _buddyHeap.Initialize(heapBuffer, blockSize, maxOrder);
-        if (rc.IsFailure()) return rc;
+        res = _buddyHeap.Initialize(heapBuffer, blockSize, maxOrder);
+        if (res.IsFailure()) return res.Miss();
 
         _totalSize = (int)_buddyHeap.GetTotalFreeSize();
         _peakFreeSize = _totalSize;
@@ -418,11 +418,11 @@ public class FileSystemBufferManager : IBufferManager
         // Note: We can't use an external buffer for the cache handle table since it contains managed pointers,
         // so pass the work buffer directly to the buddy heap.
 
-        Result rc = _cacheTable.Initialize(maxCacheCount);
-        if (rc.IsFailure()) return rc;
+        Result res = _cacheTable.Initialize(maxCacheCount);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _buddyHeap.Initialize(heapBuffer, blockSize, workBuffer);
-        if (rc.IsFailure()) return rc;
+        res = _buddyHeap.Initialize(heapBuffer, blockSize, workBuffer);
+        if (res.IsFailure()) return res.Miss();
 
         _totalSize = (int)_buddyHeap.GetTotalFreeSize();
         _peakFreeSize = _totalSize;
@@ -437,11 +437,11 @@ public class FileSystemBufferManager : IBufferManager
         // Note: We can't use an external buffer for the cache handle table since it contains managed pointers,
         // so pass the work buffer directly to the buddy heap.
 
-        Result rc = _cacheTable.Initialize(maxCacheCount);
-        if (rc.IsFailure()) return rc;
+        Result res = _cacheTable.Initialize(maxCacheCount);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _buddyHeap.Initialize(heapBuffer, blockSize, maxOrder, workBuffer);
-        if (rc.IsFailure()) return rc;
+        res = _buddyHeap.Initialize(heapBuffer, blockSize, maxOrder, workBuffer);
+        if (res.IsFailure()) return res.Miss();
 
         _totalSize = (int)_buddyHeap.GetTotalFreeSize();
         _peakFreeSize = _totalSize;

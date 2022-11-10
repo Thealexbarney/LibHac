@@ -89,40 +89,40 @@ public class SaveDataIndexer : ISaveDataIndexer
 
             _fsClient.DisableAutoSaveDataCreation();
 
-            Result rc = _fsClient.MountSystemSaveData(new U8Span(_mountName), spaceId, saveDataId);
+            Result res = _fsClient.MountSystemSaveData(new U8Span(_mountName), spaceId, saveDataId);
 
-            if (rc.IsFailure())
+            if (res.IsFailure())
             {
-                if (ResultFs.TargetNotFound.Includes(rc))
+                if (ResultFs.TargetNotFound.Includes(res))
                 {
-                    rc = _fsClient.CreateSystemSaveData(spaceId, saveDataId, 0, SaveDataAvailableSize,
+                    res = _fsClient.CreateSystemSaveData(spaceId, saveDataId, 0, SaveDataAvailableSize,
                         SaveDataJournalSize, 0);
-                    if (rc.IsFailure()) return rc;
+                    if (res.IsFailure()) return res.Miss();
 
-                    rc = _fsClient.MountSystemSaveData(new U8Span(_mountName), spaceId, saveDataId);
-                    if (rc.IsFailure()) return rc;
+                    res = _fsClient.MountSystemSaveData(new U8Span(_mountName), spaceId, saveDataId);
+                    if (res.IsFailure()) return res.Miss();
                 }
-                else if (ResultFs.SignedSystemPartitionDataCorrupted.Includes(rc))
+                else if (ResultFs.SignedSystemPartitionDataCorrupted.Includes(res))
                 {
-                    return rc;
+                    return res;
                 }
-                else if (ResultFs.DataCorrupted.Includes(rc))
+                else if (ResultFs.DataCorrupted.Includes(res))
                 {
                     if (spaceId == SaveDataSpaceId.SdSystem)
-                        return rc;
+                        return res;
 
-                    rc = _fsClient.DeleteSaveData(spaceId, saveDataId);
-                    if (rc.IsFailure()) return rc;
+                    res = _fsClient.DeleteSaveData(spaceId, saveDataId);
+                    if (res.IsFailure()) return res.Miss();
 
-                    rc = _fsClient.CreateSystemSaveData(spaceId, saveDataId, 0, 0xC0000, 0xC0000, 0);
-                    if (rc.IsFailure()) return rc;
+                    res = _fsClient.CreateSystemSaveData(spaceId, saveDataId, 0, 0xC0000, 0xC0000, 0);
+                    if (res.IsFailure()) return res.Miss();
 
-                    rc = _fsClient.MountSystemSaveData(new U8Span(_mountName), spaceId, saveDataId);
-                    if (rc.IsFailure()) return rc;
+                    res = _fsClient.MountSystemSaveData(new U8Span(_mountName), spaceId, saveDataId);
+                    if (res.IsFailure()) return res.Miss();
                 }
                 else
                 {
-                    return rc;
+                    return res;
                 }
             }
 
@@ -308,14 +308,14 @@ public class SaveDataIndexer : ISaveDataIndexer
 
         using var scopedMount = new ScopedMount(_fsClient);
 
-        Result rc = scopedMount.Mount(_mountName, _spaceId, _indexerSaveDataId);
-        if (rc.IsFailure()) return rc;
+        Result res = scopedMount.Mount(_mountName, _spaceId, _indexerSaveDataId);
+        if (res.IsFailure()) return res.Miss();
 
         Span<byte> rootPath = stackalloc byte[MaxPathLength];
         MakeRootPath(rootPath, _mountName);
 
-        rc = _kvDatabase.Initialize(_fsClient, new U8Span(rootPath), KvDatabaseCapacity, _memoryResource, _bufferMemoryResource);
-        if (rc.IsFailure()) return rc;
+        res = _kvDatabase.Initialize(_fsClient, new U8Span(rootPath), KvDatabaseCapacity, _memoryResource, _bufferMemoryResource);
+        if (res.IsFailure()) return res.Miss();
 
         _isInitialized = true;
         return Result.Success;
@@ -337,11 +337,11 @@ public class SaveDataIndexer : ISaveDataIndexer
             return Result.Success;
 
         using var scopedMount = new ScopedMount(_fsClient);
-        Result rc = scopedMount.Mount(_mountName, _spaceId, _indexerSaveDataId);
-        if (rc.IsFailure()) return rc;
+        Result res = scopedMount.Mount(_mountName, _spaceId, _indexerSaveDataId);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = _kvDatabase.Load();
-        if (rc.IsFailure()) return rc;
+        res = _kvDatabase.Load();
+        if (res.IsFailure()) return res.Miss();
 
         bool createdNewFile = false;
 
@@ -350,18 +350,18 @@ public class SaveDataIndexer : ISaveDataIndexer
 
         try
         {
-            rc = _fsClient.OpenFile(out FileHandle file, new U8Span(lastPublishedIdPath), OpenMode.Read);
+            res = _fsClient.OpenFile(out FileHandle file, new U8Span(lastPublishedIdPath), OpenMode.Read);
 
             // Create the last published ID file if it doesn't exist.
-            if (rc.IsFailure())
+            if (res.IsFailure())
             {
-                if (!ResultFs.PathNotFound.Includes(rc)) return rc;
+                if (!ResultFs.PathNotFound.Includes(res)) return res;
 
-                rc = _fsClient.CreateFile(new U8Span(lastPublishedIdPath), LastPublishedIdFileSize);
-                if (rc.IsFailure()) return rc;
+                res = _fsClient.CreateFile(new U8Span(lastPublishedIdPath), LastPublishedIdFileSize);
+                if (res.IsFailure()) return res.Miss();
 
-                rc = _fsClient.OpenFile(out file, new U8Span(lastPublishedIdPath), OpenMode.Read);
-                if (rc.IsFailure()) return rc;
+                res = _fsClient.OpenFile(out file, new U8Span(lastPublishedIdPath), OpenMode.Read);
+                if (res.IsFailure()) return res.Miss();
 
                 createdNewFile = true;
             }
@@ -371,8 +371,8 @@ public class SaveDataIndexer : ISaveDataIndexer
                 // If we had to create the file earlier, we don't need to load the value again.
                 if (!createdNewFile)
                 {
-                    rc = _fsClient.ReadFile(file, 0, SpanHelpers.AsByteSpan(ref _lastPublishedId));
-                    if (rc.IsFailure()) return rc;
+                    res = _fsClient.ReadFile(file, 0, SpanHelpers.AsByteSpan(ref _lastPublishedId));
+                    if (res.IsFailure()) return res.Miss();
                 }
                 else
                 {
@@ -404,19 +404,19 @@ public class SaveDataIndexer : ISaveDataIndexer
 
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        Result rc = TryInitializeDatabase();
-        if (rc.IsFailure()) return rc;
+        Result res = TryInitializeDatabase();
+        if (res.IsFailure()) return res.Miss();
 
-        rc = TryLoadDatabase(forceLoad: false);
-        if (rc.IsFailure()) return rc;
+        res = TryLoadDatabase(forceLoad: false);
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkRequires(_isLoaded);
 
         // Make sure the key isn't in the database already.
         SaveDataIndexerValue value = default;
-        rc = _kvDatabase.Get(out _, in key, SpanHelpers.AsByteSpan(ref value));
+        res = _kvDatabase.Get(out _, in key, SpanHelpers.AsByteSpan(ref value));
 
-        if (rc.IsSuccess())
+        if (res.IsSuccess())
         {
             return ResultFs.AlreadyExists.Log();
         }
@@ -426,16 +426,16 @@ public class SaveDataIndexer : ISaveDataIndexer
         ulong newSaveDataId = _lastPublishedId;
 
         value = new SaveDataIndexerValue { SaveDataId = newSaveDataId };
-        rc = _kvDatabase.Set(in key, SpanHelpers.AsByteSpan(ref value));
+        res = _kvDatabase.Set(in key, SpanHelpers.AsByteSpan(ref value));
 
-        if (rc.IsFailure())
+        if (res.IsFailure())
         {
             _lastPublishedId--;
-            return rc;
+            return res;
         }
 
-        rc = FixReader(in key);
-        if (rc.IsFailure()) return rc;
+        res = FixReader(in key);
+        if (res.IsFailure()) return res.Miss();
 
         saveDataId = value.SaveDataId;
         return Result.Success;
@@ -445,11 +445,11 @@ public class SaveDataIndexer : ISaveDataIndexer
     {
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        Result rc = TryInitializeDatabase();
-        if (rc.IsFailure()) return rc;
+        Result res = TryInitializeDatabase();
+        if (res.IsFailure()) return res.Miss();
 
-        rc = TryLoadDatabase(forceLoad: false);
-        if (rc.IsFailure()) return rc;
+        res = TryLoadDatabase(forceLoad: false);
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkRequires(_isLoaded);
         Assert.SdkRequires(key.StaticSaveDataId != InvalidSystemSaveDataId);
@@ -469,11 +469,11 @@ public class SaveDataIndexer : ISaveDataIndexer
 
         var value = new SaveDataIndexerValue { SaveDataId = key.StaticSaveDataId };
 
-        rc = _kvDatabase.Set(in key, SpanHelpers.AsReadOnlyByteSpan(in value));
-        if (rc.IsFailure()) return rc;
+        res = _kvDatabase.Set(in key, SpanHelpers.AsReadOnlyByteSpan(in value));
+        if (res.IsFailure()) return res.Miss();
 
-        rc = FixReader(in key);
-        if (rc.IsFailure()) return rc;
+        res = FixReader(in key);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -489,11 +489,11 @@ public class SaveDataIndexer : ISaveDataIndexer
     {
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        Result rc = TryInitializeDatabase();
-        if (rc.IsFailure()) return rc;
+        Result res = TryInitializeDatabase();
+        if (res.IsFailure()) return res.Miss();
 
-        rc = TryLoadDatabase(forceLoad: false);
-        if (rc.IsFailure()) return rc;
+        res = TryLoadDatabase(forceLoad: false);
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkRequires(_isLoaded);
 
@@ -512,11 +512,11 @@ public class SaveDataIndexer : ISaveDataIndexer
 
         SaveDataAttribute key = iterator.Get().Key;
 
-        rc = _kvDatabase.Delete(in key);
-        if (rc.IsFailure()) return rc;
+        res = _kvDatabase.Delete(in key);
+        if (res.IsFailure()) return res.Miss();
 
-        rc = FixReader(in key);
-        if (rc.IsFailure()) return rc;
+        res = FixReader(in key);
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
@@ -526,39 +526,39 @@ public class SaveDataIndexer : ISaveDataIndexer
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
         // Make sure we've loaded the database
-        Result rc = TryInitializeDatabase();
-        if (rc.IsFailure()) return rc;
+        Result res = TryInitializeDatabase();
+        if (res.IsFailure()) return res.Miss();
 
-        rc = TryLoadDatabase(forceLoad: false);
-        if (rc.IsFailure()) return rc;
+        res = TryLoadDatabase(forceLoad: false);
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkRequires(_isLoaded);
 
         // Mount the indexer's save data
         using var scopedMount = new ScopedMount(_fsClient);
-        rc = scopedMount.Mount(_mountName, _spaceId, _indexerSaveDataId);
-        if (rc.IsFailure()) return rc;
+        res = scopedMount.Mount(_mountName, _spaceId, _indexerSaveDataId);
+        if (res.IsFailure()) return res.Miss();
 
         // Save the actual database
-        rc = _kvDatabase.Save();
-        if (rc.IsFailure()) return rc;
+        res = _kvDatabase.Save();
+        if (res.IsFailure()) return res.Miss();
 
         // Save the last published save data ID
         Span<byte> lastPublishedIdPath = stackalloc byte[MaxPathLength];
         MakeLastPublishedIdSaveFilePath(lastPublishedIdPath, _mountName);
 
-        rc = _fsClient.OpenFile(out FileHandle file, new U8Span(lastPublishedIdPath), OpenMode.Write);
-        if (rc.IsFailure()) return rc;
+        res = _fsClient.OpenFile(out FileHandle file, new U8Span(lastPublishedIdPath), OpenMode.Write);
+        if (res.IsFailure()) return res.Miss();
 
         bool isFileClosed = false;
 
         try
         {
-            rc = _fsClient.WriteFile(file, 0, SpanHelpers.AsByteSpan(ref _lastPublishedId), WriteOption.None);
-            if (rc.IsFailure()) return rc;
+            res = _fsClient.WriteFile(file, 0, SpanHelpers.AsByteSpan(ref _lastPublishedId), WriteOption.None);
+            if (res.IsFailure()) return res.Miss();
 
-            rc = _fsClient.FlushFile(file);
-            if (rc.IsFailure()) return rc;
+            res = _fsClient.FlushFile(file);
+            if (res.IsFailure()) return res.Miss();
 
             _fsClient.CloseFile(file);
             isFileClosed = true;
@@ -578,11 +578,11 @@ public class SaveDataIndexer : ISaveDataIndexer
     {
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        Result rc = TryInitializeDatabase();
-        if (rc.IsFailure()) return rc;
+        Result res = TryInitializeDatabase();
+        if (res.IsFailure()) return res.Miss();
 
-        rc = TryLoadDatabase(forceLoad: true);
-        if (rc.IsFailure()) return rc;
+        res = TryLoadDatabase(forceLoad: true);
+        if (res.IsFailure()) return res.Miss();
 
         UpdateHandle();
         return Result.Success;
@@ -595,14 +595,14 @@ public class SaveDataIndexer : ISaveDataIndexer
         if (_isLoaded)
             _isLoaded = false;
 
-        Result rc = _fsClient.DeleteSaveData(_indexerSaveDataId);
+        Result res = _fsClient.DeleteSaveData(_indexerSaveDataId);
 
-        if (rc.IsSuccess() || ResultFs.TargetNotFound.Includes(rc))
+        if (res.IsSuccess() || ResultFs.TargetNotFound.Includes(res))
         {
             UpdateHandle();
         }
 
-        return rc;
+        return res;
     }
 
     public Result Get(out SaveDataIndexerValue value, in SaveDataAttribute key)
@@ -611,19 +611,19 @@ public class SaveDataIndexer : ISaveDataIndexer
 
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        Result rc = TryInitializeDatabase();
-        if (rc.IsFailure()) return rc;
+        Result res = TryInitializeDatabase();
+        if (res.IsFailure()) return res.Miss();
 
-        rc = TryLoadDatabase(forceLoad: false);
-        if (rc.IsFailure()) return rc;
+        res = TryLoadDatabase(forceLoad: false);
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkRequires(_isLoaded);
 
-        rc = _kvDatabase.Get(out _, in key, SpanHelpers.AsByteSpan(ref value));
+        res = _kvDatabase.Get(out _, in key, SpanHelpers.AsByteSpan(ref value));
 
-        if (rc.IsFailure())
+        if (res.IsFailure())
         {
-            return ResultFs.TargetNotFound.LogConverted(rc);
+            return ResultFs.TargetNotFound.LogConverted(res);
         }
 
         return Result.Success;
@@ -665,11 +665,11 @@ public class SaveDataIndexer : ISaveDataIndexer
 
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        Result rc = TryInitializeDatabase();
-        if (rc.IsFailure()) return rc;
+        Result res = TryInitializeDatabase();
+        if (res.IsFailure()) return res.Miss();
 
-        rc = TryLoadDatabase(forceLoad: false);
-        if (rc.IsFailure()) return rc;
+        res = TryLoadDatabase(forceLoad: false);
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkRequires(_isLoaded);
 
@@ -695,11 +695,11 @@ public class SaveDataIndexer : ISaveDataIndexer
 
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        Result rc = TryInitializeDatabase();
-        if (rc.IsFailure()) return rc;
+        Result res = TryInitializeDatabase();
+        if (res.IsFailure()) return res.Miss();
 
-        rc = TryLoadDatabase(forceLoad: false);
-        if (rc.IsFailure()) return rc;
+        res = TryLoadDatabase(forceLoad: false);
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkRequires(_isLoaded);
 
@@ -725,11 +725,11 @@ public class SaveDataIndexer : ISaveDataIndexer
     {
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        Result rc = TryInitializeDatabase();
-        if (rc.IsFailure()) return rc;
+        Result res = TryInitializeDatabase();
+        if (res.IsFailure()) return res.Miss();
 
-        rc = TryLoadDatabase(forceLoad: false);
-        if (rc.IsFailure()) return rc;
+        res = TryLoadDatabase(forceLoad: false);
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkRequires(_isLoaded);
 
@@ -836,16 +836,16 @@ public class SaveDataIndexer : ISaveDataIndexer
     {
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        Result rc = TryInitializeDatabase();
-        if (rc.IsFailure()) return rc;
+        Result res = TryInitializeDatabase();
+        if (res.IsFailure()) return res.Miss();
 
-        rc = TryLoadDatabase(forceLoad: false);
-        if (rc.IsFailure()) return rc;
+        res = TryLoadDatabase(forceLoad: false);
+        if (res.IsFailure()) return res.Miss();
 
         // Create the reader and register it in the opened-reader list
         using var reader = new SharedRef<Reader>(new Reader(this));
-        rc = RegisterReader(in reader);
-        if (rc.IsFailure()) return rc;
+        res = RegisterReader(in reader);
+        if (res.IsFailure()) return res.Miss();
 
         outInfoReader.SetByMove(ref reader.Ref());
         return Result.Success;
@@ -884,11 +884,11 @@ public class SaveDataIndexer : ISaveDataIndexer
     {
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        Result rc = TryInitializeDatabase();
-        if (rc.IsFailure()) return rc;
+        Result res = TryInitializeDatabase();
+        if (res.IsFailure()) return res.Miss();
 
-        rc = TryLoadDatabase(forceLoad: false);
-        if (rc.IsFailure()) return rc;
+        res = TryLoadDatabase(forceLoad: false);
+        if (res.IsFailure()) return res.Miss();
 
         Assert.SdkRequires(_isLoaded);
 
@@ -915,8 +915,8 @@ public class SaveDataIndexer : ISaveDataIndexer
         // Run the function on the save data's indexer value and update the value in the database
         func(ref value, data);
 
-        rc = _kvDatabase.Set(in iterator.Get().Key, SpanHelpers.AsReadOnlyByteSpan(in value));
-        if (rc.IsFailure()) return rc;
+        res = _kvDatabase.Set(in iterator.Get().Key, SpanHelpers.AsReadOnlyByteSpan(in value));
+        if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
