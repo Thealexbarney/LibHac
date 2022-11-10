@@ -5,7 +5,6 @@ using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.FsSystem.Impl;
 using LibHac.Os;
-
 using Buffer = LibHac.Mem.Buffer;
 using CacheHandle = System.UInt64;
 
@@ -310,7 +309,6 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
         if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
-
     }
 
     public void FinalizeObject()

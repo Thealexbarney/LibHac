@@ -58,5 +58,6 @@ public struct KeyBlob
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator ReadOnlySpan<byte>(in KeyBlob value) => SpanHelpers.AsReadOnlyByteSpan(in value);
+
     public readonly override string ToString() => BytesRo.ToHexString();
 }

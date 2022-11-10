@@ -7,7 +7,6 @@ using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Os;
 using LibHac.Util;
-
 using Buffer = LibHac.Mem.Buffer;
 using CacheHandle = System.UInt64;
 

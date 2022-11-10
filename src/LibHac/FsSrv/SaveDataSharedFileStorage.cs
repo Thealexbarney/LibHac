@@ -420,7 +420,6 @@ public class SaveDataFileStorageHolder
                 ref Entry entry = ref currentEntry.ValueRef;
                 _entryList.Remove(currentEntry);
                 entry.Dispose();
-
             }
 
             currentEntry = currentEntry.Next;

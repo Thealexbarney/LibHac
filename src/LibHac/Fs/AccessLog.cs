@@ -492,7 +492,6 @@ namespace LibHac.Fs.Impl
                     .Append(LogLineEnd);
 
                 OutputAccessLogImpl(fs, new U8Span(sb.Buffer));
-
             }
             finally
             {

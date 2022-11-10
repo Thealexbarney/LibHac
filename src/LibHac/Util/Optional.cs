@@ -11,6 +11,7 @@ public struct Optional<T>
     private T _value;
 
     public readonly bool HasValue => _hasValue;
+
     public ref T Value
     {
         get
@@ -20,6 +21,7 @@ public struct Optional<T>
             return ref MemoryMarshal.GetReference(SpanHelpers.CreateSpan(ref _value, 1));
         }
     }
+
     public readonly ref readonly T ValueRo
     {
         get

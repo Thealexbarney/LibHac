@@ -14,10 +14,8 @@ using LibHac.Ncm;
 using LibHac.Os;
 using LibHac.Sf;
 using LibHac.Util;
-
 using static LibHac.Fs.SaveData;
 using static LibHac.Fs.StringTraits;
-
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 using IFile = LibHac.Fs.Fsa.IFile;
@@ -445,8 +443,8 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
                 canAccess = accessControl.CanCall(OperationType.FindOwnSaveDataWithFilter);
 
                 bool canAccessDebugSave = accessControl.CanCall(OperationType.DebugSaveData)
-                                        && filter.Attribute.Type == SaveDataType.Account
-                                        && filter.Attribute.UserId == UserId.InvalidId;
+                                          && filter.Attribute.Type == SaveDataType.Account
+                                          && filter.Attribute.UserId == UserId.InvalidId;
 
                 canAccess |= canAccessDebugSave;
             }
@@ -579,7 +577,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         for (int i = 0; i < Unsafe.SizeOf<SaveDataExtraData>(); i++)
         {
             currentExtraDataBytes[i] = (byte)(extraDataBytes[i] & extraDataMaskBytes[i] |
-                                          currentExtraDataBytes[i] & ~extraDataMaskBytes[i]);
+                                              currentExtraDataBytes[i] & ~extraDataMaskBytes[i]);
         }
     }
 

@@ -25,7 +25,7 @@ public class RegisteredLocationResolver : IDisposable
         _interface.Get.RegisterProgramPath(in path, id, ownerId);
 
     public Result UnregisterProgramPath(ProgramId id) =>
-    _interface.Get.UnregisterProgramPath(id);
+        _interface.Get.UnregisterProgramPath(id);
 
     public Result RedirectProgramPath(in Path path, ProgramId id, ProgramId ownerId) =>
         _interface.Get.RedirectProgramPath(in path, id, ownerId);

@@ -35,9 +35,7 @@ public readonly ref struct Ref<T>
     /// <param name="pointer">The pointer to the target value.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public unsafe Ref(void* pointer)
-        : this(ref Unsafe.AsRef<T>(pointer))
-    {
-    }
+        : this(ref Unsafe.AsRef<T>(pointer)) { }
 
     /// <summary>
     /// Gets the <typeparamref name="T"/> reference represented by the current <see cref="Ref{T}"/> instance.
@@ -97,9 +95,7 @@ public readonly ref struct ReadOnlyRef<T>
     /// <param name="pointer">The pointer to the target value.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public unsafe ReadOnlyRef(void* pointer)
-        : this(in Unsafe.AsRef<T>(pointer))
-    {
-    }
+        : this(in Unsafe.AsRef<T>(pointer)) { }
 
     /// <summary>
     /// Gets the <typeparamref name="T"/> reference represented by the current <see cref="Ref{T}"/> instance.

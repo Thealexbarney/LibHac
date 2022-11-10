@@ -121,6 +121,7 @@ public class Calibration
             stream.Position = 0x88 + i * 4;
             WlanCountryCodes[i] = reader.ReadUtf8Z();
         }
+
         stream.Position = 0x210;
         WlanMacAddr = reader.ReadBytes(0x6);
 

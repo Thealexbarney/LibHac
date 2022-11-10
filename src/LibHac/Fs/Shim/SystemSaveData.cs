@@ -5,7 +5,6 @@ using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Os;
-
 using static LibHac.Fs.Impl.AccessLogStrings;
 using static LibHac.Fs.SaveData;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;

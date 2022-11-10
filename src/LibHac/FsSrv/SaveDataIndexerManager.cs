@@ -234,32 +234,32 @@ internal class SaveDataIndexerManager : ISaveDataIndexerManager, IDisposable
     private static ReadOnlySpan<byte> BisIndexerMountName =>
         new[]
         {
-            (byte) 's', (byte) 'a', (byte) 'v', (byte) 'e', (byte) 'D', (byte) 'a', (byte) 't', (byte) 'a',
-            (byte) 'I', (byte) 'x', (byte) 'r', (byte) 'D', (byte) 'b'
+            (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'D', (byte)'a', (byte)'t', (byte)'a',
+            (byte)'I', (byte)'x', (byte)'r', (byte)'D', (byte)'b'
         };
 
     /// <summary>"<c>saveDataIxrDbSd</c>"</summary>
     private static ReadOnlySpan<byte> SdCardIndexerMountName =>
         new[]
         {
-            (byte) 's', (byte) 'a', (byte) 'v', (byte) 'e', (byte) 'D', (byte) 'a', (byte) 't', (byte) 'a',
-            (byte) 'I', (byte) 'x', (byte) 'r', (byte) 'D', (byte) 'b', (byte) 'S', (byte) 'd'
+            (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'D', (byte)'a', (byte)'t', (byte)'a',
+            (byte)'I', (byte)'x', (byte)'r', (byte)'D', (byte)'b', (byte)'S', (byte)'d'
         };
 
     /// <summary>"<c>saveDataIxrDbPr</c>"</summary>
     private static ReadOnlySpan<byte> ProperBisIndexerMountName =>
         new[]
         {
-            (byte) 's', (byte) 'a', (byte) 'v', (byte) 'e', (byte) 'D', (byte) 'a', (byte) 't', (byte) 'a',
-            (byte) 'I', (byte) 'x', (byte) 'r', (byte) 'D', (byte) 'b', (byte) 'P', (byte) 'r'
+            (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'D', (byte)'a', (byte)'t', (byte)'a',
+            (byte)'I', (byte)'x', (byte)'r', (byte)'D', (byte)'b', (byte)'P', (byte)'r'
         };
 
     /// <summary>"<c>saveDataIxrDbSf</c>"</summary>
     private static ReadOnlySpan<byte> SafeModeIndexerMountName =>
         new[]
         {
-            (byte) 's', (byte) 'a', (byte) 'v', (byte) 'e', (byte) 'D', (byte) 'a', (byte) 't', (byte) 'a',
-            (byte) 'I', (byte) 'x', (byte) 'r', (byte) 'D', (byte) 'b', (byte) 'S', (byte) 'f'
+            (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'D', (byte)'a', (byte)'t', (byte)'a',
+            (byte)'I', (byte)'x', (byte)'r', (byte)'D', (byte)'b', (byte)'S', (byte)'f'
         };
 }
 

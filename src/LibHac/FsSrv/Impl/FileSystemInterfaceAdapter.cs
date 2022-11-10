@@ -6,7 +6,6 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 using LibHac.Sf;
-
 using IFile = LibHac.Fs.Fsa.IFile;
 using IFileSf = LibHac.FsSrv.Sf.IFile;
 using IDirectory = LibHac.Fs.Fsa.IDirectory;

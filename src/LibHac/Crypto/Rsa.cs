@@ -142,8 +142,7 @@ public static class Rsa
             {
                 rng.NextBytes(rndBuf);
                 g = GetBigInteger(rndBuf);
-            }
-            while (g >= n);
+            } while (g >= n);
 
             y = BigInteger.ModPow(g, r, n);
 

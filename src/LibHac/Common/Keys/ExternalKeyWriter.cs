@@ -5,7 +5,6 @@ using System.Text;
 using LibHac.Fs;
 using LibHac.Spl;
 using LibHac.Util;
-
 using Type = LibHac.Common.Keys.KeyInfo.KeyType;
 using RangeType = LibHac.Common.Keys.KeyInfo.KeyRangeType;
 
@@ -150,6 +149,7 @@ public static class ExternalKeyWriter
             PrintKeys(keySet, sb, DefaultKeySet.CreateKeyList(), Type.Common | Type.Seed | Type.DifferentDev, true);
             keySet.SetMode(KeySet.Mode.Prod);
         }
+
         return sb.ToString();
     }
 

@@ -1258,7 +1258,7 @@ public static class PathFunctions
     /// <see cref="ResultFs.InvalidArgument"/>: <paramref name="pathBuffer"/> was too small to contain the built path.</returns>
     internal static Result SetUpFixedPathSaveMetaName(ref Path path, Span<byte> pathBuffer, uint metaType)
     {
-        ReadOnlySpan<byte> metaExtension = new[] { (byte)'.', (byte)'m', (byte)'e', (byte)'t', (byte)'a' };  // ".meta"
+        ReadOnlySpan<byte> metaExtension = new[] { (byte)'.', (byte)'m', (byte)'e', (byte)'t', (byte)'a' }; // ".meta"
 
         var sb = new U8StringBuilder(pathBuffer);
         sb.Append((byte)'/').AppendFormat(metaType, 'x', 8).Append(metaExtension);
@@ -1282,9 +1282,9 @@ public static class PathFunctions
     {
         ReadOnlySpan<byte> metaDirectoryName = new[]
         {
-                (byte)'/', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'M', (byte)'e', (byte)'t',
-                (byte)'a', (byte)'/'
-            };
+            (byte)'/', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'M', (byte)'e', (byte)'t',
+            (byte)'a', (byte)'/'
+        };
 
         var sb = new U8StringBuilder(pathBuffer);
         sb.Append(metaDirectoryName).AppendFormat(saveDataId, 'x', 16);

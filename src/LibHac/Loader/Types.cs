@@ -2,6 +2,7 @@
 using LibHac.Common;
 using LibHac.Common.FixedArrays;
 using LibHac.Ncm;
+
 #pragma warning disable 169 // Unused private fields
 
 namespace LibHac.Loader;

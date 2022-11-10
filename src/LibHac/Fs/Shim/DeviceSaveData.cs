@@ -8,7 +8,6 @@ using LibHac.Ncm;
 using LibHac.Os;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
-
 using static LibHac.Fs.Impl.AccessLogStrings;
 using static LibHac.Fs.SaveData;
 

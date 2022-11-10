@@ -192,13 +192,13 @@ public class HierarchicalIntegrityVerificationStorage : IStorage
 
     private static readonly string[] SaltSources =
     {
-            "HierarchicalIntegrityVerificationStorage::Master",
-            "HierarchicalIntegrityVerificationStorage::L1",
-            "HierarchicalIntegrityVerificationStorage::L2",
-            "HierarchicalIntegrityVerificationStorage::L3",
-            "HierarchicalIntegrityVerificationStorage::L4",
-            "HierarchicalIntegrityVerificationStorage::L5"
-        };
+        "HierarchicalIntegrityVerificationStorage::Master",
+        "HierarchicalIntegrityVerificationStorage::L1",
+        "HierarchicalIntegrityVerificationStorage::L2",
+        "HierarchicalIntegrityVerificationStorage::L3",
+        "HierarchicalIntegrityVerificationStorage::L4",
+        "HierarchicalIntegrityVerificationStorage::L5"
+    };
 }
 
 public static class HierarchicalIntegrityVerificationStorageExtensions

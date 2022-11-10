@@ -855,7 +855,6 @@ public static class CharacterEncoding
 
             bufferSrc[1] = source[1];
             bufferSrc[2] = source[2];
-
         }
         else if (source[0] >= 0xF0 && source[0] < 0xF8)
         {
@@ -1001,7 +1000,6 @@ public static class CharacterEncoding
             destination[0] = (byte)(0xE0 | (source >> 12) & 0xF);
             destination[1] = (byte)(0x80 | (source >> 6) & 0x3F);
             destination[2] = (byte)(0x80 | (source >> 0) & 0x3F);
-
         }
         else if (source < 0x110000)
         {

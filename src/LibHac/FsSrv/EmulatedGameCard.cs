@@ -20,6 +20,7 @@ public class EmulatedGameCard
     {
         KeySet = keySet;
     }
+
     public GameCardHandle GetGameCardHandle()
     {
         return Handle;

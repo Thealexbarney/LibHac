@@ -22,8 +22,7 @@ public static class Lz4
                 do
                 {
                     length += sum = cmp[cmpPos++];
-                }
-                while (sum == 0xff);
+                } while (sum == 0xff);
             }
 
             return length;
@@ -70,9 +69,8 @@ public static class Lz4
                     dec[decPos++] = dec[encPos++];
                 }
             }
-        }
-        while (cmpPos < cmp.Length &&
-               decPos < dec.Length);
+        } while (cmpPos < cmp.Length &&
+                 decPos < dec.Length);
 
         return dec;
     }
@@ -92,8 +90,7 @@ public static class Lz4
                 do
                 {
                     length += sum = cmp[cmpPos++];
-                }
-                while (sum == 0xff);
+                } while (sum == 0xff);
             }
 
             return length;
@@ -140,8 +137,7 @@ public static class Lz4
                     dec[decPos++] = dec[encPos++];
                 }
             }
-        }
-        while (cmpPos < cmp.Length &&
-               decPos < dec.Length);
+        } while (cmpPos < cmp.Length &&
+                 decPos < dec.Length);
     }
 }

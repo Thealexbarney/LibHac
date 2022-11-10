@@ -395,7 +395,7 @@ public class NcaReader : IDisposable
         for (int i = 0; i < (int)NcaHeader.DecryptionKey.Count; i++)
         {
             if (!CryptoUtil.IsSameBytes(zeroKey,
-                    _header.EncryptedKeys.ItemsRo.Slice(i * Aes.KeySize128, Aes.KeySize128), Aes.KeySize128))
+                _header.EncryptedKeys.ItemsRo.Slice(i * Aes.KeySize128, Aes.KeySize128), Aes.KeySize128))
             {
                 return true;
             }

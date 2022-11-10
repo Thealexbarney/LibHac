@@ -122,7 +122,9 @@ public class SwitchFs : IDisposable
             catch (MissingKeyException ex)
             {
                 if (ex.Name == null)
-                { Console.WriteLine($"{ex.Message} File:\n{fileEntry}"); }
+                {
+                    Console.WriteLine($"{ex.Message} File:\n{fileEntry}");
+                }
                 else
                 {
                     string name = ex.Type == KeyType.Title ? $"Title key for rights ID {ex.Name}" : ex.Name;

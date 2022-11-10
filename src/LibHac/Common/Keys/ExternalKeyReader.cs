@@ -146,8 +146,7 @@ public static class ExternalKeyReader
     /// <param name="keyList">A list of all the keys that will be loaded into the key set.
     /// <see cref="DefaultKeySet.CreateKeyList"/> will create a list containing all loadable keys.</param>
     /// <param name="logger">An optional logger that key-parsing errors will be written to.</param>
-    public static void ReadMainKeys(KeySet keySet, Stream reader, List<KeyInfo> keyList,
-                IProgressReport logger = null)
+    public static void ReadMainKeys(KeySet keySet, Stream reader, List<KeyInfo> keyList, IProgressReport logger = null)
     {
         if (reader == null) return;
 

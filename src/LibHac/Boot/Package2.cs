@@ -119,11 +119,11 @@ public struct Package2Meta
 
         // Verify that no payloads overlap.
         for (int i = 0; i < Package2Header.PayloadCount - 1; i++)
-            for (int j = i + 1; j < Package2Header.PayloadCount; j++)
-            {
-                if (Overlap.HasOverlap(PayloadOffsets[i], PayloadSizes[i], PayloadOffsets[j], PayloadSizes[j]))
-                    return ResultLibHac.InvalidPackage2MetaPayloadsOverlap.Log();
-            }
+        for (int j = i + 1; j < Package2Header.PayloadCount; j++)
+        {
+            if (Overlap.HasOverlap(PayloadOffsets[i], PayloadSizes[i], PayloadOffsets[j], PayloadSizes[j]))
+                return ResultLibHac.InvalidPackage2MetaPayloadsOverlap.Log();
+        }
 
         // Check whether any payload contains the entrypoint.
         for (int i = 0; i < Package2Header.PayloadCount; i++)

@@ -230,6 +230,7 @@ public static class Utilities
         {
             return bytes.ToString("0 B"); // Byte
         }
+
         // Divide by 1024 to get fractional value
         readable = readable / 1024;
         // Return formatted number with suffix

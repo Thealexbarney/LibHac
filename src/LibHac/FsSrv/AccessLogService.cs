@@ -67,10 +67,10 @@ internal readonly struct AccessLogService
     private static ReadOnlySpan<byte> MultiProgramTag => // FS_ACCESS: { multi_program_tag: true }\n
         new[]
         {
-            (byte) 'F', (byte) 'S', (byte) '_', (byte) 'A', (byte) 'C', (byte) 'C', (byte) 'E', (byte) 'S',
-            (byte) 'S', (byte) ':', (byte) ' ', (byte) '{', (byte) ' ', (byte) 'm', (byte) 'u', (byte) 'l',
-            (byte) 't', (byte) 'i', (byte) '_', (byte) 'p', (byte) 'r', (byte) 'o', (byte) 'g', (byte) 'r',
-            (byte) 'a', (byte) 'm', (byte) '_', (byte) 't', (byte) 'a', (byte) 'g', (byte) ':', (byte) ' ',
-            (byte) 't', (byte) 'r', (byte) 'u', (byte) 'e', (byte) ' ', (byte) '}', (byte) '\n'
+            (byte)'F', (byte)'S', (byte)'_', (byte)'A', (byte)'C', (byte)'C', (byte)'E', (byte)'S',
+            (byte)'S', (byte)':', (byte)' ', (byte)'{', (byte)' ', (byte)'m', (byte)'u', (byte)'l',
+            (byte)'t', (byte)'i', (byte)'_', (byte)'p', (byte)'r', (byte)'o', (byte)'g', (byte)'r',
+            (byte)'a', (byte)'m', (byte)'_', (byte)'t', (byte)'a', (byte)'g', (byte)':', (byte)' ',
+            (byte)'t', (byte)'r', (byte)'u', (byte)'e', (byte)' ', (byte)'}', (byte)'\n'
         };
 }

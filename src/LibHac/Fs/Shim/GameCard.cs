@@ -9,10 +9,8 @@ using LibHac.Gc;
 using LibHac.Os;
 using LibHac.Sf;
 using LibHac.Util;
-
 using static LibHac.Fs.Impl.AccessLogStrings;
 using static LibHac.Gc.Values;
-
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 using IStorageSf = LibHac.FsSrv.Sf.IStorage;

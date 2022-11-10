@@ -163,6 +163,7 @@ public static class StringUtils
         {
             c = (byte)(c | 0x20);
         }
+
         return c;
     }
 

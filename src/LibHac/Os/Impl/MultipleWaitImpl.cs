@@ -241,6 +241,7 @@ public class MultiWaitImpl : IDisposable
                         outHolder = null;
                         return waitResult;
                     }
+
                     break;
                 case WaitCancelled:
                 {

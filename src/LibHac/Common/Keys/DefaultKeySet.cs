@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-
 using Type = LibHac.Common.Keys.KeyInfo.KeyType;
 
 namespace LibHac.Common.Keys;

@@ -6,7 +6,7 @@ namespace LibHac.Tools.FsSystem.Save;
 
 public class JournalMap
 {
-    private int MapEntryLength = 8;
+    private const int MapEntryLength = 8;
     public JournalMapHeader Header { get; }
     private JournalMapEntry[] Entries { get; }
 

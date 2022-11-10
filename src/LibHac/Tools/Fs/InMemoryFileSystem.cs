@@ -434,12 +434,12 @@ public class InMemoryFileSystem : IAttributeFileSystem
 
     private class FileTable
     {
-        private DirectoryNode Root;
+        private DirectoryNode _root;
 
         public FileTable()
         {
-            Root = new DirectoryNode();
-            Root.Name = new U8String("");
+            _root = new DirectoryNode();
+            _root.Name = new U8String("");
         }
 
         public Result AddFile(U8Span path)
@@ -645,7 +645,7 @@ public class InMemoryFileSystem : IAttributeFileSystem
         private Result FindDirectory(U8Span path, out DirectoryNode directory)
         {
             var parser = new PathParser(path);
-            DirectoryNode current = Root;
+            DirectoryNode current = _root;
 
             while (parser.MoveNext())
             {

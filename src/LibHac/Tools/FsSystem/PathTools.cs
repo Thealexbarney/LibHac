@@ -493,8 +493,7 @@ public static class PathTools
 
     public static bool MatchesPattern(string searchPattern, string name, bool ignoreCase)
     {
-        return FileSystemName.MatchesSimpleExpression(searchPattern.AsSpan(),
-                       name.AsSpan(), ignoreCase);
+        return FileSystemName.MatchesSimpleExpression(searchPattern.AsSpan(), name.AsSpan(), ignoreCase);
     }
 
     private static bool IsValidMountNameChar(char c)

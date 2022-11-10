@@ -12,7 +12,6 @@ using LibHac.Kvdb;
 using LibHac.Os;
 using LibHac.Sf;
 using LibHac.Util;
-
 using static LibHac.Fs.SaveData;
 
 namespace LibHac.FsSrv;
@@ -41,8 +40,8 @@ public class SaveDataIndexer : ISaveDataIndexer
     private static ReadOnlySpan<byte> LastPublishedIdFileName => // lastPublishedId
         new[]
         {
-            (byte) 'l', (byte) 'a', (byte) 's', (byte) 't', (byte) 'P', (byte) 'u', (byte) 'b', (byte) 'l',
-            (byte) 'i', (byte) 's', (byte) 'h', (byte) 'e', (byte) 'd', (byte) 'I', (byte) 'd'
+            (byte)'l', (byte)'a', (byte)'s', (byte)'t', (byte)'P', (byte)'u', (byte)'b', (byte)'l',
+            (byte)'i', (byte)'s', (byte)'h', (byte)'e', (byte)'d', (byte)'I', (byte)'d'
         };
 
     private static ReadOnlySpan<byte> MountDelimiter => // :/

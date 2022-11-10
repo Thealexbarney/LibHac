@@ -104,7 +104,7 @@ public class TickManager : IDisposable
 
             // Calculate the tick, and invert back to negative if needed.
             long ticks = (seconds * tickFreq) +
-                        ((frac * tickFreq + nanoSecondsPerSecond - 1) / nanoSecondsPerSecond);
+                         ((frac * tickFreq + nanoSecondsPerSecond - 1) / nanoSecondsPerSecond);
 
             if (isNegative)
             {

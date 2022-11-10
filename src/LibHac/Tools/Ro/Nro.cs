@@ -53,7 +53,6 @@ public class Nro
 
         return AssetStorage.Slice(header.FileOffset, header.Size, leaveOpen);
     }
-
 }
 
 public class NroStart

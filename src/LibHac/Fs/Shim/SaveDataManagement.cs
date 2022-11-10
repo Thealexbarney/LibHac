@@ -12,7 +12,6 @@ using LibHac.Ncm;
 using LibHac.Os;
 using LibHac.Sf;
 using LibHac.Time;
-
 using static LibHac.Fs.Impl.AccessLogStrings;
 using static LibHac.Fs.SaveData;
 

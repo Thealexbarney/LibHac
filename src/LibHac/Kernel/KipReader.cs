@@ -289,6 +289,7 @@ public class KipReader : IDisposable
                     // Copy directly.
                     data[--outOffset] = data[--inOffset];
                 }
+
                 control <<= 1;
 
                 if (outOffset == 0)

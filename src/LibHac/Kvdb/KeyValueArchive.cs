@@ -174,7 +174,7 @@ internal ref struct KeyValueArchiveBufferWriter
     {
         // Bounds check.
         Abort.DoAbortUnless(_offset + source.Length <= _buffer.Length &&
-                    _offset + source.Length > _offset);
+                            _offset + source.Length > _offset);
 
         source.CopyTo(_buffer.Slice(_offset));
         _offset += source.Length;

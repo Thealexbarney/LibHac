@@ -908,13 +908,13 @@ public class NcaFileSystemServiceImpl
     private static ReadOnlySpan<byte> SdCardNintendoRootDirectoryName => // Nintendo
         new[]
         {
-            (byte) 'N', (byte) 'i', (byte) 'n', (byte) 't', (byte) 'e', (byte) 'n', (byte) 'd', (byte) 'o'
+            (byte)'N', (byte)'i', (byte)'n', (byte)'t', (byte)'e', (byte)'n', (byte)'d', (byte)'o'
         };
 
     private static ReadOnlySpan<byte> ContentStorageDirectoryName => // Contents
         new[]
         {
-            (byte) 'C', (byte) 'o', (byte) 'n', (byte) 't', (byte) 'e', (byte) 'n', (byte) 't', (byte) 's'
+            (byte)'C', (byte)'o', (byte)'n', (byte)'t', (byte)'e', (byte)'n', (byte)'t', (byte)'s'
         };
 }
 

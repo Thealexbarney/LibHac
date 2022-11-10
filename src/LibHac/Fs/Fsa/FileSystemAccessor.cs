@@ -311,6 +311,7 @@ internal class FileSystemAccessor : IDisposable
             res = _fileSystem.Get.RenameDirectory(in currentPathNormalized, in newPathNormalized);
             if (res.IsFailure()) return res.Miss();
         }
+
         return Result.Success;
     }
 
@@ -578,7 +579,7 @@ internal class FileSystemAccessor : IDisposable
     public static ReadOnlySpan<byte> LogLineEnd => new[] { (byte)')', (byte)'\n' }; // ")\n"
 
     /// <summary>"<c> | </c>"</summary>
-    public static ReadOnlySpan<byte> LogOrOperator => new[] { (byte)' ', (byte)'|', (byte)' ' };  // " | "
+    public static ReadOnlySpan<byte> LogOrOperator => new[] { (byte)' ', (byte)'|', (byte)' ' }; // " | "
 
     /// <summary>"<c>OpenMode_Read</c>"</summary>
     private static ReadOnlySpan<byte> LogOpenModeRead => // "OpenMode_Read"

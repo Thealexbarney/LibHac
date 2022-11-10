@@ -1,5 +1,4 @@
 ﻿global using GameCardHandle = System.UInt32;
-
 using System;
 using LibHac.Common.FixedArrays;
 

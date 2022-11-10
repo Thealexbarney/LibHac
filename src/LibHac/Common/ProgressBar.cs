@@ -110,6 +110,7 @@ public class ProgressBar : IDisposable, IProgressReport
                 int progressBlockCount = (int)Math.Min(progress * BlockCount, BlockCount);
                 text = $"[{new string('#', progressBlockCount)}{new string('-', BlockCount - progressBlockCount)}] {_progress}/{_total} {progress:P1} {Animation[_animationIndex++ % Animation.Length]}{speed}";
             }
+
             UpdateText(text);
 
             ResetTimer();

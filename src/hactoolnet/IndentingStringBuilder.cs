@@ -5,17 +5,17 @@ namespace hactoolnet;
 
 public struct ScopedIndentation : IDisposable
 {
-    private IndentingStringBuilder Builder;
+    private IndentingStringBuilder _builder;
 
     public ScopedIndentation(IndentingStringBuilder builder)
     {
         builder.IncreaseLevel();
-        Builder = builder;
+        _builder = builder;
     }
 
     public void Dispose()
     {
-        Builder.DecreaseLevel();
+        _builder.DecreaseLevel();
     }
 }
 

@@ -2,6 +2,7 @@
 using LibHac.Common.FixedArrays;
 
 namespace LibHac.Fs;
+
 public struct DirectoryEntry
 {
     public Array769<byte> Name;

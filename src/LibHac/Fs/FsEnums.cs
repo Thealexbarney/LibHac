@@ -74,7 +74,6 @@ public enum FileSystemProxyType
     RegisteredUpdate = 8
 }
 
-
 public enum ImageDirectoryId
 {
     Nand = 0,

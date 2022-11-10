@@ -7,7 +7,6 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 using LibHac.Util;
-
 using OpenType = LibHac.FsSrv.SaveDataOpenTypeSetFileStorage.OpenType;
 
 namespace LibHac.FsSrv.FsCreator;

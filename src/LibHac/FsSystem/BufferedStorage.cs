@@ -7,7 +7,6 @@ using LibHac.Fs;
 using LibHac.FsSystem.Buffers;
 using LibHac.Os;
 using LibHac.Util;
-
 using Buffer = LibHac.Mem.Buffer;
 using CacheHandle = System.UInt64;
 
@@ -882,7 +881,6 @@ public class BufferedStorage : IStorage
                 using var lk = new ScopedLock<SdkMutexType>(ref _bufferedStorage._mutex);
 
                 _cache.Value.UnprepareFetch();
-
             }
         }
 
@@ -1693,6 +1691,7 @@ public class BufferedStorage : IStorage
                         }
                     }
                 }
+
                 cache.Write(currentOffset, currentSource.Slice(0, currentSize));
 
                 BufferManagerUtility.EnableBlockingBufferManagerAllocation();

@@ -80,7 +80,6 @@ public static class ReaderWriterLockApi
     {
         Assert.SdkRequires(rwLock.LockState == ReaderWriterLockType.State.Initialized);
         return ReaderWriterLockImpl.GetReadLockCount(in ReaderWriterLockImpl.GetLockCountRo(in rwLock)) != 0;
-
     }
 
     // Todo: Use Horizon thread APIs

@@ -27,6 +27,6 @@ internal static class CommonPaths
     public static ReadOnlySpan<byte> SdCardNintendoRootDirectoryName => // Nintendo
         new[]
         {
-                (byte) 'N', (byte) 'i', (byte) 'n', (byte) 't', (byte) 'e', (byte) 'n', (byte) 'd', (byte) 'o'
+            (byte)'N', (byte)'i', (byte)'n', (byte)'t', (byte)'e', (byte)'n', (byte)'d', (byte)'o'
         };
 }

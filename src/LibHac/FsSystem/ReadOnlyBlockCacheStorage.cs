@@ -5,7 +5,6 @@ using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Os;
 using LibHac.Util;
-
 using BlockCache = LibHac.FsSystem.LruListCache<long, System.Memory<byte>>;
 
 namespace LibHac.FsSystem;

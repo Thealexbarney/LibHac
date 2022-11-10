@@ -53,7 +53,6 @@ public class ProgramIndexMapInfoManager : IDisposable
         // We skip running ClearImpl() if the allocation failed because we don't need to worry about that in C#
 
         return Result.Success;
-
     }
 
     /// <summary>

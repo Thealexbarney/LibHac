@@ -8,7 +8,6 @@ using LibHac.Fs.Shim;
 using LibHac.FsSrv.Sf;
 using LibHac.Sf;
 using LibHac.Util;
-
 using static LibHac.Fs.SaveData;
 
 // ReSharper disable once CheckNamespace
