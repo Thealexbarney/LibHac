@@ -25,6 +25,20 @@ public static class Common
             "//-----------------------------------------------------------------------------";
     }
 
+    private static void WriteToLog(string message)
+    {
+        // If the logger is of type "SilentLogger", we're probably running as a separate process from nuke,
+        // so we want to log to the console so the nuke instance that launched us will get our output.
+        if (Serilog.Log.Logger.GetType().Name.Contains("SilentLogger"))
+        {
+            Console.WriteLine(message);
+        }
+        else
+        {
+            Serilog.Log.Debug(message);
+        }
+    }
+
     // Write the file only if it has changed
     // Preserve the UTF-8 BOM usage if the file already exists
     public static void WriteOutput(string relativePath, string text)
@@ -67,11 +81,11 @@ public static class Common
 
         if (oldFile?.SequenceEqual(newFile) == true)
         {
-            Serilog.Log.Debug($"{relativePath} is already up-to-date");
+            WriteToLog($"{relativePath} is already up-to-date");
             return;
         }
 
-        Serilog.Log.Debug($"Generated file {relativePath}");
+        WriteToLog($"Generated file {relativePath}");
         File.WriteAllBytes(fullPath, newFile);
     }
 

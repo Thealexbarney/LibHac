@@ -49,7 +49,7 @@ public static class KeysCodeGen
         BuildArray(sb, "RsaSigningKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.RsaSigningKeysProd));
         BuildArray(sb, "RsaKeys", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.RsaKeys));
 
-        sb.DecreaseAndAppendLine("}");
+        sb.DecreaseAndAppend("}");
 
         return sb.ToString();
     }
@@ -145,7 +145,7 @@ public static class KeysCodeGen
 
     private static ReadOnlySpan<byte> StandardPublicExponent => new byte[]
     {
-            0x01, 0x00, 0x01
+        0x01, 0x00, 0x01
     };
 
     private static ReadOnlySpan<byte> BetaNca0Modulus => new byte[]

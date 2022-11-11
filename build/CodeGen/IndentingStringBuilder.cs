@@ -75,6 +75,13 @@ public class IndentingStringBuilder
         return this;
     }
 
+    public IndentingStringBuilder DecreaseAndAppend(string value)
+    {
+        DecreaseLevel();
+        Append(value);
+        return this;
+    }
+
     private void IndentIfNeeded()
     {
         if (!_hasIndentedCurrentLine)

@@ -9,6 +9,7 @@ namespace LibHacBuild.CodeGen.Stage2;
 public static class RunStage2
 {
     private const string SolutionFileName = "LibHac.sln";
+
     public static int Main(string[] args)
     {
         if (!File.Exists(SolutionFileName))

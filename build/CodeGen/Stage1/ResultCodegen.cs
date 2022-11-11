@@ -295,8 +295,7 @@ public static class ResultCodeGen
             sb.DecreaseLevel();
         }
 
-        sb.DecreaseAndAppendLine("}");
-
+        sb.DecreaseAndAppend("}");
 
         return sb.ToString();
     }
@@ -405,7 +404,7 @@ public static class ResultCodeGen
 
         sb.AppendLine();
         sb.DecreaseAndAppendLine("};");
-        sb.DecreaseAndAppendLine("}");
+        sb.DecreaseAndAppend("}");
 
         return sb.ToString();
     }
