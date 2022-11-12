@@ -12,92 +12,92 @@ public class PathToolsTests
 {
     public static object[][] NormalizedPathTestItems =
     {
-            new object[] {"", "/"},
-            new object[] {"/", "/"},
-            new object[] {"/.", "/"},
-            new object[] {"/a/b/c", "/a/b/c"},
-            new object[] {"/a/b/../c", "/a/c"},
-            new object[] {"/a/b/c/..", "/a/b"},
-            new object[] {"/a/b/c/.", "/a/b/c"},
-            new object[] {"/a/../../..", "/"},
-            new object[] {"/a/../../../a/b/c", "/a/b/c"},
-            new object[] {"//a/b//.//c", "/a/b/c"},
-            new object[] {"/../a/b/c/.", "/a/b/c"},
-            new object[] {"/./aaa/bbb/ccc/.", "/aaa/bbb/ccc"},
+        new object[] { "", "/" },
+        new object[] { "/", "/" },
+        new object[] { "/.", "/" },
+        new object[] { "/a/b/c", "/a/b/c" },
+        new object[] { "/a/b/../c", "/a/c" },
+        new object[] { "/a/b/c/..", "/a/b" },
+        new object[] { "/a/b/c/.", "/a/b/c" },
+        new object[] { "/a/../../..", "/" },
+        new object[] { "/a/../../../a/b/c", "/a/b/c" },
+        new object[] { "//a/b//.//c", "/a/b/c" },
+        new object[] { "/../a/b/c/.", "/a/b/c" },
+        new object[] { "/./aaa/bbb/ccc/.", "/aaa/bbb/ccc" },
 
-            new object[] {"/a/b/c/", "/a/b/c/"},
-            new object[] {"a/b/c/", "/a/b/c/"},
-            new object[] {"/aa/./bb/../cc/", "/aa/cc/"},
-            new object[] {"/./b/../c/", "/c/"},
-            new object[] {"/a/../../../", "/"},
-            new object[] {"//a/b//.//c/", "/a/b/c/"},
-            new object[] {"/tmp/../", "/"},
+        new object[] { "/a/b/c/", "/a/b/c/" },
+        new object[] { "a/b/c/", "/a/b/c/" },
+        new object[] { "/aa/./bb/../cc/", "/aa/cc/" },
+        new object[] { "/./b/../c/", "/c/" },
+        new object[] { "/a/../../../", "/" },
+        new object[] { "//a/b//.//c/", "/a/b/c/" },
+        new object[] { "/tmp/../", "/" },
 
-            new object[] {"a", "/a"},
-            new object[] {"a/../../../a/b/c", "/a/b/c"},
-            new object[] {"./b/../c/", "/c/"},
-            new object[] {".", "/"},
-            new object[] {"..", "/"},
-            new object[] {"../a/b/c/.", "/a/b/c"},
-            new object[] {"./a/b/c/.", "/a/b/c"},
+        new object[] { "a", "/a" },
+        new object[] { "a/../../../a/b/c", "/a/b/c" },
+        new object[] { "./b/../c/", "/c/" },
+        new object[] { ".", "/" },
+        new object[] { "..", "/" },
+        new object[] { "../a/b/c/.", "/a/b/c" },
+        new object[] { "./a/b/c/.", "/a/b/c" },
 
-            new object[] {"a:/a/b/c", "a:/a/b/c"},
-            new object[] {"mount:/a/b/../c", "mount:/a/c"},
-            new object[] {"mount:", "mount:/"},
-            new object[] {"abc:/a/../../../a/b/c", "abc:/a/b/c"},
-            new object[] {"abc:/./b/../c/", "abc:/c/"},
-            new object[] {"abc:/.", "abc:/"},
-            new object[] {"abc:/..", "abc:/"},
-            new object[] {"abc:/", "abc:/"},
-            new object[] {"abc://a/b//.//c", "abc:/a/b/c"},
-            new object[] {"abc:/././/././a/b//.//c", "abc:/a/b/c"},
-            new object[] {"mount:/d./aa", "mount:/d./aa"},
-        };
+        new object[] { "a:/a/b/c", "a:/a/b/c" },
+        new object[] { "mount:/a/b/../c", "mount:/a/c" },
+        new object[] { "mount:", "mount:/" },
+        new object[] { "abc:/a/../../../a/b/c", "abc:/a/b/c" },
+        new object[] { "abc:/./b/../c/", "abc:/c/" },
+        new object[] { "abc:/.", "abc:/" },
+        new object[] { "abc:/..", "abc:/" },
+        new object[] { "abc:/", "abc:/" },
+        new object[] { "abc://a/b//.//c", "abc:/a/b/c" },
+        new object[] { "abc:/././/././a/b//.//c", "abc:/a/b/c" },
+        new object[] { "mount:/d./aa", "mount:/d./aa" },
+    };
 
     public static object[][] SubPathTestItems =
     {
-            new object[] {"/", "/", false},
-            new object[] {"/", "/a", true},
-            new object[] {"/", "/a/", true},
+        new object[] { "/", "/", false },
+        new object[] { "/", "/a", true },
+        new object[] { "/", "/a/", true },
 
-            new object[] {"/a/b/c", "/a/b/c/d", true},
-            new object[] {"/a/b/c/", "/a/b/c/d", true},
+        new object[] { "/a/b/c", "/a/b/c/d", true },
+        new object[] { "/a/b/c/", "/a/b/c/d", true },
 
-            new object[] {"/a/b/c", "/a/b/c", false},
-            new object[] {"/a/b/c/", "/a/b/c/", false},
-            new object[] {"/a/b/c/", "/a/b/c", false},
-            new object[] {"/a/b/c", "/a/b/c/", false},
+        new object[] { "/a/b/c", "/a/b/c", false },
+        new object[] { "/a/b/c/", "/a/b/c/", false },
+        new object[] { "/a/b/c/", "/a/b/c", false },
+        new object[] { "/a/b/c", "/a/b/c/", false },
 
-            new object[] {"/a/b/c/", "/a/b/cdef", false},
-            new object[] {"/a/b/c", "/a/b/cdef", false},
-            new object[] {"/a/b/c/", "/a/b/cd", false},
+        new object[] { "/a/b/c/", "/a/b/cdef", false },
+        new object[] { "/a/b/c", "/a/b/cdef", false },
+        new object[] { "/a/b/c/", "/a/b/cd", false },
 
-            new object[] {"mount:/", "mount:/", false},
-            new object[] {"mount:/", "mount:/a", true},
-            new object[] {"mount:/", "mount:/a/", true},
+        new object[] { "mount:/", "mount:/", false },
+        new object[] { "mount:/", "mount:/a", true },
+        new object[] { "mount:/", "mount:/a/", true },
 
-            new object[] {"mount:/a/b/c", "mount:/a/b/c/d", true},
-            new object[] {"mount:/a/b/c/", "mount:/a/b/c/d", true},
+        new object[] { "mount:/a/b/c", "mount:/a/b/c/d", true },
+        new object[] { "mount:/a/b/c/", "mount:/a/b/c/d", true },
 
-            new object[] {"mount:/a/b/c", "mount:/a/b/c", false},
-            new object[] {"mount:/a/b/c/", "mount:/a/b/c/", false},
-            new object[] {"mount:/a/b/c/", "mount:/a/b/c", false},
-            new object[] {"mount:/a/b/c", "mount:/a/b/c/", false},
+        new object[] { "mount:/a/b/c", "mount:/a/b/c", false },
+        new object[] { "mount:/a/b/c/", "mount:/a/b/c/", false },
+        new object[] { "mount:/a/b/c/", "mount:/a/b/c", false },
+        new object[] { "mount:/a/b/c", "mount:/a/b/c/", false },
 
-            new object[] {"mount:/a/b/c/", "mount:/a/b/cdef", false},
-            new object[] {"mount:/a/b/c", "mount:/a/b/cdef", false},
-            new object[] {"mount:/a/b/c/", "mount:/a/b/cd", false},
-        };
+        new object[] { "mount:/a/b/c/", "mount:/a/b/cdef", false },
+        new object[] { "mount:/a/b/c", "mount:/a/b/cdef", false },
+        new object[] { "mount:/a/b/c/", "mount:/a/b/cd", false },
+    };
 
     public static object[][] ParentDirectoryTestItems =
     {
-            new object[] {"/", ""},
-            new object[] {"/a", "/"},
-            new object[] {"/aa/aabc/f", "/aa/aabc"},
-            new object[] {"mount:/", ""},
-            new object[] {"mount:/a", "mount:/"},
-            new object[] {"mount:/aa/aabc/f", "mount:/aa/aabc"}
-        };
+        new object[] { "/", "" },
+        new object[] { "/a", "/" },
+        new object[] { "/aa/aabc/f", "/aa/aabc" },
+        new object[] { "mount:/", "" },
+        new object[] { "mount:/a", "mount:/" },
+        new object[] { "mount:/aa/aabc/f", "mount:/aa/aabc" }
+    };
 
     public static object[][] IsNormalizedTestItems = GetNormalizedPaths(true);
 
@@ -174,14 +174,14 @@ public class PathToolsTests
 
     public static object[][] GetFileNameTestItems =
     {
-            new object[] {"/a/bb/ccc", "ccc"},
-            new object[] {"/a/bb/ccc/", ""},
-            new object[] {"/a/bb", "bb"},
-            new object[] {"/a/bb/", ""},
-            new object[] {"/a", "a"},
-            new object[] {"/a/", ""},
-            new object[] {"/", ""},
-        };
+        new object[] { "/a/bb/ccc", "ccc" },
+        new object[] { "/a/bb/ccc/", "" },
+        new object[] { "/a/bb", "bb" },
+        new object[] { "/a/bb/", "" },
+        new object[] { "/a", "a" },
+        new object[] { "/a/", "" },
+        new object[] { "/", "" },
+    };
 
     [Theory]
     [MemberData(nameof(GetFileNameTestItems))]
@@ -198,14 +198,14 @@ public class PathToolsTests
 
     public static object[][] GetLastSegmentTestItems =
     {
-            new object[] {"/a/bb/ccc", "ccc"},
-            new object[] {"/a/bb/ccc/", "ccc"},
-            new object[] {"/a/bb", "bb"},
-            new object[] {"/a/bb/", "bb"},
-            new object[] {"/a", "a"},
-            new object[] {"/a/", "a"},
-            new object[] {"/", ""},
-        };
+        new object[] { "/a/bb/ccc", "ccc" },
+        new object[] { "/a/bb/ccc/", "ccc" },
+        new object[] { "/a/bb", "bb" },
+        new object[] { "/a/bb/", "bb" },
+        new object[] { "/a", "a" },
+        new object[] { "/a/", "a" },
+        new object[] { "/", "" },
+    };
 
     [Theory]
     [MemberData(nameof(GetLastSegmentTestItems))]

@@ -21,17 +21,17 @@ internal class ResultNameResolver : Result.IResultNameResolver
         Assembly assembly = typeof(Result).Assembly;
 
         foreach (TypeInfo type in assembly.DefinedTypes.Where(x => x.Name.Contains("Result")))
-            foreach (PropertyInfo property in type.DeclaredProperties
-                .Where(x => x.PropertyType == typeof(Result.Base) && x.GetMethod?.IsStatic == true && x.SetMethod == null))
-            {
-                object value = property.GetValue(null, null);
-                if (value is null) continue;
+        foreach (PropertyInfo property in type.DeclaredProperties
+            .Where(x => x.PropertyType == typeof(Result.Base) && x.GetMethod?.IsStatic == true && x.SetMethod == null))
+        {
+            object value = property.GetValue(null, null);
+            if (value is null) continue;
 
-                Result resultValue = ((Result.Base)value).Value;
-                string name = $"{type.Name}{property.Name}";
+            Result resultValue = ((Result.Base)value).Value;
+            string name = $"{type.Name}{property.Name}";
 
-                dict[resultValue] = name;
-            }
+            dict[resultValue] = name;
+        }
 
         return dict;
     }

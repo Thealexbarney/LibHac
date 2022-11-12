@@ -4,7 +4,6 @@ using LibHac.Fs;
 using LibHac.Fs.Shim;
 using LibHac.Ns;
 using Xunit;
-
 using static LibHac.Fs.SaveData;
 
 namespace LibHac.Tests.Fs.FileSystemClientTests;

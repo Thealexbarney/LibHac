@@ -6,7 +6,6 @@ using LibHac.Kvdb;
 using LibHac.Tests.Fs.FileSystemClientTests;
 using LibHac.Tools.Fs;
 using Xunit;
-
 using TTest = System.Int32;
 
 namespace LibHac.Tests.Kvdb;

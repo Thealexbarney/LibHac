@@ -7,7 +7,6 @@ using LibHac.FsSrv.Impl;
 using LibHac.Ncm;
 using LibHac.Time;
 using Xunit;
-
 using static LibHac.Fs.SaveData;
 
 namespace LibHac.Tests.Fs.FileSystemClientTests.ShimTests;

@@ -39,6 +39,7 @@ internal static class ProcessBench
             src.CopyTo(dst);
             logger.ReportAdd(1);
         }
+
         encryptWatch.Stop();
         logger.SetTotal(0);
 

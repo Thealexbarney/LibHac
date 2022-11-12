@@ -5,7 +5,6 @@ using LibHac.Fs.Fsa;
 using LibHac.Fs.Shim;
 using LibHac.Tests.Fs.FileSystemClientTests;
 using Xunit;
-
 using static LibHac.Fs.SaveData;
 
 namespace LibHac.Tests.Fs.FsaTests;
@@ -18,11 +17,11 @@ public class MultiCommitTests
         FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
         var saveInfo = new List<(int id, string name)>
-            {
-                (1, "Save1"),
-                (3, "Save2"),
-                (2, "Save3")
-            };
+        {
+            (1, "Save1"),
+            (3, "Save2"),
+            (2, "Save3")
+        };
 
         foreach ((int id, string name) info in saveInfo)
         {

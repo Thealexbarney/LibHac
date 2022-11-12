@@ -22,6 +22,7 @@ public abstract partial class IFileSystemTests
         Assert.Equal(DirectoryEntryType.File, type);
         Assert.Result(ResultFs.PathNotFound, res);
     }
+
     [Fact]
     public void RenameFile_DifferentParentDirectory_EntryIsRenamed()
     {

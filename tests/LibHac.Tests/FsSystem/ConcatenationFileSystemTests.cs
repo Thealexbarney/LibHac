@@ -13,6 +13,7 @@ namespace LibHac.Tests.FsSystem;
 public class ConcatenationFileSystemTests : IFileSystemTests
 {
     private const int InternalFileSize = 0x10000;
+
     protected override IFileSystem CreateFileSystem()
     {
         return CreateFileSystemInternal().concatFs;

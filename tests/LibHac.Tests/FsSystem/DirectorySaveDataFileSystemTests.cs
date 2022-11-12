@@ -425,7 +425,7 @@ public class DirectorySaveDataFileSystemTests : CommittableIFileSystemTests
 
         var baseFs = new InMemoryFileSystem();
         CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, baseFs, timeStampGetter,
-             randomGeneratorFunc, true, true, true, null).ThrowIfFailure();
+            randomGeneratorFunc, true, true, true, null).ThrowIfFailure();
 
         saveFs.CommitExtraData(true).ThrowIfFailure();
         saveFs.ReadExtraData(out SaveDataExtraData extraData).ThrowIfFailure();
@@ -453,7 +453,7 @@ public class DirectorySaveDataFileSystemTests : CommittableIFileSystemTests
 
         var baseFs = new InMemoryFileSystem();
         CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, baseFs, timeStampGetter,
-             randomGeneratorFunc, true, true, true, null).ThrowIfFailure();
+            randomGeneratorFunc, true, true, true, null).ThrowIfFailure();
 
         saveFs.CommitExtraData(true).ThrowIfFailure();
         saveFs.ReadExtraData(out SaveDataExtraData extraData).ThrowIfFailure();
@@ -481,7 +481,7 @@ public class DirectorySaveDataFileSystemTests : CommittableIFileSystemTests
 
         var baseFs = new InMemoryFileSystem();
         CreateDirSaveFs(out DirectorySaveDataFileSystem saveFs, baseFs, timeStampGetter,
-             randomGeneratorFunc, true, true, true, null).ThrowIfFailure();
+            randomGeneratorFunc, true, true, true, null).ThrowIfFailure();
 
         saveFs.CommitExtraData(true).ThrowIfFailure();
         saveFs.ReadExtraData(out SaveDataExtraData extraData).ThrowIfFailure();

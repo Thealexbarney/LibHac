@@ -2,7 +2,6 @@
 using LibHac.FsSystem;
 using LibHac.Mem;
 using Xunit;
-
 using CacheHandle = System.UInt64;
 
 namespace LibHac.Tests.FsSystem;

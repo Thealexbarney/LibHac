@@ -68,7 +68,7 @@ public class IndirectStorageTests : IClassFixture<IndirectStorageBuffers>
         new()
         {
             RngSeed = 948285,
-            OriginalEntrySizeRange = new SizeRange(0x10000, 1,5),
+            OriginalEntrySizeRange = new SizeRange(0x10000, 1, 5),
             PatchEntrySizeRange = new SizeRange(1, 0x20, 0xFFF),
             StorageSize = 1024 * 1024 * 10
         },
@@ -76,21 +76,21 @@ public class IndirectStorageTests : IClassFixture<IndirectStorageBuffers>
         new()
         {
             RngSeed = 236956,
-            OriginalEntrySizeRange = new SizeRange(0x1000, 1,10),
+            OriginalEntrySizeRange = new SizeRange(0x1000, 1, 10),
             StorageSize = 1024 * 1024 * 10
         },
         // Medium patch regions
         new()
         {
             RngSeed = 352174,
-            OriginalEntrySizeRange = new SizeRange(0x8000, 1,10),
+            OriginalEntrySizeRange = new SizeRange(0x8000, 1, 10),
             StorageSize = 1024 * 1024 * 10
         },
         // Larger patch regions
         new()
         {
             RngSeed = 220754,
-            OriginalEntrySizeRange = new SizeRange(0x10000, 10,50),
+            OriginalEntrySizeRange = new SizeRange(0x10000, 10, 50),
             StorageSize = 1024 * 1024 * 10
         }
     };

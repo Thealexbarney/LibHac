@@ -258,10 +258,10 @@ public class CharacterEncodingTests
     public void Utf8ToUtf16_WithSmallInvalidBuffers(string utf8HexInput, CharacterEncodingResult expectedEncodingResult, string expectedUtf16Transcoding)
     {
         Utf8ToUtf16_String_Test_Core(
-          utf8Input: DecodeHex(utf8HexInput),
-          destinationSize: expectedUtf16Transcoding.Length,
-          expectedEncodingResult: expectedEncodingResult,
-          expectedUtf16Transcoding: expectedUtf16Transcoding);
+            utf8Input: DecodeHex(utf8HexInput),
+            destinationSize: expectedUtf16Transcoding.Length,
+            expectedEncodingResult: expectedEncodingResult,
+            expectedUtf16Transcoding: expectedUtf16Transcoding);
 
         // Now try the tests again with a larger buffer.
         // This ensures that the sequence is seen as invalid when not hitting the destination length check.
