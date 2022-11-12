@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -62,6 +63,7 @@ partial class Build : NukeBuild
     private string HostOsName { get; set; }
     private string NativeProgramExtension { get; set; }
 
+    private DateTimeOffset CommitTime { get; set; } = DateTimeOffset.Now;
     string VersionString { get; set; }
     Dictionary<string, object> VersionProps { get; set; } = new Dictionary<string, object>();
 
@@ -123,6 +125,12 @@ partial class Build : NukeBuild
             }
 
             HasGitDir = true;
+
+            if (DateTimeOffset.TryParseExact(gitVersion.CommitDate, "yyyy-MM-dd HH:mm:ss",
+                    CultureInfo.InvariantCulture.DateTimeFormat, DateTimeStyles.AssumeUniversal, out DateTimeOffset commitTime))
+            {
+                CommitTime = commitTime.LocalDateTime;
+            }
 
             VersionString = $"{gitVersion.MajorMinorPatch}";
             if (!string.IsNullOrWhiteSpace(gitVersion.PreReleaseTag))
@@ -287,7 +295,7 @@ partial class Build : NukeBuild
 
             EnsureExistingDirectory(ArtifactsDirectory);
 
-            ZipFiles(CliCoreZip, namesCore);
+            ZipFiles(CliCoreZip, namesCore, CommitTime);
             Serilog.Log.Debug($"Created {CliCoreZip}");
 
             PushArtifact(CliCoreZip);
@@ -390,14 +398,14 @@ partial class Build : NukeBuild
 
         EnsureExistingDirectory(ArtifactsDirectory);
 
-        ZipFile(CliNativeZip, CliNativeExe, $"hactoolnet{NativeProgramExtension}");
+        ZipFile(CliNativeZip, CliNativeExe, $"hactoolnet{NativeProgramExtension}", CommitTime);
         Serilog.Log.Debug($"Created {CliNativeZip}");
         Serilog.Log.Debug($"Created {CliNativeZip}");
 
         PushArtifact(CliNativeZip);
     }
 
-    public static void ZipFiles(string outFile, IEnumerable<string> files)
+    public static void ZipFiles(string outFile, IEnumerable<string> files, DateTimeOffset fileDateTime)
     {
         using (var s = new ZipOutputStream(File.Create(outFile)))
         {
@@ -406,7 +414,7 @@ partial class Build : NukeBuild
             foreach (string file in files)
             {
                 var entry = new ZipEntry(Path.GetFileName(file));
-                entry.DateTime = DateTime.UnixEpoch;
+                entry.DateTime = fileDateTime.DateTime;
 
                 using (FileStream fs = File.OpenRead(file))
                 {
@@ -418,14 +426,14 @@ partial class Build : NukeBuild
         }
     }
 
-    public static void ZipFile(string outFile, string file, string nameInsideZip)
+    public static void ZipFile(string outFile, string file, string nameInsideZip, DateTimeOffset fileDateTime)
     {
         using (var s = new ZipOutputStream(File.Create(outFile)))
         {
             s.SetLevel(9);
 
             var entry = new ZipEntry(nameInsideZip);
-            entry.DateTime = DateTime.UnixEpoch;
+            entry.DateTime = fileDateTime.DateTime;
 
             using (FileStream fs = File.OpenRead(file))
             {
@@ -436,7 +444,7 @@ partial class Build : NukeBuild
         }
     }
 
-    public static void ZipDirectory(string outFile, string directory)
+    public static void ZipDirectory(string outFile, string directory, DateTimeOffset fileDateTime)
     {
         using (var s = new ZipOutputStream(File.Create(outFile)))
         {
@@ -447,7 +455,7 @@ partial class Build : NukeBuild
                 string relativePath = Path.GetRelativePath(directory, filePath);
 
                 var entry = new ZipEntry(relativePath);
-                entry.DateTime = DateTime.UnixEpoch;
+                entry.DateTime = fileDateTime.DateTime;
 
                 using (FileStream fs = File.OpenRead(filePath))
                 {
@@ -459,7 +467,7 @@ partial class Build : NukeBuild
         }
     }
 
-    public static void ZipDirectory(string outFile, string directory, IEnumerable<string> files)
+    public static void ZipDirectory(string outFile, string directory, IEnumerable<string> files, DateTimeOffset fileDateTime)
     {
         using (var s = new ZipOutputStream(File.Create(outFile)))
         {
@@ -470,7 +478,7 @@ partial class Build : NukeBuild
                 string absolutePath = Path.Combine(directory, filePath);
 
                 var entry = new ZipEntry(filePath);
-                entry.DateTime = DateTime.UnixEpoch;
+                entry.DateTime = fileDateTime.DateTime;
 
                 using (FileStream fs = File.OpenRead(absolutePath))
                 {
@@ -590,12 +598,12 @@ partial class Build : NukeBuild
             // Avoid having multiple signed versions of the same file
             File.Copy(nupkgDir / "lib" / "net6.0" / "LibHac.dll", coreFxDir / "LibHac.dll", true);
 
-            ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(nupkgFile), nupkgDir, pkgFileList);
-            ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliCoreZip), coreFxDir);
+            ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(nupkgFile), nupkgDir, pkgFileList, CommitTime);
+            ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliCoreZip), coreFxDir, CommitTime);
 
             if (signNative)
             {
-                ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliNativeZip), nativeZipDir);
+                ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliNativeZip), nativeZipDir, CommitTime);
             }
 
             File.Copy(snupkgFile, SignedArtifactsDirectory / Path.GetFileName(snupkgFile));

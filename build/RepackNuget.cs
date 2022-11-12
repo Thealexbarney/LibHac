@@ -45,7 +45,7 @@ public partial class Build
                 ReplaceLineEndings(filename);
             }
 
-            ZipDirectory(path, tempDir, fileList);
+            ZipDirectory(path, tempDir, fileList, CommitTime);
         }
         finally
         {

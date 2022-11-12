@@ -1,6 +1,7 @@
 mode: ContinuousDeployment
 increment: Patch
-next-version: 0.16.1
+next-version: 0.17.0
+commit-date-format: yyyy-MM-dd HH:mm:ss
 branches:
   master:
     tag: alpha
