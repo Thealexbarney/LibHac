@@ -45,5 +45,5 @@ public static class Log
     }
 
     /// <summary>"<c>$</c>"</summary>
-    public static ReadOnlySpan<byte> EmptyModuleName => new[] { (byte)'$' }; // "$"
+    public static ReadOnlySpan<byte> EmptyModuleName => "$"u8;
 }

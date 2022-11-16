@@ -126,8 +126,7 @@ public static class PathUtility
         /*
         The optimized code is equivalent to this:
 
-        ReadOnlySpan<byte> invalidChars = new[]
-            {(byte) ':', (byte) '*', (byte) '?', (byte) '<', (byte) '>', (byte) '|'};
+        ReadOnlySpan<byte> invalidChars = ":*?<>|"u8;
 
         for (int i = 0; i < invalidChars.Length; i++)
         {

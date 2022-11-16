@@ -37,15 +37,9 @@ public class SaveDataIndexer : ISaveDataIndexer
     private const long LastPublishedIdFileSize = sizeof(long);
     private const int MaxPathLength = 0x30;
 
-    private static ReadOnlySpan<byte> LastPublishedIdFileName => // lastPublishedId
-        new[]
-        {
-            (byte)'l', (byte)'a', (byte)'s', (byte)'t', (byte)'P', (byte)'u', (byte)'b', (byte)'l',
-            (byte)'i', (byte)'s', (byte)'h', (byte)'e', (byte)'d', (byte)'I', (byte)'d'
-        };
+    private static ReadOnlySpan<byte> LastPublishedIdFileName => "lastPublishedId"u8;
 
-    private static ReadOnlySpan<byte> MountDelimiter => // :/
-        new[] { (byte)':', (byte)'/' };
+    private static ReadOnlySpan<byte> MountDelimiter => ":/"u8;
 
     private delegate void SaveDataValueTransform(ref SaveDataIndexerValue value, ReadOnlySpan<byte> updateData);
 

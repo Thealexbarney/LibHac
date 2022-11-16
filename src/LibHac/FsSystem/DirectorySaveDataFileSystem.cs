@@ -30,10 +30,10 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
 {
     private const int IdealWorkBufferSize = 0x100000; // 1 MiB
 
-    private static ReadOnlySpan<byte> CommittedDirectoryName => new[] { (byte)'/', (byte)'0' };
-    private static ReadOnlySpan<byte> ModifiedDirectoryName => new[] { (byte)'/', (byte)'1' };
-    private static ReadOnlySpan<byte> SynchronizingDirectoryName => new[] { (byte)'/', (byte)'_' };
-    private static ReadOnlySpan<byte> LockFileName => new[] { (byte)'/', (byte)'.', (byte)'l', (byte)'o', (byte)'c', (byte)'k' };
+    private static ReadOnlySpan<byte> CommittedDirectoryName => "/0"u8;
+    private static ReadOnlySpan<byte> ModifiedDirectoryName => "/1"u8;
+    private static ReadOnlySpan<byte> SynchronizingDirectoryName => "/_"u8;
+    private static ReadOnlySpan<byte> LockFileName => "/.lock"u8;
 
     private IFileSystem _baseFs;
     private SdkMutexType _mutex;
@@ -735,26 +735,11 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
     // always writing the extra data directly to the /extradata file.
     // Everything below this point is a LibHac extension.
 
-    private static ReadOnlySpan<byte> CommittedExtraDataName => // "/ExtraData0"
-        new[]
-        {
-            (byte)'/', (byte)'E', (byte)'x', (byte)'t', (byte)'r', (byte)'a', (byte)'D', (byte)'a',
-            (byte)'t', (byte)'a', (byte)'0'
-        };
+    private static ReadOnlySpan<byte> CommittedExtraDataName => "/ExtraData0"u8;
 
-    private static ReadOnlySpan<byte> ModifiedExtraDataName => // "/ExtraData1"
-        new[]
-        {
-            (byte)'/', (byte)'E', (byte)'x', (byte)'t', (byte)'r', (byte)'a', (byte)'D', (byte)'a',
-            (byte)'t', (byte)'a', (byte)'1'
-        };
+    private static ReadOnlySpan<byte> ModifiedExtraDataName => "/ExtraData1"u8;
 
-    private static ReadOnlySpan<byte> SynchronizingExtraDataName => // "/ExtraData_"
-        new[]
-        {
-            (byte)'/', (byte)'E', (byte)'x', (byte)'t', (byte)'r', (byte)'a', (byte)'D', (byte)'a',
-            (byte)'t', (byte)'a', (byte)'_'
-        };
+    private static ReadOnlySpan<byte> SynchronizingExtraDataName => "/ExtraData_"u8;
 
     /// <summary>
     /// Initializes the save data's extra data files.

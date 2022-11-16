@@ -621,7 +621,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         if (res.IsFailure()) return res.Miss();
 
         using var pathRoot = new Path();
-        res = PathFunctions.SetUpFixedPath(ref pathRoot.Ref(), new[] { (byte)'/' });
+        res = PathFunctions.SetUpFixedPath(ref pathRoot.Ref(), "/"u8);
         if (res.IsFailure()) return res.Miss();
 
         fileSystem.Get.GetFreeSpaceSize(out long freeSpaceSize, in pathRoot);
@@ -854,7 +854,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
         if (path.Str[0] == NullTerminator)
         {
-            res = saveDataRootPath.Initialize(new[] { (byte)'.' });
+            res = saveDataRootPath.Initialize("."u8);
             if (res.IsFailure()) return res.Miss();
         }
         else
@@ -2583,7 +2583,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         if (res.IsFailure()) return res.Miss();
 
         using var pathRoot = new Path();
-        res = PathFunctions.SetUpFixedPath(ref pathRoot.Ref(), new[] { (byte)'/' });
+        res = PathFunctions.SetUpFixedPath(ref pathRoot.Ref(), "/"u8);
         if (res.IsFailure()) return res.Miss();
 
         res = fileSystem.Get.CleanDirectoryRecursively(in pathRoot);

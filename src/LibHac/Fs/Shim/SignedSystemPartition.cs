@@ -29,7 +29,7 @@ public static class SignedSystemPartition
         static Result Operate(ref bool isValid, FileSystemAccessor fileSystem)
         {
             Result res = fileSystem.QueryEntry(SpanHelpers.AsByteSpan(ref isValid), ReadOnlySpan<byte>.Empty,
-                QueryId.IsSignedSystemPartition, new U8Span(new[] { (byte)'/' }));
+                QueryId.IsSignedSystemPartition, new U8Span("/"u8));
 
             if (res.IsFailure())
             {

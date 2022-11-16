@@ -16,15 +16,9 @@ namespace LibHac.Fs;
 /// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 public static class PathFormatter
 {
-    private static ReadOnlySpan<byte> InvalidCharacter =>
-        new[] { (byte)':', (byte)'*', (byte)'?', (byte)'<', (byte)'>', (byte)'|' };
-
-    private static ReadOnlySpan<byte> InvalidCharacterForHostName =>
-        new[] { (byte)':', (byte)'*', (byte)'<', (byte)'>', (byte)'|', (byte)'$' };
-
-    private static ReadOnlySpan<byte> InvalidCharacterForMountName =>
-        new[] { (byte)'*', (byte)'?', (byte)'<', (byte)'>', (byte)'|' };
-
+    private static ReadOnlySpan<byte> InvalidCharacter => ":*?<>|"u8;
+    private static ReadOnlySpan<byte> InvalidCharacterForHostName => ":*<>|$"u8;
+    private static ReadOnlySpan<byte> InvalidCharacterForMountName => "*?<>|"u8;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Result CheckHostName(ReadOnlySpan<byte> name)

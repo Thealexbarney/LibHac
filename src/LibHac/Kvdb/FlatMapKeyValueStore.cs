@@ -24,12 +24,7 @@ public class FlatMapKeyValueStore<TKey> : IDisposable where TKey : unmanaged, IE
     private MemoryResource _memoryResource;
     private MemoryResource _memoryResourceForAutoBuffers;
 
-    private static ReadOnlySpan<byte> ArchiveFileName => // /imkvdb.arc
-        new[]
-        {
-            (byte)'/', (byte)'i', (byte)'m', (byte)'k', (byte)'v', (byte)'d', (byte)'b', (byte)'.',
-            (byte)'a', (byte)'r', (byte)'c'
-        };
+    private static ReadOnlySpan<byte> ArchiveFileName => "/imkvdb.arc"u8;
 
     public int Count => _index.Count;
 

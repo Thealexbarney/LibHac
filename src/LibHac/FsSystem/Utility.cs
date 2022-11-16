@@ -33,7 +33,7 @@ internal static class Utility
         public IFileSystem DestFileSystem;
     }
 
-    private static ReadOnlySpan<byte> RootPath => new[] { (byte)'/' };
+    private static ReadOnlySpan<byte> RootPath => "/"u8;
 
     private static Result IterateDirectoryRecursivelyInternal(IFileSystem fs, ref Path workPath,
         ref DirectoryEntry dirEntry, FsIterationTask onEnterDir, FsIterationTask onExitDir, FsIterationTask onFile,

@@ -24,8 +24,7 @@ namespace LibHac.Fs.Shim;
 public static class Host
 {
     /// <summary>"<c>@Host:/</c>"</summary>
-    private static ReadOnlySpan<byte> HostRootFileSystemPath =>
-            new[] { (byte)'@', (byte)'H', (byte)'o', (byte)'s', (byte)'t', (byte)':', (byte)'/' };
+    private static ReadOnlySpan<byte> HostRootFileSystemPath => "@Host:/"u8;
 
     private const int HostRootFileSystemPathLength = 7;
 

@@ -527,107 +527,46 @@ internal class FileSystemAccessor : IDisposable
     }
 
     /// <summary>"<c>$fs</c>"</summary>
-    private static ReadOnlySpan<byte> LogFsModuleName => new[] { (byte)'$', (byte)'f', (byte)'s' }; // "$fs"
+    private static ReadOnlySpan<byte> LogFsModuleName => "$fs"u8;
 
     /// <summary>"<c>------ FS ERROR INFORMATION ------\n</c>"</summary>
-    private static ReadOnlySpan<byte> LogFsErrorInfo => // "------ FS ERROR INFORMATION ------\n"
-        new[]
-        {
-            (byte)'-', (byte)'-', (byte)'-', (byte)'-', (byte)'-', (byte)'-', (byte)' ', (byte)'F',
-            (byte)'S', (byte)' ', (byte)'E', (byte)'R', (byte)'R', (byte)'O', (byte)'R', (byte)' ',
-            (byte)'I', (byte)'N', (byte)'F', (byte)'O', (byte)'R', (byte)'M', (byte)'A', (byte)'T',
-            (byte)'I', (byte)'O', (byte)'N', (byte)' ', (byte)'-', (byte)'-', (byte)'-', (byte)'-',
-            (byte)'-', (byte)'-', (byte)'\n'
-        };
+    private static ReadOnlySpan<byte> LogFsErrorInfo => "------ FS ERROR INFORMATION ------\n"u8;
 
     /// <summary>"<c>Error: File not closed</c>"</summary>
-    private static ReadOnlySpan<byte> LogFileNotClosed => // "Error: File not closed"
-        new[]
-        {
-            (byte)'E', (byte)'r', (byte)'r', (byte)'o', (byte)'r', (byte)':', (byte)' ', (byte)'F',
-            (byte)'i', (byte)'l', (byte)'e', (byte)' ', (byte)'n', (byte)'o', (byte)'t', (byte)' ',
-            (byte)'c', (byte)'l', (byte)'o', (byte)'s', (byte)'e', (byte)'d'
-        };
+    private static ReadOnlySpan<byte> LogFileNotClosed => "Error: File not closed"u8;
 
     /// <summary>"<c>Error: Directory not closed</c>"</summary>
-    private static ReadOnlySpan<byte> LogDirectoryNotClosed => // "Error: Directory not closed"
-        new[]
-        {
-            (byte)'E', (byte)'r', (byte)'r', (byte)'o', (byte)'r', (byte)':', (byte)' ', (byte)'D',
-            (byte)'i', (byte)'r', (byte)'e', (byte)'c', (byte)'t', (byte)'o', (byte)'r', (byte)'y',
-            (byte)' ', (byte)'n', (byte)'o', (byte)'t', (byte)' ', (byte)'c', (byte)'l', (byte)'o',
-            (byte)'s', (byte)'e', (byte)'d'
-        };
+    private static ReadOnlySpan<byte> LogDirectoryNotClosed => "Error: Directory not closed"u8;
 
     /// <summary>"<c> (mount_name: "</c>"</summary>
-    private static ReadOnlySpan<byte> LogMountName => // " (mount_name: ""
-        new[]
-        {
-            (byte)' ', (byte)'(', (byte)'m', (byte)'o', (byte)'u', (byte)'n', (byte)'t', (byte)'_',
-            (byte)'n', (byte)'a', (byte)'m', (byte)'e', (byte)':', (byte)' ', (byte)'"'
-        };
+    private static ReadOnlySpan<byte> LogMountName => " (mount_name: \""u8;
 
     /// <summary>"<c>", count: </c>"</summary>
-    private static ReadOnlySpan<byte> LogCount => // "", count: "
-        new[]
-        {
-            (byte)'"', (byte)',', (byte)' ', (byte)'c', (byte)'o', (byte)'u', (byte)'n', (byte)'t',
-            (byte)':', (byte)' '
-        };
+    private static ReadOnlySpan<byte> LogCount => "\", count: "u8;
 
     /// <summary>"<c>)\n</c>"</summary>
-    public static ReadOnlySpan<byte> LogLineEnd => new[] { (byte)')', (byte)'\n' }; // ")\n"
+    public static ReadOnlySpan<byte> LogLineEnd => ")\n"u8;
 
     /// <summary>"<c> | </c>"</summary>
-    public static ReadOnlySpan<byte> LogOrOperator => new[] { (byte)' ', (byte)'|', (byte)' ' }; // " | "
+    public static ReadOnlySpan<byte> LogOrOperator => " | "u8;
 
     /// <summary>"<c>OpenMode_Read</c>"</summary>
-    private static ReadOnlySpan<byte> LogOpenModeRead => // "OpenMode_Read"
-        new[]
-        {
-            (byte)'O', (byte)'p', (byte)'e', (byte)'n', (byte)'M', (byte)'o', (byte)'d', (byte)'e',
-            (byte)'_', (byte)'R', (byte)'e', (byte)'a', (byte)'d'
-        };
+    private static ReadOnlySpan<byte> LogOpenModeRead => "OpenMode_Read"u8;
 
     /// <summary>"<c>OpenMode_Write</c>"</summary>
-    private static ReadOnlySpan<byte> LogOpenModeWrite => // "OpenMode_Write"
-        new[]
-        {
-            (byte)'O', (byte)'p', (byte)'e', (byte)'n', (byte)'M', (byte)'o', (byte)'d', (byte)'e',
-            (byte)'_', (byte)'W', (byte)'r', (byte)'i', (byte)'t', (byte)'e'
-        };
+    private static ReadOnlySpan<byte> LogOpenModeWrite => "OpenMode_Write"u8;
 
     /// <summary>"<c>OpenMode_AllowAppend</c>"</summary>
-    private static ReadOnlySpan<byte> LogOpenModeAppend => // "OpenMode_AllowAppend"
-        new[]
-        {
-            (byte)'O', (byte)'p', (byte)'e', (byte)'n', (byte)'M', (byte)'o', (byte)'d', (byte)'e',
-            (byte)'_', (byte)'A', (byte)'l', (byte)'l', (byte)'o', (byte)'w', (byte)'A', (byte)'p',
-            (byte)'p', (byte)'e', (byte)'n', (byte)'d'
-        };
+    private static ReadOnlySpan<byte> LogOpenModeAppend => "OpenMode_AllowAppend"u8;
 
     /// <summary>"<c>     handle: 0x</c>"</summary>
-    private static ReadOnlySpan<byte> LogHandle => // "     handle: 0x"
-        new[]
-        {
-            (byte)' ', (byte)' ', (byte)' ', (byte)' ', (byte)' ', (byte)'h', (byte)'a', (byte)'n',
-            (byte)'d', (byte)'l', (byte)'e', (byte)':', (byte)' ', (byte)'0', (byte)'x'
-        };
+    private static ReadOnlySpan<byte> LogHandle => "     handle: 0x"u8;
 
     /// <summary>"<c>, open_mode: </c>"</summary>
-    private static ReadOnlySpan<byte> LogOpenMode => // ", open_mode: "
-        new[]
-        {
-            (byte)',', (byte)' ', (byte)'o', (byte)'p', (byte)'e', (byte)'n', (byte)'_', (byte)'m',
-            (byte)'o', (byte)'d', (byte)'e', (byte)':', (byte)' '
-        };
+    private static ReadOnlySpan<byte> LogOpenMode => ", open_mode: "u8;
 
-    /// <summary>"<c>, size:</c>"</summary>
-    private static ReadOnlySpan<byte> LogSize => // ", size: "
-        new[]
-        {
-            (byte)',', (byte)' ', (byte)'s', (byte)'i', (byte)'z', (byte)'e', (byte)':', (byte)' '
-        };
+    /// <summary>"<c>, size: </c>"</summary>
+    private static ReadOnlySpan<byte> LogSize => ", size: "u8;
 
     private void DumpUnclosedAccessorList(OpenMode fileOpenModeMask, OpenDirectoryMode directoryOpenModeMask)
     {

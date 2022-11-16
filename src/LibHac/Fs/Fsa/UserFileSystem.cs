@@ -458,10 +458,10 @@ public static class UserFileSystem
         {
             UnsafeHelpers.SkipParamInit(out freeSpace);
 
-            if (subPath.IsEmpty() && StringUtils.Compare(subPath, new[] { (byte)'/' }) != 0)
+            if (subPath.IsEmpty() && StringUtils.Compare(subPath, "/"u8) != 0)
                 return ResultFs.InvalidMountName.Log();
 
-            return fileSystem.GetFreeSpaceSize(out freeSpace, new U8Span(new[] { (byte)'/' }));
+            return fileSystem.GetFreeSpaceSize(out freeSpace, new U8Span("/"u8));
         }
 
         if (fs.Impl.IsEnabledAccessLog() && fileSystem.IsEnabledAccessLog())

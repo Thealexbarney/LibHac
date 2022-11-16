@@ -744,74 +744,20 @@ public class HierarchicalIntegrityVerificationStorage : IStorage
     }
 
     /// <summary>"<c>HierarchicalIntegrityVerificationStorage::Master</c>"</summary>
-    public static ReadOnlySpan<byte> MasterKey => // "HierarchicalIntegrityVerificationStorage::Master"
-        new[]
-        {
-            (byte)'H', (byte)'i', (byte)'e', (byte)'r', (byte)'a', (byte)'r', (byte)'c', (byte)'h',
-            (byte)'i', (byte)'c', (byte)'a', (byte)'l', (byte)'I', (byte)'n', (byte)'t', (byte)'e',
-            (byte)'g', (byte)'r', (byte)'i', (byte)'t', (byte)'y', (byte)'V', (byte)'e', (byte)'r',
-            (byte)'i', (byte)'f', (byte)'i', (byte)'c', (byte)'a', (byte)'t', (byte)'i', (byte)'o',
-            (byte)'n', (byte)'S', (byte)'t', (byte)'o', (byte)'r', (byte)'a', (byte)'g', (byte)'e',
-            (byte)':', (byte)':', (byte)'M', (byte)'a', (byte)'s', (byte)'t', (byte)'e', (byte)'r'
-        };
+    public static ReadOnlySpan<byte> MasterKey => "HierarchicalIntegrityVerificationStorage::Master"u8;
 
     /// <summary>"<c>HierarchicalIntegrityVerificationStorage::L1</c>"</summary>
-    public static ReadOnlySpan<byte> L1Key => // "HierarchicalIntegrityVerificationStorage::L1"
-        new[]
-        {
-            (byte)'H', (byte)'i', (byte)'e', (byte)'r', (byte)'a', (byte)'r', (byte)'c', (byte)'h',
-            (byte)'i', (byte)'c', (byte)'a', (byte)'l', (byte)'I', (byte)'n', (byte)'t', (byte)'e',
-            (byte)'g', (byte)'r', (byte)'i', (byte)'t', (byte)'y', (byte)'V', (byte)'e', (byte)'r',
-            (byte)'i', (byte)'f', (byte)'i', (byte)'c', (byte)'a', (byte)'t', (byte)'i', (byte)'o',
-            (byte)'n', (byte)'S', (byte)'t', (byte)'o', (byte)'r', (byte)'a', (byte)'g', (byte)'e',
-            (byte)':', (byte)':', (byte)'L', (byte)'1'
-        };
+    public static ReadOnlySpan<byte> L1Key => "HierarchicalIntegrityVerificationStorage::L1"u8;
 
     /// <summary>"<c>HierarchicalIntegrityVerificationStorage::L2</c>"</summary>
-    public static ReadOnlySpan<byte> L2Key => // "HierarchicalIntegrityVerificationStorage::L2"
-        new[]
-        {
-            (byte)'H', (byte)'i', (byte)'e', (byte)'r', (byte)'a', (byte)'r', (byte)'c', (byte)'h',
-            (byte)'i', (byte)'c', (byte)'a', (byte)'l', (byte)'I', (byte)'n', (byte)'t', (byte)'e',
-            (byte)'g', (byte)'r', (byte)'i', (byte)'t', (byte)'y', (byte)'V', (byte)'e', (byte)'r',
-            (byte)'i', (byte)'f', (byte)'i', (byte)'c', (byte)'a', (byte)'t', (byte)'i', (byte)'o',
-            (byte)'n', (byte)'S', (byte)'t', (byte)'o', (byte)'r', (byte)'a', (byte)'g', (byte)'e',
-            (byte)':', (byte)':', (byte)'L', (byte)'2'
-        };
+    public static ReadOnlySpan<byte> L2Key => "HierarchicalIntegrityVerificationStorage::L2"u8;
 
     /// <summary>"<c>HierarchicalIntegrityVerificationStorage::L3</c>"</summary>
-    public static ReadOnlySpan<byte> L3Key => // "HierarchicalIntegrityVerificationStorage::L3"
-        new[]
-        {
-            (byte)'H', (byte)'i', (byte)'e', (byte)'r', (byte)'a', (byte)'r', (byte)'c', (byte)'h',
-            (byte)'i', (byte)'c', (byte)'a', (byte)'l', (byte)'I', (byte)'n', (byte)'t', (byte)'e',
-            (byte)'g', (byte)'r', (byte)'i', (byte)'t', (byte)'y', (byte)'V', (byte)'e', (byte)'r',
-            (byte)'i', (byte)'f', (byte)'i', (byte)'c', (byte)'a', (byte)'t', (byte)'i', (byte)'o',
-            (byte)'n', (byte)'S', (byte)'t', (byte)'o', (byte)'r', (byte)'a', (byte)'g', (byte)'e',
-            (byte)':', (byte)':', (byte)'L', (byte)'3'
-        };
+    public static ReadOnlySpan<byte> L3Key => "HierarchicalIntegrityVerificationStorage::L3"u8;
 
     /// <summary>"<c>HierarchicalIntegrityVerificationStorage::L4</c>"</summary>
-    public static ReadOnlySpan<byte> L4Key => // "HierarchicalIntegrityVerificationStorage::L4"
-        new[]
-        {
-            (byte)'H', (byte)'i', (byte)'e', (byte)'r', (byte)'a', (byte)'r', (byte)'c', (byte)'h',
-            (byte)'i', (byte)'c', (byte)'a', (byte)'l', (byte)'I', (byte)'n', (byte)'t', (byte)'e',
-            (byte)'g', (byte)'r', (byte)'i', (byte)'t', (byte)'y', (byte)'V', (byte)'e', (byte)'r',
-            (byte)'i', (byte)'f', (byte)'i', (byte)'c', (byte)'a', (byte)'t', (byte)'i', (byte)'o',
-            (byte)'n', (byte)'S', (byte)'t', (byte)'o', (byte)'r', (byte)'a', (byte)'g', (byte)'e',
-            (byte)':', (byte)':', (byte)'L', (byte)'4'
-        };
+    public static ReadOnlySpan<byte> L4Key => "HierarchicalIntegrityVerificationStorage::L4"u8;
 
     /// <summary>"<c>HierarchicalIntegrityVerificationStorage::L5</c>"</summary>
-    public static ReadOnlySpan<byte> L5Key => // "HierarchicalIntegrityVerificationStorage::L5"
-        new[]
-        {
-            (byte)'H', (byte)'i', (byte)'e', (byte)'r', (byte)'a', (byte)'r', (byte)'c', (byte)'h',
-            (byte)'i', (byte)'c', (byte)'a', (byte)'l', (byte)'I', (byte)'n', (byte)'t', (byte)'e',
-            (byte)'g', (byte)'r', (byte)'i', (byte)'t', (byte)'y', (byte)'V', (byte)'e', (byte)'r',
-            (byte)'i', (byte)'f', (byte)'i', (byte)'c', (byte)'a', (byte)'t', (byte)'i', (byte)'o',
-            (byte)'n', (byte)'S', (byte)'t', (byte)'o', (byte)'r', (byte)'a', (byte)'g', (byte)'e',
-            (byte)':', (byte)':', (byte)'L', (byte)'5'
-        };
+    public static ReadOnlySpan<byte> L5Key => "HierarchicalIntegrityVerificationStorage::L5"u8;
 }

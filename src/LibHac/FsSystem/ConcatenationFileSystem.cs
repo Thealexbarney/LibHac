@@ -525,7 +525,7 @@ public class ConcatenationFileSystem : IFileSystem
         base.Dispose();
     }
 
-    private static ReadOnlySpan<byte> RootPath => new[] { (byte)'/' };
+    private static ReadOnlySpan<byte> RootPath => "/"u8;
 
     /// <summary>
     /// Appends the two-digit-padded <paramref name="index"/> to the given <see cref="Path"/>.

@@ -537,9 +537,5 @@ public class Package1
         return (Package1Section)(-1);
     }
 
-    private static ReadOnlySpan<byte> LegacyDateCutoff => // 20181107
-        new[]
-        {
-            (byte) '2', (byte) '0', (byte) '1', (byte) '8', (byte) '1', (byte) '1', (byte) '0', (byte) '7'
-        };
+    private static ReadOnlySpan<byte> LegacyDateCutoff => "20181107"u8;
 }

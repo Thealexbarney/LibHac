@@ -480,7 +480,7 @@ public class NcaFileSystemServiceImpl
     {
         UnsafeHelpers.SkipParamInit(out isDirectory);
 
-        ReadOnlySpan<byte> mountSeparator = new[] { (byte)':', (byte)'/' };
+        ReadOnlySpan<byte> mountSeparator = ":/"u8;
 
         if (StringUtils.Compare(mountSeparator, path, mountSeparator.Length) != 0)
         {
@@ -502,8 +502,8 @@ public class NcaFileSystemServiceImpl
 
         ReadOnlySpan<byte> fileExtension = path.Value.Slice(pathLen - 4);
 
-        ReadOnlySpan<byte> ncaExtension = new[] { (byte)'.', (byte)'n', (byte)'c', (byte)'a' };
-        ReadOnlySpan<byte> nspExtension = new[] { (byte)'.', (byte)'n', (byte)'s', (byte)'p' };
+        ReadOnlySpan<byte> ncaExtension = ".nca"u8;
+        ReadOnlySpan<byte> nspExtension = ".nsp"u8;
 
         if (StringUtils.CompareCaseInsensitive(fileExtension, ncaExtension) == 0 ||
             StringUtils.CompareCaseInsensitive(fileExtension, nspExtension) == 0)
@@ -531,8 +531,7 @@ public class NcaFileSystemServiceImpl
         using var pathRoot = new Path();
         using var pathData = new Path();
 
-        Result res = PathFunctions.SetUpFixedPath(ref pathData.Ref(),
-            new[] { (byte)'/', (byte)'d', (byte)'a', (byte)'t', (byte)'a' });
+        Result res = PathFunctions.SetUpFixedPath(ref pathData.Ref(), "/data"u8);
         if (res.IsFailure()) return res.Miss();
 
         res = pathRoot.Combine(in path, in pathData);
@@ -551,7 +550,7 @@ public class NcaFileSystemServiceImpl
     private Result ParseNsp(ref U8Span path, ref SharedRef<IFileSystem> outFileSystem,
         ref SharedRef<IFileSystem> baseFileSystem)
     {
-        ReadOnlySpan<byte> nspExtension = new[] { (byte)'.', (byte)'n', (byte)'s', (byte)'p' };
+        ReadOnlySpan<byte> nspExtension = ".nsp"u8;
 
         // Search for the end of the nsp part of the path
         int nspPathLen = 0;
@@ -648,17 +647,17 @@ public class NcaFileSystemServiceImpl
                 return Result.Success;
 
             case FileSystemProxyType.Code:
-                dirName = new[] { (byte)'/', (byte)'c', (byte)'o', (byte)'d', (byte)'e', (byte)'/' };
+                dirName = "/code/"u8;
                 break;
             case FileSystemProxyType.Rom:
             case FileSystemProxyType.Control:
             case FileSystemProxyType.Manual:
             case FileSystemProxyType.Meta:
             case FileSystemProxyType.RegisteredUpdate:
-                dirName = new[] { (byte)'/', (byte)'d', (byte)'a', (byte)'t', (byte)'a', (byte)'/' };
+                dirName = "/data/"u8;
                 break;
             case FileSystemProxyType.Logo:
-                dirName = new[] { (byte)'/', (byte)'l', (byte)'o', (byte)'g', (byte)'o', (byte)'/' };
+                dirName = "/logo/"u8;
                 break;
 
             default:
@@ -905,17 +904,9 @@ public class NcaFileSystemServiceImpl
         }
     }
 
-    private static ReadOnlySpan<byte> SdCardNintendoRootDirectoryName => // Nintendo
-        new[]
-        {
-            (byte)'N', (byte)'i', (byte)'n', (byte)'t', (byte)'e', (byte)'n', (byte)'d', (byte)'o'
-        };
+    private static ReadOnlySpan<byte> SdCardNintendoRootDirectoryName => "Nintendo"u8;
 
-    private static ReadOnlySpan<byte> ContentStorageDirectoryName => // Contents
-        new[]
-        {
-            (byte)'C', (byte)'o', (byte)'n', (byte)'t', (byte)'e', (byte)'n', (byte)'t', (byte)'s'
-        };
+    private static ReadOnlySpan<byte> ContentStorageDirectoryName => "Contents"u8;
 }
 
 public readonly struct InternalProgramIdRangeForSpeedEmulation

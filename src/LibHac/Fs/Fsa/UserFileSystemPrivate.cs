@@ -93,7 +93,7 @@ public static class UserFileSystemPrivate
         if (res.IsFailure()) return res.Miss();
 
         res = fileSystem.QueryEntry(SpanHelpers.AsByteSpan(ref info), ReadOnlySpan<byte>.Empty,
-            QueryId.QueryUnpreparedFileInformation, new U8Span(new[] { (byte)'/' }));
+            QueryId.QueryUnpreparedFileInformation, new U8Span("/"u8));
         fs.Impl.AbortIfNeeded(res);
         return res;
     }

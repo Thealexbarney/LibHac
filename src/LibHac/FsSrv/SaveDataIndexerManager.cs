@@ -231,36 +231,16 @@ internal class SaveDataIndexerManager : ISaveDataIndexerManager, IDisposable
     }
 
     /// <summary>"<c>saveDataIxrDb</c>"</summary>
-    private static ReadOnlySpan<byte> BisIndexerMountName =>
-        new[]
-        {
-            (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'D', (byte)'a', (byte)'t', (byte)'a',
-            (byte)'I', (byte)'x', (byte)'r', (byte)'D', (byte)'b'
-        };
+    private static ReadOnlySpan<byte> BisIndexerMountName => "saveDataIxrDb"u8;
 
     /// <summary>"<c>saveDataIxrDbSd</c>"</summary>
-    private static ReadOnlySpan<byte> SdCardIndexerMountName =>
-        new[]
-        {
-            (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'D', (byte)'a', (byte)'t', (byte)'a',
-            (byte)'I', (byte)'x', (byte)'r', (byte)'D', (byte)'b', (byte)'S', (byte)'d'
-        };
+    private static ReadOnlySpan<byte> SdCardIndexerMountName => "saveDataIxrDbSd"u8;
 
     /// <summary>"<c>saveDataIxrDbPr</c>"</summary>
-    private static ReadOnlySpan<byte> ProperBisIndexerMountName =>
-        new[]
-        {
-            (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'D', (byte)'a', (byte)'t', (byte)'a',
-            (byte)'I', (byte)'x', (byte)'r', (byte)'D', (byte)'b', (byte)'P', (byte)'r'
-        };
+    private static ReadOnlySpan<byte> ProperBisIndexerMountName => "saveDataIxrDbPr"u8;
 
     /// <summary>"<c>saveDataIxrDbSf</c>"</summary>
-    private static ReadOnlySpan<byte> SafeModeIndexerMountName =>
-        new[]
-        {
-            (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'D', (byte)'a', (byte)'t', (byte)'a',
-            (byte)'I', (byte)'x', (byte)'r', (byte)'D', (byte)'b', (byte)'S', (byte)'f'
-        };
+    private static ReadOnlySpan<byte> SafeModeIndexerMountName => "saveDataIxrDbSf"u8;
 }
 
 /// <summary>

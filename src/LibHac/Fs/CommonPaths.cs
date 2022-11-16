@@ -24,9 +24,5 @@ internal static class CommonPaths
     public const char GameCardFileSystemMountNameNormalSuffix = 'N';
     public const char GameCardFileSystemMountNameSecureSuffix = 'S';
 
-    public static ReadOnlySpan<byte> SdCardNintendoRootDirectoryName => // Nintendo
-        new[]
-        {
-            (byte)'N', (byte)'i', (byte)'n', (byte)'t', (byte)'e', (byte)'n', (byte)'d', (byte)'o'
-        };
+    public static ReadOnlySpan<byte> SdCardNintendoRootDirectoryName => "Nintendo"u8;
 }

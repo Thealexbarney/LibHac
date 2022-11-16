@@ -61,10 +61,5 @@ public static class CustomStorage
     }
 
     /// <summary>"<c>CustomStorage0</c>"</summary>
-    private static ReadOnlySpan<byte> CustomStorageDirectoryName =>
-        new[]
-        {
-            (byte)'C', (byte)'u', (byte)'s', (byte)'t', (byte)'o', (byte)'m', (byte)'S', (byte)'t',
-            (byte)'o', (byte)'r', (byte)'a', (byte)'g', (byte)'e', (byte)'0'
-        };
+    private static ReadOnlySpan<byte> CustomStorageDirectoryName => "CustomStorage0"u8;
 }

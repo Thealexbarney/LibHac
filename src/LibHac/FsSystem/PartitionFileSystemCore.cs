@@ -55,9 +55,7 @@ public class PartitionFileSystemCore<T> : IFileSystem where T : unmanaged, IPart
         if (!_isInitialized)
             return ResultFs.PreconditionViolation.Log();
 
-        ReadOnlySpan<byte> rootPath = new[] { (byte)'/' };
-
-        if (path != rootPath)
+        if (path != "/"u8)
             return ResultFs.PathNotFound.Log();
 
         outDirectory.Reset(new PartitionDirectory(this, mode));
@@ -95,7 +93,7 @@ public class PartitionFileSystemCore<T> : IFileSystem where T : unmanaged, IPart
         if (path.IsEmpty() || pathStr[0] != '/')
             return ResultFs.InvalidPathFormat.Log();
 
-        ReadOnlySpan<byte> rootPath = new[] { (byte)'/' };
+        ReadOnlySpan<byte> rootPath = "/"u8;
 
         if (StringUtils.Compare(rootPath, pathStr, 2) == 0)
         {

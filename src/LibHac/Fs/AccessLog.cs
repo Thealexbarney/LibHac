@@ -165,6 +165,7 @@ namespace LibHac.Fs.Impl
         private Buffer32 _buffer;
 
         [UnscopedRef]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private ReadOnlySpan<byte> ToValueString(int value)
         {
             bool success = Utf8Formatter.TryFormat(value, _buffer.Bytes, out int length);
@@ -180,9 +181,9 @@ namespace LibHac.Fs.Impl
         {
             switch (value)
             {
-                case Priority.Realtime: return new[] { (byte)'R', (byte)'e', (byte)'a', (byte)'l', (byte)'t', (byte)'i', (byte)'m', (byte)'e' };
-                case Priority.Normal: return new[] { (byte)'N', (byte)'o', (byte)'r', (byte)'m', (byte)'a', (byte)'l' };
-                case Priority.Low: return new[] { (byte)'L', (byte)'o', (byte)'w' };
+                case Priority.Realtime: return "Realtime"u8;
+                case Priority.Normal: return "Normal"u8;
+                case Priority.Low: return "Low"u8;
                 default: return ToValueString((int)value);
             }
         }
@@ -192,10 +193,10 @@ namespace LibHac.Fs.Impl
         {
             switch (value)
             {
-                case PriorityRaw.Realtime: return new[] { (byte)'R', (byte)'e', (byte)'a', (byte)'l', (byte)'t', (byte)'i', (byte)'m', (byte)'e' };
-                case PriorityRaw.Normal: return new[] { (byte)'N', (byte)'o', (byte)'r', (byte)'m', (byte)'a', (byte)'l' };
-                case PriorityRaw.Low: return new[] { (byte)'L', (byte)'o', (byte)'w' };
-                case PriorityRaw.Background: return new[] { (byte)'B', (byte)'a', (byte)'c', (byte)'k', (byte)'g', (byte)'r', (byte)'o', (byte)'u', (byte)'n', (byte)'d' };
+                case PriorityRaw.Realtime: return "Realtime"u8;
+                case PriorityRaw.Normal: return "Normal"u8;
+                case PriorityRaw.Low: return "Low"u8;
+                case PriorityRaw.Background: return "Background"u8;
                 default: return ToValueString((int)value);
             }
         }
@@ -205,8 +206,8 @@ namespace LibHac.Fs.Impl
         {
             switch (value)
             {
-                case ImageDirectoryId.Nand: return new[] { (byte)'N', (byte)'a', (byte)'n', (byte)'d' };
-                case ImageDirectoryId.SdCard: return new[] { (byte)'S', (byte)'d', (byte)'C', (byte)'a', (byte)'r', (byte)'d' };
+                case ImageDirectoryId.Nand: return "Nand"u8;
+                case ImageDirectoryId.SdCard: return "SdCard"u8;
                 default: return ToValueString((int)value);
             }
         }
@@ -216,9 +217,9 @@ namespace LibHac.Fs.Impl
         {
             switch (value)
             {
-                case ContentStorageId.System: return new[] { (byte)'S', (byte)'y', (byte)'s', (byte)'t', (byte)'e', (byte)'m' };
-                case ContentStorageId.User: return new[] { (byte)'U', (byte)'s', (byte)'e', (byte)'r' };
-                case ContentStorageId.SdCard: return new[] { (byte)'S', (byte)'d', (byte)'C', (byte)'a', (byte)'r', (byte)'d' };
+                case ContentStorageId.System: return "System"u8;
+                case ContentStorageId.User: return "User"u8;
+                case ContentStorageId.SdCard: return "SdCard"u8;
                 default: return ToValueString((int)value);
             }
         }
@@ -228,10 +229,10 @@ namespace LibHac.Fs.Impl
         {
             switch (value)
             {
-                case GameCardPartition.Update: return new[] { (byte)'U', (byte)'p', (byte)'d', (byte)'a', (byte)'t', (byte)'e' };
-                case GameCardPartition.Normal: return new[] { (byte)'N', (byte)'o', (byte)'r', (byte)'m', (byte)'a', (byte)'l' };
-                case GameCardPartition.Secure: return new[] { (byte)'S', (byte)'e', (byte)'c', (byte)'u', (byte)'r', (byte)'e' };
-                case GameCardPartition.Logo: return new[] { (byte)'L', (byte)'o', (byte)'g', (byte)'o' };
+                case GameCardPartition.Update: return "Update"u8;
+                case GameCardPartition.Normal: return "Normal"u8;
+                case GameCardPartition.Secure: return "Secure"u8;
+                case GameCardPartition.Logo: return "Logo"u8;
                 default: return ToValueString((int)value);
             }
         }
@@ -241,10 +242,10 @@ namespace LibHac.Fs.Impl
         {
             switch (value)
             {
-                case SaveDataSpaceId.System: return new[] { (byte)'S', (byte)'y', (byte)'s', (byte)'t', (byte)'e', (byte)'m' };
-                case SaveDataSpaceId.User: return new[] { (byte)'U', (byte)'s', (byte)'e', (byte)'r' };
-                case SaveDataSpaceId.SdSystem: return new[] { (byte)'S', (byte)'d', (byte)'S', (byte)'y', (byte)'s', (byte)'t', (byte)'e', (byte)'m' };
-                case SaveDataSpaceId.ProperSystem: return new[] { (byte)'P', (byte)'r', (byte)'o', (byte)'p', (byte)'e', (byte)'r', (byte)'S', (byte)'y', (byte)'s', (byte)'t', (byte)'e', (byte)'m' };
+                case SaveDataSpaceId.System: return "System"u8;
+                case SaveDataSpaceId.User: return "User"u8;
+                case SaveDataSpaceId.SdSystem: return "SdSystem"u8;
+                case SaveDataSpaceId.ProperSystem: return "ProperSystem"u8;
                 default: return ToValueString((int)value);
             }
         }
@@ -254,8 +255,8 @@ namespace LibHac.Fs.Impl
         {
             switch (value)
             {
-                case SaveDataFormatType.Normal: return new[] { (byte)'N', (byte)'o', (byte)'r', (byte)'m', (byte)'a', (byte)'l' };
-                case SaveDataFormatType.NoJournal: return new[] { (byte)'N', (byte)'o', (byte)'J', (byte)'o', (byte)'u', (byte)'r', (byte)'n', (byte)'a', (byte)'l' };
+                case SaveDataFormatType.Normal: return "Normal"u8;
+                case SaveDataFormatType.NoJournal: return "NoJournal"u8;
                 default: return ToValueString((int)value);
             }
         }
@@ -265,11 +266,11 @@ namespace LibHac.Fs.Impl
         {
             switch (value)
             {
-                case ContentType.Meta: return new[] { (byte)'M', (byte)'e', (byte)'t', (byte)'a' };
-                case ContentType.Control: return new[] { (byte)'C', (byte)'o', (byte)'n', (byte)'t', (byte)'r', (byte)'o', (byte)'l' };
-                case ContentType.Manual: return new[] { (byte)'M', (byte)'a', (byte)'n', (byte)'u', (byte)'a', (byte)'l' };
-                case ContentType.Logo: return new[] { (byte)'L', (byte)'o', (byte)'g', (byte)'o' };
-                case ContentType.Data: return new[] { (byte)'D', (byte)'a', (byte)'t', (byte)'a' };
+                case ContentType.Meta: return "Meta"u8;
+                case ContentType.Control: return "Control"u8;
+                case ContentType.Manual: return "Manual"u8;
+                case ContentType.Logo: return "Logo"u8;
+                case ContentType.Data: return "Data"u8;
                 default: return ToValueString((int)value);
             }
         }
@@ -279,23 +280,23 @@ namespace LibHac.Fs.Impl
         {
             switch (value)
             {
-                case BisPartitionId.BootPartition1Root: return new[] { (byte)'B', (byte)'o', (byte)'o', (byte)'t', (byte)'P', (byte)'a', (byte)'r', (byte)'t', (byte)'i', (byte)'t', (byte)'i', (byte)'o', (byte)'n', (byte)'1', (byte)'R', (byte)'o', (byte)'o', (byte)'t' };
-                case BisPartitionId.BootPartition2Root: return new[] { (byte)'B', (byte)'o', (byte)'o', (byte)'t', (byte)'P', (byte)'a', (byte)'r', (byte)'t', (byte)'i', (byte)'t', (byte)'i', (byte)'o', (byte)'n', (byte)'2', (byte)'R', (byte)'o', (byte)'o', (byte)'t' };
-                case BisPartitionId.UserDataRoot: return new[] { (byte)'U', (byte)'s', (byte)'e', (byte)'r', (byte)'D', (byte)'a', (byte)'t', (byte)'a', (byte)'R', (byte)'o', (byte)'o', (byte)'t' };
-                case BisPartitionId.BootConfigAndPackage2Part1: return new[] { (byte)'B', (byte)'o', (byte)'o', (byte)'t', (byte)'C', (byte)'o', (byte)'n', (byte)'f', (byte)'i', (byte)'g', (byte)'A', (byte)'n', (byte)'d', (byte)'P', (byte)'a', (byte)'c', (byte)'k', (byte)'a', (byte)'g', (byte)'e', (byte)'2', (byte)'P', (byte)'a', (byte)'r', (byte)'t', (byte)'1' };
-                case BisPartitionId.BootConfigAndPackage2Part2: return new[] { (byte)'B', (byte)'o', (byte)'o', (byte)'t', (byte)'C', (byte)'o', (byte)'n', (byte)'f', (byte)'i', (byte)'g', (byte)'A', (byte)'n', (byte)'d', (byte)'P', (byte)'a', (byte)'c', (byte)'k', (byte)'a', (byte)'g', (byte)'e', (byte)'2', (byte)'P', (byte)'a', (byte)'r', (byte)'t', (byte)'2' };
-                case BisPartitionId.BootConfigAndPackage2Part3: return new[] { (byte)'B', (byte)'o', (byte)'o', (byte)'t', (byte)'C', (byte)'o', (byte)'n', (byte)'f', (byte)'i', (byte)'g', (byte)'A', (byte)'n', (byte)'d', (byte)'P', (byte)'a', (byte)'c', (byte)'k', (byte)'a', (byte)'g', (byte)'e', (byte)'2', (byte)'P', (byte)'a', (byte)'r', (byte)'t', (byte)'3' };
-                case BisPartitionId.BootConfigAndPackage2Part4: return new[] { (byte)'B', (byte)'o', (byte)'o', (byte)'t', (byte)'C', (byte)'o', (byte)'n', (byte)'f', (byte)'i', (byte)'g', (byte)'A', (byte)'n', (byte)'d', (byte)'P', (byte)'a', (byte)'c', (byte)'k', (byte)'a', (byte)'g', (byte)'e', (byte)'2', (byte)'P', (byte)'a', (byte)'r', (byte)'t', (byte)'4' };
-                case BisPartitionId.BootConfigAndPackage2Part5: return new[] { (byte)'B', (byte)'o', (byte)'o', (byte)'t', (byte)'C', (byte)'o', (byte)'n', (byte)'f', (byte)'i', (byte)'g', (byte)'A', (byte)'n', (byte)'d', (byte)'P', (byte)'a', (byte)'c', (byte)'k', (byte)'a', (byte)'g', (byte)'e', (byte)'2', (byte)'P', (byte)'a', (byte)'r', (byte)'t', (byte)'5' };
-                case BisPartitionId.BootConfigAndPackage2Part6: return new[] { (byte)'B', (byte)'o', (byte)'o', (byte)'t', (byte)'C', (byte)'o', (byte)'n', (byte)'f', (byte)'i', (byte)'g', (byte)'A', (byte)'n', (byte)'d', (byte)'P', (byte)'a', (byte)'c', (byte)'k', (byte)'a', (byte)'g', (byte)'e', (byte)'2', (byte)'P', (byte)'a', (byte)'r', (byte)'t', (byte)'6' };
-                case BisPartitionId.CalibrationBinary: return new[] { (byte)'C', (byte)'a', (byte)'l', (byte)'i', (byte)'b', (byte)'r', (byte)'a', (byte)'t', (byte)'i', (byte)'o', (byte)'n', (byte)'B', (byte)'i', (byte)'n', (byte)'a', (byte)'r', (byte)'y' };
-                case BisPartitionId.CalibrationFile: return new[] { (byte)'C', (byte)'a', (byte)'l', (byte)'i', (byte)'b', (byte)'r', (byte)'a', (byte)'t', (byte)'i', (byte)'o', (byte)'n', (byte)'F', (byte)'i', (byte)'l', (byte)'e' };
-                case BisPartitionId.SafeMode: return new[] { (byte)'S', (byte)'a', (byte)'f', (byte)'e', (byte)'M', (byte)'o', (byte)'d', (byte)'e' };
-                case BisPartitionId.User: return new[] { (byte)'U', (byte)'s', (byte)'e', (byte)'r' };
-                case BisPartitionId.System: return new[] { (byte)'S', (byte)'y', (byte)'s', (byte)'t', (byte)'e', (byte)'m' };
-                case BisPartitionId.SystemProperEncryption: return new[] { (byte)'S', (byte)'y', (byte)'s', (byte)'t', (byte)'e', (byte)'m', (byte)'P', (byte)'r', (byte)'o', (byte)'p', (byte)'e', (byte)'r', (byte)'E', (byte)'n', (byte)'c', (byte)'r', (byte)'y', (byte)'p', (byte)'t', (byte)'i', (byte)'o', (byte)'n' };
-                case BisPartitionId.SystemProperPartition: return new[] { (byte)'S', (byte)'y', (byte)'s', (byte)'t', (byte)'e', (byte)'m', (byte)'P', (byte)'r', (byte)'o', (byte)'p', (byte)'e', (byte)'r', (byte)'P', (byte)'a', (byte)'r', (byte)'t', (byte)'i', (byte)'t', (byte)'i', (byte)'o', (byte)'n' };
-                case (BisPartitionId)35: return new[] { (byte)'I', (byte)'n', (byte)'v', (byte)'a', (byte)'l', (byte)'i', (byte)'d' };
+                case BisPartitionId.BootPartition1Root: return "BootPartition1Root"u8;
+                case BisPartitionId.BootPartition2Root: return "BootPartition2Root"u8;
+                case BisPartitionId.UserDataRoot: return "UserDataRoot"u8;
+                case BisPartitionId.BootConfigAndPackage2Part1: return "BootConfigAndPackage2Part1"u8;
+                case BisPartitionId.BootConfigAndPackage2Part2: return "BootConfigAndPackage2Part2"u8;
+                case BisPartitionId.BootConfigAndPackage2Part3: return "BootConfigAndPackage2Part3"u8;
+                case BisPartitionId.BootConfigAndPackage2Part4: return "BootConfigAndPackage2Part4"u8;
+                case BisPartitionId.BootConfigAndPackage2Part5: return "BootConfigAndPackage2Part5"u8;
+                case BisPartitionId.BootConfigAndPackage2Part6: return "BootConfigAndPackage2Part6"u8;
+                case BisPartitionId.CalibrationBinary: return "CalibrationBinary"u8;
+                case BisPartitionId.CalibrationFile: return "CalibrationFile"u8;
+                case BisPartitionId.SafeMode: return "SafeMode"u8;
+                case BisPartitionId.User: return "User"u8;
+                case BisPartitionId.System: return "System"u8;
+                case BisPartitionId.SystemProperEncryption: return "SystemProperEncryption"u8;
+                case BisPartitionId.SystemProperPartition: return "SystemProperPartition"u8;
+                case (BisPartitionId)35: return "Invalid"u8;
                 default: return ToValueString((int)value);
             }
         }
@@ -305,8 +306,8 @@ namespace LibHac.Fs.Impl
         {
             switch (value)
             {
-                case DirectoryEntryType.Directory: return new[] { (byte)'D', (byte)'i', (byte)'r', (byte)'e', (byte)'c', (byte)'t', (byte)'o', (byte)'r', (byte)'y' };
-                case DirectoryEntryType.File: return new[] { (byte)'F', (byte)'i', (byte)'l', (byte)'e' };
+                case DirectoryEntryType.Directory: return "Directory"u8;
+                case DirectoryEntryType.File: return "File"u8;
                 default: return ToValueString((int)value);
             }
         }
@@ -316,7 +317,7 @@ namespace LibHac.Fs.Impl
         {
             switch (value.Flags)
             {
-                case MountHostOptionFlag.PseudoCaseSensitive: return new[] { (byte)'M', (byte)'o', (byte)'u', (byte)'n', (byte)'t', (byte)'H', (byte)'o', (byte)'s', (byte)'t', (byte)'O', (byte)'p', (byte)'t', (byte)'i', (byte)'o', (byte)'n', (byte)'F', (byte)'l', (byte)'a', (byte)'g', (byte)'_', (byte)'P', (byte)'s', (byte)'e', (byte)'u', (byte)'d', (byte)'o', (byte)'C', (byte)'a', (byte)'s', (byte)'e', (byte)'S', (byte)'e', (byte)'n', (byte)'s', (byte)'i', (byte)'t', (byte)'i', (byte)'v', (byte)'e' };
+                case MountHostOptionFlag.PseudoCaseSensitive: return "MountHostOptionFlag_PseudoCaseSensitive"u8;
                 default: return ToValueString((int)value.Flags);
             }
         }
@@ -326,12 +327,12 @@ namespace LibHac.Fs.Impl
         {
             switch (value)
             {
-                case MemoryCapacity.Capacity1GB: return new[] { (byte)'1', (byte)'G', (byte)'B' };
-                case MemoryCapacity.Capacity2GB: return new[] { (byte)'2', (byte)'G', (byte)'B' };
-                case MemoryCapacity.Capacity4GB: return new[] { (byte)'4', (byte)'G', (byte)'B' };
-                case MemoryCapacity.Capacity8GB: return new[] { (byte)'8', (byte)'G', (byte)'B' };
-                case MemoryCapacity.Capacity16GB: return new[] { (byte)'1', (byte)'6', (byte)'G', (byte)'B' };
-                case MemoryCapacity.Capacity32GB: return new[] { (byte)'3', (byte)'2', (byte)'G', (byte)'B' };
+                case MemoryCapacity.Capacity1GB: return "1GB"u8;
+                case MemoryCapacity.Capacity2GB: return "2GB"u8;
+                case MemoryCapacity.Capacity4GB: return "4GB"u8;
+                case MemoryCapacity.Capacity8GB: return "8GB"u8;
+                case MemoryCapacity.Capacity16GB: return "16GB"u8;
+                case MemoryCapacity.Capacity32GB: return "32GB"u8;
                 default: return ToValueString((int)value);
             }
         }
@@ -341,8 +342,8 @@ namespace LibHac.Fs.Impl
         {
             switch (value)
             {
-                case SelSec.T1: return new[] { (byte)'T', (byte)'1' };
-                case SelSec.T2: return new[] { (byte)'T', (byte)'2' };
+                case SelSec.T1: return "T1"u8;
+                case SelSec.T2: return "T2"u8;
                 default: return ToValueString((int)value);
             }
         }
@@ -352,8 +353,8 @@ namespace LibHac.Fs.Impl
         {
             switch (value)
             {
-                case KekIndex.Version0: return new[] { (byte)'V', (byte)'e', (byte)'r', (byte)'s', (byte)'i', (byte)'o', (byte)'n', (byte)'0' };
-                case KekIndex.ForDev: return new[] { (byte)'V', (byte)'e', (byte)'r', (byte)'s', (byte)'i', (byte)'o', (byte)'n', (byte)'F', (byte)'o', (byte)'r', (byte)'D', (byte)'e', (byte)'v' };
+                case KekIndex.Version0: return "Version0"u8;
+                case KekIndex.ForDev: return "VersionForDev"u8;
                 default: return ToValueString((int)value);
             }
         }
@@ -363,8 +364,8 @@ namespace LibHac.Fs.Impl
         {
             switch (value)
             {
-                case AccessControl1ClockRate.ClockRate25MHz: return new[] { (byte)'2', (byte)'5', (byte)' ', (byte)'M', (byte)'H', (byte)'z' };
-                case AccessControl1ClockRate.ClockRate50MHz: return new[] { (byte)'5', (byte)'0', (byte)' ', (byte)'M', (byte)'H', (byte)'z' };
+                case AccessControl1ClockRate.ClockRate25MHz: return "25 MHz"u8;
+                case AccessControl1ClockRate.ClockRate50MHz: return "50 MHz"u8;
                 default: return ToValueString((int)value);
             }
         }
@@ -374,12 +375,12 @@ namespace LibHac.Fs.Impl
         {
             switch (value)
             {
-                case FwVersion.ForDev: return new[] { (byte)'F', (byte)'o', (byte)'r', (byte)'D', (byte)'e', (byte)'v' };
-                case FwVersion.Since1_0_0: return new[] { (byte)'1', (byte)'.', (byte)'0', (byte)'.', (byte)'0' };
-                case FwVersion.Since4_0_0: return new[] { (byte)'4', (byte)'.', (byte)'0', (byte)'.', (byte)'0' };
-                case FwVersion.Since9_0_0: return new[] { (byte)'9', (byte)'.', (byte)'0', (byte)'.', (byte)'0' };
-                case FwVersion.Since11_0_0: return new[] { (byte)'1', (byte)'1', (byte)'.', (byte)'0', (byte)'.', (byte)'0' };
-                case FwVersion.Since12_0_0: return new[] { (byte)'1', (byte)'2', (byte)'.', (byte)'0', (byte)'.', (byte)'0' };
+                case FwVersion.ForDev: return "ForDev"u8;
+                case FwVersion.Since1_0_0: return "1.0.0"u8;
+                case FwVersion.Since4_0_0: return "4.0.0"u8;
+                case FwVersion.Since9_0_0: return "9.0.0"u8;
+                case FwVersion.Since11_0_0: return "11.0.0"u8;
+                case FwVersion.Since12_0_0: return "12.0.0"u8;
                 default: return ToValueString((int)value);
             }
         }
@@ -389,8 +390,8 @@ namespace LibHac.Fs.Impl
         {
             switch (value)
             {
-                case GameCardCompatibilityType.Normal: return new[] { (byte)'N', (byte)'o', (byte)'r', (byte)'m', (byte)'a', (byte)'l' };
-                case GameCardCompatibilityType.Terra: return new[] { (byte)'T', (byte)'e', (byte)'r', (byte)'r', (byte)'a' };
+                case GameCardCompatibilityType.Normal: return "Normal"u8;
+                case GameCardCompatibilityType.Terra: return "Terra"u8;
                 default: return ToValueString((int)value);
             }
         }
@@ -828,456 +829,174 @@ namespace LibHac.Fs.Impl
     internal static class AccessLogStrings
     {
         /// <summary>"<c>$fs</c>"</summary>
-        public static ReadOnlySpan<byte> FsModuleName => // "$fs"
-            new[] { (byte)'$', (byte)'f', (byte)'s' };
+        public static ReadOnlySpan<byte> FsModuleName => "$fs"u8;
 
         /// <summary>"<c>0.17.0</c>"</summary>
-        public static ReadOnlySpan<byte> LogLibHacVersion => // "0.17.0"
-            new[]
-            {
-                (byte)'0', (byte)'.', (byte)'1', (byte)'7', (byte)'.', (byte)'0'
-            };
+        public static ReadOnlySpan<byte> LogLibHacVersion => "0.17.0"u8;
 
         /// <summary>"<c>"</c>"</summary>
         public static byte LogQuote => (byte)'"';
 
         /// <summary>"<c>true</c>"</summary>
-        public static ReadOnlySpan<byte> LogTrue => // "true"
-            new[] { (byte)'t', (byte)'r', (byte)'u', (byte)'e' };
+        public static ReadOnlySpan<byte> LogTrue => "true"u8;
 
         /// <summary>"<c>false</c>"</summary>
-        public static ReadOnlySpan<byte> LogFalse => // "false"
-            new[] { (byte)'f', (byte)'a', (byte)'l', (byte)'s', (byte)'e' };
+        public static ReadOnlySpan<byte> LogFalse => "false"u8;
 
         /// <summary>"<c>, entry_buffer_count: </c>"</summary>
-        public static ReadOnlySpan<byte> LogEntryBufferCount => // ", entry_buffer_count: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'e', (byte)'n', (byte)'t', (byte)'r', (byte)'y', (byte)'_',
-                (byte)'b', (byte)'u', (byte)'f', (byte)'f', (byte)'e', (byte)'r', (byte)'_', (byte)'c',
-                (byte)'o', (byte)'u', (byte)'n', (byte)'t', (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogEntryBufferCount => ", entry_buffer_count: "u8;
 
         /// <summary>"<c>, entry_count: </c>"</summary>
-        public static ReadOnlySpan<byte> LogEntryCount => // ", entry_count: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'e', (byte)'n', (byte)'t', (byte)'r', (byte)'y', (byte)'_',
-                (byte)'c', (byte)'o', (byte)'u', (byte)'n', (byte)'t', (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogEntryCount => ", entry_count: "u8;
 
         /// <summary>"<c>, offset: </c>"</summary>
-        public static ReadOnlySpan<byte> LogOffset => // ", offset: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'o', (byte)'f', (byte)'f', (byte)'s', (byte)'e', (byte)'t',
-                (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogOffset => ", offset: "u8;
 
         /// <summary>"<c>, size: </c>"</summary>
-        public static ReadOnlySpan<byte> LogSize => // ", size: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'s', (byte)'i', (byte)'z', (byte)'e', (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogSize => ", size: "u8;
 
         /// <summary>"<c>, read_size: </c>"</summary>
-        public static ReadOnlySpan<byte> LogReadSize => // ", read_size: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'r', (byte)'e', (byte)'a', (byte)'d', (byte)'_', (byte)'s',
-                (byte)'i', (byte)'z', (byte)'e', (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogReadSize => ", read_size: "u8;
 
         /// <summary>"<c>, write_option: Flush</c>"</summary>
-        public static ReadOnlySpan<byte> LogWriteOptionFlush => // ", write_option: Flush"
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'w', (byte)'r', (byte)'i', (byte)'t', (byte)'e', (byte)'_',
-                (byte)'o', (byte)'p', (byte)'t', (byte)'i', (byte)'o', (byte)'n', (byte)':', (byte)' ',
-                (byte)'F', (byte)'l', (byte)'u', (byte)'s', (byte)'h'
-            };
+        public static ReadOnlySpan<byte> LogWriteOptionFlush => ", write_option: Flush"u8;
 
         /// <summary>"<c>, open_mode: 0x</c>"</summary>
-        public static ReadOnlySpan<byte> LogOpenMode => // ", open_mode: 0x"
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'o', (byte)'p', (byte)'e', (byte)'n', (byte)'_', (byte)'m',
-                (byte)'o', (byte)'d', (byte)'e', (byte)':', (byte)' ', (byte)'0', (byte)'x'
-            };
+        public static ReadOnlySpan<byte> LogOpenMode => ", open_mode: 0x"u8;
 
         /// <summary>"<c>, path: "</c>"</summary>
-        public static ReadOnlySpan<byte> LogPath => // ", path: ""
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'p', (byte)'a', (byte)'t', (byte)'h', (byte)':', (byte)' ',
-                (byte)'"'
-            };
+        public static ReadOnlySpan<byte> LogPath => ", path: \""u8;
 
         /// <summary>"<c>", new_path: "</c>"</summary>
-        public static ReadOnlySpan<byte> LogNewPath => // "", new_path: ""
-            new[]
-            {
-                (byte)'"', (byte)',', (byte)' ', (byte)'n', (byte)'e', (byte)'w', (byte)'_', (byte)'p',
-                (byte)'a', (byte)'t', (byte)'h', (byte)':', (byte)' ', (byte)'"'
-            };
+        public static ReadOnlySpan<byte> LogNewPath => "\", new_path: \""u8;
 
         /// <summary>"<c>", entry_type: </c>"</summary>
-        public static ReadOnlySpan<byte> LogEntryType => // "", entry_type: "
-            new[]
-            {
-                (byte)'"', (byte)',', (byte)' ', (byte)'e', (byte)'n', (byte)'t', (byte)'r', (byte)'y',
-                (byte)'_', (byte)'t', (byte)'y', (byte)'p', (byte)'e', (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogEntryType => "\", entry_type: "u8;
 
         /// <summary>"<c>, name: "</c>"</summary>
-        public static ReadOnlySpan<byte> LogName => // ", name: ""
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'n', (byte)'a', (byte)'m', (byte)'e', (byte)':', (byte)' ',
-                (byte)'"'
-            };
+        public static ReadOnlySpan<byte> LogName => ", name: \""u8;
 
         /// <summary>"<c>", commit_option: 0x</c>"</summary>
-        public static ReadOnlySpan<byte> LogCommitOption => // "", commit_option: 0x"
-            new[]
-            {
-                (byte)'"', (byte)',', (byte)' ', (byte)'c', (byte)'o', (byte)'m', (byte)'m', (byte)'i',
-                (byte)'t', (byte)'_', (byte)'o', (byte)'p', (byte)'t', (byte)'i', (byte)'o', (byte)'n',
-                (byte)':', (byte)' ', (byte)'0', (byte)'x'
-            };
+        public static ReadOnlySpan<byte> LogCommitOption => "\", commit_option: 0x"u8;
 
         /// <summary>"<c>", is_mounted: "</c>"</summary>
-        public static ReadOnlySpan<byte> LogIsMounted => // "", is_mounted: ""
-            new[]
-            {
-                (byte)'"', (byte)',', (byte)' ', (byte)'i', (byte)'s', (byte)'_', (byte)'m', (byte)'o',
-                (byte)'u', (byte)'n', (byte)'t', (byte)'e', (byte)'d', (byte)':', (byte)' ', (byte)'"'
-            };
+        public static ReadOnlySpan<byte> LogIsMounted => "\", is_mounted: \""u8;
 
         /// <summary>"<c>, applicationid: 0x</c>"</summary>
-        public static ReadOnlySpan<byte> LogApplicationId => // ", applicationid: 0x"
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'a', (byte)'p', (byte)'p', (byte)'l', (byte)'i', (byte)'c',
-                (byte)'a', (byte)'t', (byte)'i', (byte)'o', (byte)'n', (byte)'i', (byte)'d', (byte)':',
-                (byte)' ', (byte)'0', (byte)'x'
-            };
+        public static ReadOnlySpan<byte> LogApplicationId => ", applicationid: 0x"u8;
 
         /// <summary>"<c>, programid: 0x</c>"</summary>
-        public static ReadOnlySpan<byte> LogProgramId => // ", programid: 0x"
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'p', (byte)'r', (byte)'o', (byte)'g', (byte)'r', (byte)'a',
-                (byte)'m', (byte)'i', (byte)'d', (byte)':', (byte)' ', (byte)'0', (byte)'x'
-            };
+        public static ReadOnlySpan<byte> LogProgramId => ", programid: 0x"u8;
 
         /// <summary>"<c>, dataid: 0x</c>"</summary>
-        public static ReadOnlySpan<byte> LogDataId => // ", dataid: 0x"
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'d', (byte)'a', (byte)'t', (byte)'a', (byte)'i', (byte)'d',
-                (byte)':', (byte)' ', (byte)'0', (byte)'x'
-            };
+        public static ReadOnlySpan<byte> LogDataId => ", dataid: 0x"u8;
 
         /// <summary>"<c>, bispartitionid: </c>"</summary>
-        public static ReadOnlySpan<byte> LogBisPartitionId => // ", bispartitionid: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'b', (byte)'i', (byte)'s', (byte)'p', (byte)'a', (byte)'r',
-                (byte)'t', (byte)'i', (byte)'t', (byte)'i', (byte)'o', (byte)'n', (byte)'i', (byte)'d',
-                (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogBisPartitionId => ", bispartitionid: "u8;
 
         /// <summary>"<c>, content_type: </c>"</summary>
-        public static ReadOnlySpan<byte> LogContentType => // ", content_type: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'c', (byte)'o', (byte)'n', (byte)'t', (byte)'e', (byte)'n',
-                (byte)'t', (byte)'_', (byte)'t', (byte)'y', (byte)'p', (byte)'e', (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogContentType => ", content_type: "u8;
 
         /// <summary>"<c>, contentstorageid: </c>"</summary>
-        public static ReadOnlySpan<byte> LogContentStorageId => // ", contentstorageid: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'c', (byte)'o', (byte)'n', (byte)'t', (byte)'e', (byte)'n',
-                (byte)'t', (byte)'s', (byte)'t', (byte)'o', (byte)'r', (byte)'a', (byte)'g', (byte)'e',
-                (byte)'i', (byte)'d', (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogContentStorageId => ", contentstorageid: "u8;
 
         /// <summary>"<c>, imagedirectoryid: </c>"</summary>
-        public static ReadOnlySpan<byte> LogImageDirectoryId => // ", imagedirectoryid: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'i', (byte)'m', (byte)'a', (byte)'g', (byte)'e', (byte)'d',
-                (byte)'i', (byte)'r', (byte)'e', (byte)'c', (byte)'t', (byte)'o', (byte)'r', (byte)'y',
-                (byte)'i', (byte)'d', (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogImageDirectoryId => ", imagedirectoryid: "u8;
 
         /// <summary>"<c>, gamecard_handle: 0x</c>"</summary>
-        public static ReadOnlySpan<byte> LogGameCardHandle => // ", gamecard_handle: 0x"
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'g', (byte)'a', (byte)'m', (byte)'e', (byte)'c', (byte)'a',
-                (byte)'r', (byte)'d', (byte)'_', (byte)'h', (byte)'a', (byte)'n', (byte)'d', (byte)'l',
-                (byte)'e', (byte)':', (byte)' ', (byte)'0', (byte)'x'
-            };
+        public static ReadOnlySpan<byte> LogGameCardHandle => ", gamecard_handle: 0x"u8;
 
         /// <summary>"<c>, gamecard_partition: </c>"</summary>
-        public static ReadOnlySpan<byte> LogGameCardPartition => // ", gamecard_partition: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'g', (byte)'a', (byte)'m', (byte)'e', (byte)'c', (byte)'a',
-                (byte)'r', (byte)'d', (byte)'_', (byte)'p', (byte)'a', (byte)'r', (byte)'t', (byte)'i',
-                (byte)'t', (byte)'i', (byte)'o', (byte)'n', (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogGameCardPartition => ", gamecard_partition: "u8;
 
         /// <summary>"<c>, mount_host_option: </c>"</summary>
-        public static ReadOnlySpan<byte> LogMountHostOption => // ", mount_host_option: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'m', (byte)'o', (byte)'u', (byte)'n', (byte)'t', (byte)'_',
-                (byte)'h', (byte)'o', (byte)'s', (byte)'t', (byte)'_', (byte)'o', (byte)'p', (byte)'t',
-                (byte)'i', (byte)'o', (byte)'n', (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogMountHostOption => ", mount_host_option: "u8;
 
         /// <summary>"<c>, root_path: "</c>"</summary>
-        public static ReadOnlySpan<byte> LogRootPath => // ", root_path: ""
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'r', (byte)'o', (byte)'o', (byte)'t', (byte)'_', (byte)'p',
-                (byte)'a', (byte)'t', (byte)'h', (byte)':', (byte)' ', (byte)'"'
-            };
+        public static ReadOnlySpan<byte> LogRootPath => ", root_path: \""u8;
 
         /// <summary>"<c>, userid: 0x</c>"</summary>
-        public static ReadOnlySpan<byte> LogUserId => // ", userid: 0x"
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'u', (byte)'s', (byte)'e', (byte)'r', (byte)'i', (byte)'d',
-                (byte)':', (byte)' ', (byte)'0', (byte)'x'
-            };
+        public static ReadOnlySpan<byte> LogUserId => ", userid: 0x"u8;
 
         /// <summary>"<c>, index: </c>"</summary>
-        public static ReadOnlySpan<byte> LogIndex => // ", index: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'i', (byte)'n', (byte)'d', (byte)'e', (byte)'x', (byte)':',
-                (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogIndex => ", index: "u8;
 
         /// <summary>"<c>, save_data_owner_id: 0x</c>"</summary>
-        public static ReadOnlySpan<byte> LogSaveDataOwnerId => // ", save_data_owner_id: 0x"
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'_', (byte)'d',
-                (byte)'a', (byte)'t', (byte)'a', (byte)'_', (byte)'o', (byte)'w', (byte)'n', (byte)'e',
-                (byte)'r', (byte)'_', (byte)'i', (byte)'d', (byte)':', (byte)' ', (byte)'0', (byte)'x'
-            };
+        public static ReadOnlySpan<byte> LogSaveDataOwnerId => ", save_data_owner_id: 0x"u8;
 
         /// <summary>"<c>, save_data_size: </c>"</summary>
-        public static ReadOnlySpan<byte> LogSaveDataSize => // ", save_data_size: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'_', (byte)'d',
-                (byte)'a', (byte)'t', (byte)'a', (byte)'_', (byte)'s', (byte)'i', (byte)'z', (byte)'e',
-                (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogSaveDataSize => ", save_data_size: "u8;
 
         /// <summary>"<c>, save_data_journal_size: </c>"</summary>
-        public static ReadOnlySpan<byte> LogSaveDataJournalSize => // ", save_data_journal_size: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'_', (byte)'d',
-                (byte)'a', (byte)'t', (byte)'a', (byte)'_', (byte)'j', (byte)'o', (byte)'u', (byte)'r',
-                (byte)'n', (byte)'a', (byte)'l', (byte)'_', (byte)'s', (byte)'i', (byte)'z', (byte)'e',
-                (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogSaveDataJournalSize => ", save_data_journal_size: "u8;
 
         /// <summary>"<c>, save_data_flags: 0x</c>"</summary>
-        public static ReadOnlySpan<byte> LogSaveDataFlags => // ", save_data_flags: 0x"
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'_', (byte)'d',
-                (byte)'a', (byte)'t', (byte)'a', (byte)'_', (byte)'f', (byte)'l', (byte)'a', (byte)'g',
-                (byte)'s', (byte)':', (byte)' ', (byte)'0', (byte)'x'
-            };
+        public static ReadOnlySpan<byte> LogSaveDataFlags => ", save_data_flags: 0x"u8;
 
         /// <summary>"<c>, savedataid: 0x</c>"</summary>
-        public static ReadOnlySpan<byte> LogSaveDataId => // ", savedataid: 0x"
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'d', (byte)'a',
-                (byte)'t', (byte)'a', (byte)'i', (byte)'d', (byte)':', (byte)' ', (byte)'0', (byte)'x'
-            };
+        public static ReadOnlySpan<byte> LogSaveDataId => ", savedataid: 0x"u8;
 
         /// <summary>"<c>, savedataspaceid: </c>"</summary>
-        public static ReadOnlySpan<byte> LogSaveDataSpaceId => // ", savedataspaceid: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'d', (byte)'a',
-                (byte)'t', (byte)'a', (byte)'s', (byte)'p', (byte)'a', (byte)'c', (byte)'e', (byte)'i',
-                (byte)'d', (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogSaveDataSpaceId => ", savedataspaceid: "u8;
 
         /// <summary>"<c>, save_data_format_type: </c>"</summary>
-        public static ReadOnlySpan<byte> LogSaveDataFormatType => // ", save_data_format_type: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'_', (byte)'d',
-                (byte)'a', (byte)'t', (byte)'a', (byte)'_', (byte)'f', (byte)'o', (byte)'r', (byte)'m',
-                (byte)'a', (byte)'t', (byte)'_', (byte)'t', (byte)'y', (byte)'p', (byte)'e', (byte)':',
-                (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogSaveDataFormatType => ", save_data_format_type: "u8;
 
         /// <summary>"<c>, save_data_time_stamp: </c>"</summary>
-        public static ReadOnlySpan<byte> LogSaveDataTimeStamp => // ", save_data_time_stamp: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'_', (byte)'d',
-                (byte)'a', (byte)'t', (byte)'a', (byte)'_', (byte)'t', (byte)'i', (byte)'m', (byte)'e',
-                (byte)'_', (byte)'s', (byte)'t', (byte)'a', (byte)'m', (byte)'p', (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogSaveDataTimeStamp => ", save_data_time_stamp: "u8;
 
         /// <summary>"<c>, save_data_commit_id: 0x</c>"</summary>
-        public static ReadOnlySpan<byte> LogSaveDataCommitId => // ", save_data_commit_id: 0x"
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'_', (byte)'d',
-                (byte)'a', (byte)'t', (byte)'a', (byte)'_', (byte)'c', (byte)'o', (byte)'m', (byte)'m',
-                (byte)'i', (byte)'t', (byte)'_', (byte)'i', (byte)'d', (byte)':', (byte)' ', (byte)'0',
-                (byte)'x'
-            };
+        public static ReadOnlySpan<byte> LogSaveDataCommitId => ", save_data_commit_id: 0x"u8;
 
         /// <summary>"<c>, restore_flag: </c>"</summary>
-        public static ReadOnlySpan<byte> LogRestoreFlag => // ", restore_flag: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'r', (byte)'e', (byte)'s', (byte)'t', (byte)'o', (byte)'r',
-                (byte)'e', (byte)'_', (byte)'f', (byte)'l', (byte)'a', (byte)'g', (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogRestoreFlag => ", restore_flag: "u8;
 
         /// <summary>"<c>sdk_version: </c>"</summary>
-        public static ReadOnlySpan<byte> LogSdkVersion => // "sdk_version: "
-            new[]
-            {
-                (byte)'s', (byte)'d', (byte)'k', (byte)'_', (byte)'v', (byte)'e', (byte)'r', (byte)'s',
-                (byte)'i', (byte)'o', (byte)'n', (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogSdkVersion => "sdk_version: "u8;
 
         /// <summary>"<c>, spec: </c>"</summary>
-        public static ReadOnlySpan<byte> LogSpec => // ", spec: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'s', (byte)'p', (byte)'e', (byte)'c', (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogSpec => ", spec: "u8;
 
         /// <summary>"<c>NX</c>"</summary>
-        public static ReadOnlySpan<byte> LogNx => // "NX"
-            new[] { (byte)'N', (byte)'X' };
+        public static ReadOnlySpan<byte> LogNx => "NX"u8;
 
         /// <summary>"<c>, program_index: </c>"</summary>
-        public static ReadOnlySpan<byte> LogProgramIndex => // ", program_index: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'p', (byte)'r', (byte)'o', (byte)'g', (byte)'r', (byte)'a',
-                (byte)'m', (byte)'_', (byte)'i', (byte)'n', (byte)'d', (byte)'e', (byte)'x', (byte)':',
-                (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogProgramIndex => ", program_index: "u8;
 
         /// <summary>"<c>, for_system: true</c>"</summary>
-        public static ReadOnlySpan<byte> LogForSystem => // ", for_system: true"
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'f', (byte)'o', (byte)'r', (byte)'_', (byte)'s', (byte)'y',
-                (byte)'s', (byte)'t', (byte)'e', (byte)'m', (byte)':', (byte)' ', (byte)'t', (byte)'r',
-                (byte)'u', (byte)'e'
-            };
+        public static ReadOnlySpan<byte> LogForSystem => ", for_system: true"u8;
 
         /// <summary>"<c>"FS_ACCESS: { </c>"</summary>
-        public static ReadOnlySpan<byte> LogLineStart => // "FS_ACCESS: { "
-            new[]
-            {
-                (byte)'F', (byte)'S', (byte)'_', (byte)'A', (byte)'C', (byte)'C', (byte)'E', (byte)'S',
-                (byte)'S', (byte)':', (byte)' ', (byte)'{', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogLineStart => "FS_ACCESS: { "u8;
 
         /// <summary>"<c> }\n</c>"</summary>
-        public static ReadOnlySpan<byte> LogLineEnd => // " }\n"
-            new[] { (byte)' ', (byte)'}', (byte)'\n' };
+        public static ReadOnlySpan<byte> LogLineEnd => " }\n"u8;
 
         /// <summary>"<c>start: </c>"</summary>
-        public static ReadOnlySpan<byte> LogStart => // "start: "
-            new[]
-            {
-                (byte)'s', (byte)'t', (byte)'a', (byte)'r', (byte)'t', (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogStart => "start: "u8;
 
         /// <summary>"<c>, end: </c>"</summary>
-        public static ReadOnlySpan<byte> LogEnd => // ", end: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'e', (byte)'n', (byte)'d', (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogEnd => ", end: "u8;
 
         /// <summary>"<c>, result: 0x</c>"</summary>
-        public static ReadOnlySpan<byte> LogResult => // ", result: 0x"
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'r', (byte)'e', (byte)'s', (byte)'u', (byte)'l', (byte)'t',
-                (byte)':', (byte)' ', (byte)'0', (byte)'x'
-            };
+        public static ReadOnlySpan<byte> LogResult => ", result: 0x"u8;
 
         /// <summary>"<c>, handle: 0x</c>"</summary>
-        public static ReadOnlySpan<byte> LogHandle => // ", handle: 0x"
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'h', (byte)'a', (byte)'n', (byte)'d', (byte)'l', (byte)'e',
-                (byte)':', (byte)' ', (byte)'0', (byte)'x'
-            };
+        public static ReadOnlySpan<byte> LogHandle => ", handle: 0x"u8;
 
         /// <summary>"<c>, priority: </c>"</summary>
-        public static ReadOnlySpan<byte> LogPriority => // ", priority: "
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'p', (byte)'r', (byte)'i', (byte)'o', (byte)'r', (byte)'i',
-                (byte)'t', (byte)'y', (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogPriority => ", priority: "u8;
 
         /// <summary>"<c>, function: "</c>"</summary>
-        public static ReadOnlySpan<byte> LogFunction => // ", function: ""
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'f', (byte)'u', (byte)'n', (byte)'c', (byte)'t', (byte)'i',
-                (byte)'o', (byte)'n', (byte)':', (byte)' ', (byte)'"'
-            };
+        public static ReadOnlySpan<byte> LogFunction => ", function: \""u8;
 
         /// <summary>"<c>, cachestoragelist_handle: 0x</c>"</summary>
-        public static ReadOnlySpan<byte> LogCacheStorageListHandle =>
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'c', (byte)'a', (byte)'c', (byte)'h', (byte)'e', (byte)'s',
-                (byte)'t', (byte)'o', (byte)'r', (byte)'a', (byte)'g', (byte)'e', (byte)'l', (byte)'i',
-                (byte)'s', (byte)'t', (byte)'_', (byte)'h', (byte)'a', (byte)'n', (byte)'d', (byte)'l',
-                (byte)'e', (byte)':', (byte)' ', (byte)'0', (byte)'x'
-            };
+        public static ReadOnlySpan<byte> LogCacheStorageListHandle => ", cachestoragelist_handle: 0x"u8;
 
         /// <summary>"<c>, infobuffercount: 0x</c>"</summary>
-        public static ReadOnlySpan<byte> LogInfoBufferCount =>
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'i', (byte)'n', (byte)'f', (byte)'o', (byte)'b', (byte)'u',
-                (byte)'f', (byte)'f', (byte)'e', (byte)'r', (byte)'c', (byte)'o', (byte)'u', (byte)'n',
-                (byte)'t', (byte)':', (byte)' ', (byte)'0', (byte)'x'
-            };
+        public static ReadOnlySpan<byte> LogInfoBufferCount => ", infobuffercount: 0x</c>"u8;
 
         /// <summary>"<c>, cache_storage_count: </c>"</summary>
-        public static ReadOnlySpan<byte> LogCacheStorageCount =>
-            new[]
-            {
-                (byte)',', (byte)' ', (byte)'c', (byte)'a', (byte)'c', (byte)'h', (byte)'e', (byte)'_',
-                (byte)'s', (byte)'t', (byte)'o', (byte)'r', (byte)'a', (byte)'g', (byte)'e', (byte)'_',
-                (byte)'c', (byte)'o', (byte)'u', (byte)'n', (byte)'t', (byte)':', (byte)' '
-            };
+        public static ReadOnlySpan<byte> LogCacheStorageCount => ", cache_storage_count: "u8;
     }
 }

@@ -292,7 +292,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         _baseFileSystem.Destroy();
     }
 
-    private static ReadOnlySpan<byte> RootDir => new[] { (byte)'/' };
+    private static ReadOnlySpan<byte> RootDir => "/"u8;
 
     private Result SetUpPath(ref Path fsPath, in PathSf sfPath)
     {

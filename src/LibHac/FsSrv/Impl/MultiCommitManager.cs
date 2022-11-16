@@ -55,8 +55,7 @@ internal class MultiCommitManager : IMultiCommitManager
     private const long CommitContextFileSize = 0x200;
 
     /// <summary>"<c>/commitinfo</c>"</summary>
-    private static ReadOnlySpan<byte> CommitContextFileName =>
-        new[] { (byte)'/', (byte)'c', (byte)'o', (byte)'m', (byte)'m', (byte)'i', (byte)'t', (byte)'i', (byte)'n', (byte)'f', (byte)'o' };
+    private static ReadOnlySpan<byte> CommitContextFileName => "/commitinfo"u8;
 
     private SharedRef<ISaveDataMultiCommitCoreInterface> _multiCommitInterface;
     private readonly SharedRef<IFileSystem>[] _fileSystems;

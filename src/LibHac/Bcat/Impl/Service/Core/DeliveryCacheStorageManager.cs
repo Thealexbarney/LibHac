@@ -330,69 +330,36 @@ internal class DeliveryCacheStorageManager
         return 1;
     }
 
-    private static ReadOnlySpan<byte> DeliveryCacheMountNamePrefix => // bcat-dc-
-        new[] { (byte)'b', (byte)'c', (byte)'a', (byte)'t', (byte)'-', (byte)'d', (byte)'c', (byte)'-' };
+    /// <summary>"<c>bcat-dc-</c>"</summary>
+    private static ReadOnlySpan<byte> DeliveryCacheMountNamePrefix => "bcat-dc-"u8;
 
-    private static ReadOnlySpan<byte> RootPath => // :/
-        new[] { (byte)':', (byte)'/' };
+    /// <summary>"<c>:/</c>"</summary>
+    private static ReadOnlySpan<byte> RootPath => ":/"u8;
 
-    private static ReadOnlySpan<byte> PassphrasePath => // :/passphrase.bin
-        new[]
-        {
-            (byte) ':', (byte) '/', (byte) 'p', (byte) 'a', (byte) 's', (byte) 's', (byte) 'p', (byte) 'h',
-            (byte) 'r', (byte) 'a', (byte) 's', (byte) 'e', (byte) '.', (byte) 'b', (byte) 'i', (byte) 'n'
-        };
+    /// <summary>"<c>:/passphrase.bin</c>"</summary>
+    private static ReadOnlySpan<byte> PassphrasePath => ":/passphrase.bin"u8;
 
-    private static ReadOnlySpan<byte> DeliveryListPath => // :/list.msgpack
-        new[]
-        {
-            (byte) ':', (byte) '/', (byte) 'l', (byte) 'i', (byte) 's', (byte) 't', (byte) '.', (byte) 'm',
-            (byte) 's', (byte) 'g', (byte) 'p', (byte) 'a', (byte) 'c', (byte) 'k'
-        };
+    /// <summary>"<c>:/list.msgpack</c>"</summary>
+    private static ReadOnlySpan<byte> DeliveryListPath => ":/list.msgpack"u8;
 
-    private static ReadOnlySpan<byte> EtagPath => // :/etag.bin
-        new[]
-        {
-            (byte) ':', (byte) '/', (byte) 'e', (byte) 't', (byte) 'a', (byte) 'g', (byte) '.', (byte) 'b',
-            (byte) 'i', (byte) 'n'
-        };
+    /// <summary>"<c>:/etag.bin</c>"</summary>
+    private static ReadOnlySpan<byte> EtagPath => ":/etag.bin"u8;
 
-    private static ReadOnlySpan<byte> NaRequiredPath => // :/na_required
-        new[]
-        {
-            (byte) ':', (byte) '/', (byte) 'n', (byte) 'a', (byte) '_', (byte) 'r', (byte) 'e', (byte) 'q',
-            (byte) 'u', (byte) 'i', (byte) 'r', (byte) 'e', (byte) 'd'
-        };
+    /// <summary>"<c>:/na_required</c>"</summary>
+    private static ReadOnlySpan<byte> NaRequiredPath => ":/na_required"u8;
 
-    private static ReadOnlySpan<byte> IndexLockPath => // :/index.lock
-        new[]
-        {
-            (byte) ':', (byte) '/', (byte) 'i', (byte) 'n', (byte) 'd', (byte) 'e', (byte) 'x', (byte) '.',
-            (byte) 'l', (byte) 'o', (byte) 'c', (byte) 'k'
-        };
+    /// <summary>"<c>:/index.lock</c>"</summary>
+    private static ReadOnlySpan<byte> IndexLockPath => ":/index.lock"u8;
 
-    private static ReadOnlySpan<byte> DirectoriesPath => // :/directories
-        new[]
-        {
-            (byte) ':', (byte) '/', (byte) 'd', (byte) 'i', (byte) 'r', (byte) 'e', (byte) 'c', (byte) 't',
-            (byte) 'o', (byte) 'r', (byte) 'i', (byte) 'e', (byte) 's'
-        };
+    /// <summary>"<c>:/directories</c>"</summary>
+    private static ReadOnlySpan<byte> DirectoriesPath => ":/directories"u8;
 
-    private static ReadOnlySpan<byte> FilesMetaFileName => // files.meta
-        new[]
-        {
-            (byte) 'f', (byte) 'i', (byte) 'l', (byte) 'e', (byte) 's', (byte) '.', (byte) 'm', (byte) 'e',
-            (byte) 't', (byte) 'a'
-        };
+    /// <summary>"<c>files.meta</c>"</summary>
+    private static ReadOnlySpan<byte> FilesMetaFileName => "files.meta"u8;
 
-    private static ReadOnlySpan<byte> DirectoriesMetaPath => // :/directories.meta
-        new[]
-        {
-            (byte) ':', (byte) '/', (byte) 'd', (byte) 'i', (byte) 'r', (byte) 'e', (byte) 'c', (byte) 't',
-            (byte) 'o', (byte) 'r', (byte) 'i', (byte) 'e', (byte) 's', (byte) '.', (byte) 'm', (byte) 'e',
-            (byte) 't', (byte) 'a'
-        };
+    /// <summary>"<c>:/directories.meta</c>"</summary>
+    private static ReadOnlySpan<byte> DirectoriesMetaPath => ":/directories.meta"u8;
 
-    private static ReadOnlySpan<byte> FilesDirectoryName => // files
-        new[] { (byte)'f', (byte)'i', (byte)'l', (byte)'e', (byte)'s' };
+    /// <summary>"<c>files</c>"</summary>
+    private static ReadOnlySpan<byte> FilesDirectoryName => "files"u8;
 }

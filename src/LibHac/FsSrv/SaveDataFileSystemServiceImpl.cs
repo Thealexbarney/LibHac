@@ -346,12 +346,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
 
     public Result DeleteAllSaveDataMetas(ulong saveDataId, SaveDataSpaceId spaceId)
     {
-        ReadOnlySpan<byte> metaDirName = // /saveMeta
-            new[]
-            {
-                (byte)'/', (byte)'s', (byte)'a', (byte)'v', (byte)'e', (byte)'M', (byte)'e', (byte)'t',
-                (byte)'a'
-            };
+        ReadOnlySpan<byte> metaDirName = "/saveMeta"u8;
 
         Unsafe.SkipInit(out Array18<byte> saveDataIdDirectoryNameBuffer);
 
@@ -697,11 +692,11 @@ public class SaveDataFileSystemServiceImpl : IDisposable
 
         if (spaceId == SaveDataSpaceId.Temporary)
         {
-            saveDirName = new[] { (byte)'/', (byte)'t', (byte)'e', (byte)'m', (byte)'p' }; // /temp
+            saveDirName = "/temp"u8;
         }
         else
         {
-            saveDirName = new[] { (byte)'/', (byte)'s', (byte)'a', (byte)'v', (byte)'e' }; // /save
+            saveDirName = "/save"u8;
         }
 
         res = PathFunctions.SetUpFixedPath(ref saveDataAreaDirectoryName.Ref(), saveDirName);
