@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using LibHac.Util;
 
@@ -10,7 +11,7 @@ public struct Key128 : IEquatable<Key128>
     private readonly ulong _dummy1;
     private readonly ulong _dummy2;
 
-    public Span<byte> Value => SpanHelpers.AsByteSpan(ref this);
+    [UnscopedRef] public Span<byte> Value => SpanHelpers.AsByteSpan(ref this);
 
     public Key128(ReadOnlySpan<byte> bytes)
     {

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
@@ -50,8 +51,9 @@ public struct KipHeader
 
     public Array32<uint> Capabilities;
 
+    [UnscopedRef]
     public Span<SegmentHeader> Segments =>
-        SpanHelpers.CreateSpan(ref Unsafe.As<int, SegmentHeader>(ref TextMemoryOffset), SegmentCount);
+         SpanHelpers.CreateSpan(ref Unsafe.As<int, SegmentHeader>(ref TextMemoryOffset), SegmentCount);
 
     public bool IsValid => Magic == Kip1Magic;
 

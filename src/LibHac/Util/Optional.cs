@@ -1,6 +1,5 @@
-﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using LibHac.Common;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using LibHac.Diag;
 
 namespace LibHac.Util;
@@ -14,20 +13,21 @@ public struct Optional<T>
 
     public ref T Value
     {
+        [UnscopedRef]
         get
         {
             Assert.SdkRequires(_hasValue);
-            // It's beautiful, working around C# rules
-            return ref MemoryMarshal.GetReference(SpanHelpers.CreateSpan(ref _value, 1));
+            return ref _value;
         }
     }
 
     public readonly ref readonly T ValueRo
     {
+        [UnscopedRef]
         get
         {
             Assert.SdkRequires(_hasValue);
-            return ref MemoryMarshal.GetReference(SpanHelpers.CreateReadOnlySpan(in _value, 1));
+            return ref _value;
         }
     }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using LibHac.Common;
 using LibHac.Diag;
 using static LibHac.Fs.StringTraits;
@@ -16,21 +17,19 @@ public ref struct DirectoryPathParser
     private Span<byte> _buffer;
     private byte _replacedChar;
     private int _position;
-
-    // Todo: Make private so we can use the GetCurrentPath method once lifetime tracking is better
-    public Path CurrentPath;
+    private Path _currentPath;
 
     public DirectoryPathParser()
     {
         _buffer = Span<byte>.Empty;
         _replacedChar = 0;
         _position = 0;
-        CurrentPath = new Path();
+        _currentPath = new Path();
     }
 
     public void Dispose()
     {
-        CurrentPath.Dispose();
+        _currentPath.Dispose();
     }
 
     /// <summary>
@@ -40,7 +39,7 @@ public ref struct DirectoryPathParser
     /// </summary>
     /// <param name="path">The <see cref="Path"/> to iterate. Must have an allocated write buffer.</param>
     /// <returns>The <see cref="Result"/> of the operation.</returns>
-    public Result Initialize(ref Path path)
+    public Result Initialize(scoped ref Path path)
     {
         Span<byte> pathBuffer = path.GetWriteBufferLength() != 0 ? path.GetWriteBuffer() : Span<byte>.Empty;
 
@@ -49,7 +48,7 @@ public ref struct DirectoryPathParser
 
         if (windowsSkipLength != 0)
         {
-            Result res = CurrentPath.InitializeWithNormalization(pathBuffer, windowsSkipLength + 1);
+            Result res = _currentPath.InitializeWithNormalization(pathBuffer, windowsSkipLength + 1);
             if (res.IsFailure()) return res.Miss();
 
             _buffer = _buffer.Slice(1);
@@ -60,7 +59,7 @@ public ref struct DirectoryPathParser
 
             if (!initialPath.IsEmpty)
             {
-                Result res = CurrentPath.InitializeWithNormalization(initialPath);
+                Result res = _currentPath.InitializeWithNormalization(initialPath);
                 if (res.IsFailure()) return res.Miss();
             }
         }
@@ -68,11 +67,11 @@ public ref struct DirectoryPathParser
         return Result.Success;
     }
 
-    // Todo: Return reference when escape semantics are better
-    //public ref readonly Path GetCurrentPath()
-    //{
-    //    return ref CurrentPath;
-    //}
+    [UnscopedRef]
+    public ref readonly Path GetCurrentPath()
+    {
+        return ref _currentPath;
+    }
 
     public Result ReadNext(out bool isFinished)
     {
@@ -86,7 +85,7 @@ public ref struct DirectoryPathParser
             return Result.Success;
         }
 
-        return CurrentPath.AppendChild(nextEntry);
+        return _currentPath.AppendChild(nextEntry);
     }
 
     private Span<byte> ReadNextImpl()

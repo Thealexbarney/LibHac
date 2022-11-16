@@ -109,7 +109,7 @@ internal ref struct KeyValueArchiveBufferReader
         return Result.Success;
     }
 
-    public Result ReadKeyValue(Span<byte> keyBuffer, Span<byte> valueBuffer)
+    public Result ReadKeyValue(scoped Span<byte> keyBuffer, scoped Span<byte> valueBuffer)
     {
         // This should only be called after ReadEntryCount.
         Assert.SdkNotEqual(_offset, 0);
@@ -136,7 +136,7 @@ internal ref struct KeyValueArchiveBufferReader
         return Result.Success;
     }
 
-    private Result Peek(Span<byte> destBuffer)
+    private Result Peek(scoped Span<byte> destBuffer)
     {
         // Bounds check.
         if (_offset + destBuffer.Length > _buffer.Length ||
@@ -149,7 +149,7 @@ internal ref struct KeyValueArchiveBufferReader
         return Result.Success;
     }
 
-    private Result Read(Span<byte> destBuffer)
+    private Result Read(scoped Span<byte> destBuffer)
     {
         Result res = Peek(destBuffer);
         if (res.IsFailure()) return res.Miss();
@@ -170,7 +170,7 @@ internal ref struct KeyValueArchiveBufferWriter
         _offset = 0;
     }
 
-    private void Write(ReadOnlySpan<byte> source)
+    private void Write(scoped ReadOnlySpan<byte> source)
     {
         // Bounds check.
         Abort.DoAbortUnless(_offset + source.Length <= _buffer.Length &&
@@ -189,7 +189,7 @@ internal ref struct KeyValueArchiveBufferWriter
         Write(SpanHelpers.AsByteSpan(ref header));
     }
 
-    public void WriteEntry(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
+    public void WriteEntry(scoped ReadOnlySpan<byte> key, scoped ReadOnlySpan<byte> value)
     {
         // This should only be called after writing header.
         Assert.SdkNotEqual(_offset, 0);

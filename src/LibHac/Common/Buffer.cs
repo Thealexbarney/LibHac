@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Util;
@@ -22,7 +23,7 @@ public struct Buffer16
         set => Bytes[i] = value;
     }
 
-    public Span<byte> Bytes => SpanHelpers.AsByteSpan(ref this);
+    [UnscopedRef] public Span<byte> Bytes => SpanHelpers.AsByteSpan(ref this);
 
     // Prevent a defensive copy by changing the read-only in reference to a reference with Unsafe.AsRef()
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -37,7 +38,7 @@ public struct Buffer16
         return SpanHelpers.AsReadOnlyByteSpan(in value);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [UnscopedRef, MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ref T As<T>() where T : unmanaged
     {
         if (Unsafe.SizeOf<T>() > (uint)Unsafe.SizeOf<Buffer16>())
@@ -48,13 +49,13 @@ public struct Buffer16
         return ref MemoryMarshal.GetReference(AsSpan<T>());
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [UnscopedRef, MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Span<T> AsSpan<T>() where T : unmanaged
     {
         return SpanHelpers.AsSpan<Buffer16, T>(ref this);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [UnscopedRef, MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly ReadOnlySpan<T> AsReadOnlySpan<T>() where T : unmanaged
     {
         return SpanHelpers.AsReadOnlySpan<Buffer16, T>(in this);
@@ -80,7 +81,7 @@ public struct Buffer32
         set => Bytes[i] = value;
     }
 
-    public Span<byte> Bytes => SpanHelpers.AsByteSpan(ref this);
+    [UnscopedRef] public Span<byte> Bytes => SpanHelpers.AsByteSpan(ref this);
 
     // Prevent a defensive copy by changing the read-only in reference to a reference with Unsafe.AsRef()
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -95,7 +96,7 @@ public struct Buffer32
         return SpanHelpers.AsReadOnlyByteSpan(in value);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [UnscopedRef, MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ref T As<T>() where T : unmanaged
     {
         if (Unsafe.SizeOf<T>() > (uint)Unsafe.SizeOf<Buffer32>())
@@ -106,13 +107,13 @@ public struct Buffer32
         return ref MemoryMarshal.GetReference(AsSpan<T>());
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [UnscopedRef, MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Span<T> AsSpan<T>() where T : unmanaged
     {
         return SpanHelpers.AsSpan<Buffer32, T>(ref this);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [UnscopedRef, MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly ReadOnlySpan<T> AsReadOnlySpan<T>() where T : unmanaged
     {
         return SpanHelpers.AsReadOnlySpan<Buffer32, T>(in this);

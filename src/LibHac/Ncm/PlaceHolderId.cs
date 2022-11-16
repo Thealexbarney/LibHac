@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 
@@ -36,6 +37,7 @@ public struct PlaceHolderId : IEquatable<PlaceHolderId>, IComparable<PlaceHolder
 
     public void ToBytes(Span<byte> output) => Id.ToBytes(output);
 
+    [UnscopedRef]
     public ReadOnlySpan<byte> AsBytes()
     {
         return SpanHelpers.AsByteSpan(ref this);

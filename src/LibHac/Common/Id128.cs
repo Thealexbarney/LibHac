@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using LibHac.Util;
 
@@ -67,6 +68,7 @@ public struct Id128 : IEquatable<Id128>, IComparable<Id128>, IComparable
         longs[1] = Low;
     }
 
+    [UnscopedRef]
     public ReadOnlySpan<byte> AsBytes()
     {
         return SpanHelpers.AsByteSpan(ref this);

@@ -71,18 +71,18 @@ public struct ApplicationControlProperty
     public AccessibleLaunchRequiredVersionValue AccessibleLaunchRequiredVersion;
     public Array3000<byte> Reserved3448;
 
-    public readonly U8Span IsbnString => new U8Span(Isbn.ItemsRo);
-    public readonly U8Span DisplayVersionString => new U8Span(DisplayVersion.ItemsRo);
-    public readonly U8Span ApplicationErrorCodeCategoryString => new U8Span(ApplicationErrorCodeCategory.ItemsRo);
-    public readonly U8Span BcatPassphraseString => new U8Span(BcatPassphrase.ItemsRo);
+    [UnscopedRef] public readonly U8Span IsbnString => new U8Span(Isbn.ItemsRo);
+    [UnscopedRef] public readonly U8Span DisplayVersionString => new U8Span(DisplayVersion.ItemsRo);
+    [UnscopedRef] public readonly U8Span ApplicationErrorCodeCategoryString => new U8Span(ApplicationErrorCodeCategory.ItemsRo);
+    [UnscopedRef] public readonly U8Span BcatPassphraseString => new U8Span(BcatPassphrase.ItemsRo);
 
     public struct ApplicationTitle
     {
         public Array512<byte> Name;
         public Array256<byte> Publisher;
 
-        public readonly U8Span NameString => new U8Span(Name.ItemsRo);
-        public readonly U8Span PublisherString => new U8Span(Publisher.ItemsRo);
+        [UnscopedRef] public readonly U8Span NameString => new U8Span(Name.ItemsRo);
+        [UnscopedRef] public readonly U8Span PublisherString => new U8Span(Publisher.ItemsRo);
     }
 
     public struct ApplicationNeighborDetectionClientConfiguration

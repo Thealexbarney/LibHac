@@ -192,7 +192,7 @@ internal static class Utility
     }
 
     public static Result CopyDirectoryRecursively(IFileSystem destinationFileSystem, IFileSystem sourceFileSystem,
-        in Path destinationPath, in Path sourcePath, ref DirectoryEntry dirEntry, Span<byte> workBuffer)
+       in Path destinationPath, in Path sourcePath, ref DirectoryEntry dirEntry, Span<byte> workBuffer)
     {
         static Result OnEnterDir(in Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure)
         {
@@ -235,7 +235,7 @@ internal static class Utility
     }
 
     public static Result CopyDirectoryRecursively(IFileSystem fileSystem, in Path destinationPath,
-        in Path sourcePath, ref DirectoryEntry dirEntry, Span<byte> workBuffer)
+       in Path sourcePath, ref DirectoryEntry dirEntry, Span<byte> workBuffer)
     {
         var closure = new FsIterationTaskClosure();
         closure.Buffer = workBuffer;
@@ -333,7 +333,7 @@ internal static class Utility
         do
         {
             // Check if the path exists
-            res = fileSystem.GetEntryType(out DirectoryEntryType type, in parser.CurrentPath);
+            res = fileSystem.GetEntryType(out DirectoryEntryType type, in parser.GetCurrentPath());
             if (!res.IsSuccess())
             {
                 // Something went wrong if we get a result other than PathNotFound
@@ -341,12 +341,12 @@ internal static class Utility
                     return res;
 
                 // Create the directory
-                res = fileSystem.CreateDirectory(in parser.CurrentPath);
+                res = fileSystem.CreateDirectory(in parser.GetCurrentPath());
                 if (res.IsFailure() && !ResultFs.PathAlreadyExists.Includes(res))
                     return res;
 
                 // Check once more if the path exists
-                res = fileSystem.GetEntryType(out type, in parser.CurrentPath);
+                res = fileSystem.GetEntryType(out type, in parser.GetCurrentPath());
                 if (res.IsFailure()) return res.Miss();
             }
 

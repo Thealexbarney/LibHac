@@ -1016,8 +1016,8 @@ public static class CharacterEncoding
         return CharacterEncodingResult.Success;
     }
 
-    public static CharacterEncodingResult PickOutCharacterFromUtf8String(Span<byte> destinationChar,
-        ref ReadOnlySpan<byte> source)
+    public static CharacterEncodingResult PickOutCharacterFromUtf8String(scoped Span<byte> destinationChar,
+        scoped ref ReadOnlySpan<byte> source)
     {
         Assert.SdkRequires(destinationChar.Length >= 4);
         Assert.SdkRequires(source.Length >= 1);

@@ -57,7 +57,7 @@ public static unsafe class InteropWin32
         public long LastWriteTime => (long)((ulong)_lastWriteHigh << 32 | _lastWriteLow);
         public long FileSize => (long)_fileSizeHigh << 32 | _fileSizeLow;
 
-        public Span<char> FileName => MemoryMarshal.CreateSpan(ref _fileName[0], 260);
-        public Span<char> AlternateFileName => MemoryMarshal.CreateSpan(ref _alternateFileName[0], 14);
+        public Span<char> FileName => SpanHelpers.CreateSpan(ref _fileName[0], 260);
+        public Span<char> AlternateFileName => SpanHelpers.CreateSpan(ref _alternateFileName[0], 14);
     }
 }

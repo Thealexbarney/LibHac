@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
@@ -53,12 +54,13 @@ public struct NsoHeader
     public Array32<byte> RoHash;
     public Array32<byte> DataHash;
 
+    [UnscopedRef]
     public Span<SegmentHeader> Segments =>
         SpanHelpers.CreateSpan(ref Unsafe.As<uint, SegmentHeader>(ref TextFileOffset), SegmentCount);
 
-    public Span<uint> CompressedSizes => SpanHelpers.CreateSpan(ref TextFileSize, SegmentCount);
+    [UnscopedRef] public Span<uint> CompressedSizes => SpanHelpers.CreateSpan(ref TextFileSize, SegmentCount);
 
-    public Span<Array32<byte>> SegmentHashes => SpanHelpers.CreateSpan(ref TextHash, SegmentCount);
+    [UnscopedRef] public Span<Array32<byte>> SegmentHashes => SpanHelpers.CreateSpan(ref TextHash, SegmentCount);
 
     [Flags]
     public enum Flag

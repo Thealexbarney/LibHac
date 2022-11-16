@@ -40,7 +40,7 @@ public class FileSystemProxyCoreImpl
             Result res = _baseFileSystemService.OpenBisFileSystem(ref fileSystem.Ref(), BisPartitionId.User);
             if (res.IsFailure()) return res.Miss();
 
-            using var path = new Path();
+            using scoped var path = new Path();
             res = PathFunctions.SetUpFixedPathSingleEntry(ref path.Ref(), pathBuffer.Items,
                 CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.System));
             if (res.IsFailure()) return res.Miss();
@@ -54,7 +54,7 @@ public class FileSystemProxyCoreImpl
             Result res = _baseFileSystemService.OpenSdCardProxyFileSystem(ref fileSystem.Ref());
             if (res.IsFailure()) return res.Miss();
 
-            using var path = new Path();
+            using scoped var path = new Path();
             res = PathFunctions.SetUpFixedPathDoubleEntry(ref path.Ref(), pathBuffer.Items,
                 CommonPaths.SdCardNintendoRootDirectoryName,
                 CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.System));

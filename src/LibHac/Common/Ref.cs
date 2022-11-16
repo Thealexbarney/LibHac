@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace LibHac.Common;
 
@@ -14,10 +12,7 @@ namespace LibHac.Common;
 /// <typeparam name="T">The type of value to reference.</typeparam>
 public readonly ref struct Ref<T>
 {
-    /// <summary>
-    /// The 1-length <see cref="Span{T}"/> instance used to track the target <typeparamref name="T"/> value.
-    /// </summary>
-    private readonly Span<T> _span;
+    private readonly ref T _ref;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Ref{T}"/> struct.
@@ -26,7 +21,7 @@ public readonly ref struct Ref<T>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Ref(ref T value)
     {
-        _span = MemoryMarshal.CreateSpan(ref value, 1);
+        _ref = ref value;
     }
 
     /// <summary>
@@ -40,11 +35,7 @@ public readonly ref struct Ref<T>
     /// <summary>
     /// Gets the <typeparamref name="T"/> reference represented by the current <see cref="Ref{T}"/> instance.
     /// </summary>
-    public ref T Value
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => ref MemoryMarshal.GetReference(_span);
-    }
+    public ref T Value => ref _ref;
 
     /// <summary>
     /// Returns a value that indicates whether the current <see cref="Ref{T}"/> is <see langword="null"/>.
@@ -74,10 +65,7 @@ public readonly ref struct Ref<T>
 /// <typeparam name="T">The type of value to reference.</typeparam>
 public readonly ref struct ReadOnlyRef<T>
 {
-    /// <summary>
-    /// The 1-length <see cref="ReadOnlySpan{T}"/> instance used to track the target <typeparamref name="T"/> value.
-    /// </summary>
-    private readonly ReadOnlySpan<T> _span;
+    private readonly ref readonly T _ref;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Ref{T}"/> struct.
@@ -86,7 +74,7 @@ public readonly ref struct ReadOnlyRef<T>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ReadOnlyRef(in T value)
     {
-        _span = MemoryMarshal.CreateSpan(ref Unsafe.AsRef(in value), 1);
+        _ref = ref value;
     }
 
     /// <summary>
@@ -103,7 +91,7 @@ public readonly ref struct ReadOnlyRef<T>
     public ref readonly T Value
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => ref MemoryMarshal.GetReference(_span);
+        get => ref _ref;
     }
 
     /// <summary>

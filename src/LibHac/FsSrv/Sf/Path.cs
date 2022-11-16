@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Common.FixedArrays;
@@ -10,5 +11,5 @@ public readonly struct Path
 {
     private readonly Array769<byte> _value;
 
-    public ReadOnlySpan<byte> Str => SpanHelpers.AsReadOnlyByteSpan(in _value);
+    [UnscopedRef] public ReadOnlySpan<byte> Str => SpanHelpers.AsReadOnlyByteSpan(in _value);
 }

@@ -336,7 +336,7 @@ public class SaveDataFileStorageHolder
     {
         Unsafe.SkipInit(out Array18<byte> saveImageNameBuffer);
 
-        using var saveImageName = new Path();
+        using scoped var saveImageName = new Path();
         Result res = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer.Items, saveDataId);
         if (res.IsFailure()) return res.Miss();
 

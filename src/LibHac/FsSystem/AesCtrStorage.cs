@@ -133,7 +133,7 @@ public class AesCtrStorage : IStorage
             int writeSize = useWorkBuffer ? Math.Max(pooledBuffer.GetSize(), remaining) : remaining;
             Span<byte> writeBuffer = useWorkBuffer
                 ? pooledBuffer.GetBuffer().Slice(0, writeSize)
-                : MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(source), source.Length).Slice(0, writeSize);
+                : SpanHelpers.CreateSpan(ref MemoryMarshal.GetReference(source), source.Length).Slice(0, writeSize);
 
             // Encrypt the data, with temporarily increased priority.
             using (new ScopedThreadPriorityChanger(1, ScopedThreadPriorityChanger.Mode.Relative))

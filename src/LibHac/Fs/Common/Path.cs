@@ -46,7 +46,7 @@ public static class PathExtensions
     /// <param name="path">The read-only reference to reinterpret.</param>
     /// <returns>A reference to the given <see cref="Path"/>.</returns>
     // ReSharper disable once EntityNameCapturedOnly.Global
-    public static ref Path Ref(this in Path path)
+    public static ref Path Ref(this scoped in Path path)
     {
         Ldarg(nameof(path));
         Ret();
@@ -122,7 +122,7 @@ public ref struct Path
         /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
         /// <see cref="ResultFs.NotNormalized"/>: The <c>IsNormalized</c> flag of
         /// <paramref name="path"/> is not <see langword="true"/>.</returns>
-        public Result Initialize(in Path path)
+        public Result Initialize(scoped in Path path)
         {
             if (!path._isNormalized)
                 return ResultFs.NotNormalized.Log();
@@ -249,17 +249,17 @@ public ref struct Path
     /// <param name="value">The string to compare to this <see cref="Path"/>.</param>
     /// <param name="length">The maximum number of characters to compare.</param>
     /// <returns><see langword="true"/> if the strings are the same; otherwise <see langword="false"/>.</returns>
-    public readonly bool IsMatchHead(ReadOnlySpan<byte> value, int length)
+    public readonly bool IsMatchHead(scoped ReadOnlySpan<byte> value, int length)
     {
         return StringUtils.Compare(GetString(), value, length) == 0;
     }
 
-    public static bool operator !=(in Path left, in Path right)
+    public static bool operator !=(scoped in Path left, scoped in Path right)
     {
         return !(left == right);
     }
 
-    public static bool operator !=(in Path left, ReadOnlySpan<byte> right)
+    public static bool operator !=(scoped in Path left, scoped ReadOnlySpan<byte> right)
     {
         return !(left == right);
     }
@@ -397,7 +397,7 @@ public ref struct Path
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.NotNormalized"/>: The <c>IsNormalized</c> flag of
     /// <paramref name="other"/> is not <see langword="true"/>.</returns>
-    public Result Initialize(in Path other)
+    public Result Initialize(scoped in Path other)
     {
         if (!other._isNormalized)
             return ResultFs.NotNormalized.Log();
@@ -424,7 +424,7 @@ public ref struct Path
     /// because <see cref="Stored"/> paths are always normalized upon initialization.</remarks>
     /// <param name="other">The <see cref="Stored"/> path used to initialize this <see cref="Path"/>.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
-    public Result Initialize(in Stored other)
+    public Result Initialize(scoped in Stored other)
     {
         int otherLength = other.GetLength();
 
@@ -449,7 +449,7 @@ public ref struct Path
     /// <param name="path">The buffer containing the path to use.</param>
     /// <param name="length">The length of the provided path.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
-    private Result InitializeImpl(ReadOnlySpan<byte> path, int length)
+    private Result InitializeImpl(scoped ReadOnlySpan<byte> path, int length)
     {
         if (length == 0 || path.At(0) == NullTerminator)
         {
@@ -476,7 +476,7 @@ public ref struct Path
     /// This function will always set the <c>IsNormalized</c> flag to <see langword="false"/>.</remarks>
     /// <param name="path">The buffer containing the path to use.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
-    public Result Initialize(ReadOnlySpan<byte> path)
+    public Result Initialize(scoped ReadOnlySpan<byte> path)
     {
         Result res = InitializeImpl(path, StringUtils.GetLength(path));
         if (res.IsFailure()) return res.Miss();
@@ -661,7 +661,7 @@ public ref struct Path
     /// </remarks>
     /// <param name="path">The buffer containing the path to use.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
-    public Result InitializeWithReplaceUnc(ReadOnlySpan<byte> path)
+    public Result InitializeWithReplaceUnc(scoped ReadOnlySpan<byte> path)
     {
         Result res = InitializeImpl(path, StringUtils.GetLength(path));
         if (res.IsFailure()) return res.Miss();
@@ -720,7 +720,7 @@ public ref struct Path
     /// <param name="parent">The buffer containing the path to insert.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.NotImplemented"/>: The path provided in <paramref name="parent"/> is a Windows path.</returns>
-    public Result InsertParent(ReadOnlySpan<byte> parent)
+    public Result InsertParent(scoped ReadOnlySpan<byte> parent)
     {
         if (parent.Length == 0 || parent[0] == NullTerminator)
             return Result.Success;
@@ -832,7 +832,7 @@ public ref struct Path
     /// <param name="parent">The <see cref="Path"/> to insert.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.NotImplemented"/>: The path provided in <paramref name="parent"/> is a Windows path.</returns>
-    public Result InsertParent(in Path parent)
+    public Result InsertParent(scoped in Path parent)
     {
         return InsertParent(parent.GetString());
     }
@@ -845,7 +845,7 @@ public ref struct Path
     /// path is not normalized yet the <c>IsNormalized</c> flag is still <see langword="true"/>.</remarks>
     /// <param name="child">The buffer containing the child path to append to the current path.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
-    public Result AppendChild(ReadOnlySpan<byte> child)
+    public Result AppendChild(scoped ReadOnlySpan<byte> child)
     {
         ReadOnlySpan<byte> trimmedChild = child;
 
@@ -925,7 +925,7 @@ public ref struct Path
     /// path is not normalized yet the <c>IsNormalized</c> flag is still <see langword="true"/>.</remarks>
     /// <param name="child">The child <see cref="Path"/> to append to the current path.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
-    public Result AppendChild(in Path child)
+    public Result AppendChild(scoped in Path child)
     {
         return AppendChild(child.GetString());
     }
@@ -941,7 +941,7 @@ public ref struct Path
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.NotNormalized"/>: The <c>IsNormalized</c> flag of either
     /// <paramref name="path1"/> or <paramref name="path2"/> is not <see langword="true"/>.</returns>
-    public Result Combine(in Path path1, in Path path2)
+    public Result Combine(scoped in Path path1, scoped in Path path2)
     {
         int path1Length = path1.GetLength();
         int path2Length = path2.GetLength();
@@ -977,7 +977,7 @@ public ref struct Path
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.NotNormalized"/>: The <c>IsNormalized</c> flag of
     /// <paramref name="path1"/> is not <see langword="true"/>.</returns>
-    public Result Combine(in Path path1, ReadOnlySpan<byte> path2)
+    public Result Combine(scoped in Path path1, scoped ReadOnlySpan<byte> path2)
     {
         int path1Length = path1.GetLength();
         int path2Length = StringUtils.GetLength(path2);
@@ -1002,7 +1002,7 @@ public ref struct Path
     /// <param name="path1">The first path to combine.</param>
     /// <param name="path2">The second path to combine.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
-    public Result Combine(ReadOnlySpan<byte> path1, in Path path2)
+    public Result Combine(scoped ReadOnlySpan<byte> path1, scoped in Path path2)
     {
         int path1Length = StringUtils.GetLength(path1);
         int path2Length = path2.GetLength();
@@ -1167,7 +1167,7 @@ public static class PathFunctions
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.InvalidCharacter"/>: The path contains an invalid character.<br/>
     /// <see cref="ResultFs.InvalidPathFormat"/>: The path is in an invalid format or is not normalized.</returns>
-    public static Result SetUpFixedPath(ref Path path, ReadOnlySpan<byte> pathBuffer)
+    public static Result SetUpFixedPath(scoped ref Path path, ReadOnlySpan<byte> pathBuffer)
     {
         Result res = PathNormalizer.IsNormalized(out bool isNormalized, out _, pathBuffer);
         if (res.IsFailure()) return res.Miss();
@@ -1192,7 +1192,7 @@ public static class PathFunctions
     /// <param name="entryName">The first entry in the generated path.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.InvalidArgument"/>: <paramref name="pathBuffer"/> was too small to contain the built path.</returns>
-    internal static Result SetUpFixedPathSingleEntry(ref Path path, Span<byte> pathBuffer,
+    internal static Result SetUpFixedPathSingleEntry(scoped ref Path path, Span<byte> pathBuffer,
         ReadOnlySpan<byte> entryName)
     {
         var sb = new U8StringBuilder(pathBuffer);
@@ -1214,8 +1214,8 @@ public static class PathFunctions
     /// <param name="entryName2">The second entry in the generated path.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.InvalidArgument"/>: <paramref name="pathBuffer"/> was too small to contain the built path.</returns>
-    internal static Result SetUpFixedPathDoubleEntry(ref Path path, Span<byte> pathBuffer,
-        ReadOnlySpan<byte> entryName1, ReadOnlySpan<byte> entryName2)
+    internal static Result SetUpFixedPathDoubleEntry(scoped ref Path path, Span<byte> pathBuffer,
+       scoped ReadOnlySpan<byte> entryName1, scoped ReadOnlySpan<byte> entryName2)
     {
         var sb = new U8StringBuilder(pathBuffer);
         sb.Append((byte)'/').Append(entryName1)
@@ -1236,7 +1236,7 @@ public static class PathFunctions
     /// <param name="saveDataId">The save data ID to insert into the path.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.InvalidArgument"/>: <paramref name="pathBuffer"/> was too small to contain the built path.</returns>
-    internal static Result SetUpFixedPathSaveId(ref Path path, Span<byte> pathBuffer, ulong saveDataId)
+    internal static Result SetUpFixedPathSaveId(scoped ref Path path, Span<byte> pathBuffer, ulong saveDataId)
     {
         var sb = new U8StringBuilder(pathBuffer);
         sb.Append((byte)'/').AppendFormat(saveDataId, 'x', 16);
@@ -1256,7 +1256,7 @@ public static class PathFunctions
     /// <param name="metaType">The <see cref="SaveDataMetaType"/> to insert into the path.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.InvalidArgument"/>: <paramref name="pathBuffer"/> was too small to contain the built path.</returns>
-    internal static Result SetUpFixedPathSaveMetaName(ref Path path, Span<byte> pathBuffer, uint metaType)
+    internal static Result SetUpFixedPathSaveMetaName(scoped ref Path path, Span<byte> pathBuffer, uint metaType)
     {
         ReadOnlySpan<byte> metaExtension = new[] { (byte)'.', (byte)'m', (byte)'e', (byte)'t', (byte)'a' }; // ".meta"
 
@@ -1278,7 +1278,7 @@ public static class PathFunctions
     /// <param name="saveDataId">The save data ID to insert into the path.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.InvalidArgument"/>: <paramref name="pathBuffer"/> was too small to contain the built path.</returns>
-    internal static Result SetUpFixedPathSaveMetaDir(ref Path path, Span<byte> pathBuffer, ulong saveDataId)
+    internal static Result SetUpFixedPathSaveMetaDir(scoped ref Path path, Span<byte> pathBuffer, ulong saveDataId)
     {
         ReadOnlySpan<byte> metaDirectoryName = new[]
         {

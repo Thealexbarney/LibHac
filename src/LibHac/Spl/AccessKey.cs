@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 
@@ -9,7 +10,7 @@ public struct AccessKey : IEquatable<AccessKey>
 {
     private readonly Key128 Key;
 
-    public ReadOnlySpan<byte> Value => SpanHelpers.AsByteSpan(ref this);
+    [UnscopedRef] public ReadOnlySpan<byte> Value => SpanHelpers.AsByteSpan(ref this);
 
     public AccessKey(ReadOnlySpan<byte> bytes)
     {

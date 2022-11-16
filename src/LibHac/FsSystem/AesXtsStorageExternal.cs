@@ -235,7 +235,7 @@ public class AesXtsStorageExternal : IStorage
                     // const_cast the input buffer and encrypt in-place if it's a "device buffer".
                     Span<byte> encryptDest = useWorkBuffer
                         ? pooledBuffer.GetBuffer().Slice(encryptOffset, currentSize)
-                        : MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(encryptSource), encryptSource.Length);
+                        : SpanHelpers.CreateSpan(ref MemoryMarshal.GetReference(encryptSource), encryptSource.Length);
 
                     res = _encryptFunction(encryptDest, _key[0], _key[1], counter, encryptSource);
                     if (res.IsFailure()) return res.Miss();

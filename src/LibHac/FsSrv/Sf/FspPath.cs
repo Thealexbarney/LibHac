@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
@@ -15,7 +16,7 @@ public readonly struct FspPath
 
     private readonly Array769<byte> _value;
 
-    public ReadOnlySpan<byte> Str => SpanHelpers.AsReadOnlyByteSpan(in _value);
+    [UnscopedRef] public ReadOnlySpan<byte> Str => SpanHelpers.AsReadOnlyByteSpan(in _value);
 
     public static Result FromSpan(out FspPath fspPath, ReadOnlySpan<byte> path)
     {

@@ -42,7 +42,7 @@ public static class SpanHelpers
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<T> AsSpan<T>(ref T reference) where T : unmanaged
     {
-        return CreateSpan(ref reference, 1);
+        return new Span<T>(ref reference);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -68,7 +68,7 @@ public static class SpanHelpers
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<T> AsReadOnlySpan<T>(in T reference) where T : unmanaged
     {
-        return CreateReadOnlySpan(in reference, 1);
+        return new ReadOnlySpan<T>(in reference);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

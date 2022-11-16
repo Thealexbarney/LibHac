@@ -1,5 +1,4 @@
 ﻿using System;
-using LibHac.Common;
 using LibHac.Common.FixedArrays;
 using LibHac.Ncm;
 
@@ -9,9 +8,9 @@ namespace LibHac.Loader;
 
 public ref struct Npdm
 {
-    public ReadOnlyRef<Meta> Meta;
-    public ReadOnlyRef<AcidHeaderData> Acid;
-    public ReadOnlyRef<AciHeader> Aci;
+    public ref readonly Meta Meta;
+    public ref readonly AcidHeaderData Acid;
+    public ref readonly AciHeader Aci;
 
     public ReadOnlySpan<byte> FsAccessControlDescriptor;
     public ReadOnlySpan<byte> ServiceAccessControlDescriptor;

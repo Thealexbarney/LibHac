@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Common.FixedArrays;
@@ -13,8 +14,8 @@ public struct EncryptedKeyBlob
     public AesIv Counter;
     public Array144<byte> Payload;
 
-    public Span<byte> Bytes => SpanHelpers.AsByteSpan(ref this);
-    public readonly ReadOnlySpan<byte> BytesRo => SpanHelpers.AsReadOnlyByteSpan(in this);
+    [UnscopedRef] public Span<byte> Bytes => SpanHelpers.AsByteSpan(ref this);
+    [UnscopedRef] public readonly ReadOnlySpan<byte> BytesRo => SpanHelpers.AsReadOnlyByteSpan(in this);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool IsZeros()
@@ -41,8 +42,8 @@ public struct KeyBlob
     public Array112<byte> Unused;
     public AesKey Package1Key;
 
-    public Span<byte> Bytes => SpanHelpers.AsByteSpan(ref this);
-    public readonly ReadOnlySpan<byte> BytesRo => SpanHelpers.AsReadOnlyByteSpan(in this);
+    [UnscopedRef] public Span<byte> Bytes => SpanHelpers.AsByteSpan(ref this);
+    [UnscopedRef] public readonly ReadOnlySpan<byte> BytesRo => SpanHelpers.AsReadOnlyByteSpan(in this);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool IsZeros()

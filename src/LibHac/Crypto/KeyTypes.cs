@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
@@ -16,10 +17,10 @@ public struct AesKey
     [FieldOffset(0)] private byte _byte;
     [FieldOffset(0)] private ulong _ulong;
 
-    public Span<byte> Data => SpanHelpers.CreateSpan(ref _byte, Size);
-    public readonly ReadOnlySpan<byte> DataRo => SpanHelpers.CreateReadOnlySpan(in _byte, Size);
-    public Span<ulong> Data64 => SpanHelpers.CreateSpan(ref _ulong, Size / sizeof(ulong));
-    public readonly ReadOnlySpan<ulong> DataRo64 => SpanHelpers.CreateReadOnlySpan(in _ulong, Size / sizeof(ulong));
+    [UnscopedRef] public Span<byte> Data => SpanHelpers.CreateSpan(ref _byte, Size);
+    [UnscopedRef] public readonly ReadOnlySpan<byte> DataRo => SpanHelpers.CreateReadOnlySpan(in _byte, Size);
+    [UnscopedRef] public Span<ulong> Data64 => SpanHelpers.CreateSpan(ref _ulong, Size / sizeof(ulong));
+    [UnscopedRef] public readonly ReadOnlySpan<ulong> DataRo64 => SpanHelpers.CreateReadOnlySpan(in _ulong, Size / sizeof(ulong));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool IsZeros() => (DataRo64[0] | DataRo64[1]) == 0;
@@ -31,7 +32,7 @@ public struct AesKey
     public readonly override string ToString() => DataRo.ToHexString();
 
 #if DEBUG
-    [FieldOffset(8)] [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly ulong _dummy1;
+    [FieldOffset(8)][DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly ulong _dummy1;
 #endif
 }
 
@@ -46,12 +47,12 @@ public struct AesXtsKey
     [FieldOffset(0)] public AesKey DataKey;
     [FieldOffset(0x10)] public AesKey TweakKey;
 
-    public Span<byte> Data => SpanHelpers.CreateSpan(ref _byte, Size);
-    public readonly ReadOnlySpan<byte> DataRo => SpanHelpers.CreateReadOnlySpan(in _byte, Size);
-    public Span<ulong> Data64 => SpanHelpers.CreateSpan(ref _ulong, Size / sizeof(ulong));
-    public readonly ReadOnlySpan<ulong> DataRo64 => SpanHelpers.CreateReadOnlySpan(in _ulong, Size / sizeof(ulong));
+    [UnscopedRef] public Span<byte> Data => SpanHelpers.CreateSpan(ref _byte, Size);
+    [UnscopedRef] public readonly ReadOnlySpan<byte> DataRo => SpanHelpers.CreateReadOnlySpan(in _byte, Size);
+    [UnscopedRef] public Span<ulong> Data64 => SpanHelpers.CreateSpan(ref _ulong, Size / sizeof(ulong));
+    [UnscopedRef] public readonly ReadOnlySpan<ulong> DataRo64 => SpanHelpers.CreateReadOnlySpan(in _ulong, Size / sizeof(ulong));
 
-    public Span<AesKey> SubKeys => SpanHelpers.CreateSpan(ref DataKey, Size / Unsafe.SizeOf<AesKey>());
+    [UnscopedRef] public Span<AesKey> SubKeys => SpanHelpers.CreateSpan(ref DataKey, Size / Unsafe.SizeOf<AesKey>());
 
     public static implicit operator Span<byte>(in AesXtsKey value) => Unsafe.AsRef(in value).Data;
     public static implicit operator ReadOnlySpan<byte>(in AesXtsKey value) => value.DataRo;
@@ -70,10 +71,10 @@ public struct AesIv
     [FieldOffset(0)] private byte _byte;
     [FieldOffset(0)] private ulong _ulong;
 
-    public Span<byte> Data => SpanHelpers.CreateSpan(ref _byte, Size);
-    public readonly ReadOnlySpan<byte> DataRo => SpanHelpers.CreateReadOnlySpan(in _byte, Size);
-    public Span<ulong> Data64 => SpanHelpers.CreateSpan(ref _ulong, Size / sizeof(ulong));
-    public readonly ReadOnlySpan<ulong> DataRo64 => SpanHelpers.CreateReadOnlySpan(in _ulong, Size / sizeof(ulong));
+    [UnscopedRef] public Span<byte> Data => SpanHelpers.CreateSpan(ref _byte, Size);
+    [UnscopedRef] public readonly ReadOnlySpan<byte> DataRo => SpanHelpers.CreateReadOnlySpan(in _byte, Size);
+    [UnscopedRef] public Span<ulong> Data64 => SpanHelpers.CreateSpan(ref _ulong, Size / sizeof(ulong));
+    [UnscopedRef] public readonly ReadOnlySpan<ulong> DataRo64 => SpanHelpers.CreateReadOnlySpan(in _ulong, Size / sizeof(ulong));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool IsZeros() => (DataRo64[0] | DataRo64[1]) == 0;
@@ -84,7 +85,7 @@ public struct AesIv
     public readonly override string ToString() => DataRo.ToHexString();
 
 #if DEBUG
-    [FieldOffset(8)] [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly ulong _dummy1;
+    [FieldOffset(8)][DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly ulong _dummy1;
 #endif
 }
 
@@ -96,10 +97,10 @@ public struct AesCmac
     [FieldOffset(0)] private byte _byte;
     [FieldOffset(0)] private ulong _ulong;
 
-    public Span<byte> Data => SpanHelpers.CreateSpan(ref _byte, Size);
-    public readonly ReadOnlySpan<byte> DataRo => SpanHelpers.CreateReadOnlySpan(in _byte, Size);
-    public Span<ulong> Data64 => SpanHelpers.CreateSpan(ref _ulong, Size / sizeof(ulong));
-    public readonly ReadOnlySpan<ulong> DataRo64 => SpanHelpers.CreateReadOnlySpan(in _ulong, Size / sizeof(ulong));
+    [UnscopedRef] public Span<byte> Data => SpanHelpers.CreateSpan(ref _byte, Size);
+    [UnscopedRef] public readonly ReadOnlySpan<byte> DataRo => SpanHelpers.CreateReadOnlySpan(in _byte, Size);
+    [UnscopedRef] public Span<ulong> Data64 => SpanHelpers.CreateSpan(ref _ulong, Size / sizeof(ulong));
+    [UnscopedRef] public readonly ReadOnlySpan<ulong> DataRo64 => SpanHelpers.CreateReadOnlySpan(in _ulong, Size / sizeof(ulong));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool IsZeros() => (DataRo64[0] | DataRo64[1]) == 0;
@@ -110,7 +111,7 @@ public struct AesCmac
     public readonly override string ToString() => DataRo.ToHexString();
 
 #if DEBUG
-    [FieldOffset(8)] [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly ulong _dummy1;
+    [FieldOffset(8)][DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly ulong _dummy1;
 #endif
 }
 

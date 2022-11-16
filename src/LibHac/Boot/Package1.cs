@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
@@ -35,8 +36,8 @@ public struct Package1MetaData
     public byte KeyGeneration;
     public byte Version;
 
-    public U8Span BuildDate => new U8Span(_buildDate);
-    public ReadOnlySpan<byte> Iv => SpanHelpers.CreateSpan(ref MemoryMarshal.GetReference(_buildDate.Items), 0x10);
+    [UnscopedRef] public U8Span BuildDate => new U8Span(_buildDate);
+    [UnscopedRef] public ReadOnlySpan<byte> Iv => SpanHelpers.CreateSpan(ref MemoryMarshal.GetReference(_buildDate.Items), 0x10);
 }
 
 public struct Package1Stage1Footer

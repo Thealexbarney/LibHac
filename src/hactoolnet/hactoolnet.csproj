@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -23,10 +23,9 @@
     <ProjectReference Include="..\LibHac\LibHac.csproj" />
   </ItemGroup>
 
-  <!-- Options for use with CoreRT -->
-  <ItemGroup Condition=" $(BuildType.StartsWith('native')) ">
-    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="7.0.0-*" />
-  </ItemGroup>
+  <PropertyGroup Condition=" $(BuildType.StartsWith('native')) ">
+	  <PublishAot>true</PublishAot>
+  </PropertyGroup>
 
   <PropertyGroup Condition=" $(BuildType.StartsWith('native')) and '$(BuildType)' != 'native-untrimmed' ">
     <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>

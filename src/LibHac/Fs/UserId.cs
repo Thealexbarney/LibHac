@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using LibHac.Common;
 
@@ -43,6 +44,7 @@ public struct UserId : IEquatable<UserId>, IComparable<UserId>, IComparable
 
     public void ToBytes(Span<byte> output) => Id.ToBytes(output);
 
+    [UnscopedRef]
     public ReadOnlySpan<byte> AsBytes()
     {
         return SpanHelpers.AsByteSpan(ref this);

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Buffers.Text;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Unicode;
@@ -163,6 +164,7 @@ namespace LibHac.Fs.Impl
     {
         private Buffer32 _buffer;
 
+        [UnscopedRef]
         private ReadOnlySpan<byte> ToValueString(int value)
         {
             bool success = Utf8Formatter.TryFormat(value, _buffer.Bytes, out int length);
@@ -173,6 +175,7 @@ namespace LibHac.Fs.Impl
             return _buffer.Bytes;
         }
 
+        [UnscopedRef]
         public ReadOnlySpan<byte> ToString(Priority value)
         {
             switch (value)
@@ -184,6 +187,7 @@ namespace LibHac.Fs.Impl
             }
         }
 
+        [UnscopedRef]
         public ReadOnlySpan<byte> ToString(PriorityRaw value)
         {
             switch (value)
@@ -196,6 +200,7 @@ namespace LibHac.Fs.Impl
             }
         }
 
+        [UnscopedRef]
         public ReadOnlySpan<byte> ToString(ImageDirectoryId value)
         {
             switch (value)
@@ -206,6 +211,7 @@ namespace LibHac.Fs.Impl
             }
         }
 
+        [UnscopedRef]
         public ReadOnlySpan<byte> ToString(ContentStorageId value)
         {
             switch (value)
@@ -217,6 +223,7 @@ namespace LibHac.Fs.Impl
             }
         }
 
+        [UnscopedRef]
         public ReadOnlySpan<byte> ToString(GameCardPartition value)
         {
             switch (value)
@@ -229,6 +236,7 @@ namespace LibHac.Fs.Impl
             }
         }
 
+        [UnscopedRef]
         public ReadOnlySpan<byte> ToString(SaveDataSpaceId value)
         {
             switch (value)
@@ -241,6 +249,7 @@ namespace LibHac.Fs.Impl
             }
         }
 
+        [UnscopedRef]
         public ReadOnlySpan<byte> ToString(SaveDataFormatType value)
         {
             switch (value)
@@ -251,6 +260,7 @@ namespace LibHac.Fs.Impl
             }
         }
 
+        [UnscopedRef]
         public ReadOnlySpan<byte> ToString(ContentType value)
         {
             switch (value)
@@ -264,6 +274,7 @@ namespace LibHac.Fs.Impl
             }
         }
 
+        [UnscopedRef]
         public ReadOnlySpan<byte> ToString(BisPartitionId value)
         {
             switch (value)
@@ -289,6 +300,7 @@ namespace LibHac.Fs.Impl
             }
         }
 
+        [UnscopedRef]
         public ReadOnlySpan<byte> ToString(DirectoryEntryType value)
         {
             switch (value)
@@ -299,6 +311,7 @@ namespace LibHac.Fs.Impl
             }
         }
 
+        [UnscopedRef]
         public ReadOnlySpan<byte> ToString(MountHostOption value)
         {
             switch (value.Flags)
@@ -308,6 +321,7 @@ namespace LibHac.Fs.Impl
             }
         }
 
+        [UnscopedRef]
         public ReadOnlySpan<byte> ToString(MemoryCapacity value)
         {
             switch (value)
@@ -322,6 +336,7 @@ namespace LibHac.Fs.Impl
             }
         }
 
+        [UnscopedRef]
         public ReadOnlySpan<byte> ToString(SelSec value)
         {
             switch (value)
@@ -332,6 +347,7 @@ namespace LibHac.Fs.Impl
             }
         }
 
+        [UnscopedRef]
         public ReadOnlySpan<byte> ToString(KekIndex value)
         {
             switch (value)
@@ -342,6 +358,7 @@ namespace LibHac.Fs.Impl
             }
         }
 
+        [UnscopedRef]
         public ReadOnlySpan<byte> ToString(AccessControl1ClockRate value)
         {
             switch (value)
@@ -352,6 +369,7 @@ namespace LibHac.Fs.Impl
             }
         }
 
+        [UnscopedRef]
         public ReadOnlySpan<byte> ToString(FwVersion value)
         {
             switch (value)
@@ -366,6 +384,7 @@ namespace LibHac.Fs.Impl
             }
         }
 
+        [UnscopedRef]
         public ReadOnlySpan<byte> ToString(GameCardCompatibilityType value)
         {
             switch (value)

@@ -67,7 +67,7 @@ public class MetaLoader
             return ResultLoader.InvalidMeta.Log();
         }
 
-        npdm = GetNpdmFromBufferUnsafe(ref MemoryMarshal.GetArrayDataReference(_npdmBuffer));
+        npdm = GetNpdmFromBufferUnsafe(_npdmBuffer);
         return Result.Success;
     }
 
@@ -98,9 +98,9 @@ public class MetaLoader
         if (res.IsFailure()) return res.Miss();
 
         // Set Npdm members.
-        npdm.Meta = new ReadOnlyRef<Meta>(in meta);
-        npdm.Acid = new ReadOnlyRef<AcidHeaderData>(in acid);
-        npdm.Aci = new ReadOnlyRef<AciHeader>(in aci);
+        npdm.Meta = ref meta;
+        npdm.Acid = ref acid;
+        npdm.Aci = ref aci;
 
         npdm.FsAccessControlDescriptor = acidBuffer.Slice(acid.FsAccessControlOffset, acid.FsAccessControlSize);
         npdm.ServiceAccessControlDescriptor = acidBuffer.Slice(acid.ServiceAccessControlOffset, acid.ServiceAccessControlSize);
@@ -113,8 +113,10 @@ public class MetaLoader
         return Result.Success;
     }
 
-    private static Npdm GetNpdmFromBufferUnsafe(ref byte npdmBuffer)
+    private static Npdm GetNpdmFromBufferUnsafe(ReadOnlySpan<byte> npdmSpan)
     {
+        ref byte npdmBuffer = ref MemoryMarshal.GetReference(npdmSpan);
+
         var npdm = new Npdm();
 
         ref Meta meta = ref Unsafe.As<byte, Meta>(ref npdmBuffer);
@@ -122,17 +124,17 @@ public class MetaLoader
         ref AciHeader aci = ref Unsafe.As<byte, AciHeader>(ref Unsafe.Add(ref npdmBuffer, meta.AciOffset));
 
         // Set Npdm members.
-        npdm.Meta = new ReadOnlyRef<Meta>(in meta);
-        npdm.Acid = new ReadOnlyRef<AcidHeaderData>(in acid);
-        npdm.Aci = new ReadOnlyRef<AciHeader>(in aci);
+        npdm.Meta = ref meta;
+        npdm.Acid = ref acid;
+        npdm.Aci = ref aci;
 
-        npdm.FsAccessControlDescriptor = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.As<AcidHeaderData, byte>(ref acid), acid.FsAccessControlOffset), acid.FsAccessControlSize);
-        npdm.ServiceAccessControlDescriptor = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.As<AcidHeaderData, byte>(ref acid), acid.ServiceAccessControlOffset), acid.ServiceAccessControlSize);
-        npdm.KernelCapabilityDescriptor = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.As<AcidHeaderData, byte>(ref acid), acid.KernelCapabilityOffset), acid.KernelCapabilitySize);
+        npdm.FsAccessControlDescriptor = SpanHelpers.CreateReadOnlySpan(in Unsafe.Add(ref Unsafe.As<AcidHeaderData, byte>(ref acid), acid.FsAccessControlOffset), acid.FsAccessControlSize);
+        npdm.ServiceAccessControlDescriptor = SpanHelpers.CreateReadOnlySpan(in Unsafe.Add(ref Unsafe.As<AcidHeaderData, byte>(ref acid), acid.ServiceAccessControlOffset), acid.ServiceAccessControlSize);
+        npdm.KernelCapabilityDescriptor = SpanHelpers.CreateReadOnlySpan(in Unsafe.Add(ref Unsafe.As<AcidHeaderData, byte>(ref acid), acid.KernelCapabilityOffset), acid.KernelCapabilitySize);
 
-        npdm.FsAccessControlData = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.As<AciHeader, byte>(ref aci), aci.FsAccessControlOffset), aci.FsAccessControlSize);
-        npdm.ServiceAccessControlData = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.As<AciHeader, byte>(ref aci), aci.ServiceAccessControlOffset), aci.ServiceAccessControlSize);
-        npdm.KernelCapabilityData = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.As<AciHeader, byte>(ref aci), aci.KernelCapabilityOffset), aci.KernelCapabilitySize);
+        npdm.FsAccessControlData = SpanHelpers.CreateReadOnlySpan(in Unsafe.Add(ref Unsafe.As<AciHeader, byte>(ref aci), aci.FsAccessControlOffset), aci.FsAccessControlSize);
+        npdm.ServiceAccessControlData = SpanHelpers.CreateReadOnlySpan(in Unsafe.Add(ref Unsafe.As<AciHeader, byte>(ref aci), aci.ServiceAccessControlOffset), aci.ServiceAccessControlSize);
+        npdm.KernelCapabilityData = SpanHelpers.CreateReadOnlySpan(in Unsafe.Add(ref Unsafe.As<AciHeader, byte>(ref aci), aci.KernelCapabilityOffset), aci.KernelCapabilitySize);
 
         return npdm;
     }

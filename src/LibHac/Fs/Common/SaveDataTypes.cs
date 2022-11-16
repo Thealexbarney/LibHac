@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using LibHac.Common;
 using LibHac.Common.FixedArrays;
 using LibHac.FsSrv.Impl;
@@ -122,8 +123,8 @@ public struct HashSalt
 {
     private Array32<byte> _value;
 
-    public Span<byte> Hash => _value.Items;
-    public readonly ReadOnlySpan<byte> HashRo => _value.ItemsRo;
+    [UnscopedRef] public Span<byte> Hash => _value.Items;
+    [UnscopedRef] public readonly ReadOnlySpan<byte> HashRo => _value.ItemsRo;
 }
 
 public struct SaveDataAttribute : IEquatable<SaveDataAttribute>, IComparable<SaveDataAttribute>
