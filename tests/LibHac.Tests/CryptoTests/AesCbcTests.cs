@@ -6,10 +6,10 @@ namespace LibHac.Tests.CryptoTests;
 public class AesCbcTests
 {
     public static EncryptionTestVector[] EncryptTestVectors =
-        RspReader.ReadEncryptionTestVectorsArray(true, "CBCVarKey128.rsp", "CBCVarTxt128.rsp", "CBCKeySbox128.rsp", "CBCGFSbox128.rsp");
+        RspReader.ReadEncryptionTestVectorsArray(true, "CBCVarKey128.rsp", "CBCVarTxt128.rsp", "CBCKeySbox128.rsp", "CBCGFSbox128.rsp", "CBC128Long.rsp");
 
     public static EncryptionTestVector[] DecryptTestVectors =
-        RspReader.ReadEncryptionTestVectorsArray(false, "CBCVarKey128.rsp", "CBCVarTxt128.rsp", "CBCKeySbox128.rsp", "CBCGFSbox128.rsp");
+        RspReader.ReadEncryptionTestVectorsArray(false, "CBCVarKey128.rsp", "CBCVarTxt128.rsp", "CBCKeySbox128.rsp", "CBCGFSbox128.rsp", "CBC128Long.rsp");
 
     public static EncryptionTestVector[] EncryptMultiTestVectors =
         RspReader.ReadEncryptionTestVectorsArray(true, "CBCMMT128.rsp");
@@ -74,10 +74,10 @@ public class AesCbcTests
 #pragma warning disable xUnit1013 // Public method should be marked as test
 
     public static TheoryData<EncryptionTestVector> EncryptTestVectors_Individual =
-        RspReader.ReadEncryptionTestVectors(true, "CBCVarKey128.rsp", "CBCVarTxt128.rsp", "CBCKeySbox128.rsp", "CBCGFSbox128.rsp");
+        RspReader.ReadEncryptionTestVectors(true, "CBCVarKey128.rsp", "CBCVarTxt128.rsp", "CBCKeySbox128.rsp", "CBCGFSbox128.rsp", "CBC128Long.rsp");
 
     public static TheoryData<EncryptionTestVector> DecryptTestVectors_Individual =
-        RspReader.ReadEncryptionTestVectors(false, "CBCVarKey128.rsp", "CBCVarTxt128.rsp", "CBCKeySbox128.rsp", "CBCGFSbox128.rsp");
+        RspReader.ReadEncryptionTestVectors(false, "CBCVarKey128.rsp", "CBCVarTxt128.rsp", "CBCKeySbox128.rsp", "CBCGFSbox128.rsp", "CBC128Long.rsp");
 
     public static TheoryData<EncryptionTestVector> EncryptMultiTestVectors_Individual =
         RspReader.ReadEncryptionTestVectors(true, "CBCMMT128.rsp");

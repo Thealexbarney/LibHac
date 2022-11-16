@@ -9,10 +9,10 @@ namespace LibHac.Tests.CryptoTests;
 public class AesXtsTests
 {
     public static EncryptionTestVector[] EncryptTestVectors =
-        RemovePartialByteTests(RspReader.ReadEncryptionTestVectorsArray(true, "XTSGenAES128.rsp"));
+        RemovePartialByteTests(RspReader.ReadEncryptionTestVectorsArray(true, "XTSGenAES128.rsp", "XTSAES128Long.rsp"));
 
     public static EncryptionTestVector[] DecryptTestVectors =
-        RemovePartialByteTests(RspReader.ReadEncryptionTestVectorsArray(false, "XTSGenAES128.rsp"));
+        RemovePartialByteTests(RspReader.ReadEncryptionTestVectorsArray(false, "XTSGenAES128.rsp", "XTSAES128Long.rsp"));
 
     // The XTS implementation only supports multiples of whole bytes
     private static EncryptionTestVector[] RemovePartialByteTests(EncryptionTestVector[] input)
@@ -67,10 +67,10 @@ public class AesXtsTests
 #pragma warning disable xUnit1013 // Public method should be marked as test
 
     public static TheoryData<EncryptionTestVector> EncryptTestVectors_Individual =
-        RemovePartialByteTests(RspReader.ReadEncryptionTestVectors(true, "XTSGenAES128.rsp"));
+        RemovePartialByteTests(RspReader.ReadEncryptionTestVectors(true, "XTSGenAES128.rsp", "XTSAES128Long.rsp"));
 
     public static TheoryData<EncryptionTestVector> DecryptTestVectors_Individual =
-        RemovePartialByteTests(RspReader.ReadEncryptionTestVectors(false, "XTSGenAES128.rsp"));
+        RemovePartialByteTests(RspReader.ReadEncryptionTestVectors(false, "XTSGenAES128.rsp", "XTSAES128Long.rsp"));
 
     private static TheoryData<EncryptionTestVector> RemovePartialByteTests(TheoryData<EncryptionTestVector> input)
     {

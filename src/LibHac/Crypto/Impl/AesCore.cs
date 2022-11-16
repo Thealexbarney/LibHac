@@ -63,7 +63,7 @@ public struct AesCore
 
         int bytesWritten = Transform(rented.Array, rented.Array, input.Length);
 
-        rented.Array.CopyTo(output);
+        rented.Span.Slice(0, bytesWritten).CopyTo(output);
 
         return bytesWritten;
     }
