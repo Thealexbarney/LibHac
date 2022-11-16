@@ -812,11 +812,11 @@ namespace LibHac.Fs.Impl
         public static ReadOnlySpan<byte> FsModuleName => // "$fs"
             new[] { (byte)'$', (byte)'f', (byte)'s' };
 
-        /// <summary>"<c>0.16.1</c>"</summary>
-        public static ReadOnlySpan<byte> LogLibHacVersion => // "0.16.1"
+        /// <summary>"<c>0.17.0</c>"</summary>
+        public static ReadOnlySpan<byte> LogLibHacVersion => // "0.17.0"
             new[]
             {
-                (byte)'0', (byte)'.', (byte)'1', (byte)'6', (byte)'.', (byte)'1'
+                (byte)'0', (byte)'.', (byte)'1', (byte)'7', (byte)'.', (byte)'0'
             };
 
         /// <summary>"<c>"</c>"</summary>

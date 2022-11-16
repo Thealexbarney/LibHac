@@ -7,6 +7,8 @@ namespace hactoolnet;
 
 internal class Options
 {
+    public bool PrintHelp;
+    public bool PrintVersion;
     public bool RunCustom;
     public string InFile;
     public FileType InFileType = FileType.Nca;
@@ -61,6 +63,10 @@ internal class Options
     public ulong TitleId;
     public string BenchType;
     public double CpuFrequencyGhz;
+
+    public string ParseErrorMessage;
+    public bool IsParseSuccessful;
+    public bool ContinueRunning;
 
     public IntegrityCheckLevel IntegrityLevel
     {

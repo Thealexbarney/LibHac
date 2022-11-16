@@ -35,6 +35,8 @@ Options:
   --titlekeys <file>   Load title keys from an external file.
   --accesslog <file>   Specify the access log file path.
   --disablekeywarns    Disables warning output when loading external keys.
+  --version            Display version information and exit.
+  --help               Display this help and exit.
 NCA options:
   --plaintext <file>   Specify file path for saving a decrypted copy of the NCA.
   --ciphertext <file>  Specify file path for saving an encrypted copy of the NCA.

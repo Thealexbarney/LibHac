@@ -60,7 +60,9 @@ public static class Program
         Console.OutputEncoding = Encoding.UTF8;
         var ctx = new Context();
         ctx.Options = CliParser.Parse(args);
-        if (ctx.Options == null) return false;
+        if (!ctx.Options.IsParseSuccessful) return false;
+
+        if (!ctx.Options.ContinueRunning) return true;
 
         StreamWriter logWriter = null;
         ResultLogger resultLogger = null;

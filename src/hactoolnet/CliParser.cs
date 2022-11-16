@@ -9,8 +9,10 @@ internal static class CliParser
 {
     private static CliOption[] GetCliOptions() => new[]
     {
+        new CliOption("help", 0, (o, _) => o.PrintHelp = true),
+        new CliOption("version", 0, (o, _) => o.PrintVersion = true),
         new CliOption("custom", 0, (o, _) => o.RunCustom = true),
-        new CliOption("intype", 't', 1, (o, a) => o.InFileType = ParseFileType(a[0])),
+        new CliOption("intype", 't', 1, (o, a) => o.InFileType = ParseFileType(o, a[0])),
         new CliOption("raw", 'r', 0, (o, _) => o.Raw = true),
         new CliOption("verify", 'y', 0, (o, _) => o.Validate = true),
         new CliOption("dev", 'd', 0, (o, _) => o.UseDevKeys = true),
@@ -63,9 +65,9 @@ internal static class CliParser
         new CliOption("readbench", 0, (o, _) => o.ReadBench = true),
         new CliOption("hashedfs", 0, (o, _) => o.BuildHfs = true),
         new CliOption("extractini1", 0, (o, _) => o.ExtractIni1 = true),
-        new CliOption("title", 1, (o, a) => o.TitleId = ParseTitleId(a[0])),
+        new CliOption("title", 1, (o, a) => o.TitleId = ParseTitleId(o, a[0])),
         new CliOption("bench", 1, (o, a) => o.BenchType = a[0]),
-        new CliOption("cpufreq", 1, (o, a) => o.CpuFrequencyGhz = ParseDouble(a[0])),
+        new CliOption("cpufreq", 1, (o, a) => o.CpuFrequencyGhz = ParseDouble(o, a[0])),
 
         new CliOption("replacefile", 2, (o, a) =>
         {
@@ -75,6 +77,38 @@ internal static class CliParser
     };
 
     public static Options Parse(string[] args)
+    {
+        Options options = ParseAllOptions(args);
+
+        if (options.PrintVersion)
+        {
+            Console.WriteLine(GetLongVersion());
+
+            return options;
+        }
+
+        if (options.PrintHelp)
+        {
+            Console.WriteLine(GetShortVersion());
+            Console.WriteLine(GetUsage());
+
+            return options;
+        }
+
+        if (!options.IsParseSuccessful)
+        {
+            Console.WriteLine($"hactoolnet: {options.ParseErrorMessage}");
+            Console.WriteLine("Usage: hactoolnet [options...] <path>");
+            Console.WriteLine("Use 'hactoolnet --help' for full usage information.");
+
+            return options;
+        }
+
+        options.ContinueRunning = true;
+        return options;
+    }
+
+    public static Options ParseAllOptions(string[] args)
     {
         var options = new Options();
         bool inputSpecified = false;
@@ -89,7 +123,7 @@ internal static class CliParser
             {
                 arg = args[i][1].ToString().ToLower();
             }
-            else if (args[i].Length > 2 && args[i].Substring(0, 2) == "--")
+            else if (args[i].Length > 2 && (args[i][0] == '-' && args[i][1] == '-'))
             {
                 arg = args[i].Substring(2).ToLower();
             }
@@ -97,8 +131,8 @@ internal static class CliParser
             {
                 if (inputSpecified)
                 {
-                    PrintWithUsage($"Unable to parse option {args[i]}");
-                    return null;
+                    options.ParseErrorMessage ??= $"Unable to parse option {args[i]}";
+                    continue;
                 }
 
                 options.InFile = args[i];
@@ -109,14 +143,14 @@ internal static class CliParser
             CliOption option = cliOptions.FirstOrDefault(x => x.Long == arg || x.Short == arg);
             if (option == null)
             {
-                PrintWithUsage($"Unknown option {args[i]}");
-                return null;
+                options.ParseErrorMessage ??= $"Unknown option {args[i]}";
+                continue;
             }
 
             if (i + option.ArgsNeeded >= args.Length)
             {
-                PrintWithUsage($"Need {option.ArgsNeeded} parameter{(option.ArgsNeeded == 1 ? "" : "s")} after {args[i]}");
-                return null;
+                options.ParseErrorMessage ??= $"Need {option.ArgsNeeded} parameter{(option.ArgsNeeded == 1 ? "" : "s")} after {args[i]}";
+                continue;
             }
 
             string[] optionArgs = new string[option.ArgsNeeded];
@@ -128,14 +162,14 @@ internal static class CliParser
 
         if (!inputSpecified && options.InFileType != FileType.Keygen && options.InFileType != FileType.Bench && !options.RunCustom)
         {
-            PrintWithUsage("Input file must be specified");
-            return null;
+            options.ParseErrorMessage ??= "Input file must be specified";
         }
 
+        options.IsParseSuccessful = options.ParseErrorMessage is null;
         return options;
     }
 
-    private static FileType ParseFileType(string input)
+    private static FileType ParseFileType(Options options, string input)
     {
         switch (input.ToLower())
         {
@@ -158,41 +192,51 @@ internal static class CliParser
             case "bench": return FileType.Bench;
         }
 
-        PrintWithUsage("Specified type is invalid.");
+        options.ParseErrorMessage ??= "Specified type is invalid.";
 
         return default;
     }
 
-    private static ulong ParseTitleId(string input)
+    private static ulong ParseTitleId(Options options, string input)
     {
         if (input.Length != 16)
         {
-            PrintWithUsage("Title ID must be 16 hex characters long");
+            options.ParseErrorMessage ??= "Title ID must be 16 hex characters long";
+            return default;
         }
 
         if (!ulong.TryParse(input, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ulong id))
         {
-            PrintWithUsage("Could not parse title ID");
+            options.ParseErrorMessage ??= "Could not parse title ID";
         }
 
         return id;
     }
 
-    private static double ParseDouble(string input)
+    private static double ParseDouble(Options options, string input)
     {
         if (!double.TryParse(input, out double value))
         {
-            PrintWithUsage($"Could not parse value \"{input}\"");
+            options.ParseErrorMessage ??= $"Could not parse value \"{input}\"";
         }
 
         return value;
     }
 
-    private static void PrintWithUsage(string toPrint)
+    private static string GetShortVersion()
     {
-        Console.WriteLine(toPrint);
-        Console.WriteLine(GetUsage());
-        // PrintUsage();
+        return $"hactoolnet {VersionInfo.Version}";
+    }
+
+    private static string GetLongVersion()
+    {
+        var sb = new StringBuilder();
+
+        sb.AppendLine($"hactoolnet {VersionInfo.Version}");
+        //sb.AppendLine($"Commit time: {VersionInfo.CommitTime}");
+        //sb.Append($"Commit hash: {VersionInfo.CommitHash}");
+
+        return sb.ToString();
     }
 
     private static string GetUsage()
@@ -210,6 +254,8 @@ internal static class CliParser
         sb.AppendLine("  --titlekeys <file>   Load title keys from an external file.");
         sb.AppendLine("  --accesslog <file>   Specify the access log file path.");
         sb.AppendLine("  --disablekeywarns    Disables warning output when loading external keys.");
+        sb.AppendLine("  --version            Display version information and exit.");
+        sb.AppendLine("  --help               Display this help and exit.");
         sb.AppendLine("NCA options:");
         sb.AppendLine("  --plaintext <file>   Specify file path for saving a decrypted copy of the NCA.");
         sb.AppendLine("  --ciphertext <file>  Specify file path for saving an encrypted copy of the NCA.");

@@ -6,13 +6,17 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <VersionPrefix>0.16.1</VersionPrefix>
+    <VersionPrefix>0.17.0</VersionPrefix>
     <PathMap Condition=" '$(BuildType)' == 'Release' ">$(MSBuildProjectDirectory)=C:/hactoolnet/</PathMap>
   </PropertyGroup>
 
   <ItemGroup>
     <None Remove="CA00000003_XS00000020" />
     <EmbeddedResource Include="CA00000003_XS00000020" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Condition="Exists('VersionInfo.Generated.cs')" Remove="VersionInfo.cs" />
   </ItemGroup>
 
   <ItemGroup>
