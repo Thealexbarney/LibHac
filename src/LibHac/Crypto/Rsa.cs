@@ -29,7 +29,8 @@ public static class Rsa
                 return rsa.VerifyData(message, signature, HashAlgorithmName.SHA256, padding);
             }
         }
-        catch (CryptographicException)
+        // Catch the OutOfMemoryException to workaround an issue with OpenSSL 1.1. dotnet/runtime#78293
+        catch (Exception ex) when (ex is CryptographicException or OutOfMemoryException)
         {
             return false;
         }
