@@ -92,7 +92,7 @@ public struct NcaHeader
     public Array4<Hash> FsHeaderHashes;
     public Array256<byte> EncryptedKeys;
 
-    public static ulong SectorToByte(uint sectorIndex) => sectorIndex << SectorShift;
+    public static ulong SectorToByte(uint sectorIndex) => (ulong)sectorIndex << SectorShift;
     public static uint ByteToSector(ulong byteIndex) => (uint)(byteIndex >> SectorShift);
 
     public readonly byte GetProperKeyGeneration() => Math.Max(KeyGeneration1, KeyGeneration2);

@@ -291,6 +291,8 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
         FinalizeObject();
         _cacheManager.Dispose();
         _core.Dispose();
+
+        base.Dispose();
     }
 
     public Result Initialize(MemoryResource allocatorForBucketTree, IBufferManager allocatorForCacheManager,

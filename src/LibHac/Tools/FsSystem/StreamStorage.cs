@@ -83,5 +83,7 @@ public class StreamStorage : IStorage
         {
             BaseStream?.Dispose();
         }
+
+        base.Dispose();
     }
 }

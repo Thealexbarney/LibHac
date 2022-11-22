@@ -94,7 +94,7 @@ public class KernelAccessControl
 
                     descriptor >>= 7;
 
-                    ulong mmioSize = (descriptor & 0xffffff) << 12;
+                    ulong mmioSize = (descriptor & 0xffffffUL) << 12;
                     bool isNormal = (descriptor >> 24) != 0;
 
                     items[index].NormalMmio.Add(new KernelAccessControlMmio(address, mmioSize, isRo, isNormal));
@@ -107,7 +107,7 @@ public class KernelAccessControl
                 //Map Normal Page.
                 case 7:
                 {
-                    ulong address = descriptor << 12;
+                    ulong address = (ulong)descriptor << 12;
 
                     items[index].PageMmio.Add(new KernelAccessControlMmio(address, 0x1000, false, false));
 

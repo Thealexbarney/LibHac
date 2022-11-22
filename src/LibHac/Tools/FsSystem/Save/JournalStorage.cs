@@ -48,7 +48,7 @@ public class JournalStorage : IStorage
             int blockNum = (int)(inPos / BlockSize);
             int blockPos = (int)(inPos % BlockSize);
 
-            long physicalOffset = Map.GetPhysicalBlock(blockNum) * BlockSize + blockPos;
+            long physicalOffset = (long)Map.GetPhysicalBlock(blockNum) * BlockSize + blockPos;
 
             int bytesToRead = Math.Min(remaining, BlockSize - blockPos);
 
@@ -77,7 +77,7 @@ public class JournalStorage : IStorage
             int blockNum = (int)(inPos / BlockSize);
             int blockPos = (int)(inPos % BlockSize);
 
-            long physicalOffset = Map.GetPhysicalBlock(blockNum) * BlockSize + blockPos;
+            long physicalOffset = (long)Map.GetPhysicalBlock(blockNum) * BlockSize + blockPos;
 
             int bytesToWrite = Math.Min(remaining, BlockSize - blockPos);
 

@@ -204,7 +204,7 @@ public class NcaReader : IDisposable
 
         Assert.SdkRequiresInRange(index, 0, NcaHeader.FsCountMax);
 
-        long offset = Unsafe.SizeOf<NcaHeader>() + Unsafe.SizeOf<NcaFsHeader>() * index;
+        long offset = Unsafe.SizeOf<NcaHeader>() + Unsafe.SizeOf<NcaFsHeader>() * (long)index;
         return _headerStorage.Get.Read(offset, SpanHelpers.AsByteSpan(ref outHeader));
     }
 

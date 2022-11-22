@@ -93,10 +93,7 @@ public class AesXtsFileHeader
 
     private void GenerateKek(byte[] kekSeed, string path)
     {
-        var hash = new HMACSHA256(kekSeed);
-        byte[] pathBytes = Encoding.UTF8.GetBytes(path);
-
-        byte[] checksum = hash.ComputeHash(pathBytes, 0, pathBytes.Length);
+        byte[] checksum = HMACSHA256.HashData(kekSeed, Encoding.UTF8.GetBytes(path));
         Array.Copy(checksum, 0, Kek1, 0, 0x10);
         Array.Copy(checksum, 0x10, Kek2, 0, 0x10);
     }
@@ -104,9 +101,8 @@ public class AesXtsFileHeader
     private byte[] CalculateHmac(byte[] key)
     {
         byte[] message = ToBytes(true).AsSpan(0x20).ToArray();
-        var hash = new HMACSHA256(message);
 
-        return hash.ComputeHash(key);
+        return HMACSHA256.HashData(message, key);
     }
 
     public byte[] ToBytes(bool writeDecryptedKey)

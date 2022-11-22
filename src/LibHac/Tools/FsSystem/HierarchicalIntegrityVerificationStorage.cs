@@ -90,7 +90,7 @@ public class HierarchicalIntegrityVerificationStorage : IStorage
             {
                 Data = levels[i],
                 BlockSize = 1 << ivfc.LevelHeaders[i - 1].BlockSizePower,
-                Salt = new HMACSHA256(Encoding.ASCII.GetBytes(SaltSources[i - 1])).ComputeHash(ivfc.SaltSource),
+                Salt = HMACSHA256.HashData(Encoding.ASCII.GetBytes(SaltSources[i - 1]), ivfc.SaltSource),
                 Type = type
             };
         }

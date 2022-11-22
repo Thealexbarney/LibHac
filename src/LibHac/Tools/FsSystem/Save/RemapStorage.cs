@@ -140,6 +140,8 @@ public class RemapStorage : IStorage
         {
             BaseStorage?.Dispose();
         }
+
+        base.Dispose();
     }
 
     public IStorage GetBaseStorage() => BaseStorage;
@@ -211,7 +213,7 @@ public class RemapStorage : IStorage
 
     private long GetOffsetMask()
     {
-        return (1 << (64 - Header.SegmentBits)) - 1;
+        return (1L << (64 - Header.SegmentBits)) - 1;
     }
 
     private long GetSegmentMask()
