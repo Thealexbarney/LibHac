@@ -82,7 +82,7 @@ public static class NcaExtensions
 
                 expectedHash = ivfcInfo.MasterHash.ToArray();
                 offset = ivfcInfo.GetLevelOffset(0);
-                size = 1 << ivfcInfo.GetLevelBlockSize(0);
+                size = 1L << ivfcInfo.GetLevelBlockSize(0);
 
                 break;
             case NcaHashType.Sha256:

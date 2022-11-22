@@ -25,8 +25,8 @@ internal partial class ResultNameResolver : Result.IResultNameResolver
 
     private static byte[] DecompressArchive()
     {
-        var deflateStream = new DeflateStream(new MemoryStream(ArchiveData.ToArray()), CompressionMode.Decompress);
-        var archiveDataStream = new MemoryStream();
+        using var deflateStream = new DeflateStream(new MemoryStream(ArchiveData.ToArray()), CompressionMode.Decompress);
+        using var archiveDataStream = new MemoryStream();
         deflateStream.CopyTo(archiveDataStream);
         return archiveDataStream.ToArray();
     }

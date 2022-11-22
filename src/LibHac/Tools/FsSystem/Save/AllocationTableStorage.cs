@@ -21,7 +21,7 @@ public class AllocationTableStorage : IStorage
         Fat = table;
         InitialBlock = initialBlock;
 
-        _length = initialBlock == -1 ? 0 : table.GetListLength(initialBlock) * blockSize;
+        _length = initialBlock == -1 ? 0 : (long)table.GetListLength(initialBlock) * blockSize;
     }
 
     public override Result Read(long offset, Span<byte> destination)
@@ -42,7 +42,7 @@ public class AllocationTableStorage : IStorage
             }
 
             int segmentPos = (int)(inPos - (long)iterator.VirtualBlock * BlockSize);
-            long physicalOffset = iterator.PhysicalBlock * BlockSize + segmentPos;
+            long physicalOffset = (long)iterator.PhysicalBlock * BlockSize + segmentPos;
 
             int remainingInSegment = iterator.CurrentSegmentSize * BlockSize - segmentPos;
             int bytesToRead = Math.Min(remaining, remainingInSegment);
@@ -76,7 +76,7 @@ public class AllocationTableStorage : IStorage
             }
 
             int segmentPos = (int)(inPos - (long)iterator.VirtualBlock * BlockSize);
-            long physicalOffset = iterator.PhysicalBlock * BlockSize + segmentPos;
+            long physicalOffset = (long)iterator.PhysicalBlock * BlockSize + segmentPos;
 
             int remainingInSegment = iterator.CurrentSegmentSize * BlockSize - segmentPos;
             int bytesToWrite = Math.Min(remaining, remainingInSegment);
@@ -115,7 +115,7 @@ public class AllocationTableStorage : IStorage
             InitialBlock = Fat.Allocate(newBlockCount);
             if (InitialBlock == -1) throw new IOException("Not enough space to resize file.");
 
-            _length = newBlockCount * BlockSize;
+            _length = (long)newBlockCount * BlockSize;
 
             return Result.Success;
         }
@@ -143,7 +143,7 @@ public class AllocationTableStorage : IStorage
             Fat.Free(oldBlocks);
         }
 
-        _length = newBlockCount * BlockSize;
+        _length = (long)newBlockCount * BlockSize;
 
         return Result.Success;
     }

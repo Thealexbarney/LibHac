@@ -76,6 +76,8 @@ public class SectorStorage : IStorage
         {
             BaseStorage?.Dispose();
         }
+
+        base.Dispose();
     }
 
     /// <summary>

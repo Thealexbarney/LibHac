@@ -284,7 +284,7 @@ public partial class BucketTree
                 l2NodeHeader.EntryCount = indexInL2Node != 0 ? indexInL2Node : _offsetsPerNode;
                 l2NodeHeader.OffsetEnd = endOffset;
 
-                long l2NodeStorageOffset = _nodeSize * (l2NodeIndex + 1);
+                long l2NodeStorageOffset = (long)_nodeSize * (l2NodeIndex + 1);
                 res = _nodeStorage.Write(l2NodeStorageOffset, _l2Node.GetBuffer());
                 if (res.IsFailure()) return res.Miss();
             }
