@@ -11,8 +11,8 @@ namespace LibHacBuild.CodeGen.Stage2;
 
 public static class KeysCodeGen
 {
-    private static string InputMainKeyFileName = "IncludedKeys.txt";
-    private static string GeneratedFilePath = "LibHac/Common/Keys/DefaultKeySet.Generated.cs";
+    private const string InputMainKeyFileName = "IncludedKeys.txt";
+    private const string GeneratedFilePath = "LibHac/Common/Keys/DefaultKeySet.Generated.cs";
 
     public static void Run()
     {
@@ -45,6 +45,8 @@ public static class KeysCodeGen
         BuildArray(sb, "DerivedKeysDev", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.DerivedKeysDev));
         BuildArray(sb, "DerivedKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.DerivedKeysProd));
         BuildArray(sb, "DeviceKeys", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.DeviceKeys));
+        BuildArray(sb, "DerivedDeviceKeysDev", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.DerivedDeviceKeysDev));
+        BuildArray(sb, "DerivedDeviceKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.DerivedDeviceKeysProd));
         BuildArray(sb, "RsaSigningKeysDev", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.RsaSigningKeysDev));
         BuildArray(sb, "RsaSigningKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.RsaSigningKeysProd));
         BuildArray(sb, "RsaKeys", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.RsaKeys));

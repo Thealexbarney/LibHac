@@ -12,6 +12,8 @@ internal static partial class DefaultKeySet
     private static ReadOnlySpan<byte> DerivedKeysDev => new byte[] { };
     private static ReadOnlySpan<byte> DerivedKeysProd => new byte[] { };
     private static ReadOnlySpan<byte> DeviceKeys => new byte[] { };
+    private static ReadOnlySpan<byte> DerivedDeviceKeysDev => new byte[] { };
+    private static ReadOnlySpan<byte> DerivedDeviceKeysProd => new byte[] { };
     private static ReadOnlySpan<byte> RsaSigningKeysDev => new byte[] { };
     private static ReadOnlySpan<byte> RsaSigningKeysProd => new byte[] { };
     private static ReadOnlySpan<byte> RsaKeys => new byte[] { };

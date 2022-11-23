@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Type = LibHac.Common.Keys.KeyInfo.KeyType;
 
 namespace LibHac.Common.Keys;
@@ -16,59 +15,70 @@ internal static partial class DefaultKeySet
         var keySet = new KeySet();
 
         // Fill the key set with any key structs included in the library.
+        // This is split into multiple parts so the binary size isn't increased when providing only some keys.
         if (RootKeysDev.Length == Unsafe.SizeOf<RootKeys>())
         {
-            keySet.KeyStruct.RootKeysDev = MemoryMarshal.Cast<byte, RootKeys>(RootKeysDev)[0];
+            keySet.KeyStruct.RootKeysDev = SpanHelpers.AsReadOnlyStruct<RootKeys>(RootKeysDev);
         }
 
         if (RootKeysProd.Length == Unsafe.SizeOf<RootKeys>())
         {
-            keySet.KeyStruct.RootKeysProd = MemoryMarshal.Cast<byte, RootKeys>(RootKeysProd)[0];
+            keySet.KeyStruct.RootKeysProd = SpanHelpers.AsReadOnlyStruct<RootKeys>(RootKeysProd);
         }
 
         if (KeySeeds.Length == Unsafe.SizeOf<KeySeeds>())
         {
-            keySet.KeyStruct.KeySeeds = MemoryMarshal.Cast<byte, KeySeeds>(KeySeeds)[0];
+            keySet.KeyStruct.KeySeeds = SpanHelpers.AsReadOnlyStruct<KeySeeds>(KeySeeds);
         }
 
         if (StoredKeysDev.Length == Unsafe.SizeOf<StoredKeys>())
         {
-            keySet.KeyStruct.StoredKeysDev = MemoryMarshal.Cast<byte, StoredKeys>(StoredKeysDev)[0];
+            keySet.KeyStruct.StoredKeysDev = SpanHelpers.AsReadOnlyStruct<StoredKeys>(StoredKeysDev);
         }
 
         if (StoredKeysProd.Length == Unsafe.SizeOf<StoredKeys>())
         {
-            keySet.KeyStruct.StoredKeysProd = MemoryMarshal.Cast<byte, StoredKeys>(StoredKeysProd)[0];
+            keySet.KeyStruct.StoredKeysProd = SpanHelpers.AsReadOnlyStruct<StoredKeys>(StoredKeysProd);
         }
 
         if (DerivedKeysDev.Length == Unsafe.SizeOf<DerivedKeys>())
         {
-            keySet.KeyStruct.DerivedKeysDev = MemoryMarshal.Cast<byte, DerivedKeys>(DerivedKeysDev)[0];
+            keySet.KeyStruct.DerivedKeysDev = SpanHelpers.AsReadOnlyStruct<DerivedKeys>(DerivedKeysDev);
         }
 
         if (DerivedKeysProd.Length == Unsafe.SizeOf<DerivedKeys>())
         {
-            keySet.KeyStruct.DerivedKeysProd = MemoryMarshal.Cast<byte, DerivedKeys>(DerivedKeysProd)[0];
+            keySet.KeyStruct.DerivedKeysProd = SpanHelpers.AsReadOnlyStruct<DerivedKeys>(DerivedKeysProd);
         }
 
         if (DeviceKeys.Length == Unsafe.SizeOf<DeviceKeys>())
         {
-            keySet.KeyStruct.DeviceKeys = MemoryMarshal.Cast<byte, DeviceKeys>(DeviceKeys)[0];
+            keySet.KeyStruct.DeviceKeys = SpanHelpers.AsReadOnlyStruct<DeviceKeys>(DeviceKeys);
+        }
+
+        if (DerivedDeviceKeysDev.Length == Unsafe.SizeOf<DerivedDeviceKeys>())
+        {
+            keySet.KeyStruct.DerivedDeviceKeysDev = SpanHelpers.AsReadOnlyStruct<DerivedDeviceKeys>(DerivedDeviceKeysDev);
+        }
+
+        if (DerivedDeviceKeysProd.Length == Unsafe.SizeOf<DerivedDeviceKeys>())
+        {
+            keySet.KeyStruct.DerivedDeviceKeysProd = SpanHelpers.AsReadOnlyStruct<DerivedDeviceKeys>(DerivedDeviceKeysProd);
         }
 
         if (RsaSigningKeysDev.Length == Unsafe.SizeOf<RsaSigningKeys>())
         {
-            keySet.KeyStruct.RsaSigningKeysDev = MemoryMarshal.Cast<byte, RsaSigningKeys>(RsaSigningKeysDev)[0];
+            keySet.KeyStruct.RsaSigningKeysDev = SpanHelpers.AsReadOnlyStruct<RsaSigningKeys>(RsaSigningKeysDev);
         }
 
         if (RsaSigningKeysProd.Length == Unsafe.SizeOf<RsaSigningKeys>())
         {
-            keySet.KeyStruct.RsaSigningKeysProd = MemoryMarshal.Cast<byte, RsaSigningKeys>(RsaSigningKeysProd)[0];
+            keySet.KeyStruct.RsaSigningKeysProd = SpanHelpers.AsReadOnlyStruct<RsaSigningKeys>(RsaSigningKeysProd);
         }
 
         if (RsaKeys.Length == Unsafe.SizeOf<RsaKeys>())
         {
-            keySet.KeyStruct.RsaKeys = MemoryMarshal.Cast<byte, RsaKeys>(RsaKeys)[0];
+            keySet.KeyStruct.RsaKeys = SpanHelpers.AsReadOnlyStruct<RsaKeys>(RsaKeys);
         }
 
         return keySet;

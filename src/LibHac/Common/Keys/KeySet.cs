@@ -33,6 +33,7 @@ public class KeySet
     private ref RootKeys RootKeys => ref _mode == Mode.Dev ? ref _keys.RootKeysDev : ref _keys.RootKeysProd;
     private ref StoredKeys StoredKeys => ref _mode == Mode.Dev ? ref _keys.StoredKeysDev : ref _keys.StoredKeysProd;
     private ref DerivedKeys DerivedKeys => ref _mode == Mode.Dev ? ref _keys.DerivedKeysDev : ref _keys.DerivedKeysProd;
+    private ref DerivedDeviceKeys DerivedDeviceKeys => ref _mode == Mode.Dev ? ref _keys.DerivedDeviceKeysDev : ref _keys.DerivedDeviceKeysProd;
     private ref RsaSigningKeys RsaSigningKeys => ref _mode == Mode.Dev ? ref _keys.RsaSigningKeysDev : ref _keys.RsaSigningKeysProd;
     private ref RsaKeys RsaKeys => ref _keys.RsaKeys;
 
@@ -94,17 +95,18 @@ public class KeySet
 
     public ref AesKey SecureBootKey => ref _keys.DeviceKeys.SecureBootKey;
     public ref AesKey TsecKey => ref _keys.DeviceKeys.TsecKey;
-    public Span<AesKey> KeyBlobKeys => _keys.DeviceKeys.KeyBlobKeys.Items;
-    public Span<AesKey> KeyBlobMacKeys => _keys.DeviceKeys.KeyBlobMacKeys.Items;
-    public Span<EncryptedKeyBlob> EncryptedKeyBlobs => _keys.DeviceKeys.EncryptedKeyBlobs.Items;
-    public ref AesKey DeviceKey => ref _keys.DeviceKeys.DeviceKey;
-    public Span<AesXtsKey> BisKeys => _keys.DeviceKeys.BisKeys.Items;
-    public Span<AesKey> DeviceUniqueSaveMacKeys => _keys.DeviceKeys.DeviceUniqueSaveMacKeys.Items;
-    public ref AesKey SeedUniqueSaveMacKey => ref _keys.DeviceKeys.SeedUniqueSaveMacKey;
     public ref AesKey SdCardEncryptionSeed => ref _keys.DeviceKeys.SdCardEncryptionSeed;
+    public Span<EncryptedKeyBlob> EncryptedKeyBlobs => _keys.DeviceKeys.EncryptedKeyBlobs.Items;
+
+    public Span<AesKey> KeyBlobKeys => DerivedDeviceKeys.KeyBlobKeys.Items;
+    public Span<AesKey> KeyBlobMacKeys => DerivedDeviceKeys.KeyBlobMacKeys.Items;
+    public ref AesKey DeviceKey => ref DerivedDeviceKeys.DeviceKey;
+    public Span<AesXtsKey> BisKeys => DerivedDeviceKeys.BisKeys.Items;
+    public Span<AesKey> DeviceUniqueSaveMacKeys => DerivedDeviceKeys.DeviceUniqueSaveMacKeys.Items;
+    public ref AesKey SeedUniqueSaveMacKey => ref DerivedDeviceKeys.SeedUniqueSaveMacKey;
 
     // Todo: Make a separate type? Not actually an AES-XTS key, but it's still the same shape.
-    public Span<AesXtsKey> SdCardEncryptionKeys => _keys.DeviceKeys.SdCardEncryptionKeys.Items;
+    public Span<AesXtsKey> SdCardEncryptionKeys => DerivedDeviceKeys.SdCardEncryptionKeys.Items;
 
     public Span<RsaKey> NcaHeaderSigningKeys => RsaSigningKeys.NcaHeaderSigningKeys.Items;
     public Span<RsaKey> AcidSigningKeys => RsaSigningKeys.AcidSigningKeys.Items;
@@ -269,6 +271,8 @@ public struct AllKeys
     public DerivedKeys DerivedKeysDev;
     public DerivedKeys DerivedKeysProd;
     public DeviceKeys DeviceKeys;
+    public DerivedDeviceKeys DerivedDeviceKeysDev;
+    public DerivedDeviceKeys DerivedDeviceKeysProd;
     public RsaSigningKeys RsaSigningKeysDev;
     public RsaSigningKeys RsaSigningKeysProd;
     public RsaKeys RsaKeys;
@@ -354,14 +358,18 @@ public struct DeviceKeys
 {
     public AesKey SecureBootKey;
     public AesKey TsecKey;
+    public AesKey SdCardEncryptionSeed;
+    public Array32<EncryptedKeyBlob> EncryptedKeyBlobs;
+}
+
+public struct DerivedDeviceKeys
+{
     public Array32<AesKey> KeyBlobKeys;
     public Array32<AesKey> KeyBlobMacKeys;
-    public Array32<EncryptedKeyBlob> EncryptedKeyBlobs;
     public AesKey DeviceKey;
     public Array4<AesXtsKey> BisKeys;
     public Array2<AesKey> DeviceUniqueSaveMacKeys;
     public AesKey SeedUniqueSaveMacKey;
-    public AesKey SdCardEncryptionSeed;
     public Array3<AesXtsKey> SdCardEncryptionKeys;
 }
 
