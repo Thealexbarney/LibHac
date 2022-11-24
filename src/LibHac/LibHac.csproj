@@ -25,9 +25,6 @@
     <PathMap Condition=" '$(BuildType)' == 'Release' and '$(HasGitDir)' == 'false' ">$(MSBuildProjectDirectory)=C:/LibHac/</PathMap>
     <DeterministicSourcePaths Condition=" '$(BuildType)' == 'Release' and '$(HasGitDir)' == 'true' ">true</DeterministicSourcePaths>
 
-    <!-- Workaround https://github.com/jbevain/cecil/issues/610 by including the pdb in the main .nupkg -->
-    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
-
     <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 
@@ -41,8 +38,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Fody" Version="6.6.4" PrivateAssets="All" />
-    <PackageReference Include="InlineIL.Fody" Version="1.7.2" PrivateAssets="All" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
   </ItemGroup>
 
@@ -51,14 +46,5 @@
       <_Parameter1>LibHac.Tests</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
-
-  <!-- Configuration for Fody -->
-  <PropertyGroup>
-    <WeaverConfiguration>
-      <Weavers>
-        <InlineIL />
-      </Weavers>
-    </WeaverConfiguration>
-  </PropertyGroup>
 
 </Project>

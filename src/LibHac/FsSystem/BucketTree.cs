@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
@@ -887,15 +888,8 @@ public partial class BucketTree : IDisposable
         /// <remarks><para>This property allows using a <see langword="using"/> expression with <see cref="Visitor"/>s
         /// while still being able to pass it by reference.</para></remarks>
         /// <returns>A reference to this <see cref="Visitor"/>.</returns>
-        public ref Visitor Ref
-        {
-            get
-            {
-                InlineIL.IL.Emit.Ldarg_0();
-                InlineIL.IL.Emit.Ret();
-                throw InlineIL.IL.Unreachable();
-            }
-        }
+        [UnscopedRef]
+        public ref Visitor Ref => ref this;
 
         internal Result Initialize(BucketTree tree, in Offsets offsets)
         {

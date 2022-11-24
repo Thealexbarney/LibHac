@@ -367,7 +367,7 @@ namespace LibHac.Fs.Shim
                 Unsafe.SkipInit(out SaveDataInfo info);
 
                 res = fs.Impl.ReadSaveDataIteratorSaveDataInfo(out long count, SpanHelpers.AsSpan(ref info),
-                   ref iterator.Get);
+                    iterator.Get);
 
                 fs.Impl.LogResultErrorMessage(res);
                 if (res.IsFailure()) return res.Miss();

@@ -590,7 +590,7 @@ namespace LibHac.Fs.Shim
         }
 
         public static Result ReadSaveDataIteratorSaveDataInfo(this FileSystemClientImpl fs, out long readCount,
-            Span<SaveDataInfo> buffer, ref SaveDataIterator iterator)
+            Span<SaveDataInfo> buffer, SaveDataIterator iterator)
         {
             Result res = iterator.ReadSaveDataInfo(out readCount, buffer);
             if (res.IsFailure()) return res.Miss();

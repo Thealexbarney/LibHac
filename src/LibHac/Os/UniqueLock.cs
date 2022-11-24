@@ -2,7 +2,6 @@
 using System.Runtime.CompilerServices;
 using System.Threading;
 using LibHac.Common;
-using static InlineIL.IL.Emit;
 
 namespace LibHac.Os;
 
@@ -26,20 +25,19 @@ public static class UniqueLock
         return new UniqueLock<TMutex>(lockable);
     }
 
-    // ReSharper disable once EntityNameCapturedOnly.Global
-    public static ref UniqueLockRef<T> Ref<T>(this in UniqueLockRef<T> value) where T : struct, ILockable
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+    public static unsafe ref UniqueLockRef<T> Ref<T>(this in UniqueLockRef<T> value) where T : struct, ILockable
     {
-        Ldarg(nameof(value));
-        Ret();
-        throw InlineIL.IL.Unreachable();
+        fixed (UniqueLockRef<T>* p = &value)
+        {
+            return ref *p;
+        }
     }
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
 
-    // ReSharper disable once EntityNameCapturedOnly.Global
     public static ref UniqueLock<T> Ref<T>(this in UniqueLock<T> value) where T : class, ILockable
     {
-        Ldarg(nameof(value));
-        Ret();
-        throw InlineIL.IL.Unreachable();
+        return ref Unsafe.AsRef(in value);
     }
 }
 

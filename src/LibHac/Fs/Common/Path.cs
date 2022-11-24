@@ -4,7 +4,6 @@ using System.Diagnostics;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Util;
-using static InlineIL.IL.Emit;
 using static LibHac.Fs.StringTraits;
 
 // ReSharper disable once CheckNamespace
@@ -45,30 +44,40 @@ public static class PathExtensions
     /// of the input <see langword="readonly"/> reference.</para></remarks>
     /// <param name="path">The read-only reference to reinterpret.</param>
     /// <returns>A reference to the given <see cref="Path"/>.</returns>
-    // ReSharper disable once EntityNameCapturedOnly.Global
-    public static ref Path Ref(this scoped in Path path)
+#pragma warning disable LH0001 // DoNotCopyValue
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+    public static unsafe ref Path Ref(this scoped in Path path)
     {
-        Ldarg(nameof(path));
-        Ret();
-        throw InlineIL.IL.Unreachable();
+        fixed (Path* p = &path)
+        {
+            return ref *p;
+        }
     }
 
-    public static ref Path GetNullRef()
+    public static unsafe ref Path GetNullRef()
     {
-        Ldc_I4_0();
-        Conv_U();
-        Ret();
-        throw InlineIL.IL.Unreachable();
+        // Todo: Combine into one statement once ReSharper stops detecting that as an error
+        var p = (Path*)null;
+        return ref *p;
     }
 
-    public static bool IsNullRef(in Path path)
+    public static unsafe bool IsNullRef(in Path path)
     {
-        Ldarg_0();
-        Ldc_I4_0();
-        Conv_U();
-        Ceq();
-        return InlineIL.IL.Return<bool>();
+        fixed (Path* p = &path)
+        {
+            return p == null;
+        }
     }
+
+    public static unsafe bool IsNullRef(in int path)
+    {
+        fixed (int* p = &path)
+        {
+            return p == null;
+        }
+    }
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+#pragma warning restore LH0001 // DoNotCopyValue
 }
 
 /// <summary>
@@ -1214,7 +1223,7 @@ public static class PathFunctions
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.InvalidArgument"/>: <paramref name="pathBuffer"/> was too small to contain the built path.</returns>
     internal static Result SetUpFixedPathDoubleEntry(scoped ref Path path, Span<byte> pathBuffer,
-       scoped ReadOnlySpan<byte> entryName1, scoped ReadOnlySpan<byte> entryName2)
+        scoped ReadOnlySpan<byte> entryName1, scoped ReadOnlySpan<byte> entryName2)
     {
         var sb = new U8StringBuilder(pathBuffer);
         sb.Append((byte)'/').Append(entryName1)

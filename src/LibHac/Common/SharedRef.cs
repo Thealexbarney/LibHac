@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using InlineIL;
 using LibHac.Diag;
 
 #pragma warning disable LH0001
@@ -13,17 +12,13 @@ public static class SharedRefExtensions
     // ReSharper disable once EntityNameCapturedOnly.Global
     public static ref SharedRef<T> Ref<T>(this in SharedRef<T> value) where T : class, IDisposable
     {
-        IL.Emit.Ldarg(nameof(value));
-        IL.Emit.Ret();
-        throw IL.Unreachable();
+        return ref Unsafe.AsRef(in value);
     }
 
     // ReSharper disable once EntityNameCapturedOnly.Global
     public static ref WeakRef<T> Ref<T>(this in WeakRef<T> value) where T : class, IDisposable
     {
-        IL.Emit.Ldarg(nameof(value));
-        IL.Emit.Ret();
-        throw IL.Unreachable();
+        return ref Unsafe.AsRef(in value);
     }
 }
 

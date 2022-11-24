@@ -1,7 +1,6 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using InlineIL;
-using static InlineIL.IL.Emit;
 
 namespace LibHac.Common;
 
@@ -10,9 +9,7 @@ public static class UniqueRefExtensions
     // ReSharper disable once EntityNameCapturedOnly.Global
     public static ref UniqueRef<T> Ref<T>(this in UniqueRef<T> value) where T : class, IDisposable
     {
-        Ldarg(nameof(value));
-        Ret();
-        throw IL.Unreachable();
+        return ref Unsafe.AsRef(in value);
     }
 }
 
@@ -21,16 +18,8 @@ public struct UniqueRef<T> : IDisposable where T : class, IDisposable
 {
     private T _value;
 
-    public readonly ref T Get
-    {
-        get
-        {
-            Ldarg_0();
-            Ldflda(new FieldRef(typeof(UniqueRef<T>), nameof(_value)));
-            Ret();
-            throw IL.Unreachable();
-        }
-    }
+    [UnscopedRef]
+    public readonly ref readonly T Get => ref _value;
 
     public readonly bool HasValue => Get is not null;
 
