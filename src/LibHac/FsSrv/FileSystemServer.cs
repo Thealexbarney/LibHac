@@ -1,4 +1,5 @@
 ﻿using System;
+using LibHac.Common;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Storage;
 using LibHac.FsSystem;
@@ -29,6 +30,7 @@ public class FileSystemServer : IDisposable
     }
 }
 
+[NonCopyableDisposable]
 internal struct FileSystemServerGlobals : IDisposable
 {
     public HorizonClient Hos;
