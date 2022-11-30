@@ -140,7 +140,7 @@ public static class Assert
     [Conditional(AssertCondition)]
     public static void True([DoesNotReturnIf(false)] bool condition,
         string message = "",
-        [CallerArgumentExpression("condition")] string conditionText = "",
+        [CallerArgumentExpression(nameof(condition))] string conditionText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -151,7 +151,7 @@ public static class Assert
     [Conditional(AssertCondition)]
     public static void SdkAssert([DoesNotReturnIf(false)] bool condition,
         string message = "",
-        [CallerArgumentExpression("condition")] string conditionText = "",
+        [CallerArgumentExpression(nameof(condition))] string conditionText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -162,7 +162,7 @@ public static class Assert
     [Conditional(AssertCondition)]
     public static void SdkRequires([DoesNotReturnIf(false)] bool condition,
         string message = "",
-        [CallerArgumentExpression("condition")] string conditionText = "",
+        [CallerArgumentExpression(nameof(condition))] string conditionText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -185,7 +185,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void NotNull<T>([NotNull] T value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -196,7 +196,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkNotNull<T>([NotNull] T value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -207,7 +207,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresNotNull<T>([NotNull] T value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -231,7 +231,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void NotNull<T>([NotNull] ref T value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -241,7 +241,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkNotNull<T>([NotNull] ref T value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -251,7 +251,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresNotNull<T>([NotNull] ref T value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -277,7 +277,7 @@ public static class Assert
     }
 
     public static void NotNullOut<T>([NotNull] out T value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -286,7 +286,7 @@ public static class Assert
     }
 
     internal static void SdkNotNullOut<T>([NotNull] out T value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -295,7 +295,7 @@ public static class Assert
     }
 
     internal static void SdkRequiresNotNullOut<T>([NotNull] out T value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -318,7 +318,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void NotNull<T>(Span<T> value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -328,7 +328,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkNotNull<T>(Span<T> value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -338,7 +338,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresNotNull<T>(Span<T> value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -361,7 +361,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void NotNull<T>(ReadOnlySpan<T> value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -371,7 +371,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkNotNull<T>(ReadOnlySpan<T> value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -381,7 +381,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresNotNull<T>(ReadOnlySpan<T> value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -404,7 +404,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void NotNull<T>(in UniqueRef<T> value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -415,7 +415,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkNotNull<T>(in UniqueRef<T> value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -426,7 +426,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresNotNull<T>(in UniqueRef<T> value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -450,7 +450,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void NotNull<T>(in SharedRef<T> value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -461,7 +461,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkNotNull<T>(in SharedRef<T> value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -472,7 +472,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresNotNull<T>(in SharedRef<T> value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -496,7 +496,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void Null<T>(T value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber]
@@ -508,7 +508,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkNull<T>(T value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -519,7 +519,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresNull<T>(T value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -543,7 +543,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void Null<T>(ref T value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -553,7 +553,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkNull<T>(ref T value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -563,7 +563,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresNull<T>(ref T value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -586,7 +586,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void Null<T>(in UniqueRef<T> value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -597,7 +597,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkNull<T>(in UniqueRef<T> value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -608,7 +608,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresNull<T>(in UniqueRef<T> value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -632,7 +632,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void Null<T>(in SharedRef<T> value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -643,7 +643,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkNull<T>(in SharedRef<T> value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -654,7 +654,7 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresNull<T>(in SharedRef<T> value,
-        [CallerArgumentExpression("value")] string valueText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -679,9 +679,9 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void InRange(int value, int lowerInclusive, int upperExclusive,
-        [CallerArgumentExpression("value")] string valueText = "",
-        [CallerArgumentExpression("lowerInclusive")] string lowerInclusiveText = "",
-        [CallerArgumentExpression("upperExclusive")] string upperExclusiveText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
+        [CallerArgumentExpression(nameof(lowerInclusive))] string lowerInclusiveText = "",
+        [CallerArgumentExpression(nameof(upperExclusive))] string upperExclusiveText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -692,9 +692,9 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkInRange(int value, int lowerInclusive, int upperExclusive,
-        [CallerArgumentExpression("value")] string valueText = "",
-        [CallerArgumentExpression("lowerInclusive")] string lowerInclusiveText = "",
-        [CallerArgumentExpression("upperExclusive")] string upperExclusiveText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
+        [CallerArgumentExpression(nameof(lowerInclusive))] string lowerInclusiveText = "",
+        [CallerArgumentExpression(nameof(upperExclusive))] string upperExclusiveText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -705,9 +705,9 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresInRange(int value, int lowerInclusive, int upperExclusive,
-        [CallerArgumentExpression("value")] string valueText = "",
-        [CallerArgumentExpression("lowerInclusive")] string lowerInclusiveText = "",
-        [CallerArgumentExpression("upperExclusive")] string upperExclusiveText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
+        [CallerArgumentExpression(nameof(lowerInclusive))] string lowerInclusiveText = "",
+        [CallerArgumentExpression(nameof(upperExclusive))] string upperExclusiveText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -732,9 +732,9 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void InRange(long value, long lowerInclusive, long upperExclusive,
-        [CallerArgumentExpression("value")] string valueText = "",
-        [CallerArgumentExpression("lowerInclusive")] string lowerInclusiveText = "",
-        [CallerArgumentExpression("upperExclusive")] string upperExclusiveText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
+        [CallerArgumentExpression(nameof(lowerInclusive))] string lowerInclusiveText = "",
+        [CallerArgumentExpression(nameof(upperExclusive))] string upperExclusiveText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -745,9 +745,9 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkInRange(long value, long lowerInclusive, long upperExclusive,
-        [CallerArgumentExpression("value")] string valueText = "",
-        [CallerArgumentExpression("lowerInclusive")] string lowerInclusiveText = "",
-        [CallerArgumentExpression("upperExclusive")] string upperExclusiveText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
+        [CallerArgumentExpression(nameof(lowerInclusive))] string lowerInclusiveText = "",
+        [CallerArgumentExpression(nameof(upperExclusive))] string upperExclusiveText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -758,9 +758,9 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresInRange(long value, long lowerInclusive, long upperExclusive,
-        [CallerArgumentExpression("value")] string valueText = "",
-        [CallerArgumentExpression("lowerInclusive")] string lowerInclusiveText = "",
-        [CallerArgumentExpression("upperExclusive")] string upperExclusiveText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
+        [CallerArgumentExpression(nameof(lowerInclusive))] string lowerInclusiveText = "",
+        [CallerArgumentExpression(nameof(upperExclusive))] string upperExclusiveText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -785,9 +785,9 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void WithinMinMax(int value, int min, int max,
-        [CallerArgumentExpression("value")] string valueText = "",
-        [CallerArgumentExpression("min")] string minText = "",
-        [CallerArgumentExpression("max")] string maxText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
+        [CallerArgumentExpression(nameof(min))] string minText = "",
+        [CallerArgumentExpression(nameof(max))] string maxText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -798,9 +798,9 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkWithinMinMax(int value, int min, int max,
-        [CallerArgumentExpression("value")] string valueText = "",
-        [CallerArgumentExpression("min")] string minText = "",
-        [CallerArgumentExpression("max")] string maxText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
+        [CallerArgumentExpression(nameof(min))] string minText = "",
+        [CallerArgumentExpression(nameof(max))] string maxText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -811,9 +811,9 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresWithinMinMax(int value, int min, int max,
-        [CallerArgumentExpression("value")] string valueText = "",
-        [CallerArgumentExpression("min")] string minText = "",
-        [CallerArgumentExpression("max")] string maxText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
+        [CallerArgumentExpression(nameof(min))] string minText = "",
+        [CallerArgumentExpression(nameof(max))] string maxText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -838,9 +838,9 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void WithinMinMax(long value, long min, long max,
-        [CallerArgumentExpression("value")] string valueText = "",
-        [CallerArgumentExpression("min")] string minText = "",
-        [CallerArgumentExpression("max")] string maxText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
+        [CallerArgumentExpression(nameof(min))] string minText = "",
+        [CallerArgumentExpression(nameof(max))] string maxText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -851,9 +851,9 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkWithinMinMax(long value, long min, long max,
-        [CallerArgumentExpression("value")] string valueText = "",
-        [CallerArgumentExpression("min")] string minText = "",
-        [CallerArgumentExpression("max")] string maxText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
+        [CallerArgumentExpression(nameof(min))] string minText = "",
+        [CallerArgumentExpression(nameof(max))] string maxText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -864,9 +864,9 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresWithinMinMax(long value, long min, long max,
-        [CallerArgumentExpression("value")] string valueText = "",
-        [CallerArgumentExpression("min")] string minText = "",
-        [CallerArgumentExpression("max")] string maxText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
+        [CallerArgumentExpression(nameof(min))] string minText = "",
+        [CallerArgumentExpression(nameof(max))] string maxText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -890,8 +890,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void Equal<T>(T lhs, T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -902,8 +902,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkEqual<T>(T lhs, T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -914,8 +914,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresEqual<T>(T lhs, T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -939,8 +939,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void Equal<T>(ref T lhs, ref T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -951,8 +951,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkEqual<T>(ref T lhs, ref T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -963,8 +963,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresEqual<T>(ref T lhs, ref T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -989,8 +989,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void NotEqual<T>(T lhs, T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1001,8 +1001,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkNotEqual<T>(T lhs, T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1013,8 +1013,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresNotEqual<T>(T lhs, T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1038,8 +1038,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void NotEqual<T>(ref T lhs, ref T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1051,8 +1051,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkNotEqual<T>(ref T lhs, ref T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1064,8 +1064,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresNotEqual<T>(ref T lhs, ref T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1090,8 +1090,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void Less<T>(T lhs, T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1102,8 +1102,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkLess<T>(T lhs, T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1114,8 +1114,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresLess<T>(T lhs, T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1139,8 +1139,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void LessEqual<T>(T lhs, T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1151,8 +1151,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkLessEqual<T>(T lhs, T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1163,8 +1163,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresLessEqual<T>(T lhs, T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1188,8 +1188,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void Greater<T>(T lhs, T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1200,8 +1200,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkGreater<T>(T lhs, T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1212,8 +1212,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresGreater<T>(T lhs, T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1237,8 +1237,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void GreaterEqual<T>(T lhs, T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1249,8 +1249,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkGreaterEqual<T>(T lhs, T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1261,8 +1261,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresGreaterEqual<T>(T lhs, T rhs,
-        [CallerArgumentExpression("lhs")] string lhsText = "",
-        [CallerArgumentExpression("rhs")] string rhsText = "",
+        [CallerArgumentExpression(nameof(lhs))] string lhsText = "",
+        [CallerArgumentExpression(nameof(rhs))] string rhsText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1287,8 +1287,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void Aligned(long value, int alignment,
-        [CallerArgumentExpression("value")] string valueText = "",
-        [CallerArgumentExpression("alignment")] string alignmentText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
+        [CallerArgumentExpression(nameof(alignment))] string alignmentText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1299,8 +1299,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkAligned(long value, int alignment,
-        [CallerArgumentExpression("value")] string valueText = "",
-        [CallerArgumentExpression("alignment")] string alignmentText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
+        [CallerArgumentExpression(nameof(alignment))] string alignmentText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1311,8 +1311,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresAligned(long value, int alignment,
-        [CallerArgumentExpression("value")] string valueText = "",
-        [CallerArgumentExpression("alignment")] string alignmentText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
+        [CallerArgumentExpression(nameof(alignment))] string alignmentText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1337,8 +1337,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     public static void Aligned(ulong value, int alignment,
-        [CallerArgumentExpression("value")] string valueText = "",
-        [CallerArgumentExpression("alignment")] string alignmentText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
+        [CallerArgumentExpression(nameof(alignment))] string alignmentText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1349,8 +1349,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkAligned(ulong value, int alignment,
-        [CallerArgumentExpression("value")] string valueText = "",
-        [CallerArgumentExpression("alignment")] string alignmentText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
+        [CallerArgumentExpression(nameof(alignment))] string alignmentText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
@@ -1361,8 +1361,8 @@ public static class Assert
 
     [Conditional(AssertCondition)]
     internal static void SdkRequiresAligned(ulong value, int alignment,
-        [CallerArgumentExpression("value")] string valueText = "",
-        [CallerArgumentExpression("alignment")] string alignmentText = "",
+        [CallerArgumentExpression(nameof(value))] string valueText = "",
+        [CallerArgumentExpression(nameof(alignment))] string alignmentText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
