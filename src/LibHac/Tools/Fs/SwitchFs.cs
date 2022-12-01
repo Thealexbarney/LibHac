@@ -48,10 +48,10 @@ public class SwitchFs : IDisposable
         var concatFs = new ConcatenationFileSystem(ref fileSystem);
 
         using var contentDirPath = new LibHac.Fs.Path();
-        PathFunctions.SetUpFixedPath(ref contentDirPath.Ref(), "/Nintendo/Contents".ToU8String()).ThrowIfFailure();
+        PathFunctions.SetUpFixedPath(ref contentDirPath.Ref(), "/Nintendo/Contents"u8).ThrowIfFailure();
 
         using var saveDirPath = new LibHac.Fs.Path();
-        PathFunctions.SetUpFixedPath(ref saveDirPath.Ref(), "/Nintendo/save".ToU8String()).ThrowIfFailure();
+        PathFunctions.SetUpFixedPath(ref saveDirPath.Ref(), "/Nintendo/save"u8).ThrowIfFailure();
 
         var contentDirFs = new SubdirectoryFileSystem(concatFs);
         contentDirFs.Initialize(in contentDirPath).ThrowIfFailure();
@@ -79,14 +79,14 @@ public class SwitchFs : IDisposable
         if (concatFs.DirectoryExists("/save"))
         {
             using var savePath = new LibHac.Fs.Path();
-            PathFunctions.SetUpFixedPath(ref savePath.Ref(), "/save".ToU8String());
+            PathFunctions.SetUpFixedPath(ref savePath.Ref(), "/save"u8);
 
             saveDirFs = new SubdirectoryFileSystem(concatFs);
             saveDirFs.Initialize(in savePath).ThrowIfFailure();
         }
 
         using var contentsPath = new LibHac.Fs.Path();
-        PathFunctions.SetUpFixedPath(ref contentsPath.Ref(), "/Contents".ToU8String());
+        PathFunctions.SetUpFixedPath(ref contentsPath.Ref(), "/Contents"u8);
 
         contentDirFs = new SubdirectoryFileSystem(concatFs);
         contentDirFs.Initialize(in contentsPath).ThrowIfFailure();
@@ -227,7 +227,7 @@ public class SwitchFs : IDisposable
 
             using (var control = new UniqueRef<IFile>())
             {
-                romfs.OpenFile(ref control.Ref(), "/control.nacp".ToU8Span(), OpenMode.Read).ThrowIfFailure();
+                romfs.OpenFile(ref control.Ref(), "/control.nacp"u8, OpenMode.Read).ThrowIfFailure();
 
                 control.Get.Read(out _, 0, title.Control.ByteSpan).ThrowIfFailure();
             }

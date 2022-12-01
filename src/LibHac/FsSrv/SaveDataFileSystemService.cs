@@ -680,7 +680,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
                 if (res.IsFailure())
                 {
                     Hos.Diag.Impl.LogImpl(Log.EmptyModuleName, LogSeverity.Info,
-                        "[fs] Error: Failed to rollback save data indexer.\n".ToU8Span());
+                        "[fs] Error: Failed to rollback save data indexer.\n"u8);
                 }
             }
         }

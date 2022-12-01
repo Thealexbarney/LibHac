@@ -1,5 +1,4 @@
-﻿using LibHac.Common;
-using LibHac.Fs;
+﻿using LibHac.Fs;
 using LibHac.Fs.Shim;
 using LibHac.FsSrv.Impl;
 using Xunit;
@@ -14,8 +13,8 @@ public class DeviceSaveData
         var applicationId = new Ncm.ApplicationId(1234);
         HorizonServerSet hos = FileSystemServerFactory.CreateHorizon(applicationId, fsAcBits: AccessControlBits.Bits.FullPermission);
 
-        Assert.Result(ResultFs.TargetNotFound, hos.Client.Fs.MountDeviceSaveData("device".ToU8Span(), applicationId));
-        Assert.Result(ResultFs.TargetNotFound, hos.Client.Fs.MountDeviceSaveData("device2".ToU8Span()));
+        Assert.Result(ResultFs.TargetNotFound, hos.Client.Fs.MountDeviceSaveData("device"u8, applicationId));
+        Assert.Result(ResultFs.TargetNotFound, hos.Client.Fs.MountDeviceSaveData("device2"u8));
     }
 
     [Fact]
@@ -25,8 +24,8 @@ public class DeviceSaveData
         HorizonServerSet hos = FileSystemServerFactory.CreateHorizon(applicationId, fsAcBits: AccessControlBits.Bits.FullPermission);
 
         Assert.Success(hos.Client.Fs.CreateDeviceSaveData(applicationId, applicationId.Value, 0, 0, SaveDataFlags.None));
-        Assert.Success(hos.Client.Fs.MountDeviceSaveData("device".ToU8Span()));
-        Assert.Success(hos.Client.Fs.MountDeviceSaveData("device2".ToU8Span(), applicationId));
+        Assert.Success(hos.Client.Fs.MountDeviceSaveData("device"u8));
+        Assert.Success(hos.Client.Fs.MountDeviceSaveData("device2"u8, applicationId));
     }
 
     [Fact]
@@ -37,10 +36,10 @@ public class DeviceSaveData
         HorizonServerSet hos = FileSystemServerFactory.CreateHorizon(ownApplicationId, fsAcBits: AccessControlBits.Bits.FullPermission);
 
         Assert.Success(hos.Client.Fs.CreateDeviceSaveData(otherApplicationId, otherApplicationId.Value, 0, 0, SaveDataFlags.None));
-        Assert.Success(hos.Client.Fs.MountDeviceSaveData("device".ToU8Span(), otherApplicationId));
+        Assert.Success(hos.Client.Fs.MountDeviceSaveData("device"u8, otherApplicationId));
 
         // Try to open missing own device save data
-        Assert.Result(ResultFs.TargetNotFound, hos.Client.Fs.MountDeviceSaveData("device2".ToU8Span()));
+        Assert.Result(ResultFs.TargetNotFound, hos.Client.Fs.MountDeviceSaveData("device2"u8));
     }
 
     [Fact]

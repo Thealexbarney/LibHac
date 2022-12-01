@@ -1,5 +1,4 @@
-﻿using LibHac.Common;
-using LibHac.Fs;
+﻿using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Shim;
 using Xunit;
@@ -13,7 +12,7 @@ public class SdCard
     {
         FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-        Assert.Success(fs.MountSdCard("sdcard".ToU8Span()));
+        Assert.Success(fs.MountSdCard("sdcard"u8));
     }
 
     [Fact]
@@ -21,7 +20,7 @@ public class SdCard
     {
         FileSystemClient fs = FileSystemServerFactory.CreateClient(false);
 
-        Assert.Result(ResultFs.PortSdCardNoDevice, fs.MountSdCard("sdcard".ToU8Span()));
+        Assert.Result(ResultFs.PortSdCardNoDevice, fs.MountSdCard("sdcard"u8));
     }
 
     [Fact]
@@ -29,9 +28,9 @@ public class SdCard
     {
         FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
-        fs.MountSdCard("sdcard".ToU8String());
+        fs.MountSdCard("sdcard"u8);
 
-        Assert.Success(fs.CreateFile("sdcard:/file".ToU8Span(), 100, CreateFileOptions.None));
+        Assert.Success(fs.CreateFile("sdcard:/file"u8, 100, CreateFileOptions.None));
     }
 
     [Fact]

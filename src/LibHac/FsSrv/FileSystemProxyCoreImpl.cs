@@ -56,7 +56,7 @@ public class FileSystemProxyCoreImpl
 
             using scoped var path = new Path();
             res = PathFunctions.SetUpFixedPathDoubleEntry(ref path.Ref(), pathBuffer.Items,
-                CommonPaths.SdCardNintendoRootDirectoryName,
+                CommonDirNames.SdCardNintendoRootDirectoryName,
                 CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.System));
             if (res.IsFailure()) return res.Miss();
 

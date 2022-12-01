@@ -37,8 +37,8 @@ internal static class ProcessSave
             FileSystemClient fs = ctx.Horizon.Fs;
 
             using var saveUnique = new UniqueRef<IFileSystem>(save);
-            fs.Register("save".ToU8Span(), ref saveUnique.Ref());
-            fs.Impl.EnableFileSystemAccessorAccessLog("save".ToU8Span());
+            fs.Register("save"u8, ref saveUnique.Ref());
+            fs.Impl.EnableFileSystemAccessorAccessLog("save"u8);
 
             if (ctx.Options.Validate)
             {
@@ -48,12 +48,12 @@ internal static class ProcessSave
             if (ctx.Options.OutDir != null)
             {
                 using var outputFs = new UniqueRef<IFileSystem>(new LocalFileSystem(ctx.Options.OutDir));
-                fs.Register("output".ToU8Span(), ref outputFs.Ref());
-                fs.Impl.EnableFileSystemAccessorAccessLog("output".ToU8Span());
+                fs.Register("output"u8, ref outputFs.Ref());
+                fs.Impl.EnableFileSystemAccessorAccessLog("output"u8);
 
-                FsUtils.CopyDirectoryWithProgress(fs, "save:/".ToU8Span(), "output:/".ToU8Span(), logger: ctx.Logger).ThrowIfFailure();
+                FsUtils.CopyDirectoryWithProgress(fs, "save:/"u8, "output:/"u8, logger: ctx.Logger).ThrowIfFailure();
 
-                fs.Unmount("output".ToU8Span());
+                fs.Unmount("output"u8);
             }
 
             if (ctx.Options.DebugOutDir != null)
@@ -73,7 +73,7 @@ internal static class ProcessSave
                     using var inFile = new UniqueRef<IFile>(new LocalFile(ctx.Options.ReplaceFileSource, OpenMode.Read));
 
                     using var outFile = new UniqueRef<IFile>();
-                    save.OpenFile(ref outFile.Ref(), destFilename.ToU8String(), OpenMode.ReadWrite).ThrowIfFailure();
+                    save.OpenFile(ref outFile.Ref(), destFilename.ToU8Span(), OpenMode.ReadWrite).ThrowIfFailure();
 
                     inFile.Get.GetSize(out long inFileSize).ThrowIfFailure();
                     outFile.Get.GetSize(out long outFileSize).ThrowIfFailure();
@@ -93,16 +93,16 @@ internal static class ProcessSave
                 if (ctx.Options.RepackSource != null)
                 {
                     using var inputFs = new UniqueRef<IFileSystem>(new LocalFileSystem(ctx.Options.RepackSource));
-                    fs.Register("input".ToU8Span(), ref inputFs.Ref());
-                    fs.Impl.EnableFileSystemAccessorAccessLog("input".ToU8Span());
+                    fs.Register("input"u8, ref inputFs.Ref());
+                    fs.Impl.EnableFileSystemAccessorAccessLog("input"u8);
 
-                    fs.CleanDirectoryRecursively("save:/".ToU8Span());
-                    fs.Commit("save".ToU8Span());
+                    fs.CleanDirectoryRecursively("save:/"u8);
+                    fs.Commit("save"u8);
 
-                    FsUtils.CopyDirectoryWithProgress(fs, "input:/".ToU8Span(), "save:/".ToU8Span(), logger: ctx.Logger).ThrowIfFailure();
+                    FsUtils.CopyDirectoryWithProgress(fs, "input:/"u8, "save:/"u8, logger: ctx.Logger).ThrowIfFailure();
 
-                    fs.Commit("save".ToU8Span());
-                    fs.Unmount("input".ToU8Span());
+                    fs.Commit("save"u8);
+                    fs.Unmount("input"u8);
 
                     signNeeded = true;
                 }
@@ -144,7 +144,7 @@ internal static class ProcessSave
                     ctx.Logger.LogMessage("Unable to sign save file. Do you have all the required keys?");
                 }
 
-                fs.Unmount("save".ToU8Span());
+                fs.Unmount("save"u8);
                 return;
             }
 
@@ -159,7 +159,7 @@ internal static class ProcessSave
             ctx.Logger.LogMessage(save.Print(ctx.KeySet));
             //ctx.Logger.LogMessage(PrintFatLayout(save.SaveDataFileSystemCore));
 
-            fs.Unmount("save".ToU8Span());
+            fs.Unmount("save"u8);
         }
     }
 

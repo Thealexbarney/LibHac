@@ -17,13 +17,13 @@ public static class CommonMountNames
     public static ReadOnlySpan<byte> GameCardFileSystemMountName => "@Gc"u8;
 
     /// <summary>"<c>U</c>"</summary>
-    public static ReadOnlySpan<byte> GameCardFileSystemMountNameUpdateSuffix => "U"u8;
+    public static ReadOnlySpan<byte> GameCardFileSystemMountNameSuffixUpdate => "U"u8;
 
     /// <summary>"<c>N</c>"</summary>
-    public static ReadOnlySpan<byte> GameCardFileSystemMountNameNormalSuffix => "N"u8;
+    public static ReadOnlySpan<byte> GameCardFileSystemMountNameSuffixNormal => "N"u8;
 
     /// <summary>"<c>S</c>"</summary>
-    public static ReadOnlySpan<byte> GameCardFileSystemMountNameSecureSuffix => "S"u8;
+    public static ReadOnlySpan<byte> GameCardFileSystemMountNameSuffixSecure => "S"u8;
 
     // Built-in storage names.
     /// <summary>"<c>@CalibFile</c>"</summary>
@@ -51,7 +51,4 @@ public static class CommonMountNames
     // Registered update partition
     /// <summary>"<c>@RegUpdate</c>"</summary>
     public static ReadOnlySpan<byte> RegisteredUpdatePartitionMountName => "@RegUpdate"u8;
-
-    /// <summary>"<c>Nintendo</c>"</summary>
-    public static ReadOnlySpan<byte> SdCardNintendoRootDirectoryName => "Nintendo"u8;
 }

@@ -187,7 +187,7 @@ public class PathToolsTests
     [MemberData(nameof(GetFileNameTestItems))]
     public static void GetFileNameTest(string path, string expected)
     {
-        var u8Path = path.ToU8String();
+        var u8Path = path.ToU8Span();
 
         ReadOnlySpan<byte> fileName = PathTools.GetFileName(u8Path);
 
@@ -211,7 +211,7 @@ public class PathToolsTests
     [MemberData(nameof(GetLastSegmentTestItems))]
     public static void GetLastSegmentTest(string path, string expected)
     {
-        var u8Path = path.ToU8String();
+        var u8Path = path.ToU8Span();
 
         ReadOnlySpan<byte> fileName = PathTools.GetLastSegment(u8Path);
 

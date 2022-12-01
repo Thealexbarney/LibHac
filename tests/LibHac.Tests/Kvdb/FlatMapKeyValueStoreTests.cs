@@ -12,9 +12,9 @@ namespace LibHac.Tests.Kvdb;
 
 public class FlatMapKeyValueStoreTests
 {
-    private static readonly U8String MountName = new U8String("mount");
-    private static readonly U8String RootPath = new U8String("mount:/");
-    private static readonly U8String ArchiveFilePath = new U8String("mount:/imkvdb.arc");
+    private static ReadOnlySpan<byte> MountName => "mount"u8;
+    private static ReadOnlySpan<byte> RootPath => "mount:/"u8;
+    private static ReadOnlySpan<byte> ArchiveFilePath => "mount:/imkvdb.arc"u8;
 
     private static (FlatMapKeyValueStore<T> kvStore, FileSystemClient fsClient) Create<T>(int capacity)
         where T : unmanaged, IEquatable<T>, IComparable<T>

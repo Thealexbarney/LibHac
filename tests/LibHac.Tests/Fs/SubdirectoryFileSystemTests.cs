@@ -1,5 +1,4 @@
-﻿using LibHac.Common;
-using LibHac.Fs;
+﻿using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 using LibHac.Tests.Fs.IFileSystemTestBase;
@@ -22,7 +21,7 @@ public class SubdirectoryFileSystemTests : IFileSystemTests
         baseFs.CreateDirectory("/sub/path");
 
         using var rootPath = new Path();
-        PathFunctions.SetUpFixedPath(ref rootPath.Ref(), "/sub/path".ToU8String());
+        PathFunctions.SetUpFixedPath(ref rootPath.Ref(), "/sub/path"u8);
 
         var subFs = new SubdirectoryFileSystem(baseFs);
         subFs.Initialize(in rootPath).ThrowIfFailure();
@@ -60,7 +59,7 @@ public class SubdirectoryFileSystemTestsRoot : IFileSystemTests
         var baseFs = new InMemoryFileSystem();
 
         using var rootPath = new Path();
-        PathFunctions.SetUpFixedPath(ref rootPath.Ref(), "/".ToU8String());
+        PathFunctions.SetUpFixedPath(ref rootPath.Ref(), "/"u8);
 
         var subFs = new SubdirectoryFileSystem(baseFs);
         subFs.Initialize(in rootPath).ThrowIfFailure();

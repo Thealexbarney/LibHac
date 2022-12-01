@@ -22,7 +22,7 @@ internal static class Utility
     /// It contains various fields that can used if needed to pass references to <see cref="FsIterationTask"/> methods.
     /// The main shortcomings are that every type that might possibly be passed must have a field in the struct.
     /// The struct must also be manually passed through the <see cref="Utility.IterateDirectoryRecursively"/> method.
-    /// And because ref fields aren't as thing as of C# 10, some ref structs may have to be copied into the closure struct. 
+    /// And because ref fields to ref structs aren't as thing as of C# 11, some ref structs may have to be copied into the closure struct. 
     /// </remarks>
     [NonCopyable]
     public ref struct FsIterationTaskClosure

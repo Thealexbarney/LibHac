@@ -1,5 +1,4 @@
-﻿using LibHac.Common;
-using LibHac.Fs;
+﻿using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Shim;
 using Xunit;
@@ -16,7 +15,7 @@ public class SaveData
 
         fs.CreateCacheStorage(applicationId, SaveDataSpaceId.User, applicationId.Value, 0, 0, SaveDataFlags.None);
 
-        Assert.Success(fs.MountCacheStorage("cache".ToU8Span(), applicationId));
+        Assert.Success(fs.MountCacheStorage("cache"u8, applicationId));
     }
 
     [Fact]
@@ -26,14 +25,14 @@ public class SaveData
         FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
         fs.CreateCacheStorage(applicationId, SaveDataSpaceId.SdUser, applicationId.Value, 0, 0, SaveDataFlags.None);
-        fs.MountCacheStorage("cache".ToU8Span(), applicationId);
+        fs.MountCacheStorage("cache"u8, applicationId);
 
-        fs.CreateFile("cache:/file".ToU8Span(), 0);
-        fs.Commit("cache".ToU8Span());
-        fs.Unmount("cache".ToU8Span());
+        fs.CreateFile("cache:/file"u8, 0);
+        fs.Commit("cache"u8);
+        fs.Unmount("cache"u8);
 
-        Assert.Success(fs.MountCacheStorage("cache".ToU8Span(), applicationId));
-        Assert.Success(fs.GetEntryType(out DirectoryEntryType type, "cache:/file".ToU8Span()));
+        Assert.Success(fs.MountCacheStorage("cache"u8, applicationId));
+        Assert.Success(fs.GetEntryType(out DirectoryEntryType type, "cache:/file"u8));
         Assert.Equal(DirectoryEntryType.File, type);
     }
 
@@ -44,24 +43,24 @@ public class SaveData
         FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
 
         Assert.Success(fs.CreateCacheStorage(applicationId, SaveDataSpaceId.SdUser, applicationId.Value, 0, 0, SaveDataFlags.None));
-        Assert.Success(fs.MountCacheStorage("cache".ToU8Span(), applicationId));
-        fs.CreateFile("cache:/sd".ToU8Span(), 0);
-        fs.Commit("cache".ToU8Span());
-        fs.Unmount("cache".ToU8Span());
+        Assert.Success(fs.MountCacheStorage("cache"u8, applicationId));
+        fs.CreateFile("cache:/sd"u8, 0);
+        fs.Commit("cache"u8);
+        fs.Unmount("cache"u8);
 
         // Turn off the SD card so the User save is mounted
         fs.SetSdCardAccessibility(false);
 
         fs.CreateCacheStorage(applicationId, SaveDataSpaceId.User, applicationId.Value, 0, 0, SaveDataFlags.None);
-        fs.MountCacheStorage("cache".ToU8Span(), applicationId);
-        fs.CreateFile("cache:/bis".ToU8Span(), 0);
-        fs.Commit("cache".ToU8Span());
-        fs.Unmount("cache".ToU8Span());
+        fs.MountCacheStorage("cache"u8, applicationId);
+        fs.CreateFile("cache:/bis"u8, 0);
+        fs.Commit("cache"u8);
+        fs.Unmount("cache"u8);
 
         fs.SetSdCardAccessibility(true);
 
-        Assert.Success(fs.MountCacheStorage("cache".ToU8String(), applicationId));
-        Assert.Success(fs.GetEntryType(out _, "cache:/sd".ToU8Span()));
-        Assert.Failure(fs.GetEntryType(out _, "cache:/bis".ToU8Span()));
+        Assert.Success(fs.MountCacheStorage("cache"u8, applicationId));
+        Assert.Success(fs.GetEntryType(out _, "cache:/sd"u8));
+        Assert.Failure(fs.GetEntryType(out _, "cache:/bis"u8));
     }
 }

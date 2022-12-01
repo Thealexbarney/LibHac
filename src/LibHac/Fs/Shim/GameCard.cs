@@ -28,9 +28,9 @@ public static class GameCard
     {
         switch (partition)
         {
-            case GameCardPartition.Update: return CommonMountNames.GameCardFileSystemMountNameUpdateSuffix;
-            case GameCardPartition.Normal: return CommonMountNames.GameCardFileSystemMountNameNormalSuffix;
-            case GameCardPartition.Secure: return CommonMountNames.GameCardFileSystemMountNameSecureSuffix;
+            case GameCardPartition.Update: return CommonMountNames.GameCardFileSystemMountNameSuffixUpdate;
+            case GameCardPartition.Normal: return CommonMountNames.GameCardFileSystemMountNameSuffixNormal;
+            case GameCardPartition.Secure: return CommonMountNames.GameCardFileSystemMountNameSuffixSecure;
             default:
                 Abort.UnexpectedDefault();
                 return default;

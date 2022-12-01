@@ -759,7 +759,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
 
                 using scoped var pathParent = new Path();
                 res = PathFunctions.SetUpFixedPathSingleEntry(ref pathParent.Ref(), pathParentBuffer.Items,
-                    CommonPaths.SdCardNintendoRootDirectoryName);
+                    CommonDirNames.SdCardNintendoRootDirectoryName);
                 if (res.IsFailure()) return res.Miss();
 
                 using scoped var pathSdRoot = new Path();

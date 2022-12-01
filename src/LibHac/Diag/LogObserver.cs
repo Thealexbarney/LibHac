@@ -101,7 +101,7 @@ namespace LibHac.Diag
 
 namespace LibHac.Diag.Impl
 {
-    // Todo: Make fields references once C# 10 is released
+    // Todo: Use ref fields once C# 12? is released
     internal ref struct LogObserverContext
     {
         public LogMetaData MetaData;

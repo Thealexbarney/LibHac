@@ -7,6 +7,7 @@ using LibHac.Fs.Shim;
 using LibHac.Os;
 using LibHac.Util;
 using static LibHac.Fs.Impl.AccessLogStrings;
+using static LibHac.Fs.Impl.CommonMountNames;
 using static LibHac.Fs.StringTraits;
 
 namespace LibHac.Fs.Fsa;
@@ -40,7 +41,7 @@ public static class MountUtility
 
         if (WindowsPath.IsWindowsDrive(path) || WindowsPath.IsUncPath(path))
         {
-            StringUtils.Copy(mountName.Name, CommonPaths.HostRootFileSystemMountName);
+            StringUtils.Copy(mountName.Name, HostRootFileSystemMountName);
             mountName.Name[PathTool.MountNameLengthMax] = NullTerminator;
 
             subPath = path;
@@ -106,7 +107,7 @@ public static class MountUtility
 
     public static bool IsUsedReservedMountName(this FileSystemClientImpl fs, U8Span name)
     {
-        return name.Length > 0 && name[0] == CommonPaths.ReservedMountNamePrefixCharacter;
+        return name.Length > 0 && name[0] == ReservedMountNamePrefixCharacter;
     }
 
     internal static Result FindFileSystem(this FileSystemClientImpl fs, out FileSystemAccessor fileSystem,
@@ -118,8 +119,8 @@ public static class MountUtility
         if (path.IsNull())
             return ResultFs.NullptrArgument.Log();
 
-        int hostMountNameLen = StringUtils.GetLength(CommonPaths.HostRootFileSystemMountName);
-        if (StringUtils.Compare(path, CommonPaths.HostRootFileSystemMountName, hostMountNameLen) == 0)
+        int hostMountNameLen = StringUtils.GetLength(HostRootFileSystemMountName);
+        if (StringUtils.Compare(path, HostRootFileSystemMountName, hostMountNameLen) == 0)
         {
             return ResultFs.NotMounted.Log();
         }
@@ -214,6 +215,7 @@ public static class MountUtility
         {
             res = fs.Impl.Unmount(mountName);
         }
+
         fs.Impl.LogResultErrorMessage(res);
         Abort.DoAbortUnless(res.IsSuccess());
     }
@@ -240,6 +242,7 @@ public static class MountUtility
         {
             res = fs.Impl.IsMounted(out isMounted, mountName);
         }
+
         fs.Impl.LogResultErrorMessage(res);
         Abort.DoAbortUnless(res.IsSuccess());
 

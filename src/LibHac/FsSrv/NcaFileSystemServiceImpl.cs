@@ -13,6 +13,7 @@ using LibHac.Os;
 using LibHac.Spl;
 using LibHac.Tools.FsSystem.NcaUtils;
 using LibHac.Util;
+using static LibHac.Fs.Impl.CommonMountNames;
 using NcaFsHeader = LibHac.Tools.FsSystem.NcaUtils.NcaFsHeader;
 using RightsId = LibHac.Fs.RightsId;
 using Utility = LibHac.FsSystem.Utility;
@@ -245,13 +246,13 @@ public class NcaFileSystemServiceImpl
         if (contentStorageId == ContentStorageId.SdCard)
         {
             var sb = new U8StringBuilder(contentStoragePathBuffer.Items);
-            sb.Append(StringTraits.DirectorySeparator).Append(SdCardNintendoRootDirectoryName);
-            sb.Append(StringTraits.DirectorySeparator).Append(ContentStorageDirectoryName);
+            sb.Append(StringTraits.DirectorySeparator).Append(CommonDirNames.SdCardNintendoRootDirectoryName);
+            sb.Append(StringTraits.DirectorySeparator).Append(CommonDirNames.ContentStorageDirectoryName);
         }
         else
         {
             var sb = new U8StringBuilder(contentStoragePathBuffer.Items);
-            sb.Append(StringTraits.DirectorySeparator).Append(ContentStorageDirectoryName);
+            sb.Append(StringTraits.DirectorySeparator).Append(CommonDirNames.ContentStorageDirectoryName);
         }
 
         using var contentStoragePath = new Path();
@@ -319,29 +320,23 @@ public class NcaFileSystemServiceImpl
         info = new MountInfo();
         shouldContinue = true;
 
-        if (StringUtils.Compare(path, CommonPaths.GameCardFileSystemMountName,
-            CommonPaths.GameCardFileSystemMountName.Length) == 0)
+        if (StringUtils.Compare(path, GameCardFileSystemMountName,
+            GameCardFileSystemMountName.Length) == 0)
         {
-            path = path.Slice(CommonPaths.GameCardFileSystemMountName.Length);
+            path = path.Slice(GameCardFileSystemMountName.Length);
 
             if (StringUtils.GetLength(path.Value, 9) < 9)
                 return ResultFs.InvalidPath.Log();
 
             GameCardPartition partition;
-            switch ((char)path[0])
-            {
-                case CommonPaths.GameCardFileSystemMountNameUpdateSuffix:
-                    partition = GameCardPartition.Update;
-                    break;
-                case CommonPaths.GameCardFileSystemMountNameNormalSuffix:
-                    partition = GameCardPartition.Normal;
-                    break;
-                case CommonPaths.GameCardFileSystemMountNameSecureSuffix:
-                    partition = GameCardPartition.Secure;
-                    break;
-                default:
-                    return ResultFs.InvalidPath.Log();
-            }
+            if (StringUtils.CompareCaseInsensitive(path, GameCardFileSystemMountNameSuffixUpdate) == 0)
+                partition = GameCardPartition.Update;
+            else if (StringUtils.CompareCaseInsensitive(path, GameCardFileSystemMountNameSuffixNormal) == 0)
+                partition = GameCardPartition.Normal;
+            else if (StringUtils.CompareCaseInsensitive(path, GameCardFileSystemMountNameSuffixSecure) == 0)
+                partition = GameCardPartition.Secure;
+            else
+                return ResultFs.InvalidPath.Log();
 
             path = path.Slice(1);
             bool handleParsed = Utf8Parser.TryParse(path, out int handle, out int bytesConsumed);
@@ -359,10 +354,10 @@ public class NcaFileSystemServiceImpl
             info.CanMountNca = true;
         }
 
-        else if (StringUtils.Compare(path, CommonPaths.ContentStorageSystemMountName,
-            CommonPaths.ContentStorageSystemMountName.Length) == 0)
+        else if (StringUtils.Compare(path, ContentStorageSystemMountName,
+                ContentStorageSystemMountName.Length) == 0)
         {
-            path = path.Slice(CommonPaths.ContentStorageSystemMountName.Length);
+            path = path.Slice(ContentStorageSystemMountName.Length);
 
             Result res = OpenContentStorageFileSystem(ref outFileSystem, ContentStorageId.System);
             if (res.IsFailure()) return res.Miss();
@@ -370,10 +365,10 @@ public class NcaFileSystemServiceImpl
             info.CanMountNca = true;
         }
 
-        else if (StringUtils.Compare(path, CommonPaths.ContentStorageUserMountName,
-            CommonPaths.ContentStorageUserMountName.Length) == 0)
+        else if (StringUtils.Compare(path, ContentStorageUserMountName,
+                ContentStorageUserMountName.Length) == 0)
         {
-            path = path.Slice(CommonPaths.ContentStorageUserMountName.Length);
+            path = path.Slice(ContentStorageUserMountName.Length);
 
             Result res = OpenContentStorageFileSystem(ref outFileSystem, ContentStorageId.User);
             if (res.IsFailure()) return res.Miss();
@@ -381,10 +376,10 @@ public class NcaFileSystemServiceImpl
             info.CanMountNca = true;
         }
 
-        else if (StringUtils.Compare(path, CommonPaths.ContentStorageSdCardMountName,
-            CommonPaths.ContentStorageSdCardMountName.Length) == 0)
+        else if (StringUtils.Compare(path, ContentStorageSdCardMountName,
+                ContentStorageSdCardMountName.Length) == 0)
         {
-            path = path.Slice(CommonPaths.ContentStorageSdCardMountName.Length);
+            path = path.Slice(ContentStorageSdCardMountName.Length);
 
             Result res = OpenContentStorageFileSystem(ref outFileSystem, ContentStorageId.SdCard);
             if (res.IsFailure()) return res.Miss();
@@ -392,55 +387,55 @@ public class NcaFileSystemServiceImpl
             info.CanMountNca = true;
         }
 
-        else if (StringUtils.Compare(path, CommonPaths.BisCalibrationFilePartitionMountName,
-            CommonPaths.BisCalibrationFilePartitionMountName.Length) == 0)
+        else if (StringUtils.Compare(path, BisCalibrationFilePartitionMountName,
+                BisCalibrationFilePartitionMountName.Length) == 0)
         {
-            path = path.Slice(CommonPaths.BisCalibrationFilePartitionMountName.Length);
+            path = path.Slice(BisCalibrationFilePartitionMountName.Length);
 
             Result res = _config.BaseFsService.OpenBisFileSystem(ref outFileSystem, BisPartitionId.CalibrationFile);
             if (res.IsFailure()) return res.Miss();
         }
 
-        else if (StringUtils.Compare(path, CommonPaths.BisSafeModePartitionMountName,
-            CommonPaths.BisSafeModePartitionMountName.Length) == 0)
+        else if (StringUtils.Compare(path, BisSafeModePartitionMountName,
+                BisSafeModePartitionMountName.Length) == 0)
         {
-            path = path.Slice(CommonPaths.BisSafeModePartitionMountName.Length);
+            path = path.Slice(BisSafeModePartitionMountName.Length);
 
             Result res = _config.BaseFsService.OpenBisFileSystem(ref outFileSystem, BisPartitionId.SafeMode);
             if (res.IsFailure()) return res.Miss();
         }
 
-        else if (StringUtils.Compare(path, CommonPaths.BisUserPartitionMountName,
-            CommonPaths.BisUserPartitionMountName.Length) == 0)
+        else if (StringUtils.Compare(path, BisUserPartitionMountName,
+                BisUserPartitionMountName.Length) == 0)
         {
-            path = path.Slice(CommonPaths.BisUserPartitionMountName.Length);
+            path = path.Slice(BisUserPartitionMountName.Length);
 
             Result res = _config.BaseFsService.OpenBisFileSystem(ref outFileSystem, BisPartitionId.User);
             if (res.IsFailure()) return res.Miss();
         }
 
-        else if (StringUtils.Compare(path, CommonPaths.BisSystemPartitionMountName,
-            CommonPaths.BisSystemPartitionMountName.Length) == 0)
+        else if (StringUtils.Compare(path, BisSystemPartitionMountName,
+                BisSystemPartitionMountName.Length) == 0)
         {
-            path = path.Slice(CommonPaths.BisSystemPartitionMountName.Length);
+            path = path.Slice(BisSystemPartitionMountName.Length);
 
             Result res = _config.BaseFsService.OpenBisFileSystem(ref outFileSystem, BisPartitionId.System);
             if (res.IsFailure()) return res.Miss();
         }
 
-        else if (StringUtils.Compare(path, CommonPaths.SdCardFileSystemMountName,
-            CommonPaths.SdCardFileSystemMountName.Length) == 0)
+        else if (StringUtils.Compare(path, SdCardFileSystemMountName,
+                SdCardFileSystemMountName.Length) == 0)
         {
-            path = path.Slice(CommonPaths.SdCardFileSystemMountName.Length);
+            path = path.Slice(SdCardFileSystemMountName.Length);
 
             Result res = _config.BaseFsService.OpenSdCardProxyFileSystem(ref outFileSystem);
             if (res.IsFailure()) return res.Miss();
         }
 
-        else if (StringUtils.Compare(path, CommonPaths.HostRootFileSystemMountName,
-            CommonPaths.HostRootFileSystemMountName.Length) == 0)
+        else if (StringUtils.Compare(path, HostRootFileSystemMountName,
+                HostRootFileSystemMountName.Length) == 0)
         {
-            path = path.Slice(CommonPaths.HostRootFileSystemMountName.Length);
+            path = path.Slice(HostRootFileSystemMountName.Length);
 
             using var rootPathEmpty = new Path();
             Result res = rootPathEmpty.InitializeAsEmpty();
@@ -453,10 +448,10 @@ public class NcaFileSystemServiceImpl
             if (res.IsFailure()) return res.Miss();
         }
 
-        else if (StringUtils.Compare(path, CommonPaths.RegisteredUpdatePartitionMountName,
-            CommonPaths.RegisteredUpdatePartitionMountName.Length) == 0)
+        else if (StringUtils.Compare(path, RegisteredUpdatePartitionMountName,
+                RegisteredUpdatePartitionMountName.Length) == 0)
         {
-            path = path.Slice(CommonPaths.RegisteredUpdatePartitionMountName.Length);
+            path = path.Slice(RegisteredUpdatePartitionMountName.Length);
 
             info.CanMountNca = true;
 
@@ -903,10 +898,6 @@ public class NcaFileSystemServiceImpl
                 return ResultFs.InvalidArgument.Log();
         }
     }
-
-    private static ReadOnlySpan<byte> SdCardNintendoRootDirectoryName => "Nintendo"u8;
-
-    private static ReadOnlySpan<byte> ContentStorageDirectoryName => "Contents"u8;
 }
 
 public readonly struct InternalProgramIdRangeForSpeedEmulation

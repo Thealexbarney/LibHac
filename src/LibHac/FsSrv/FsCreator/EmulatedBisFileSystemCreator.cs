@@ -74,7 +74,7 @@ public class EmulatedBisFileSystemCreator : IBuiltInStorageFileSystemCreator
         }
 
         using var bisRootPath = new Path();
-        Result res = bisRootPath.Initialize(GetPartitionPath(partitionId).ToU8String());
+        Result res = bisRootPath.Initialize(GetPartitionPath(partitionId).ToU8Span());
         if (res.IsFailure()) return res.Miss();
 
         var pathFlags = new PathFlags();
