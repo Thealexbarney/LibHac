@@ -183,6 +183,7 @@ internal static partial class DefaultKeySet
 
         keys.Add(new KeyInfo(280, Type.CommonRoot, "eticket_rsa_kek", (set, _) => set.ETicketRsaKek));
         keys.Add(new KeyInfo(281, Type.CommonRoot, "ssl_rsa_kek", (set, _) => set.SslRsaKek));
+        keys.Add(new KeyInfo(282, Type.DeviceDrvd, "eticket_rsa_keypair", (set, _) => set.ETicketRsaKeyPair));
 
         keys.Add(new KeyInfo(290, Type.CommonDrvd, "key_area_key_application", 0, KeyRevisionCount, (set, i) => set.KeyAreaKeys[i][0]));
         keys.Add(new KeyInfo(300, Type.CommonDrvd, "key_area_key_ocean", 0, KeyRevisionCount, (set, i) => set.KeyAreaKeys[i][1]));

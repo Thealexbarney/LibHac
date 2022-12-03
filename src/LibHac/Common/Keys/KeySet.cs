@@ -129,7 +129,7 @@ public class KeySet
     private RsaSigningKeyParameters _rsaSigningKeyParamsProd;
     private RsaKeyParameters _rsaKeyParams;
 
-    public RSAParameters ETicketExtKeyRsa { get; set; }
+    public ref RsaKeyPair ETicketRsaKeyPair => ref DerivedDeviceKeys.ETicketRsaKeyPair;
 
     public Span<RSAParameters> NcaHeaderSigningKeyParams
     {
@@ -389,6 +389,7 @@ public struct DerivedDeviceKeys
     public Array2<AesKey> DeviceUniqueSaveMacKeys;
     public AesKey SeedUniqueSaveMacKey;
     public Array3<AesXtsKey> SdCardEncryptionKeys;
+    public RsaKeyPair ETicketRsaKeyPair;
 }
 
 public struct RsaSigningKeys
