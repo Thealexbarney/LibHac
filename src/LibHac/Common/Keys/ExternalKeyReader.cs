@@ -12,7 +12,7 @@ namespace LibHac.Common.Keys;
 
 public static class ExternalKeyReader
 {
-    private const int ReadBufferSize = 1024;
+    private const int ReadBufferSize = 2048;
 
     // Contains info from a specific key being read from a file
     [DebuggerDisplay("{" + nameof(Name) + "}")]
