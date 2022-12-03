@@ -121,7 +121,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
 
         using var fileSystem = new SharedRef<IFileSystem>();
 
-        Result res = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref(), spaceId);
+        Result res = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref, spaceId);
         if (res.IsFailure()) return res.Miss();
 
         // Get the path of the save data
@@ -160,7 +160,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
     {
         using var fileSystem = new SharedRef<IFileSystem>();
 
-        Result res = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref(), spaceId, in saveDataRootPath, true);
+        Result res = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref, spaceId, in saveDataRootPath, true);
         if (res.IsFailure()) return res.Miss();
 
         bool isEmulatedOnHost = IsAllowedDirectorySaveData(spaceId, in saveDataRootPath);
@@ -182,7 +182,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         using (_saveFileSystemCacheManager.GetScopedLock())
         using (_saveExtraDataCacheManager.GetScopedLock())
         {
-            if (isEmulatedOnHost || !_saveFileSystemCacheManager.GetCache(ref saveDataFs.Ref(), spaceId, saveDataId))
+            if (isEmulatedOnHost || !_saveFileSystemCacheManager.GetCache(ref saveDataFs.Ref, spaceId, saveDataId))
             {
                 bool isDeviceUniqueMac = IsDeviceUniqueMac(spaceId);
                 bool isJournalingSupported = SaveDataProperties.IsJournalingSupported(type);
@@ -190,7 +190,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
                 bool openShared = SaveDataProperties.IsSharedOpenNeeded(type);
                 bool isReconstructible = SaveDataProperties.IsReconstructible(type, spaceId);
 
-                res = _config.SaveFsCreator.Create(ref saveDataFs.Ref(), ref fileSystem.Ref(), spaceId, saveDataId,
+                res = _config.SaveFsCreator.Create(ref saveDataFs.Ref, ref fileSystem.Ref, spaceId, saveDataId,
                     isEmulatedOnHost, isDeviceUniqueMac, isJournalingSupported, isMultiCommitSupported,
                     openReadOnly, openShared, _timeStampGetter, isReconstructible);
                 if (res.IsFailure()) return res.Miss();
@@ -207,21 +207,21 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         }
 
         using var registerFs = new SharedRef<SaveDataFileSystemCacheRegister>(
-            new SaveDataFileSystemCacheRegister(ref saveDataFs.Ref(), _saveFileSystemCacheManager, spaceId, saveDataId));
+            new SaveDataFileSystemCacheRegister(ref saveDataFs.Ref, _saveFileSystemCacheManager, spaceId, saveDataId));
 
         if (openReadOnly)
         {
-            using SharedRef<IFileSystem> tempFs = SharedRef<IFileSystem>.CreateMove(ref registerFs.Ref());
-            using var readOnlyFileSystem = new SharedRef<ReadOnlyFileSystem>(new ReadOnlyFileSystem(ref tempFs.Ref()));
+            using SharedRef<IFileSystem> tempFs = SharedRef<IFileSystem>.CreateMove(ref registerFs.Ref);
+            using var readOnlyFileSystem = new SharedRef<ReadOnlyFileSystem>(new ReadOnlyFileSystem(ref tempFs.Ref));
 
             if (!readOnlyFileSystem.HasValue)
                 return ResultFs.AllocationMemoryFailedInSaveDataFileSystemServiceImplB.Log();
 
-            outFileSystem.SetByMove(ref readOnlyFileSystem.Ref());
+            outFileSystem.SetByMove(ref readOnlyFileSystem.Ref);
         }
         else
         {
-            outFileSystem.SetByMove(ref registerFs.Ref());
+            outFileSystem.SetByMove(ref registerFs.Ref);
         }
 
         return Result.Success;
@@ -286,7 +286,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         in Path saveDataRootPath)
     {
         using var saveDataFile = new UniqueRef<IFile>();
-        Result res = OpenSaveDataImageFile(ref saveDataFile.Ref(), spaceId, saveDataId, in saveDataRootPath);
+        Result res = OpenSaveDataImageFile(ref saveDataFile.Ref, spaceId, saveDataId, in saveDataRootPath);
 
         if (res.IsSuccess())
         {
@@ -308,7 +308,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
     {
         using var fileSystem = new SharedRef<IFileSystem>();
 
-        Result res = OpenSaveDataMetaDirectoryFileSystem(ref fileSystem.Ref(), spaceId, saveDataId);
+        Result res = OpenSaveDataMetaDirectoryFileSystem(ref fileSystem.Ref, spaceId, saveDataId);
         if (res.IsFailure()) return res.Miss();
 
         Unsafe.SkipInit(out Array15<byte> saveDataMetaNameBuffer);
@@ -328,7 +328,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
     {
         using var fileSystem = new SharedRef<IFileSystem>();
 
-        Result res = OpenSaveDataMetaDirectoryFileSystem(ref fileSystem.Ref(), spaceId, saveDataId);
+        Result res = OpenSaveDataMetaDirectoryFileSystem(ref fileSystem.Ref, spaceId, saveDataId);
         if (res.IsFailure()) return res.Miss();
 
         Unsafe.SkipInit(out Array15<byte> saveDataMetaNameBuffer);
@@ -356,7 +356,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         Result res = PathFunctions.SetUpFixedPath(ref saveDataMetaDirectoryName.Ref(), metaDirName);
         if (res.IsFailure()) return res.Miss();
 
-        res = OpenSaveDataDirectoryFileSystemImpl(ref fileSystem.Ref(), spaceId, in saveDataMetaDirectoryName,
+        res = OpenSaveDataDirectoryFileSystemImpl(ref fileSystem.Ref, spaceId, in saveDataMetaDirectoryName,
             createIfMissing: false);
         if (res.IsFailure()) return res.Miss();
 
@@ -384,7 +384,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
     {
         using var fileSystem = new SharedRef<IFileSystem>();
 
-        Result res = OpenSaveDataMetaDirectoryFileSystem(ref fileSystem.Ref(), spaceId, saveDataId);
+        Result res = OpenSaveDataMetaDirectoryFileSystem(ref fileSystem.Ref, spaceId, saveDataId);
         if (res.IsFailure()) return res.Miss();
 
         Unsafe.SkipInit(out Array15<byte> saveDataMetaNameBuffer);
@@ -413,7 +413,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
 
         using var fileSystem = new SharedRef<IFileSystem>();
 
-        Result res = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref(), creationInfo.SpaceId, in saveDataRootPath,
+        Result res = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref, creationInfo.SpaceId, in saveDataRootPath,
             allowEmulatedSave: false);
         if (res.IsFailure()) return res.Miss();
 
@@ -486,7 +486,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         _saveFileSystemCacheManager.Unregister(spaceId, saveDataId);
 
         // Open the directory containing the save data
-        Result res = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref(), spaceId, in saveDataRootPath, false);
+        Result res = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref, spaceId, in saveDataRootPath, false);
         if (res.IsFailure()) return res.Miss();
 
         using scoped var saveImageName = new Path();
@@ -513,7 +513,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
                 if (GetDebugConfigurationService().Get(DebugOptionKey.SaveDataEncryption, 0) != 0)
                 {
                     using SharedRef<IFileSystem> tempFileSystem = SharedRef<IFileSystem>.CreateCopy(in fileSystem);
-                    res = _config.SaveFsCreator.IsDataEncrypted(out isDataEncrypted, ref tempFileSystem.Ref(),
+                    res = _config.SaveFsCreator.IsDataEncrypted(out isDataEncrypted, ref tempFileSystem.Ref,
                         saveDataId, _config.BufferManager, IsDeviceUniqueMac(spaceId), isReconstructible: false);
 
                     if (res.IsFailure())
@@ -556,7 +556,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         using var extraDataAccessor = new SharedRef<ISaveDataExtraDataAccessor>();
 
         // Try to grab an extra data accessor for the requested save from the cache.
-        Result res = _saveExtraDataCacheManager.GetCache(ref extraDataAccessor.Ref(), spaceId, saveDataId);
+        Result res = _saveExtraDataCacheManager.GetCache(ref extraDataAccessor.Ref, spaceId, saveDataId);
 
         if (res.IsFailure())
         {
@@ -564,12 +564,12 @@ public class SaveDataFileSystemServiceImpl : IDisposable
 
             // We won't actually use the returned save data FS.
             // Opening the FS should cache an extra data accessor for it.
-            res = OpenSaveDataFileSystem(ref unusedSaveDataFs.Ref(), spaceId, saveDataId, saveDataRootPath,
+            res = OpenSaveDataFileSystem(ref unusedSaveDataFs.Ref, spaceId, saveDataId, saveDataRootPath,
                 openReadOnly: true, type, cacheExtraData: true);
             if (res.IsFailure()) return res.Miss();
 
             // Try to grab an accessor from the cache again.
-            res = _saveExtraDataCacheManager.GetCache(ref extraDataAccessor.Ref(), spaceId, saveDataId);
+            res = _saveExtraDataCacheManager.GetCache(ref extraDataAccessor.Ref, spaceId, saveDataId);
             if (res.IsFailure()) return res.Miss();
         }
 
@@ -596,7 +596,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         using var extraDataAccessor = new SharedRef<ISaveDataExtraDataAccessor>();
 
         // Try to grab an extra data accessor for the requested save from the cache.
-        Result res = _saveExtraDataCacheManager.GetCache(ref extraDataAccessor.Ref(), spaceId, saveDataId);
+        Result res = _saveExtraDataCacheManager.GetCache(ref extraDataAccessor.Ref, spaceId, saveDataId);
 
         if (res.IsFailure())
         {
@@ -604,12 +604,12 @@ public class SaveDataFileSystemServiceImpl : IDisposable
 
             // We won't actually use the returned save data FS.
             // Opening the FS should cache an extra data accessor for it.
-            res = OpenSaveDataFileSystem(ref unusedSaveDataFs.Ref(), spaceId, saveDataId, saveDataRootPath,
+            res = OpenSaveDataFileSystem(ref unusedSaveDataFs.Ref, spaceId, saveDataId, saveDataRootPath,
                 openReadOnly: false, type, cacheExtraData: true);
             if (res.IsFailure()) return res.Miss();
 
             // Try to grab an accessor from the cache again.
-            res = _saveExtraDataCacheManager.GetCache(ref extraDataAccessor.Ref(), spaceId, saveDataId);
+            res = _saveExtraDataCacheManager.GetCache(ref extraDataAccessor.Ref, spaceId, saveDataId);
             if (res.IsFailure()) return res.Miss();
         }
 
@@ -660,7 +660,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
                 using (var tmFileSystem = new SharedRef<IFileSystem>())
                 {
                     // Ensure the target save data directory exists
-                    res = _config.TargetManagerFsCreator.Create(ref tmFileSystem.Ref(), in saveDataRootPath,
+                    res = _config.TargetManagerFsCreator.Create(ref tmFileSystem.Ref, in saveDataRootPath,
                         openCaseSensitive: false, ensureRootPathExists: true,
                         ResultFs.SaveDataRootPathUnavailable.Value);
                     if (res.IsFailure()) return res.Miss();
@@ -723,11 +723,11 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         {
             case SaveDataSpaceId.System:
             {
-                Result res = _config.BaseFsService.OpenBisFileSystem(ref baseFileSystem.Ref(), BisPartitionId.System,
+                Result res = _config.BaseFsService.OpenBisFileSystem(ref baseFileSystem.Ref, BisPartitionId.System,
                     caseSensitive: true);
                 if (res.IsFailure()) return res.Miss();
 
-                res = Utility.WrapSubDirectory(ref outFileSystem, ref baseFileSystem.Ref(), in directoryPath,
+                res = Utility.WrapSubDirectory(ref outFileSystem, ref baseFileSystem.Ref, in directoryPath,
                     createIfMissing);
                 if (res.IsFailure()) return res.Miss();
 
@@ -737,11 +737,11 @@ public class SaveDataFileSystemServiceImpl : IDisposable
             case SaveDataSpaceId.User:
             case SaveDataSpaceId.Temporary:
             {
-                Result res = _config.BaseFsService.OpenBisFileSystem(ref baseFileSystem.Ref(), BisPartitionId.User,
+                Result res = _config.BaseFsService.OpenBisFileSystem(ref baseFileSystem.Ref, BisPartitionId.User,
                     caseSensitive: true);
                 if (res.IsFailure()) return res.Miss();
 
-                res = Utility.WrapSubDirectory(ref outFileSystem, ref baseFileSystem.Ref(), in directoryPath,
+                res = Utility.WrapSubDirectory(ref outFileSystem, ref baseFileSystem.Ref, in directoryPath,
                     createIfMissing);
                 if (res.IsFailure()) return res.Miss();
 
@@ -751,7 +751,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
             case SaveDataSpaceId.SdSystem:
             case SaveDataSpaceId.SdUser:
             {
-                Result res = _config.BaseFsService.OpenSdCardProxyFileSystem(ref baseFileSystem.Ref(),
+                Result res = _config.BaseFsService.OpenSdCardProxyFileSystem(ref baseFileSystem.Ref,
                     openCaseSensitive: true);
                 if (res.IsFailure()) return res.Miss();
 
@@ -766,12 +766,12 @@ public class SaveDataFileSystemServiceImpl : IDisposable
                 res = pathSdRoot.Combine(in pathParent, in directoryPath);
                 if (res.IsFailure()) return res.Miss();
 
-                using SharedRef<IFileSystem> tempFileSystem = SharedRef<IFileSystem>.CreateMove(ref baseFileSystem.Ref());
+                using SharedRef<IFileSystem> tempFileSystem = SharedRef<IFileSystem>.CreateMove(ref baseFileSystem.Ref);
 
-                res = Utility.WrapSubDirectory(ref baseFileSystem.Ref(), ref tempFileSystem.Ref(), in pathSdRoot, createIfMissing);
+                res = Utility.WrapSubDirectory(ref baseFileSystem.Ref, ref tempFileSystem.Ref, in pathSdRoot, createIfMissing);
                 if (res.IsFailure()) return res.Miss();
 
-                res = _config.EncryptedFsCreator.Create(ref outFileSystem, ref baseFileSystem.Ref(),
+                res = _config.EncryptedFsCreator.Create(ref outFileSystem, ref baseFileSystem.Ref,
                     IEncryptedFileSystemCreator.KeyId.Save, in _encryptionSeed);
                 if (res.IsFailure()) return res.Miss();
 
@@ -780,11 +780,11 @@ public class SaveDataFileSystemServiceImpl : IDisposable
 
             case SaveDataSpaceId.ProperSystem:
             {
-                Result res = _config.BaseFsService.OpenBisFileSystem(ref baseFileSystem.Ref(),
+                Result res = _config.BaseFsService.OpenBisFileSystem(ref baseFileSystem.Ref,
                     BisPartitionId.SystemProperPartition, caseSensitive: true);
                 if (res.IsFailure()) return res.Miss();
 
-                res = Utility.WrapSubDirectory(ref outFileSystem, ref baseFileSystem.Ref(), in directoryPath,
+                res = Utility.WrapSubDirectory(ref outFileSystem, ref baseFileSystem.Ref, in directoryPath,
                     createIfMissing);
                 if (res.IsFailure()) return res.Miss();
 
@@ -793,11 +793,11 @@ public class SaveDataFileSystemServiceImpl : IDisposable
 
             case SaveDataSpaceId.SafeMode:
             {
-                Result res = _config.BaseFsService.OpenBisFileSystem(ref baseFileSystem.Ref(), BisPartitionId.SafeMode,
+                Result res = _config.BaseFsService.OpenBisFileSystem(ref baseFileSystem.Ref, BisPartitionId.SafeMode,
                     caseSensitive: true);
                 if (res.IsFailure()) return res.Miss();
 
-                res = Utility.WrapSubDirectory(ref outFileSystem, ref baseFileSystem.Ref(), in directoryPath,
+                res = Utility.WrapSubDirectory(ref outFileSystem, ref baseFileSystem.Ref, in directoryPath,
                     createIfMissing);
                 if (res.IsFailure()) return res.Miss();
 
@@ -885,7 +885,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         UnsafeHelpers.SkipParamInit(out count);
 
         using var accessor = new UniqueRef<SaveDataIndexerAccessor>();
-        Result res = OpenSaveDataIndexerAccessor(ref accessor.Ref(), out bool _, SaveDataSpaceId.User);
+        Result res = OpenSaveDataIndexerAccessor(ref accessor.Ref, out bool _, SaveDataSpaceId.User);
         if (res.IsFailure()) return res.Miss();
 
         count = accessor.Get.GetInterface().GetIndexCount();

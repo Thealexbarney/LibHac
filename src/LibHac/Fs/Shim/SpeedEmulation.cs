@@ -21,7 +21,7 @@ namespace LibHac.Fs.Shim
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
             using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-            Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+            Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
             fs.Impl.AbortIfNeeded(res);
             if (res.IsFailure()) return res.Miss();
 
@@ -39,7 +39,7 @@ namespace LibHac.Fs.Shim
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
             using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-            Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+            Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
             fs.Impl.AbortIfNeeded(res);
             if (res.IsFailure()) return res.Miss();
 

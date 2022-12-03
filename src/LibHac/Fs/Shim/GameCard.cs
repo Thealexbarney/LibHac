@@ -82,7 +82,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -136,11 +136,11 @@ public static class GameCard
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
             using var fileSystem = new SharedRef<IFileSystemSf>();
 
-            res = fileSystemProxy.Get.OpenGameCardFileSystem(ref fileSystem.Ref(), handle, partitionId);
+            res = fileSystemProxy.Get.OpenGameCardFileSystem(ref fileSystem.Ref, handle, partitionId);
             if (res.IsFailure()) return res.Miss();
 
             using var fileSystemAdapter =
-                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
+                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref));
 
             if (!fileSystemAdapter.HasValue)
                 return ResultFs.AllocationMemoryFailedInGameCardC.Log();
@@ -151,7 +151,7 @@ public static class GameCard
             if (!mountNameGenerator.HasValue)
                 return ResultFs.AllocationMemoryFailedInGameCardD.Log();
 
-            return fs.Register(mountName, ref fileSystemAdapter.Ref(), ref mountNameGenerator.Ref()).Ret();
+            return fs.Register(mountName, ref fileSystemAdapter.Ref, ref mountNameGenerator.Ref).Ret();
         }
     }
 
@@ -160,7 +160,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.LogResultErrorMessage(res);
         Abort.DoAbortUnless(res.IsSuccess());
 
@@ -177,16 +177,16 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var storage = new SharedRef<IStorageSf>();
 
-        Result res = fileSystemProxy.Get.OpenGameCardStorage(ref storage.Ref(), handle, partitionType);
+        Result res = fileSystemProxy.Get.OpenGameCardStorage(ref storage.Ref, handle, partitionType);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
-        using var storageAdapter = new UniqueRef<IStorage>(new StorageServiceObjectAdapter(ref storage.Ref()));
+        using var storageAdapter = new UniqueRef<IStorage>(new StorageServiceObjectAdapter(ref storage.Ref));
 
         if (!storageAdapter.HasValue)
             return ResultFs.AllocationMemoryFailedInGameCardB.Log();
 
-        outStorage.Set(ref storageAdapter.Ref());
+        outStorage.Set(ref storageAdapter.Ref);
         return Result.Success;
     }
 
@@ -195,7 +195,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -214,7 +214,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -233,7 +233,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.LogResultErrorMessage(res);
         Abort.DoAbortUnless(res.IsSuccess());
 
@@ -250,7 +250,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -271,7 +271,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -290,7 +290,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -307,7 +307,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -327,7 +327,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -350,7 +350,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -379,7 +379,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -399,7 +399,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -415,7 +415,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -431,7 +431,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -448,7 +448,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -465,7 +465,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -481,7 +481,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -497,7 +497,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -515,7 +515,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -535,7 +535,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -554,7 +554,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var fileSystem = new SharedRef<IFileSystemSf>();
 
-        Result res = fileSystemProxy.Get.OpenGameCardFileSystem(ref fileSystem.Ref(), handle, partitionId);
+        Result res = fileSystemProxy.Get.OpenGameCardFileSystem(ref fileSystem.Ref, handle, partitionId);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -576,7 +576,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -598,7 +598,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         if (res.IsFailure()) return res.Miss();
 
         res = deviceOperator.Get.SetDeviceSimulationEvent((uint)SdmmcPort.GcAsic, (uint)simulatedOperationType,
@@ -660,7 +660,7 @@ public static class GameCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 

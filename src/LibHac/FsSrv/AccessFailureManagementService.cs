@@ -33,10 +33,10 @@ public readonly struct AccessFailureManagementService
 
         using var notifier = new UniqueRef<IEventNotifier>();
 
-        res = _serviceImpl.CreateNotifier(ref notifier.Ref(), processId, notifyOnDeepRetry);
+        res = _serviceImpl.CreateNotifier(ref notifier.Ref, processId, notifyOnDeepRetry);
         if (res.IsFailure()) return res.Miss();
 
-        outNotifier.Set(ref notifier.Ref());
+        outNotifier.Set(ref notifier.Ref);
         return Result.Success;
     }
 

@@ -24,7 +24,7 @@ public class ConcatenationFileSystemTests : IFileSystemTests
         var baseFs = new InMemoryFileSystem();
 
         using var uniqueBaseFs = new UniqueRef<IAttributeFileSystem>(baseFs);
-        var concatFs = new ConcatenationFileSystem(ref uniqueBaseFs.Ref(), InternalFileSize);
+        var concatFs = new ConcatenationFileSystem(ref uniqueBaseFs.Ref, InternalFileSize);
 
         return (baseFs, concatFs);
     }
@@ -37,7 +37,7 @@ public class ConcatenationFileSystemTests : IFileSystemTests
         Assert.Success(fs.CreateFile("/file", InternalFileSize * 3, CreateFileOptions.CreateConcatenationFile));
 
         using var file = new UniqueRef<IFile>();
-        Assert.Success(fs.OpenFile(ref file.Ref(), "/file/01", OpenMode.All));
+        Assert.Success(fs.OpenFile(ref file.Ref, "/file/01", OpenMode.All));
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public class ConcatenationFileSystemTests : IFileSystemTests
         Assert.Success(baseFs.DeleteFile("/file/00"));
 
         using var file = new UniqueRef<IFile>();
-        Assert.Result(ResultFs.ConcatenationFsInvalidInternalFileCount, concatFs.OpenFile(ref file.Ref(), "/file", OpenMode.All));
+        Assert.Result(ResultFs.ConcatenationFsInvalidInternalFileCount, concatFs.OpenFile(ref file.Ref, "/file", OpenMode.All));
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public class ConcatenationFileSystemTests : IFileSystemTests
         Assert.Success(fs.CreateFile("/file", InternalFileSize * 3, CreateFileOptions.CreateConcatenationFile));
 
         using var dir = new UniqueRef<IDirectory>();
-        Assert.Result(ResultFs.PathNotFound, fs.OpenDirectory(ref dir.Ref(), "/file", OpenDirectoryMode.All));
+        Assert.Result(ResultFs.PathNotFound, fs.OpenDirectory(ref dir.Ref, "/file", OpenDirectoryMode.All));
     }
 
     [Fact]
@@ -220,12 +220,12 @@ public class ConcatenationFileSystemTests : IFileSystemTests
         fs.CreateFile("/file", fileSize, CreateFileOptions.CreateConcatenationFile);
 
         using var file = new UniqueRef<IFile>();
-        fs.OpenFile(ref file.Ref(), "/file", OpenMode.Write);
+        fs.OpenFile(ref file.Ref, "/file", OpenMode.Write);
         file.Get.Write(0, data, WriteOption.None);
         file.Reset();
 
         byte[] readData = new byte[data.Length];
-        fs.OpenFile(ref file.Ref(), "/file", OpenMode.Read);
+        fs.OpenFile(ref file.Ref, "/file", OpenMode.Read);
 
         Assert.Success(file.Get.Read(out long bytesRead, 0, readData, ReadOption.None));
         Assert.Equal(data.Length, bytesRead);
@@ -245,7 +245,7 @@ public class ConcatenationFileSystemTests : IFileSystemTests
 
         // Create the file and then resize it
         Assert.Success(concatFs.CreateFile("/file", originalSize, CreateFileOptions.CreateConcatenationFile));
-        Assert.Success(concatFs.OpenFile(ref file.Ref(), "/file", OpenMode.All));
+        Assert.Success(concatFs.OpenFile(ref file.Ref, "/file", OpenMode.All));
         Assert.Success(file.Get.SetSize(newSize));
 
         Assert.Success(file.Get.GetSize(out long concatFileSize));
@@ -285,7 +285,7 @@ public class ConcatenationFileSystemTests : IFileSystemTests
 
         // Create the file and then resize it
         Assert.Success(concatFs.CreateFile("/file", originalSize, CreateFileOptions.CreateConcatenationFile));
-        Assert.Success(concatFs.OpenFile(ref file.Ref(), "/file", OpenMode.All));
+        Assert.Success(concatFs.OpenFile(ref file.Ref, "/file", OpenMode.All));
         Assert.Success(file.Get.SetSize(newSize));
 
         Assert.Success(file.Get.GetSize(out long concatFileSize));
@@ -328,7 +328,7 @@ public class ConcatenationFileSystemTests : IFileSystemTests
 
         // Create the file and then resize it
         Assert.Success(concatFs.CreateFile("/file", originalSize, CreateFileOptions.CreateConcatenationFile));
-        Assert.Success(concatFs.OpenFile(ref file.Ref(), "/file", OpenMode.All));
+        Assert.Success(concatFs.OpenFile(ref file.Ref, "/file", OpenMode.All));
         Assert.Success(file.Get.SetSize(newSize));
 
         Assert.Success(file.Get.GetSize(out long concatFileSize));
@@ -368,7 +368,7 @@ public class ConcatenationFileSystemTests : IFileSystemTests
 
         // Create the file and then resize it
         Assert.Success(concatFs.CreateFile("/file", originalSize, CreateFileOptions.CreateConcatenationFile));
-        Assert.Success(concatFs.OpenFile(ref file.Ref(), "/file", OpenMode.All));
+        Assert.Success(concatFs.OpenFile(ref file.Ref, "/file", OpenMode.All));
         Assert.Success(file.Get.SetSize(newSize));
 
         Assert.Success(file.Get.GetSize(out long concatFileSize));
@@ -408,7 +408,7 @@ public class ConcatenationFileSystemTests : IFileSystemTests
 
         // Create the file and then resize it
         Assert.Success(concatFs.CreateFile("/file", originalSize, CreateFileOptions.CreateConcatenationFile));
-        Assert.Success(concatFs.OpenFile(ref file.Ref(), "/file", OpenMode.All));
+        Assert.Success(concatFs.OpenFile(ref file.Ref, "/file", OpenMode.All));
         Assert.Success(file.Get.SetSize(newSize));
 
         Assert.Success(file.Get.GetSize(out long concatFileSize));
@@ -450,7 +450,7 @@ public class ConcatenationFileSystemTests : IFileSystemTests
 
         // Create the file and then resize it
         Assert.Success(concatFs.CreateFile("/file", originalSize, CreateFileOptions.CreateConcatenationFile));
-        Assert.Success(concatFs.OpenFile(ref file.Ref(), "/file", OpenMode.All));
+        Assert.Success(concatFs.OpenFile(ref file.Ref, "/file", OpenMode.All));
         Assert.Success(file.Get.SetSize(newSize));
 
         Assert.Success(file.Get.GetSize(out long concatFileSize));
@@ -490,7 +490,7 @@ public class ConcatenationFileSystemTests : IFileSystemTests
 
         // Create the file and then resize it
         Assert.Success(concatFs.CreateFile("/file", originalSize, CreateFileOptions.CreateConcatenationFile));
-        Assert.Success(concatFs.OpenFile(ref file.Ref(), "/file", OpenMode.All));
+        Assert.Success(concatFs.OpenFile(ref file.Ref, "/file", OpenMode.All));
         Assert.Success(file.Get.SetSize(newSize));
 
         Assert.Success(file.Get.GetSize(out long concatFileSize));
@@ -569,21 +569,21 @@ public class ConcatenationFileSystemTests : IFileSystemTests
         {
             // Create the file and then write the data to it
             Assert.Success(fs.CreateFile(fileName, originalSize, CreateFileOptions.CreateConcatenationFile));
-            Assert.Success(fs.OpenFile(ref file.Ref(), fileName, OpenMode.Write));
+            Assert.Success(fs.OpenFile(ref file.Ref, fileName, OpenMode.Write));
             Assert.Success(file.Get.Write(0, originalData, WriteOption.None));
         }
 
         // Resize the file
         using (var file = new UniqueRef<IFile>())
         {
-            Assert.Success(fs.OpenFile(ref file.Ref(), fileName, OpenMode.Write));
+            Assert.Success(fs.OpenFile(ref file.Ref, fileName, OpenMode.Write));
             Assert.Success(file.Get.SetSize(newSize));
         }
 
         // Read back the entire resized file and ensure the contents are as expected
         using (var file = new UniqueRef<IFile>())
         {
-            Assert.Success(fs.OpenFile(ref file.Ref(), fileName, OpenMode.Read));
+            Assert.Success(fs.OpenFile(ref file.Ref, fileName, OpenMode.Read));
             Assert.Success(file.Get.Read(out long bytesRead, 0, actualNewData));
             Assert.Equal(newSize, bytesRead);
         }

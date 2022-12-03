@@ -34,7 +34,7 @@ public class ApplicationSaveDataManagementTests
         void AssertSaveExists()
         {
             using var iterator = new UniqueRef<SaveDataIterator>();
-            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
+            fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User);
 
             var info = new SaveDataInfo[2];
             Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
@@ -69,7 +69,7 @@ public class ApplicationSaveDataManagementTests
         void AssertSaveExists()
         {
             using var iterator = new UniqueRef<SaveDataIterator>();
-            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
+            fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User);
 
             var info = new SaveDataInfo[2];
             Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
@@ -103,7 +103,7 @@ public class ApplicationSaveDataManagementTests
         void AssertSaveExists()
         {
             using var iterator = new UniqueRef<SaveDataIterator>();
-            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
+            fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User);
 
             var info = new SaveDataInfo[2];
             Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
@@ -137,7 +137,7 @@ public class ApplicationSaveDataManagementTests
         void AssertSaveExists()
         {
             using var iterator = new UniqueRef<SaveDataIterator>();
-            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.Temporary);
+            fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.Temporary);
 
             var info = new SaveDataInfo[2];
             Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
@@ -174,7 +174,7 @@ public class ApplicationSaveDataManagementTests
         Assert.Success(fs.EnsureApplicationSaveData(out _, applicationId, in controlProperty, in userId));
 
         using var iterator = new UniqueRef<SaveDataIterator>();
-        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
+        fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User);
 
         var info = new SaveDataInfo[2];
         Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
@@ -219,7 +219,7 @@ public class ApplicationSaveDataManagementTests
             Assert.Equal(CacheStorageTargetMedia.SdCard, target);
 
             using var iterator = new UniqueRef<SaveDataIterator>();
-            fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.SdUser);
+            fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.SdUser);
 
             var info = new SaveDataInfo[2];
             Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
@@ -249,7 +249,7 @@ public class ApplicationSaveDataManagementTests
         Assert.Equal(CacheStorageTargetMedia.Nand, target);
 
         using var iterator = new UniqueRef<SaveDataIterator>();
-        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
+        fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User);
 
         var info = new SaveDataInfo[2];
         Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));

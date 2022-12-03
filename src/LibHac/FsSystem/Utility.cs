@@ -41,7 +41,7 @@ internal static class Utility
     {
         using var directory = new UniqueRef<IDirectory>();
 
-        Result res = fs.OpenDirectory(ref directory.Ref(), in workPath, OpenDirectoryMode.All);
+        Result res = fs.OpenDirectory(ref directory.Ref, in workPath, OpenDirectoryMode.All);
         if (res.IsFailure()) return res.Miss();
 
         while (true)
@@ -88,7 +88,7 @@ internal static class Utility
 
         while (true)
         {
-            Result res = fs.OpenDirectory(ref directory.Ref(), in workPath, OpenDirectoryMode.All);
+            Result res = fs.OpenDirectory(ref directory.Ref, in workPath, OpenDirectoryMode.All);
             if (res.IsFailure()) return res.Miss();
 
             res = directory.Get.Read(out long entriesRead, SpanHelpers.AsSpan(ref dirEntry));
@@ -159,7 +159,7 @@ internal static class Utility
     {
         // Open source file.
         using var sourceFile = new UniqueRef<IFile>();
-        Result res = sourceFileSystem.OpenFile(ref sourceFile.Ref(), sourcePath, OpenMode.Read);
+        Result res = sourceFileSystem.OpenFile(ref sourceFile.Ref, sourcePath, OpenMode.Read);
         if (res.IsFailure()) return res.Miss();
 
         res = sourceFile.Get.GetSize(out long fileSize);
@@ -169,7 +169,7 @@ internal static class Utility
         res = destFileSystem.CreateFile(in destPath, fileSize);
         if (res.IsFailure()) return res.Miss();
 
-        res = destFileSystem.OpenFile(ref destFile.Ref(), in destPath, OpenMode.Write);
+        res = destFileSystem.OpenFile(ref destFile.Ref, in destPath, OpenMode.Write);
         if (res.IsFailure()) return res.Miss();
 
         // Read/Write file in work-buffer-sized chunks.
@@ -285,7 +285,7 @@ internal static class Utility
         {
             using var file = new UniqueRef<IFile>();
 
-            Result res = closure.SourceFileSystem.OpenFile(ref file.Ref(), in path, OpenMode.Read);
+            Result res = closure.SourceFileSystem.OpenFile(ref file.Ref, in path, OpenMode.Read);
             if (res.IsFailure()) return res.Miss();
 
             long offset = 0;
@@ -419,7 +419,7 @@ internal static class Utility
         var lockWithPin = new UniqueLockWithPin<T>(ref semaphoreAdapter.Ref(), ref objectToPin);
         using var uniqueLock = new UniqueRef<IUniqueLock>(lockWithPin);
 
-        outUniqueLock.Set(ref uniqueLock.Ref());
+        outUniqueLock.Set(ref uniqueLock.Ref);
         return Result.Success;
     }
 }

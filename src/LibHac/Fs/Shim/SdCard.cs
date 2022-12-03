@@ -62,7 +62,7 @@ public static class SdCard
         if (!fileSystemAdapter.HasValue)
             return ResultFs.AllocationMemoryFailedInSdCardA.Log();
 
-        return fs.Register(mountName, ref fileSystemAdapter.Ref());
+        return fs.Register(mountName, ref fileSystemAdapter.Ref);
     }
 
     public static Result MountSdCard(this FileSystemClient fs, U8Span mountName)
@@ -97,14 +97,14 @@ public static class SdCard
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = OpenSdCardFileSystem(fs, ref fileSystem.Ref());
+            res = OpenSdCardFileSystem(fs, ref fileSystem.Ref);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             fs.Impl.OutputAccessLogUnlessResultSuccess(res, start, end, null, new U8Span(logBuffer));
         }
         else
         {
-            res = OpenSdCardFileSystem(fs, ref fileSystem.Ref());
+            res = OpenSdCardFileSystem(fs, ref fileSystem.Ref);
         }
 
         if (res.IsFailure()) return res.Miss();
@@ -113,14 +113,14 @@ public static class SdCard
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = RegisterFileSystem(fs, mountName, ref fileSystem.Ref());
+            res = RegisterFileSystem(fs, mountName, ref fileSystem.Ref);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(logBuffer));
         }
         else
         {
-            res = RegisterFileSystem(fs, mountName, ref fileSystem.Ref());
+            res = RegisterFileSystem(fs, mountName, ref fileSystem.Ref);
         }
 
         fs.Impl.AbortIfNeeded(res);
@@ -164,14 +164,14 @@ public static class SdCard
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = OpenSdCardFileSystem(fs, ref fileSystem.Ref());
+            res = OpenSdCardFileSystem(fs, ref fileSystem.Ref);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             fs.Impl.OutputAccessLogUnlessResultSuccess(res, start, end, null, new U8Span(logBuffer));
         }
         else
         {
-            res = OpenSdCardFileSystem(fs, ref fileSystem.Ref());
+            res = OpenSdCardFileSystem(fs, ref fileSystem.Ref);
         }
 
         if (res.IsFailure()) return res.Miss();
@@ -180,14 +180,14 @@ public static class SdCard
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = RegisterFileSystem(fs, mountName, ref fileSystem.Ref());
+            res = RegisterFileSystem(fs, mountName, ref fileSystem.Ref);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(logBuffer));
         }
         else
         {
-            res = RegisterFileSystem(fs, mountName, ref fileSystem.Ref());
+            res = RegisterFileSystem(fs, mountName, ref fileSystem.Ref);
         }
 
         fs.Impl.AbortIfNeeded(res);
@@ -204,11 +204,11 @@ public static class SdCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.LogResultErrorMessage(res);
         Abort.DoAbortUnless(res.IsSuccess());
 
-        res = CheckIfInserted(fs, ref deviceOperator.Ref(), out bool isInserted);
+        res = CheckIfInserted(fs, ref deviceOperator.Ref, out bool isInserted);
         fs.Impl.LogResultErrorMessage(res);
         Abort.DoAbortUnless(res.IsSuccess());
 
@@ -250,7 +250,7 @@ public static class SdCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -295,7 +295,7 @@ public static class SdCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -338,7 +338,7 @@ public static class SdCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -384,7 +384,7 @@ public static class SdCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -431,7 +431,7 @@ public static class SdCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
@@ -616,7 +616,7 @@ public static class SdCard
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var deviceOperator = new SharedRef<IDeviceOperator>();
 
-        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref());
+        Result res = fileSystemProxy.Get.OpenDeviceOperator(ref deviceOperator.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 

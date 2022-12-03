@@ -65,14 +65,14 @@ public readonly struct BaseFileSystemService
 
         // Open the file system
         using var fileSystem = new SharedRef<IFileSystem>();
-        res = _serviceImpl.OpenBaseFileSystem(ref fileSystem.Ref(), fileSystemId);
+        res = _serviceImpl.OpenBaseFileSystem(ref fileSystem.Ref, fileSystemId);
         if (res.IsFailure()) return res.Miss();
 
         // Create an SF adapter for the file system
         using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref fileSystem.Ref(), false);
+            FileSystemInterfaceAdapter.CreateShared(ref fileSystem.Ref, false);
 
-        outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+        outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
         return Result.Success;
     }
@@ -127,25 +127,25 @@ public readonly struct BaseFileSystemService
 
         // Open the file system
         using var fileSystem = new SharedRef<IFileSystem>();
-        res = _serviceImpl.OpenBisFileSystem(ref fileSystem.Ref(), partitionId, false);
+        res = _serviceImpl.OpenBisFileSystem(ref fileSystem.Ref, partitionId, false);
         if (res.IsFailure()) return res.Miss();
 
         using var subDirFileSystem = new SharedRef<IFileSystem>();
-        res = Utility.CreateSubDirectoryFileSystem(ref subDirFileSystem.Ref(), ref fileSystem.Ref(),
+        res = Utility.CreateSubDirectoryFileSystem(ref subDirFileSystem.Ref, ref fileSystem.Ref,
             in pathNormalized);
         if (res.IsFailure()) return res.Miss();
 
         // Add all the file system wrappers
         using var typeSetFileSystem =
-            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref subDirFileSystem.Ref(), storageFlag));
+            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref subDirFileSystem.Ref, storageFlag));
 
         using var asyncFileSystem =
-            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref()));
+            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref));
 
         using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref(), false);
+            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref, false);
 
-        outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+        outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
         return Result.Success;
     }
@@ -194,16 +194,16 @@ public readonly struct BaseFileSystemService
 
         using var fileSystem = new SharedRef<IFileSystem>();
 
-        res = _serviceImpl.OpenGameCardFileSystem(ref fileSystem.Ref(), handle, partitionId);
+        res = _serviceImpl.OpenGameCardFileSystem(ref fileSystem.Ref, handle, partitionId);
         if (res.IsFailure()) return res.Miss();
 
         using var asyncFileSystem =
-            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref fileSystem.Ref()));
+            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref fileSystem.Ref));
 
         using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref(), false);
+            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref, false);
 
-        outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+        outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
         return Result.Success;
     }
@@ -222,20 +222,20 @@ public readonly struct BaseFileSystemService
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         using var fileSystem = new SharedRef<IFileSystem>();
-        res = _serviceImpl.OpenSdCardProxyFileSystem(ref fileSystem.Ref());
+        res = _serviceImpl.OpenSdCardProxyFileSystem(ref fileSystem.Ref);
         if (res.IsFailure()) return res.Miss();
 
         // Add all the file system wrappers
         using var typeSetFileSystem =
-            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref(), storageFlag));
+            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref, storageFlag));
 
         using var asyncFileSystem =
-            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref()));
+            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref));
 
         using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref(), false);
+            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref, false);
 
-        outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+        outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
         return Result.Success;
     }
@@ -295,13 +295,13 @@ public readonly struct BaseFileSystemService
         }
 
         using var baseFileSystem = new SharedRef<IFileSystem>();
-        res = _serviceImpl.OpenBaseFileSystem(ref baseFileSystem.Ref(), fileSystemId);
+        res = _serviceImpl.OpenBaseFileSystem(ref baseFileSystem.Ref, fileSystemId);
         if (res.IsFailure()) return res.Miss();
 
         using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref baseFileSystem.Ref(), false);
+            FileSystemInterfaceAdapter.CreateShared(ref baseFileSystem.Ref, false);
 
-        outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+        outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
         return Result.Success;
     }
@@ -317,10 +317,10 @@ public readonly struct BaseFileSystemService
             return ResultFs.PermissionDenied.Log();
 
         using var bisWiper = new UniqueRef<IWiper>();
-        res = _serviceImpl.OpenBisWiper(ref bisWiper.Ref(), transferMemoryHandle, transferMemorySize);
+        res = _serviceImpl.OpenBisWiper(ref bisWiper.Ref, transferMemoryHandle, transferMemorySize);
         if (res.IsFailure()) return res.Miss();
 
-        outBisWiper.Set(ref bisWiper.Ref());
+        outBisWiper.Set(ref bisWiper.Ref);
 
         return Result.Success;
     }

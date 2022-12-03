@@ -28,9 +28,9 @@ public static class BaseFileSystem
         ref SharedRef<IFileSystemSf> fileSystem)
     {
         using var fileSystemAdapter =
-            new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
+            new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref));
 
-        Result res = fs.Register(mountName, ref fileSystemAdapter.Ref());
+        Result res = fs.Register(mountName, ref fileSystemAdapter.Ref);
         if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
@@ -43,11 +43,11 @@ public static class BaseFileSystem
         if (res.IsFailure()) return res.Miss();
 
         using var fileSystem = new SharedRef<IFileSystemSf>();
-        res = OpenBaseFileSystem(fs, ref fileSystem.Ref(), fileSystemId);
+        res = OpenBaseFileSystem(fs, ref fileSystem.Ref, fileSystemId);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
-        res = RegisterFileSystem(fs, mountName, ref fileSystem.Ref());
+        res = RegisterFileSystem(fs, mountName, ref fileSystem.Ref);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 

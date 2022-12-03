@@ -256,10 +256,10 @@ internal class FileSystemServiceObjectAdapter : IFileSystem, IMultiCommitTarget
 
         using var fileServiceObject = new SharedRef<IFileSf>();
 
-        res = _baseFs.Get.OpenFile(ref fileServiceObject.Ref(), in sfPath, (uint)mode);
+        res = _baseFs.Get.OpenFile(ref fileServiceObject.Ref, in sfPath, (uint)mode);
         if (res.IsFailure()) return res.Miss();
 
-        outFile.Reset(new FileServiceObjectAdapter(ref fileServiceObject.Ref()));
+        outFile.Reset(new FileServiceObjectAdapter(ref fileServiceObject.Ref));
         return Result.Success;
     }
 
@@ -271,10 +271,10 @@ internal class FileSystemServiceObjectAdapter : IFileSystem, IMultiCommitTarget
 
         using var directoryServiceObject = new SharedRef<IDirectorySf>();
 
-        res = _baseFs.Get.OpenDirectory(ref directoryServiceObject.Ref(), in sfPath, (uint)mode);
+        res = _baseFs.Get.OpenDirectory(ref directoryServiceObject.Ref, in sfPath, (uint)mode);
         if (res.IsFailure()) return res.Miss();
 
-        outDirectory.Reset(new DirectoryServiceObjectAdapter(ref directoryServiceObject.Ref()));
+        outDirectory.Reset(new DirectoryServiceObjectAdapter(ref directoryServiceObject.Ref));
         return Result.Success;
     }
 

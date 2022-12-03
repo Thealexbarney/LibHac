@@ -19,7 +19,7 @@ internal static class ProcessAppFs
         foreach (DirectoryEntryEx entry in fileSystem.EnumerateEntries("*.tik", SearchOptions.Default))
         {
             using var tikFile = new UniqueRef<IFile>();
-            fileSystem.OpenFile(ref tikFile.Ref(), entry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
+            fileSystem.OpenFile(ref tikFile.Ref, entry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
             var ticket = new Ticket(tikFile.Get.AsStream());
 

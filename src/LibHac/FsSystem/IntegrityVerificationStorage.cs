@@ -203,7 +203,7 @@ public class IntegrityVerificationStorage : IStorage
         Result verifyHashResult = Result.Success;
 
         using var hashGenerator = new UniqueRef<IHash256Generator>();
-        res = _hashGeneratorFactory.Create(ref hashGenerator.Ref());
+        res = _hashGeneratorFactory.Create(ref hashGenerator.Ref);
         if (res.IsFailure()) return res.Miss();
 
         int signatureCount = destination.Length >> _verificationBlockOrder;
@@ -304,7 +304,7 @@ public class IntegrityVerificationStorage : IStorage
             int bufferCount = Math.Min(signatureCount, signatureBuffer.GetSize() / Unsafe.SizeOf<BlockHash>());
 
             using var hashGenerator = new UniqueRef<IHash256Generator>();
-            res = _hashGeneratorFactory.Create(ref hashGenerator.Ref());
+            res = _hashGeneratorFactory.Create(ref hashGenerator.Ref);
             if (res.IsFailure()) return res.Miss();
 
             while (updatedSignatureCount < signatureCount)
@@ -520,7 +520,7 @@ public class IntegrityVerificationStorage : IStorage
         UnsafeHelpers.SkipParamInit(out outHash);
 
         using var hashGenerator = new UniqueRef<IHash256Generator>();
-        Result res = _hashGeneratorFactory.Create(ref hashGenerator.Ref());
+        Result res = _hashGeneratorFactory.Create(ref hashGenerator.Ref);
         if (res.IsFailure()) return res.Miss();
 
         CalcBlockHash(out outHash, buffer, verificationBlockSize, in hashGenerator);

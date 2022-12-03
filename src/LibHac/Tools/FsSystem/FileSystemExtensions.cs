@@ -100,7 +100,7 @@ public static class FileSystemExtensions
     {
         // Open source file.
         using var sourceFile = new UniqueRef<IFile>();
-        Result res = sourceFileSystem.OpenFile(ref sourceFile.Ref(), sourcePath, OpenMode.Read);
+        Result res = sourceFileSystem.OpenFile(ref sourceFile.Ref, sourcePath, OpenMode.Read);
         if (res.IsFailure()) return res.Miss();
 
         res = sourceFile.Get.GetSize(out long fileSize);
@@ -110,7 +110,7 @@ public static class FileSystemExtensions
         if (res.IsFailure()) return res.Miss();
 
         using var destFile = new UniqueRef<IFile>();
-        res = destFileSystem.OpenFile(ref destFile.Ref(), in destPath, OpenMode.Write);
+        res = destFileSystem.OpenFile(ref destFile.Ref, in destPath, OpenMode.Write);
         if (res.IsFailure()) return res.Miss();
 
         // Read/Write file in work buffer sized chunks.
@@ -169,7 +169,7 @@ public static class FileSystemExtensions
         {
             InitializeFromString(ref pathNormalized.Ref(), path).ThrowIfFailure();
 
-            fileSystem.OpenDirectory(ref directory.Ref(), in pathNormalized, OpenDirectoryMode.All)
+            fileSystem.OpenDirectory(ref directory.Ref, in pathNormalized, OpenDirectoryMode.All)
                 .ThrowIfFailure();
         }
 

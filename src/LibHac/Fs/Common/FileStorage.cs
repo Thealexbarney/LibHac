@@ -183,12 +183,12 @@ public class FileStorageBasedFileSystem : FileStorage
     {
         using var baseFile = new UniqueRef<IFile>();
 
-        Result res = baseFileSystem.Get.OpenFile(ref baseFile.Ref(), in path, mode);
+        Result res = baseFileSystem.Get.OpenFile(ref baseFile.Ref, in path, mode);
         if (res.IsFailure()) return res.Miss();
 
         SetFile(baseFile.Get);
         _baseFileSystem.SetByMove(ref baseFileSystem);
-        _baseFile.Set(ref baseFile.Ref());
+        _baseFile.Set(ref baseFile.Ref);
 
         return Result.Success;
     }

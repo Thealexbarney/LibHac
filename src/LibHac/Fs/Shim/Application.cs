@@ -60,17 +60,17 @@ public static class Application
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
             using var fileSystem = new SharedRef<IFileSystemSf>();
 
-            res = fileSystemProxy.Get.OpenFileSystemWithId(ref fileSystem.Ref(), in sfPath,
+            res = fileSystemProxy.Get.OpenFileSystemWithId(ref fileSystem.Ref, in sfPath,
                 Ncm.ProgramId.InvalidId.Value, FileSystemProxyType.Package);
             if (res.IsFailure()) return res.Miss();
 
             using var fileSystemAdapter =
-                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
+                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref));
 
             if (!fileSystemAdapter.HasValue)
                 return ResultFs.AllocationMemoryFailedInApplicationA.Log();
 
-            res = fs.Register(mountName, ref fileSystemAdapter.Ref());
+            res = fs.Register(mountName, ref fileSystemAdapter.Ref);
             if (res.IsFailure()) return res.Miss();
 
             return Result.Success;

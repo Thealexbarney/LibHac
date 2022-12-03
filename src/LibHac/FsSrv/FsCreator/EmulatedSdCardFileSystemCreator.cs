@@ -68,7 +68,7 @@ public class EmulatedSdCardFileSystemCreator : ISdCardProxyFileSystemCreator, ID
         // Todo: Add ProxyFileSystem?
 
         using SharedRef<IFileSystem> fileSystem = SharedRef<IFileSystem>.CreateCopy(in _rootFileSystem);
-        res = Utility.WrapSubDirectory(ref _sdCardFileSystem, ref fileSystem.Ref(), in sdCardPath, true);
+        res = Utility.WrapSubDirectory(ref _sdCardFileSystem, ref fileSystem.Ref, in sdCardPath, true);
         if (res.IsFailure()) return res.Miss();
 
         outFileSystem.SetByCopy(in _sdCardFileSystem);

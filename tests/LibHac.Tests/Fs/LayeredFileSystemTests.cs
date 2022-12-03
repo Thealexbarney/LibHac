@@ -60,7 +60,7 @@ public class LayeredFileSystemTests
         IFileSystem fs = CreateFileSystem();
 
         using var file = new UniqueRef<IFile>();
-        Assert.Result(ResultFs.PathNotFound, fs.OpenFile(ref file.Ref(), "/fakefile", OpenMode.All));
+        Assert.Result(ResultFs.PathNotFound, fs.OpenFile(ref file.Ref, "/fakefile", OpenMode.All));
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public class LayeredFileSystemTests
         IFileSystem fs = CreateFileSystem();
 
         using var file = new UniqueRef<IFile>();
-        Assert.Success(fs.OpenFile(ref file.Ref(), "/dir/replacedFile", OpenMode.All));
+        Assert.Success(fs.OpenFile(ref file.Ref, "/dir/replacedFile", OpenMode.All));
         Assert.Success(file.Get.GetSize(out long fileSize));
 
         Assert.Equal(2, fileSize);
@@ -81,8 +81,8 @@ public class LayeredFileSystemTests
         IFileSystem fs = CreateFileSystem();
 
         using var file = new UniqueRef<IFile>();
-        Assert.Success(fs.OpenFile(ref file.Ref(), "/dir2/lowerFile", OpenMode.All));
-        Assert.Success(fs.OpenFile(ref file.Ref(), "/dir2/upperFile", OpenMode.All));
+        Assert.Success(fs.OpenFile(ref file.Ref, "/dir2/lowerFile", OpenMode.All));
+        Assert.Success(fs.OpenFile(ref file.Ref, "/dir2/upperFile", OpenMode.All));
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public class LayeredFileSystemTests
         IFileSystem fs = CreateFileSystem();
 
         using var directory = new UniqueRef<IDirectory>();
-        Assert.Result(ResultFs.PathNotFound, fs.OpenDirectory(ref directory.Ref(), "/fakedir", OpenDirectoryMode.All));
+        Assert.Result(ResultFs.PathNotFound, fs.OpenDirectory(ref directory.Ref, "/fakedir", OpenDirectoryMode.All));
     }
 
     [Fact]
@@ -100,7 +100,7 @@ public class LayeredFileSystemTests
         IFileSystem fs = CreateFileSystem();
 
         using var directory = new UniqueRef<IDirectory>();
-        Assert.Success(fs.OpenDirectory(ref directory.Ref(), "/lowerDir", OpenDirectoryMode.All));
+        Assert.Success(fs.OpenDirectory(ref directory.Ref, "/lowerDir", OpenDirectoryMode.All));
         Assert.Equal(typeof(InMemoryFileSystem), directory.Get.GetType().DeclaringType);
     }
 
@@ -110,7 +110,7 @@ public class LayeredFileSystemTests
         IFileSystem fs = CreateFileSystem();
 
         using var directory = new UniqueRef<IDirectory>();
-        Assert.Success(fs.OpenDirectory(ref directory.Ref(), "/dir", OpenDirectoryMode.All));
+        Assert.Success(fs.OpenDirectory(ref directory.Ref, "/dir", OpenDirectoryMode.All));
         Assert.Equal(typeof(LayeredFileSystem), directory.Get.GetType().DeclaringType);
     }
 
@@ -130,7 +130,7 @@ public class LayeredFileSystemTests
         Span<DirectoryEntry> entries = stackalloc DirectoryEntry[4];
 
         using var directory = new UniqueRef<IDirectory>();
-        Assert.Success(fs.OpenDirectory(ref directory.Ref(), "/dir3", OpenDirectoryMode.All));
+        Assert.Success(fs.OpenDirectory(ref directory.Ref, "/dir3", OpenDirectoryMode.All));
 
         Assert.Success(directory.Get.Read(out long entriesRead, entries));
         Assert.Equal(3, entriesRead);
@@ -143,7 +143,7 @@ public class LayeredFileSystemTests
         var entry = new DirectoryEntry();
 
         using var directory = new UniqueRef<IDirectory>();
-        Assert.Success(fs.OpenDirectory(ref directory.Ref(), "/dir", OpenDirectoryMode.All));
+        Assert.Success(fs.OpenDirectory(ref directory.Ref, "/dir", OpenDirectoryMode.All));
 
         Assert.Success(directory.Get.Read(out _, SpanHelpers.AsSpan(ref entry)));
         Assert.Equal("replacedFile", StringUtils.Utf8ZToString(entry.Name));
@@ -157,7 +157,7 @@ public class LayeredFileSystemTests
         var entry = new DirectoryEntry();
 
         using var directory = new UniqueRef<IDirectory>();
-        Assert.Success(fs.OpenDirectory(ref directory.Ref(), "/", OpenDirectoryMode.All));
+        Assert.Success(fs.OpenDirectory(ref directory.Ref, "/", OpenDirectoryMode.All));
 
         Assert.Success(directory.Get.Read(out long entriesRead, SpanHelpers.AsSpan(ref entry)));
         Assert.Equal(0, entriesRead);
@@ -169,7 +169,7 @@ public class LayeredFileSystemTests
         IFileSystem fs = CreateFileSystem();
 
         using var directory = new UniqueRef<IDirectory>();
-        Assert.Success(fs.OpenDirectory(ref directory.Ref(), "/dir3", OpenDirectoryMode.All));
+        Assert.Success(fs.OpenDirectory(ref directory.Ref, "/dir3", OpenDirectoryMode.All));
 
         Assert.Success(directory.Get.GetEntryCount(out long entryCount));
         Assert.Equal(3, entryCount);
@@ -182,7 +182,7 @@ public class LayeredFileSystemTests
         var entry = new DirectoryEntry();
 
         using var directory = new UniqueRef<IDirectory>();
-        Assert.Success(fs.OpenDirectory(ref directory.Ref(), "/dir3", OpenDirectoryMode.All));
+        Assert.Success(fs.OpenDirectory(ref directory.Ref, "/dir3", OpenDirectoryMode.All));
 
         // Read all entries
         long entriesRead;
@@ -201,7 +201,7 @@ public class LayeredFileSystemTests
         IFileSystem fs = CreateEmptyFileSystem();
 
         using var directory = new UniqueRef<IDirectory>();
-        Assert.Success(fs.OpenDirectory(ref directory.Ref(), "/", OpenDirectoryMode.All));
+        Assert.Success(fs.OpenDirectory(ref directory.Ref, "/", OpenDirectoryMode.All));
 
         Assert.Success(directory.Get.GetEntryCount(out long entryCount));
         Assert.Equal(0, entryCount);

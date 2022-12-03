@@ -14,11 +14,11 @@ public abstract partial class IFileSystemTests
         fs.CreateFile("/file", 0, CreateFileOptions.None);
 
         using var file = new UniqueRef<IFile>();
-        fs.OpenFile(ref file.Ref(), "/file", OpenMode.All);
+        fs.OpenFile(ref file.Ref, "/file", OpenMode.All);
         Result res = file.Get.SetSize(54321);
         file.Reset();
 
-        fs.OpenFile(ref file.Ref(), "/file", OpenMode.All);
+        fs.OpenFile(ref file.Ref, "/file", OpenMode.All);
         file.Get.GetSize(out long fileSize);
 
         Assert.Success(res);

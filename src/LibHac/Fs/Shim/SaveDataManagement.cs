@@ -557,15 +557,15 @@ namespace LibHac.Fs.Shim
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
             using var reader = new SharedRef<ISaveDataInfoReader>();
 
-            Result res = fileSystemProxy.Get.OpenSaveDataInfoReaderBySaveDataSpaceId(ref reader.Ref(), spaceId);
+            Result res = fileSystemProxy.Get.OpenSaveDataInfoReaderBySaveDataSpaceId(ref reader.Ref, spaceId);
             if (res.IsFailure()) return res.Miss();
 
-            using var iterator = new UniqueRef<SaveDataIterator>(new SaveDataIterator(fs.Fs, ref reader.Ref()));
+            using var iterator = new UniqueRef<SaveDataIterator>(new SaveDataIterator(fs.Fs, ref reader.Ref));
 
             if (!iterator.HasValue)
                 return ResultFs.AllocationMemoryFailedInSaveDataManagementA.Log();
 
-            outIterator.Set(ref iterator.Ref());
+            outIterator.Set(ref iterator.Ref);
 
             return Result.Success;
         }
@@ -576,15 +576,15 @@ namespace LibHac.Fs.Shim
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
             using var reader = new SharedRef<ISaveDataInfoReader>();
 
-            Result res = fileSystemProxy.Get.OpenSaveDataInfoReaderWithFilter(ref reader.Ref(), spaceId, in filter);
+            Result res = fileSystemProxy.Get.OpenSaveDataInfoReaderWithFilter(ref reader.Ref, spaceId, in filter);
             if (res.IsFailure()) return res.Miss();
 
-            using var iterator = new UniqueRef<SaveDataIterator>(new SaveDataIterator(fs.Fs, ref reader.Ref()));
+            using var iterator = new UniqueRef<SaveDataIterator>(new SaveDataIterator(fs.Fs, ref reader.Ref));
 
             if (!iterator.HasValue)
                 return ResultFs.AllocationMemoryFailedInSaveDataManagementA.Log();
 
-            outIterator.Set(ref iterator.Ref());
+            outIterator.Set(ref iterator.Ref);
 
             return Result.Success;
         }
@@ -2049,7 +2049,7 @@ namespace LibHac.Fs.Shim
                     using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
                     using var reader = new SharedRef<ISaveDataInfoReader>();
 
-                    Result result = fileSystemProxy.Get.OpenSaveDataInfoReaderOnlyCacheStorage(ref reader.Ref());
+                    Result result = fileSystemProxy.Get.OpenSaveDataInfoReaderOnlyCacheStorage(ref reader.Ref);
                     if (result.IsFailure()) return result.Miss();
 
                     while (true)

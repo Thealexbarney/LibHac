@@ -101,7 +101,7 @@ public static class ContentStorage
 
             for (int i = 0; i < maxRetries; i++)
             {
-                res = fileSystemProxy.Get.OpenContentStorageFileSystem(ref fileSystem.Ref(), storageId);
+                res = fileSystemProxy.Get.OpenContentStorageFileSystem(ref fileSystem.Ref, storageId);
 
                 if (res.IsSuccess())
                     break;
@@ -118,7 +118,7 @@ public static class ContentStorage
             }
 
             using var fileSystemAdapter =
-                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
+                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref));
 
             if (!fileSystemAdapter.HasValue)
                 return ResultFs.AllocationMemoryFailedInContentStorageA.Log();
@@ -129,7 +129,7 @@ public static class ContentStorage
             if (!mountNameGenerator.HasValue)
                 return ResultFs.AllocationMemoryFailedInContentStorageB.Log();
 
-            res = fs.Register(mountName, ref fileSystemAdapter.Ref(), ref mountNameGenerator.Ref());
+            res = fs.Register(mountName, ref fileSystemAdapter.Ref, ref mountNameGenerator.Ref);
             if (res.IsFailure()) return res.Miss();
 
             return Result.Success;

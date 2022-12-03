@@ -22,7 +22,7 @@ public class SaveDataManagement
         Assert.Success(fs.CreateCacheStorage(applicationId, SaveDataSpaceId.User, applicationId.Value, 0, 0, SaveDataFlags.None));
 
         using var iterator = new UniqueRef<SaveDataIterator>();
-        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
+        fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User);
 
         var info = new SaveDataInfo[2];
         iterator.Get.ReadSaveDataInfo(out long entriesRead, info);
@@ -40,7 +40,7 @@ public class SaveDataManagement
         Assert.Success(fs.CreateCacheStorage(applicationId, SaveDataSpaceId.SdUser, applicationId.Value, 0, 0, SaveDataFlags.None));
 
         using var iterator = new UniqueRef<SaveDataIterator>();
-        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.SdUser);
+        fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.SdUser);
 
         var info = new SaveDataInfo[2];
         iterator.Get.ReadSaveDataInfo(out long entriesRead, info);
@@ -78,7 +78,7 @@ public class SaveDataManagement
         Assert.Success(fs.CreateCacheStorage(applicationId, SaveDataSpaceId.User, applicationId.Value, 1, 0, 0, SaveDataFlags.None));
 
         using var iterator = new UniqueRef<SaveDataIterator>();
-        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
+        fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User);
 
         var info = new SaveDataInfo[3];
         iterator.Get.ReadSaveDataInfo(out long entriesRead, info);
@@ -102,7 +102,7 @@ public class SaveDataManagement
         Assert.Success(fs.CreateBcatSaveData(applicationId, 0x400000));
 
         using var iterator = new UniqueRef<SaveDataIterator>();
-        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User);
+        fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User);
 
         var info = new SaveDataInfo[2];
         iterator.Get.ReadSaveDataInfo(out long entriesRead, info);
@@ -134,7 +134,7 @@ public class SaveDataManagement
 
         // Make sure it was placed in the System save space with the right info.
         using var iterator = new UniqueRef<SaveDataIterator>();
-        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.System));
+        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.System));
 
         var info = new SaveDataInfo[2];
         Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
@@ -177,7 +177,7 @@ public class SaveDataManagement
 
         // Make sure it was placed in the System save space with the right info.
         using var iterator = new UniqueRef<SaveDataIterator>();
-        Assert.Success(privilegedClient.Fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.System));
+        Assert.Success(privilegedClient.Fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.System));
 
         var info = new SaveDataInfo[2];
         Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
@@ -201,7 +201,7 @@ public class SaveDataManagement
         Assert.Success(fs.CreateSaveData(applicationId, userId, 0, 0x1000, 0x1000, SaveDataFlags.None));
 
         using var iterator = new UniqueRef<SaveDataIterator>();
-        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User));
+        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User));
 
         var info = new SaveDataInfo[2];
         iterator.Get.ReadSaveDataInfo(out long entriesRead, info);
@@ -227,7 +227,7 @@ public class SaveDataManagement
 
         // Get the created save data's ID
         using var iterator = new UniqueRef<SaveDataIterator>();
-        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User));
+        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User));
 
         var info = new SaveDataInfo[2];
         iterator.Get.ReadSaveDataInfo(out long entriesRead, info);
@@ -255,7 +255,7 @@ public class SaveDataManagement
 
         // Get the created save data's ID
         using var iterator = new UniqueRef<SaveDataIterator>();
-        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User));
+        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User));
 
         var info = new SaveDataInfo[2];
         iterator.Get.ReadSaveDataInfo(out long entriesRead, info);
@@ -284,7 +284,7 @@ public class SaveDataManagement
 
         // Get the created save data's ID
         using var iterator = new UniqueRef<SaveDataIterator>();
-        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User));
+        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User));
 
         var info = new SaveDataInfo[2];
         iterator.Get.ReadSaveDataInfo(out long entriesRead, info);
@@ -328,7 +328,7 @@ public class SaveDataManagement
 
         // Get the created save data's ID
         using var iterator = new UniqueRef<SaveDataIterator>();
-        Assert.Success(client.Fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User));
+        Assert.Success(client.Fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User));
 
         var info = new SaveDataInfo[2];
         iterator.Get.ReadSaveDataInfo(out long entriesRead, info);
@@ -349,7 +349,7 @@ public class SaveDataManagement
         Assert.Success(fs.CreateTemporaryStorage(applicationId, 0, availableSize, SaveDataFlags.None));
 
         using var iterator = new UniqueRef<SaveDataIterator>();
-        fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.Temporary);
+        fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.Temporary);
 
         var info = new SaveDataInfo[2];
         iterator.Get.ReadSaveDataInfo(out long entriesRead, info);
@@ -390,7 +390,7 @@ public class SaveDataManagement
 
         // Get the ID of the save
         using var iterator = new UniqueRef<SaveDataIterator>();
-        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User));
+        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User));
 
         var info = new SaveDataInfo[1];
         Assert.Success(iterator.Get.ReadSaveDataInfo(out _, info));
@@ -400,7 +400,7 @@ public class SaveDataManagement
 
         // Iterate saves again
         using var iterator2 = new UniqueRef<SaveDataIterator>();
-        Assert.Success(fs.OpenSaveDataIterator(ref iterator2.Ref(), SaveDataSpaceId.User));
+        Assert.Success(fs.OpenSaveDataIterator(ref iterator2.Ref, SaveDataSpaceId.User));
         Assert.Success(iterator2.Get.ReadSaveDataInfo(out long entriesRead, info));
 
         // Make sure no saves were returned
@@ -423,7 +423,7 @@ public class SaveDataManagement
 
         // Open an iterator
         using var iterator = new UniqueRef<SaveDataIterator>();
-        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User));
+        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User));
 
         // Skip ahead a few entries. Entries start counting at 1, so subtract 1
         var infos = new SaveDataInfo[nextEntryWhenRemoving - 1];
@@ -461,7 +461,7 @@ public class SaveDataManagement
 
         // Open an iterator
         using var iterator = new UniqueRef<SaveDataIterator>();
-        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User));
+        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User));
 
         // Skip ahead a few entries. We skipped 0 and added every other ID, so divide by 2 and subtract 1
         var infos = new SaveDataInfo[nextEntryWhenAdding / 2 - 1];
@@ -490,7 +490,7 @@ public class SaveDataManagement
         Assert.Success(PopulateSaveData(fs, count, rngSeed));
 
         using var iterator = new UniqueRef<SaveDataIterator>();
-        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User));
+        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User));
 
         var info = new SaveDataInfo();
         for (int i = 0; i < count; i++)
@@ -533,7 +533,7 @@ public class SaveDataManagement
             saveDataId: default, index: default));
 
         using var iterator = new UniqueRef<SaveDataIterator>();
-        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User, in filter));
+        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User, in filter));
 
         var info = new SaveDataInfo();
         for (int i = countUser1 + 1; i <= count; i++)
@@ -565,7 +565,7 @@ public class SaveDataManagement
 
         // Get the created save data's ID
         using var iterator = new UniqueRef<SaveDataIterator>();
-        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User));
+        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User));
 
         var info = new SaveDataInfo[2];
         iterator.Get.ReadSaveDataInfo(out long entriesRead, info);
@@ -595,7 +595,7 @@ public class SaveDataManagement
 
         // Get the created save data's ID
         using var iterator = new UniqueRef<SaveDataIterator>();
-        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref(), SaveDataSpaceId.User));
+        Assert.Success(fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User));
 
         var info = new SaveDataInfo[2];
         iterator.Get.ReadSaveDataInfo(out long entriesRead, info);

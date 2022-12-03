@@ -44,22 +44,22 @@ public static class Host
 
         if (option.Flags != MountHostOptionFlag.None)
         {
-            Result res = fileSystemProxy.Get.OpenHostFileSystemWithOption(ref fileSystem.Ref(), in path, option);
+            Result res = fileSystemProxy.Get.OpenHostFileSystemWithOption(ref fileSystem.Ref, in path, option);
             if (res.IsFailure()) return res.Miss();
         }
         else
         {
-            Result res = fileSystemProxy.Get.OpenHostFileSystem(ref fileSystem.Ref(), in path);
+            Result res = fileSystemProxy.Get.OpenHostFileSystem(ref fileSystem.Ref, in path);
             if (res.IsFailure()) return res.Miss();
         }
 
         using var fileSystemAdapter =
-            new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
+            new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref));
 
         if (!fileSystemAdapter.HasValue)
             return ResultFs.AllocationMemoryFailedInHostA.Log();
 
-        outFileSystem.Set(ref fileSystemAdapter.Ref());
+        outFileSystem.Set(ref fileSystemAdapter.Ref);
         return Result.Success;
     }
 
@@ -139,10 +139,10 @@ public static class Host
 
         using var fileSystem = new UniqueRef<IFileSystem>();
 
-        res = OpenHostFileSystemImpl(fs, ref fileSystem.Ref(), in sfPath, option);
+        res = OpenHostFileSystemImpl(fs, ref fileSystem.Ref, in sfPath, option);
         if (res.IsFailure()) return res.Miss();
 
-        outFileSystem.Set(ref fileSystem.Ref());
+        outFileSystem.Set(ref fileSystem.Ref);
         return Result.Success;
     }
 
@@ -186,7 +186,7 @@ public static class Host
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = PreMountHost(fs, ref mountNameGenerator.Ref(), mountName, path);
+            res = PreMountHost(fs, ref mountNameGenerator.Ref, mountName, path);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
@@ -199,7 +199,7 @@ public static class Host
         }
         else
         {
-            res = PreMountHost(fs, ref mountNameGenerator.Ref(), mountName, path);
+            res = PreMountHost(fs, ref mountNameGenerator.Ref, mountName, path);
         }
 
         fs.Impl.AbortIfNeeded(res);
@@ -210,14 +210,14 @@ public static class Host
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = OpenHostFileSystem(fs, ref fileSystem.Ref(), mountName, path, MountHostOption.None);
+            res = OpenHostFileSystem(fs, ref fileSystem.Ref, mountName, path, MountHostOption.None);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             fs.Impl.OutputAccessLogUnlessResultSuccess(res, start, end, null, new U8Span(logBuffer));
         }
         else
         {
-            res = OpenHostFileSystem(fs, ref fileSystem.Ref(), mountName, path, MountHostOption.None);
+            res = OpenHostFileSystem(fs, ref fileSystem.Ref, mountName, path, MountHostOption.None);
         }
 
         // No AbortIfNeeded here
@@ -226,14 +226,14 @@ public static class Host
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = PostMount(fs, mountName, ref fileSystem.Ref(), ref mountNameGenerator.Ref());
+            res = PostMount(fs, mountName, ref fileSystem.Ref, ref mountNameGenerator.Ref);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(logBuffer));
         }
         else
         {
-            res = PostMount(fs, mountName, ref fileSystem.Ref(), ref mountNameGenerator.Ref());
+            res = PostMount(fs, mountName, ref fileSystem.Ref, ref mountNameGenerator.Ref);
         }
 
         fs.Impl.AbortIfNeeded(res);
@@ -250,7 +250,7 @@ public static class Host
             using UniqueRef<ICommonMountNameGenerator> baseMountNameGenerator =
                 UniqueRef<ICommonMountNameGenerator>.Create(ref mountNameGenerator);
 
-            Result res = fs.Register(mountName, ref fileSystem, ref baseMountNameGenerator.Ref());
+            Result res = fs.Register(mountName, ref fileSystem, ref baseMountNameGenerator.Ref);
             if (res.IsFailure()) return res.Miss();
 
             return Result.Success;
@@ -275,7 +275,7 @@ public static class Host
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = PreMountHost(fs, ref mountNameGenerator.Ref(), mountName, path);
+            res = PreMountHost(fs, ref mountNameGenerator.Ref, mountName, path);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var idString = new IdString();
@@ -291,7 +291,7 @@ public static class Host
         }
         else
         {
-            res = PreMountHost(fs, ref mountNameGenerator.Ref(), mountName, path);
+            res = PreMountHost(fs, ref mountNameGenerator.Ref, mountName, path);
         }
 
         fs.Impl.AbortIfNeeded(res);
@@ -302,14 +302,14 @@ public static class Host
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = OpenHostFileSystem(fs, ref fileSystem.Ref(), mountName, path, option);
+            res = OpenHostFileSystem(fs, ref fileSystem.Ref, mountName, path, option);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             fs.Impl.OutputAccessLogUnlessResultSuccess(res, start, end, null, new U8Span(logBuffer));
         }
         else
         {
-            res = OpenHostFileSystem(fs, ref fileSystem.Ref(), mountName, path, option);
+            res = OpenHostFileSystem(fs, ref fileSystem.Ref, mountName, path, option);
         }
 
         // No AbortIfNeeded here
@@ -318,14 +318,14 @@ public static class Host
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = PostMount(fs, mountName, ref fileSystem.Ref(), ref mountNameGenerator.Ref());
+            res = PostMount(fs, mountName, ref fileSystem.Ref, ref mountNameGenerator.Ref);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(logBuffer));
         }
         else
         {
-            res = PostMount(fs, mountName, ref fileSystem.Ref(), ref mountNameGenerator.Ref());
+            res = PostMount(fs, mountName, ref fileSystem.Ref, ref mountNameGenerator.Ref);
         }
 
         fs.Impl.AbortIfNeeded(res);
@@ -342,7 +342,7 @@ public static class Host
             using UniqueRef<ICommonMountNameGenerator> baseMountNameGenerator =
                 UniqueRef<ICommonMountNameGenerator>.Create(ref mountNameGenerator);
 
-            Result res = fs.Register(mountName, ref fileSystem, ref baseMountNameGenerator.Ref());
+            Result res = fs.Register(mountName, ref fileSystem, ref baseMountNameGenerator.Ref);
             if (res.IsFailure()) return res.Miss();
 
             return Result.Success;
@@ -365,7 +365,7 @@ public static class Host
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = OpenHostFileSystemImpl(fs, ref fileSystem.Ref(), in sfPath, MountHostOption.None);
+            res = OpenHostFileSystemImpl(fs, ref fileSystem.Ref, in sfPath, MountHostOption.None);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
@@ -376,7 +376,7 @@ public static class Host
         }
         else
         {
-            res = OpenHostFileSystemImpl(fs, ref fileSystem.Ref(), in sfPath, MountHostOption.None);
+            res = OpenHostFileSystemImpl(fs, ref fileSystem.Ref, in sfPath, MountHostOption.None);
         }
 
         // No AbortIfNeeded here
@@ -385,14 +385,14 @@ public static class Host
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = PostMount(fs, ref fileSystem.Ref());
+            res = PostMount(fs, ref fileSystem.Ref);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(logBuffer));
         }
         else
         {
-            res = PostMount(fs, ref fileSystem.Ref());
+            res = PostMount(fs, ref fileSystem.Ref);
         }
 
         fs.Impl.AbortIfNeeded(res);
@@ -412,7 +412,7 @@ public static class Host
                 return ResultFs.AllocationMemoryFailedInHostC.Log();
 
             Result res = fs.Register(new U8Span(HostRootFileSystemMountName), ref fileSystem,
-                ref mountNameGenerator.Ref());
+                ref mountNameGenerator.Ref);
             if (res.IsFailure()) return res.Miss();
 
             return Result.Success;
@@ -436,7 +436,7 @@ public static class Host
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = OpenHostFileSystemImpl(fs, ref fileSystem.Ref(), in sfPath, option);
+            res = OpenHostFileSystemImpl(fs, ref fileSystem.Ref, in sfPath, option);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var idString = new IdString();
@@ -451,7 +451,7 @@ public static class Host
         }
         else
         {
-            res = OpenHostFileSystemImpl(fs, ref fileSystem.Ref(), in sfPath, option);
+            res = OpenHostFileSystemImpl(fs, ref fileSystem.Ref, in sfPath, option);
         }
 
         // No AbortIfNeeded here
@@ -460,14 +460,14 @@ public static class Host
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = PostMount(fs, ref fileSystem.Ref());
+            res = PostMount(fs, ref fileSystem.Ref);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(logBuffer));
         }
         else
         {
-            res = PostMount(fs, ref fileSystem.Ref());
+            res = PostMount(fs, ref fileSystem.Ref);
         }
 
         fs.Impl.AbortIfNeeded(res);
@@ -487,7 +487,7 @@ public static class Host
                 return ResultFs.AllocationMemoryFailedInHostC.Log();
 
             Result res = fs.Register(new U8Span(HostRootFileSystemMountName), ref fileSystem,
-                ref mountNameGenerator.Ref());
+                ref mountNameGenerator.Ref);
             if (res.IsFailure()) return res.Miss();
 
             return Result.Success;

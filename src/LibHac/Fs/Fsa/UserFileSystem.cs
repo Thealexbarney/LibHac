@@ -517,14 +517,14 @@ public static class UserFileSystem
         if (fs.Impl.IsEnabledAccessLog() && fileSystem.IsEnabledAccessLog())
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = fileSystem.OpenFile(ref file.Ref(), subPath, mode);
+            res = fileSystem.OpenFile(ref file.Ref, subPath, mode);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             fs.Impl.OutputAccessLog(res, start, end, file.Get, new U8Span(logBuffer));
         }
         else
         {
-            res = fileSystem.OpenFile(ref file.Ref(), subPath, mode);
+            res = fileSystem.OpenFile(ref file.Ref, subPath, mode);
         }
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
@@ -575,14 +575,14 @@ public static class UserFileSystem
         if (fs.Impl.IsEnabledAccessLog() && fileSystem.IsEnabledAccessLog())
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = fileSystem.OpenDirectory(ref accessor.Ref(), subPath, mode);
+            res = fileSystem.OpenDirectory(ref accessor.Ref, subPath, mode);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             fs.Impl.OutputAccessLog(res, start, end, accessor.Get, new U8Span(logBuffer));
         }
         else
         {
-            res = fileSystem.OpenDirectory(ref accessor.Ref(), subPath, mode);
+            res = fileSystem.OpenDirectory(ref accessor.Ref, subPath, mode);
         }
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
@@ -649,7 +649,7 @@ public static class UserFileSystem
         using var commitManager = new SharedRef<IMultiCommitManager>();
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-        Result res = fileSystemProxy.Get.OpenMultiCommitManager(ref commitManager.Ref());
+        Result res = fileSystemProxy.Get.OpenMultiCommitManager(ref commitManager.Ref);
         if (res.IsFailure()) return res.Miss();
 
         for (int i = 0; i < mountNames.Length; i++)
@@ -661,7 +661,7 @@ public static class UserFileSystem
             if (!fileSystem.HasValue)
                 return ResultFs.UnsupportedCommitTarget.Log();
 
-            res = commitManager.Get.Add(ref fileSystem.Ref());
+            res = commitManager.Get.Add(ref fileSystem.Ref);
             if (res.IsFailure()) return res.Miss();
         }
 

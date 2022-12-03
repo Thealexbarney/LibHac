@@ -273,7 +273,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
 
         adapter._selfReference.Set(in sharedAdapter);
 
-        return SharedRef<IFileSystemSf>.CreateMove(ref sharedAdapter.Ref());
+        return SharedRef<IFileSystemSf>.CreateMove(ref sharedAdapter.Ref);
     }
 
     public static SharedRef<IFileSystemSf> CreateShared(
@@ -284,7 +284,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
 
         adapter._selfReference.Set(in sharedAdapter);
 
-        return SharedRef<IFileSystemSf>.CreateMove(ref sharedAdapter.Ref());
+        return SharedRef<IFileSystemSf>.CreateMove(ref sharedAdapter.Ref);
     }
 
     public void Dispose()
@@ -491,7 +491,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
 
         for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
         {
-            res = _baseFileSystem.Get.OpenFile(ref file.Ref(), in pathNormalized, (OpenMode)mode);
+            res = _baseFileSystem.Get.OpenFile(ref file.Ref, in pathNormalized, (OpenMode)mode);
 
             // Retry on ResultDataCorrupted
             if (!ResultFs.DataCorrupted.Includes(res))
@@ -503,7 +503,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         using SharedRef<FileSystemInterfaceAdapter> selfReference =
             SharedRef<FileSystemInterfaceAdapter>.Create(in _selfReference);
 
-        var adapter = new FileInterfaceAdapter(ref file.Ref(), ref selfReference.Ref(), _allowAllOperations);
+        var adapter = new FileInterfaceAdapter(ref file.Ref, ref selfReference.Ref, _allowAllOperations);
         outFile.Reset(adapter);
 
         return Result.Success;
@@ -521,7 +521,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
 
         for (int tryNum = 0; tryNum < maxTryCount; tryNum++)
         {
-            res = _baseFileSystem.Get.OpenDirectory(ref directory.Ref(), in pathNormalized,
+            res = _baseFileSystem.Get.OpenDirectory(ref directory.Ref, in pathNormalized,
                 (OpenDirectoryMode)mode);
 
             // Retry on ResultDataCorrupted
@@ -534,7 +534,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         using SharedRef<FileSystemInterfaceAdapter> selfReference =
             SharedRef<FileSystemInterfaceAdapter>.Create(in _selfReference);
 
-        var adapter = new DirectoryInterfaceAdapter(ref directory.Ref(), ref selfReference.Ref());
+        var adapter = new DirectoryInterfaceAdapter(ref directory.Ref, ref selfReference.Ref);
         outDirectory.Reset(adapter);
 
         return Result.Success;

@@ -60,15 +60,15 @@ public class EmulatedBisFileSystemCreator : IBuiltInStorageFileSystemCreator
         if (!IsValidPartitionId(partitionId)) return ResultFs.InvalidArgument.Log();
 
         using var fileSystem = new SharedRef<IFileSystem>();
-        if (Config.TryGetFileSystem(ref fileSystem.Ref(), partitionId))
+        if (Config.TryGetFileSystem(ref fileSystem.Ref, partitionId))
         {
-            outFileSystem.SetByMove(ref fileSystem.Ref());
+            outFileSystem.SetByMove(ref fileSystem.Ref);
             return Result.Success;
         }
 
         using var rootFileSystem = new SharedRef<IFileSystem>();
 
-        if (!Config.TryGetRootFileSystem(ref rootFileSystem.Ref()))
+        if (!Config.TryGetRootFileSystem(ref rootFileSystem.Ref))
         {
             return ResultFs.PreconditionViolation.Log();
         }
@@ -83,10 +83,10 @@ public class EmulatedBisFileSystemCreator : IBuiltInStorageFileSystemCreator
         if (res.IsFailure()) return res.Miss();
 
         using var partitionFileSystem = new SharedRef<IFileSystem>();
-        res = Utility.WrapSubDirectory(ref partitionFileSystem.Ref(), ref rootFileSystem.Ref(), in bisRootPath, true);
+        res = Utility.WrapSubDirectory(ref partitionFileSystem.Ref, ref rootFileSystem.Ref, in bisRootPath, true);
         if (res.IsFailure()) return res.Miss();
 
-        outFileSystem.SetByMove(ref partitionFileSystem.Ref());
+        outFileSystem.SetByMove(ref partitionFileSystem.Ref);
         return Result.Success;
     }
 

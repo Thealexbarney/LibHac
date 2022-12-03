@@ -37,7 +37,7 @@ public static class LrService
             return;
 
         using SharedRef<ILocationResolverManager> serviceObject = lr.GetLocationResolverManagerServiceObject();
-        globals.LocationResolver.SetByMove(ref serviceObject.Ref());
+        globals.LocationResolver.SetByMove(ref serviceObject.Ref);
     }
 
     public static Result OpenLocationResolver(this LrClient lr, out LocationResolver outResolver, StorageId storageId)
@@ -45,10 +45,10 @@ public static class LrService
         UnsafeHelpers.SkipParamInit(out outResolver);
 
         using var resolver = new SharedRef<ILocationResolver>();
-        Result res = lr.Globals.LrService.LocationResolver.Get.OpenLocationResolver(ref resolver.Ref(), storageId);
+        Result res = lr.Globals.LrService.LocationResolver.Get.OpenLocationResolver(ref resolver.Ref, storageId);
         if (res.IsFailure()) return res.Miss();
 
-        outResolver = new LocationResolver(ref resolver.Ref());
+        outResolver = new LocationResolver(ref resolver.Ref);
         return Result.Success;
     }
 
@@ -57,10 +57,10 @@ public static class LrService
         UnsafeHelpers.SkipParamInit(out outResolver);
 
         using var resolver = new SharedRef<IRegisteredLocationResolver>();
-        Result res = lr.Globals.LrService.LocationResolver.Get.OpenRegisteredLocationResolver(ref resolver.Ref());
+        Result res = lr.Globals.LrService.LocationResolver.Get.OpenRegisteredLocationResolver(ref resolver.Ref);
         if (res.IsFailure()) return res.Miss();
 
-        outResolver = new RegisteredLocationResolver(ref resolver.Ref());
+        outResolver = new RegisteredLocationResolver(ref resolver.Ref);
         return Result.Success;
     }
 
@@ -69,10 +69,10 @@ public static class LrService
         UnsafeHelpers.SkipParamInit(out outResolver);
 
         using var resolver = new SharedRef<IAddOnContentLocationResolver>();
-        Result res = lr.Globals.LrService.LocationResolver.Get.OpenAddOnContentLocationResolver(ref resolver.Ref());
+        Result res = lr.Globals.LrService.LocationResolver.Get.OpenAddOnContentLocationResolver(ref resolver.Ref);
         if (res.IsFailure()) return res.Miss();
 
-        outResolver = new AddOnContentLocationResolver(ref resolver.Ref());
+        outResolver = new AddOnContentLocationResolver(ref resolver.Ref);
         return Result.Success;
     }
 
@@ -89,13 +89,13 @@ public static class LrService
     private static SharedRef<ILocationResolverManager> GetLocationResolverManagerServiceObject(this LrClient lr)
     {
         using var manager = new SharedRef<ILocationResolverManager>();
-        Result res = lr.Hos.Sm.GetService(ref manager.Ref(), "lr");
+        Result res = lr.Hos.Sm.GetService(ref manager.Ref, "lr");
 
         if (res.IsFailure())
         {
             throw new HorizonResultException(res, "Failed to get lr service object.");
         }
 
-        return SharedRef<ILocationResolverManager>.CreateMove(ref manager.Ref());
+        return SharedRef<ILocationResolverManager>.CreateMove(ref manager.Ref);
     }
 }

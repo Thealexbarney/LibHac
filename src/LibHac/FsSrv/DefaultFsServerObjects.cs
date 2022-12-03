@@ -36,8 +36,8 @@ public class DefaultFsServerObjects
         creators.GameCardStorageCreator = gcStorageCreator;
         creators.GameCardFileSystemCreator = new EmulatedGameCardFsCreator(gcStorageCreator, gameCard);
         creators.EncryptedFileSystemCreator = new EncryptedFileSystemCreator(keySet);
-        creators.BuiltInStorageFileSystemCreator = new EmulatedBisFileSystemCreator(ref sharedRootFileSystem.Ref());
-        creators.SdCardFileSystemCreator = new EmulatedSdCardFileSystemCreator(sdCard, ref sharedRootFileSystemCopy.Ref());
+        creators.BuiltInStorageFileSystemCreator = new EmulatedBisFileSystemCreator(ref sharedRootFileSystem.Ref);
+        creators.SdCardFileSystemCreator = new EmulatedSdCardFileSystemCreator(sdCard, ref sharedRootFileSystemCopy.Ref);
 
         var deviceOperator = new EmulatedDeviceOperator(gameCard, sdCard);
 

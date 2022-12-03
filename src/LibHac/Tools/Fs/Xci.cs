@@ -39,7 +39,7 @@ public class Xci
         if (type == XciPartitionType.Root) return root;
 
         using var partitionFile = new UniqueRef<IFile>();
-        root.OpenFile(ref partitionFile.Ref(), type.GetFileName().ToU8Span(), OpenMode.Read).ThrowIfFailure();
+        root.OpenFile(ref partitionFile.Ref, type.GetFileName().ToU8Span(), OpenMode.Read).ThrowIfFailure();
         return new XciPartition(partitionFile.Release().AsStorage());
     }
 

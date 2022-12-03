@@ -88,7 +88,7 @@ public class AesCtrCounterExtendedStorage : IStorage
         if (!decryptor.HasValue)
             return ResultFs.AllocationMemoryFailedInAesCtrCounterExtendedStorageA.Log();
 
-        outDecryptor.Set(ref decryptor.Ref());
+        outDecryptor.Set(ref decryptor.Ref);
         return Result.Success;
     }
 
@@ -99,7 +99,7 @@ public class AesCtrCounterExtendedStorage : IStorage
         if (!decryptor.HasValue)
             return ResultFs.AllocationMemoryFailedInAesCtrCounterExtendedStorageA.Log();
 
-        outDecryptor.Set(ref decryptor.Ref());
+        outDecryptor.Set(ref decryptor.Ref);
         return Result.Success;
     }
 
@@ -142,7 +142,7 @@ public class AesCtrCounterExtendedStorage : IStorage
         long entryStorageOffset = nodeStorageOffset + nodeStorageSize;
 
         using var decryptor = new UniqueRef<IDecryptor>();
-        res = CreateSoftwareDecryptor(ref decryptor.Ref());
+        res = CreateSoftwareDecryptor(ref decryptor.Ref);
         if (res.IsFailure()) return res.Miss();
 
         res = tableStorage.GetSize(out long storageSize);
@@ -155,7 +155,7 @@ public class AesCtrCounterExtendedStorage : IStorage
         using var nodeStorage = new ValueSubStorage(in tableStorage, nodeStorageOffset, nodeStorageSize);
 
         return Initialize(allocator, key, secureValue, counterOffset: 0, in dataStorage, in nodeStorage,
-            in entryStorage, header.EntryCount, ref decryptor.Ref());
+            in entryStorage, header.EntryCount, ref decryptor.Ref);
     }
 
     public Result Initialize(MemoryResource allocator, ReadOnlySpan<byte> key, uint secureValue, long counterOffset,

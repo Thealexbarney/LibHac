@@ -77,9 +77,9 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
             if (res.IsFailure()) return res.Miss();
 
             // Create and initialize the directory save data FS
-            using UniqueRef<IFileSystem> tempFs = UniqueRef<IFileSystem>.Create(ref baseFs.Ref());
+            using UniqueRef<IFileSystem> tempFs = UniqueRef<IFileSystem>.Create(ref baseFs.Ref);
             using var saveDirFs = new SharedRef<DirectorySaveDataFileSystem>(
-                new DirectorySaveDataFileSystem(ref tempFs.Ref(), _fsServer.Hos.Fs));
+                new DirectorySaveDataFileSystem(ref tempFs.Ref, _fsServer.Hos.Fs));
 
             if (!saveDirFs.HasValue)
                 return ResultFs.AllocationMemoryFailedInSaveDataFileSystemCreatorB.Log();
@@ -88,7 +88,7 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
                 timeStampGetter, _randomGenerator);
             if (res.IsFailure()) return res.Miss();
 
-            saveDataFs.SetByMove(ref saveDirFs.Ref());
+            saveDataFs.SetByMove(ref saveDirFs.Ref);
         }
         else
         {
@@ -97,7 +97,7 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
             Optional<OpenType> openType =
                 openShared ? new Optional<OpenType>(OpenType.Normal) : new Optional<OpenType>();
 
-            res = _fsServer.OpenSaveDataStorage(ref fileStorage.Ref(), ref baseFileSystem, spaceId, saveDataId,
+            res = _fsServer.OpenSaveDataStorage(ref fileStorage.Ref, ref baseFileSystem, spaceId, saveDataId,
                 OpenMode.ReadWrite, openType);
             if (res.IsFailure()) return res.Miss();
 
@@ -106,9 +106,9 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
 
         // Wrap the save FS in a result convert FS and set it as the output FS
         using var resultConvertFs = new SharedRef<SaveDataResultConvertFileSystem>(
-            new SaveDataResultConvertFileSystem(ref saveDataFs.Ref(), isReconstructible));
+            new SaveDataResultConvertFileSystem(ref saveDataFs.Ref, isReconstructible));
 
-        outFileSystem.SetByMove(ref resultConvertFs.Ref());
+        outFileSystem.SetByMove(ref resultConvertFs.Ref);
 
         return Result.Success;
     }

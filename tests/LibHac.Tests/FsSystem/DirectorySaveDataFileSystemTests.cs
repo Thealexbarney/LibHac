@@ -543,7 +543,7 @@ public class DirectorySaveDataFileSystemTests : CommittableIFileSystemTests
         extraData.DataSize = saveDataSize;
 
         using var file = new UniqueRef<IFile>();
-        res = fileSystem.OpenFile(ref file.Ref(), path, OpenMode.ReadWrite);
+        res = fileSystem.OpenFile(ref file.Ref, path, OpenMode.ReadWrite);
         if (res.IsFailure()) return res.Miss();
 
         res = file.Get.Write(0, SpanHelpers.AsByteSpan(ref extraData), WriteOption.Flush);

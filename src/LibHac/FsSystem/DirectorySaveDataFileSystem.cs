@@ -309,7 +309,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         if (res.IsFailure()) return res.Miss();
 
         using var lockFile = new UniqueRef<IFile>();
-        res = _baseFs.OpenFile(ref lockFile.Ref(), in pathLockFile, OpenMode.ReadWrite);
+        res = _baseFs.OpenFile(ref lockFile.Ref, in pathLockFile, OpenMode.ReadWrite);
 
         if (res.IsFailure())
         {
@@ -318,7 +318,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
                 res = _baseFs.CreateFile(in pathLockFile, 0);
                 if (res.IsFailure()) return res.Miss();
 
-                res = _baseFs.OpenFile(ref lockFile.Ref(), in pathLockFile, OpenMode.ReadWrite);
+                res = _baseFs.OpenFile(ref lockFile.Ref, in pathLockFile, OpenMode.ReadWrite);
                 if (res.IsFailure()) return res.Miss();
             }
             else
@@ -327,7 +327,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
             }
         }
 
-        _lockFile.Set(ref lockFile.Ref());
+        _lockFile.Set(ref lockFile.Ref);
         return Result.Success;
     }
 
@@ -496,17 +496,17 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
         using var baseFile = new UniqueRef<IFile>();
-        res = _baseFs.OpenFile(ref baseFile.Ref(), in fullPath, mode);
+        res = _baseFs.OpenFile(ref baseFile.Ref, in fullPath, mode);
         if (res.IsFailure()) return res.Miss();
 
-        using var file = new UniqueRef<IFile>(new DirectorySaveDataFile(ref baseFile.Ref(), this, mode));
+        using var file = new UniqueRef<IFile>(new DirectorySaveDataFile(ref baseFile.Ref, this, mode));
 
         if (mode.HasFlag(OpenMode.Write))
         {
             _openWritableFileCount++;
         }
 
-        outFile.Set(ref file.Ref());
+        outFile.Set(ref file.Ref);
         return Result.Success;
     }
 
@@ -886,7 +886,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
     private Result EnsureExtraDataSize(in Path path)
     {
         using var file = new UniqueRef<IFile>();
-        Result res = _baseFs.OpenFile(ref file.Ref(), in path, OpenMode.ReadWrite);
+        Result res = _baseFs.OpenFile(ref file.Ref, in path, OpenMode.ReadWrite);
         if (res.IsFailure()) return res.Miss();
 
         res = file.Get.GetSize(out long fileSize);
@@ -904,7 +904,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
 
         using (var sourceFile = new UniqueRef<IFile>())
         {
-            Result res = _baseFs.OpenFile(ref sourceFile.Ref(), in sourcePath, OpenMode.Read);
+            Result res = _baseFs.OpenFile(ref sourceFile.Ref, in sourcePath, OpenMode.Read);
             if (res.IsFailure()) return res.Miss();
 
             res = sourceFile.Get.Read(out long bytesRead, 0, workBuffer);
@@ -915,7 +915,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
 
         using (var destFile = new UniqueRef<IFile>())
         {
-            Result res = _baseFs.OpenFile(ref destFile.Ref(), in destPath, OpenMode.Write);
+            Result res = _baseFs.OpenFile(ref destFile.Ref, in destPath, OpenMode.Write);
             if (res.IsFailure()) return res.Miss();
 
             res = destFile.Get.Write(0, workBuffer, WriteOption.Flush);
@@ -958,7 +958,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         if (res.IsFailure()) return res.Miss();
 
         using var file = new UniqueRef<IFile>();
-        res = _baseFs.OpenFile(ref file.Ref(), in pathExtraData, OpenMode.Write);
+        res = _baseFs.OpenFile(ref file.Ref, in pathExtraData, OpenMode.Write);
         if (res.IsFailure()) return res.Miss();
 
         res = file.Get.Write(0, SpanHelpers.AsReadOnlyByteSpan(in extraData), WriteOption.Flush);
@@ -1015,7 +1015,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         if (res.IsFailure()) return res.Miss();
 
         using var file = new UniqueRef<IFile>();
-        res = _baseFs.OpenFile(ref file.Ref(), in pathExtraData, OpenMode.Read);
+        res = _baseFs.OpenFile(ref file.Ref, in pathExtraData, OpenMode.Read);
         if (res.IsFailure()) return res.Miss();
 
         res = file.Get.Read(out long bytesRead, 0, SpanHelpers.AsByteSpan(ref extraData));

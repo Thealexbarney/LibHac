@@ -26,7 +26,7 @@ internal static class Utility
 
         // Check if the directory exists
         using var dir = new UniqueRef<IDirectory>();
-        Result res = baseFileSystem.Get.OpenDirectory(ref dir.Ref(), rootPath, OpenDirectoryMode.Directory);
+        Result res = baseFileSystem.Get.OpenDirectory(ref dir.Ref, rootPath, OpenDirectoryMode.Directory);
         if (res.IsFailure()) return res.Miss();
 
         dir.Reset();
@@ -38,7 +38,7 @@ internal static class Utility
         res = fs.Get.Initialize(in rootPath);
         if (res.IsFailure()) return res.Miss();
 
-        outSubDirFileSystem.SetByMove(ref fs.Ref());
+        outSubDirFileSystem.SetByMove(ref fs.Ref);
 
         return Result.Success;
     }

@@ -30,14 +30,14 @@ public static class SaveData
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var fileSystem = new SharedRef<IFileSystemSf>();
 
-        Result res = fileSystemProxy.Get.OpenSaveDataInternalStorageFileSystem(ref fileSystem.Ref(), spaceId,
+        Result res = fileSystemProxy.Get.OpenSaveDataInternalStorageFileSystem(ref fileSystem.Ref, spaceId,
             saveDataId);
         if (res.IsFailure()) return res.Miss();
 
         using var fileSystemAdapter =
-            new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
+            new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref));
 
-        outFileSystem.Set(ref fileSystemAdapter.Ref());
+        outFileSystem.Set(ref fileSystemAdapter.Ref);
 
         return Result.Success;
     }
@@ -91,18 +91,18 @@ public static class SaveData
 
         if (openReadOnly)
         {
-            res = fileSystemProxy.Get.OpenReadOnlySaveDataFileSystem(ref fileSystem.Ref(), spaceId, in attribute);
+            res = fileSystemProxy.Get.OpenReadOnlySaveDataFileSystem(ref fileSystem.Ref, spaceId, in attribute);
             if (res.IsFailure()) return res.Miss();
         }
         else
         {
-            res = fileSystemProxy.Get.OpenSaveDataFileSystem(ref fileSystem.Ref(), spaceId, in attribute);
+            res = fileSystemProxy.Get.OpenSaveDataFileSystem(ref fileSystem.Ref, spaceId, in attribute);
             if (res.IsFailure()) return res.Miss();
         }
 
         // Note: Nintendo does pass in the same object both as a unique_ptr and as a raw pointer.
         // Both of these are tied to the lifetime of the created FileSystemServiceObjectAdapter so it shouldn't be an issue.
-        var fileSystemAdapterRaw = new FileSystemServiceObjectAdapter(ref fileSystem.Ref());
+        var fileSystemAdapterRaw = new FileSystemServiceObjectAdapter(ref fileSystem.Ref);
         using var fileSystemAdapter = new UniqueRef<IFileSystem>(fileSystemAdapterRaw);
 
         if (!fileSystemAdapter.HasValue)
@@ -110,7 +110,7 @@ public static class SaveData
 
         using var mountNameGenerator = new UniqueRef<ICommonMountNameGenerator>();
 
-        res = fs.Fs.Register(mountName, fileSystemAdapterRaw, ref fileSystemAdapter.Ref(), ref mountNameGenerator.Ref(),
+        res = fs.Fs.Register(mountName, fileSystemAdapterRaw, ref fileSystemAdapter.Ref, ref mountNameGenerator.Ref,
             false, null, true);
         if (res.IsFailure()) return res.Miss();
 
@@ -297,7 +297,7 @@ public static class SaveData
         if (res.IsFailure()) return res.Miss();
 
         using var fileSystem = new SharedRef<IFileSystemSf>();
-        res = fileSystemProxy.Get.OpenSaveDataFileSystem(ref fileSystem.Ref(), SaveDataSpaceId.User, in attribute);
+        res = fileSystemProxy.Get.OpenSaveDataFileSystem(ref fileSystem.Ref, SaveDataSpaceId.User, in attribute);
 
         if (res.IsSuccess() || ResultFs.TargetLocked.Includes(res) || ResultFs.SaveDataExtending.Includes(res))
         {
@@ -506,10 +506,10 @@ public static class SaveData
             if (res.IsFailure()) return res.Miss();
 
             using var fileSystem = new UniqueRef<IFileSystem>();
-            res = OpenSaveDataInternalStorageFileSystemImpl(fs, ref fileSystem.Ref(), spaceId, saveDataId);
+            res = OpenSaveDataInternalStorageFileSystemImpl(fs, ref fileSystem.Ref, spaceId, saveDataId);
             if (res.IsFailure()) return res.Miss();
 
-            return fs.Register(mountName, ref fileSystem.Ref());
+            return fs.Register(mountName, ref fileSystem.Ref);
         }
     }
 }

@@ -73,7 +73,7 @@ public class AesXtsDirectory : IDirectory
         try
         {
             using var file = new UniqueRef<IFile>();
-            Result res = _baseFileSystem.OpenFile(ref file.Ref(), path, OpenMode.Read);
+            Result res = _baseFileSystem.OpenFile(ref file.Ref, path, OpenMode.Read);
             if (res.IsFailure()) return 0;
 
             uint magic = 0;

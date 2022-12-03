@@ -37,7 +37,7 @@ internal static class ProcessSave
             FileSystemClient fs = ctx.Horizon.Fs;
 
             using var saveUnique = new UniqueRef<IFileSystem>(save);
-            fs.Register("save"u8, ref saveUnique.Ref());
+            fs.Register("save"u8, ref saveUnique.Ref);
             fs.Impl.EnableFileSystemAccessorAccessLog("save"u8);
 
             if (ctx.Options.Validate)
@@ -48,7 +48,7 @@ internal static class ProcessSave
             if (ctx.Options.OutDir != null)
             {
                 using var outputFs = new UniqueRef<IFileSystem>(new LocalFileSystem(ctx.Options.OutDir));
-                fs.Register("output"u8, ref outputFs.Ref());
+                fs.Register("output"u8, ref outputFs.Ref);
                 fs.Impl.EnableFileSystemAccessorAccessLog("output"u8);
 
                 FsUtils.CopyDirectoryWithProgress(fs, "save:/"u8, "output:/"u8, logger: ctx.Logger).ThrowIfFailure();
@@ -73,7 +73,7 @@ internal static class ProcessSave
                     using var inFile = new UniqueRef<IFile>(new LocalFile(ctx.Options.ReplaceFileSource, OpenMode.Read));
 
                     using var outFile = new UniqueRef<IFile>();
-                    save.OpenFile(ref outFile.Ref(), destFilename.ToU8Span(), OpenMode.ReadWrite).ThrowIfFailure();
+                    save.OpenFile(ref outFile.Ref, destFilename.ToU8Span(), OpenMode.ReadWrite).ThrowIfFailure();
 
                     inFile.Get.GetSize(out long inFileSize).ThrowIfFailure();
                     outFile.Get.GetSize(out long outFileSize).ThrowIfFailure();
@@ -93,7 +93,7 @@ internal static class ProcessSave
                 if (ctx.Options.RepackSource != null)
                 {
                     using var inputFs = new UniqueRef<IFileSystem>(new LocalFileSystem(ctx.Options.RepackSource));
-                    fs.Register("input"u8, ref inputFs.Ref());
+                    fs.Register("input"u8, ref inputFs.Ref);
                     fs.Impl.EnableFileSystemAccessorAccessLog("input"u8);
 
                     fs.CleanDirectoryRecursively("save:/"u8);

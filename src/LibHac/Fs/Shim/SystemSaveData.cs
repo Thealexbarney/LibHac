@@ -84,10 +84,10 @@ public static class SystemSaveData
 
             using var fileSystem = new SharedRef<IFileSystemSf>();
 
-            res = fileSystemProxy.Get.OpenSaveDataFileSystemBySystemSaveDataId(ref fileSystem.Ref(), spaceId, in attribute);
+            res = fileSystemProxy.Get.OpenSaveDataFileSystemBySystemSaveDataId(ref fileSystem.Ref, spaceId, in attribute);
             if (res.IsFailure()) return res.Miss();
 
-            var fileSystemAdapterRaw = new FileSystemServiceObjectAdapter(ref fileSystem.Ref());
+            var fileSystemAdapterRaw = new FileSystemServiceObjectAdapter(ref fileSystem.Ref);
             using var fileSystemAdapter = new UniqueRef<IFileSystem>(fileSystemAdapterRaw);
 
             if (!fileSystemAdapter.HasValue)
@@ -96,13 +96,13 @@ public static class SystemSaveData
             if (spaceId == SaveDataSpaceId.System)
             {
                 using var mountNameGenerator = new UniqueRef<ICommonMountNameGenerator>();
-                return fs.Register(mountName, multiCommitTarget: fileSystemAdapterRaw, ref fileSystemAdapter.Ref(),
-                    ref mountNameGenerator.Ref(), useDataCache: false, storageForPurgeFileDataCache: null,
+                return fs.Register(mountName, multiCommitTarget: fileSystemAdapterRaw, ref fileSystemAdapter.Ref,
+                    ref mountNameGenerator.Ref, useDataCache: false, storageForPurgeFileDataCache: null,
                     usePathCache: false);
             }
             else
             {
-                return fs.Register(mountName, ref fileSystemAdapter.Ref());
+                return fs.Register(mountName, ref fileSystemAdapter.Ref);
             }
         }
     }

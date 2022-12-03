@@ -347,7 +347,7 @@ public class SaveDataFileStorageHolder
             res = fileStorage.Get.Initialize(ref baseFileSystem, in saveImageName, mode);
             if (res.IsFailure()) return res.Miss();
 
-            outSaveDataStorage.SetByMove(ref fileStorage.Ref());
+            outSaveDataStorage.SetByMove(ref fileStorage.Ref);
             return Result.Success;
         }
 
@@ -369,11 +369,11 @@ public class SaveDataFileStorageHolder
             using SharedRef<SaveDataOpenTypeSetFileStorage> baseFileStorageCopy =
                 SharedRef<SaveDataOpenTypeSetFileStorage>.CreateCopy(in baseFileStorage);
 
-            res = Register(ref baseFileStorageCopy.Ref(), spaceId, saveDataId);
+            res = Register(ref baseFileStorageCopy.Ref, spaceId, saveDataId);
             if (res.IsFailure()) return res.Miss();
         }
 
-        outSaveDataStorage.Reset(new SaveDataSharedFileStorage(ref baseFileStorage.Ref(), type.ValueRo));
+        outSaveDataStorage.Reset(new SaveDataSharedFileStorage(ref baseFileStorage.Ref, type.ValueRo));
 
         return Result.Success;
     }

@@ -44,7 +44,7 @@ public static class FileSystemProxyServiceObject
         if (!guard.IsInitialized)
         {
             using SharedRef<IFileSystemProxy> createdObject = GetFileSystemProxyServiceObjectImpl(fs);
-            g.FileSystemProxyServiceObject.SetByMove(ref createdObject.Ref());
+            g.FileSystemProxyServiceObject.SetByMove(ref createdObject.Ref);
         }
 
         return SharedRef<IFileSystemProxy>.CreateCopy(in g.FileSystemProxyServiceObject);
@@ -61,7 +61,7 @@ public static class FileSystemProxyServiceObject
         }
 
         using var fileSystemProxy = new SharedRef<IFileSystemProxy>();
-        Result res = fs.Hos.Sm.GetService(ref fileSystemProxy.Ref(), "fsp-srv");
+        Result res = fs.Hos.Sm.GetService(ref fileSystemProxy.Ref, "fsp-srv");
 
         if (res.IsFailure())
         {
@@ -69,7 +69,7 @@ public static class FileSystemProxyServiceObject
         }
 
         fileSystemProxy.Get.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
-        return SharedRef<IFileSystemProxy>.CreateMove(ref fileSystemProxy.Ref());
+        return SharedRef<IFileSystemProxy>.CreateMove(ref fileSystemProxy.Ref);
     }
 
     public static SharedRef<IFileSystemProxyForLoader> GetFileSystemProxyForLoaderServiceObject(
@@ -82,7 +82,7 @@ public static class FileSystemProxyServiceObject
         if (!guard.IsInitialized)
         {
             using SharedRef<IFileSystemProxyForLoader> createdObject = GetFileSystemProxyForLoaderServiceObjectImpl(fs);
-            g.FileSystemProxyForLoaderServiceObject.SetByMove(ref createdObject.Ref());
+            g.FileSystemProxyForLoaderServiceObject.SetByMove(ref createdObject.Ref);
         }
 
         return SharedRef<IFileSystemProxyForLoader>.CreateCopy(in g.FileSystemProxyForLoaderServiceObject);
@@ -92,7 +92,7 @@ public static class FileSystemProxyServiceObject
         FileSystemClientImpl fs)
     {
         using var fileSystemProxy = new SharedRef<IFileSystemProxyForLoader>();
-        Result res = fs.Hos.Sm.GetService(ref fileSystemProxy.Ref(), "fsp-ldr");
+        Result res = fs.Hos.Sm.GetService(ref fileSystemProxy.Ref, "fsp-ldr");
 
         if (res.IsFailure())
         {
@@ -100,7 +100,7 @@ public static class FileSystemProxyServiceObject
         }
 
         fileSystemProxy.Get.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
-        return SharedRef<IFileSystemProxyForLoader>.CreateMove(ref fileSystemProxy.Ref());
+        return SharedRef<IFileSystemProxyForLoader>.CreateMove(ref fileSystemProxy.Ref);
     }
 
     public static SharedRef<IProgramRegistry> GetProgramRegistryServiceObject(this FileSystemClientImpl fs)
@@ -112,7 +112,7 @@ public static class FileSystemProxyServiceObject
         if (!guard.IsInitialized)
         {
             using SharedRef<IProgramRegistry> createdObject = GetProgramRegistryServiceObjectImpl(fs);
-            g.ProgramRegistryServiceObject.SetByMove(ref createdObject.Ref());
+            g.ProgramRegistryServiceObject.SetByMove(ref createdObject.Ref);
         }
 
         return SharedRef<IProgramRegistry>.CreateCopy(in g.ProgramRegistryServiceObject);
@@ -121,7 +121,7 @@ public static class FileSystemProxyServiceObject
     private static SharedRef<IProgramRegistry> GetProgramRegistryServiceObjectImpl(FileSystemClientImpl fs)
     {
         using var registry = new SharedRef<IProgramRegistry>();
-        Result res = fs.Hos.Sm.GetService(ref registry.Ref(), "fsp-pr");
+        Result res = fs.Hos.Sm.GetService(ref registry.Ref, "fsp-pr");
 
         if (res.IsFailure())
         {
@@ -129,7 +129,7 @@ public static class FileSystemProxyServiceObject
         }
 
         registry.Get.SetCurrentProcess(fs.Hos.Os.GetCurrentProcessId().Value).IgnoreResult();
-        return SharedRef<IProgramRegistry>.CreateMove(ref registry.Ref());
+        return SharedRef<IProgramRegistry>.CreateMove(ref registry.Ref);
     }
 
     /// <summary>

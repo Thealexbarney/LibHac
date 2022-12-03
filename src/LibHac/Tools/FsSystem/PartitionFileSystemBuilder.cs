@@ -33,7 +33,7 @@ public class PartitionFileSystemBuilder
         foreach (DirectoryEntryEx entry in input.EnumerateEntries().Where(x => x.Type == DirectoryEntryType.File)
             .OrderBy(x => x.FullPath, StringComparer.Ordinal))
         {
-            input.OpenFile(ref file.Ref(), entry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
+            input.OpenFile(ref file.Ref, entry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
             AddFile(entry.FullPath.TrimStart('/'), file.Release());
         }

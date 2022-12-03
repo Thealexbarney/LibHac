@@ -36,7 +36,7 @@ internal static class ProcessNax0
 
             try
             {
-                xtsFile = new AesXtsFile(OpenMode.Read, ref baseFile.Ref(), ctx.Options.SdPath.ToU8String(), kekSource, validationKey, 0x4000);
+                xtsFile = new AesXtsFile(OpenMode.Read, ref baseFile.Ref, ctx.Options.SdPath.ToU8String(), kekSource, validationKey, 0x4000);
                 contentType = i;
 
                 break;

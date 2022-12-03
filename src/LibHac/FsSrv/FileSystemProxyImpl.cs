@@ -189,11 +189,11 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
         // Initialize the NCA file system service
         using SharedRef<NcaFileSystemService> ncaFsService =
             NcaFileSystemService.CreateShared(Globals.NcaFileSystemServiceImpl, processId);
-        _ncaFsService.SetByMove(ref ncaFsService.Ref());
+        _ncaFsService.SetByMove(ref ncaFsService.Ref);
 
         using SharedRef<SaveDataFileSystemService> saveFsService =
             SaveDataFileSystemService.CreateShared(Globals.SaveDataFileSystemServiceImpl, processId);
-        _saveFsService.SetByMove(ref saveFsService.Ref());
+        _saveFsService.SetByMove(ref saveFsService.Ref);
 
         return Result.Success;
     }
@@ -534,7 +534,7 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
 
         bool isCaseSensitive = option.Flags.HasFlag(MountHostOptionFlag.PseudoCaseSensitive);
 
-        res = _fsProxyCore.OpenHostFileSystem(ref hostFileSystem.Ref(), in pathNormalized, isCaseSensitive);
+        res = _fsProxyCore.OpenHostFileSystem(ref hostFileSystem.Ref, in pathNormalized, isCaseSensitive);
         if (res.IsFailure()) return res.Miss();
 
         var adapterFlags = new PathFlags();
@@ -542,9 +542,9 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
             adapterFlags.AllowWindowsPath();
 
         using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref hostFileSystem.Ref(), adapterFlags, false);
+            FileSystemInterfaceAdapter.CreateShared(ref hostFileSystem.Ref, adapterFlags, false);
 
-        outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+        outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
         return Result.Success;
     }
@@ -824,20 +824,20 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
             return ResultFs.PermissionDenied.Log();
 
         using var fileSystem = new SharedRef<IFileSystem>();
-        res = _fsProxyCore.OpenCloudBackupWorkStorageFileSystem(ref fileSystem.Ref(), storageId);
+        res = _fsProxyCore.OpenCloudBackupWorkStorageFileSystem(ref fileSystem.Ref, storageId);
         if (res.IsFailure()) return res.Miss();
 
         // Add all the wrappers for the file system
         using var typeSetFileSystem =
-            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref(), storageFlag));
+            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref, storageFlag));
 
         using var asyncFileSystem =
-            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref()));
+            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref));
 
         using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref(), false);
+            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref, false);
 
-        outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+        outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
         return Result.Success;
     }
@@ -860,20 +860,20 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
             return ResultFs.PermissionDenied.Log();
 
         using var fileSystem = new SharedRef<IFileSystem>();
-        res = _fsProxyCore.OpenCustomStorageFileSystem(ref fileSystem.Ref(), storageId);
+        res = _fsProxyCore.OpenCustomStorageFileSystem(ref fileSystem.Ref, storageId);
         if (res.IsFailure()) return res.Miss();
 
         // Add all the file system wrappers
         using var typeSetFileSystem =
-            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref(), storageFlag));
+            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref, storageFlag));
 
         using var asyncFileSystem =
-            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref()));
+            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref));
 
         using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref(), false);
+            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref, false);
 
-        outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+        outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
         return Result.Success;
     }

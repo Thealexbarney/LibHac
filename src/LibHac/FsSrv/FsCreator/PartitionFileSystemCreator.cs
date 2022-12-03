@@ -16,7 +16,7 @@ public class PartitionFileSystemCreator : IPartitionFileSystemCreator
         Result res = partitionFs.Get.Initialize(ref baseStorage);
         if (res.IsFailure()) return res.Miss();
 
-        outFileSystem.SetByMove(ref partitionFs.Ref());
+        outFileSystem.SetByMove(ref partitionFs.Ref);
         return Result.Success;
     }
 }

@@ -4,15 +4,6 @@ using System.Runtime.CompilerServices;
 
 namespace LibHac.Common;
 
-public static class UniqueRefExtensions
-{
-    // ReSharper disable once EntityNameCapturedOnly.Global
-    public static ref UniqueRef<T> Ref<T>(this in UniqueRef<T> value) where T : class, IDisposable
-    {
-        return ref Unsafe.AsRef(in value);
-    }
-}
-
 [NonCopyableDisposable]
 public struct UniqueRef<T> : IDisposable where T : class, IDisposable
 {
@@ -20,6 +11,9 @@ public struct UniqueRef<T> : IDisposable where T : class, IDisposable
 
     [UnscopedRef]
     public readonly ref readonly T Get => ref _value;
+
+    [UnscopedRef]
+    public readonly ref UniqueRef<T> Ref => ref Unsafe.AsRef(in this);
 
     public readonly bool HasValue => Get is not null;
 

@@ -74,7 +74,7 @@ public abstract partial class IFileSystemTests
         fs.CreateFile("/file", expectedSize, CreateFileOptions.None);
 
         using var file = new UniqueRef<IFile>();
-        fs.OpenFile(ref file.Ref(), "/file", OpenMode.Read);
+        fs.OpenFile(ref file.Ref, "/file", OpenMode.Read);
 
         Assert.Success(file.Get.GetSize(out long fileSize));
         Assert.Equal(expectedSize, fileSize);

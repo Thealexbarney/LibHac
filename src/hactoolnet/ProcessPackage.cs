@@ -125,15 +125,15 @@ internal static class ProcessPackage
             Directory.CreateDirectory(outDir);
 
             using var kernelStorage = new UniqueRef<IStorage>();
-            package2.OpenPayload(ref kernelStorage.Ref(), 0).ThrowIfFailure();
+            package2.OpenPayload(ref kernelStorage.Ref, 0).ThrowIfFailure();
             kernelStorage.Get.WriteAllBytes(Path.Combine(outDir, "Kernel.bin"), ctx.Logger);
 
             using var ini1Storage = new UniqueRef<IStorage>();
-            package2.OpenIni(ref ini1Storage.Ref()).ThrowIfFailure();
+            package2.OpenIni(ref ini1Storage.Ref).ThrowIfFailure();
             ini1Storage.Get.WriteAllBytes(Path.Combine(outDir, "INI1.bin"), ctx.Logger);
 
             using var decPackageStorage = new UniqueRef<IStorage>();
-            package2.OpenDecryptedPackage(ref decPackageStorage.Ref()).ThrowIfFailure();
+            package2.OpenDecryptedPackage(ref decPackageStorage.Ref).ThrowIfFailure();
             decPackageStorage.Get.WriteAllBytes(Path.Combine(outDir, "Decrypted.bin"), ctx.Logger);
         }
 
@@ -142,9 +142,9 @@ internal static class ProcessPackage
             Directory.CreateDirectory(iniDir);
 
             using var ini1Storage = new UniqueRef<IStorage>();
-            package2.OpenIni(ref ini1Storage.Ref()).ThrowIfFailure();
+            package2.OpenIni(ref ini1Storage.Ref).ThrowIfFailure();
 
-            using SharedRef<IStorage> sharedIni1Storage = SharedRef<IStorage>.Create(ref ini1Storage.Ref());
+            using SharedRef<IStorage> sharedIni1Storage = SharedRef<IStorage>.Create(ref ini1Storage.Ref);
             ProcessKip.ExtractIni1(in sharedIni1Storage, iniDir);
         }
     }

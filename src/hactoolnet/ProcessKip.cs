@@ -49,9 +49,9 @@ internal static class ProcessKip
         for (int i = 0; i < ini1.ProcessCount; i++)
         {
             using var kipStorage = new UniqueRef<IStorage>();
-            ini1.OpenKipStorage(ref kipStorage.Ref(), i).ThrowIfFailure();
+            ini1.OpenKipStorage(ref kipStorage.Ref, i).ThrowIfFailure();
 
-            using SharedRef<IStorage> sharedKipStorage = SharedRef<IStorage>.Create(ref kipStorage.Ref());
+            using SharedRef<IStorage> sharedKipStorage = SharedRef<IStorage>.Create(ref kipStorage.Ref);
             kipReader.Initialize(in sharedKipStorage).ThrowIfFailure();
 
             sharedKipStorage.Get.WriteAllBytes(System.IO.Path.Combine(outDir, $"{kipReader.Name.ToString()}.kip1"));

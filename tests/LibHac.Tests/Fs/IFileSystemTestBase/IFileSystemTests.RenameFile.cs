@@ -79,8 +79,8 @@ public abstract partial class IFileSystemTests
         using var file1 = new UniqueRef<IFile>();
         using var file2 = new UniqueRef<IFile>();
 
-        Assert.Success(fs.OpenFile(ref file1.Ref(), "/file1", OpenMode.Read));
-        Assert.Success(fs.OpenFile(ref file2.Ref(), "/file2", OpenMode.Read));
+        Assert.Success(fs.OpenFile(ref file1.Ref, "/file1", OpenMode.Read));
+        Assert.Success(fs.OpenFile(ref file2.Ref, "/file2", OpenMode.Read));
 
         Assert.Success(file1.Get.GetSize(out long file1Size));
         Assert.Success(file2.Get.GetSize(out long file2Size));
@@ -99,7 +99,7 @@ public abstract partial class IFileSystemTests
         fs.CreateFile("/file", data.Length, CreateFileOptions.None);
 
         using var file = new UniqueRef<IFile>();
-        fs.OpenFile(ref file.Ref(), "/file", OpenMode.Write);
+        fs.OpenFile(ref file.Ref, "/file", OpenMode.Write);
         file.Get.Write(0, data, WriteOption.None);
         file.Reset();
 
@@ -107,7 +107,7 @@ public abstract partial class IFileSystemTests
 
         byte[] readData = new byte[data.Length];
 
-        fs.OpenFile(ref file.Ref(), "/renamed", OpenMode.Read);
+        fs.OpenFile(ref file.Ref, "/renamed", OpenMode.Read);
         Result res = file.Get.Read(out long bytesRead, 0, readData, ReadOption.None);
 
         Assert.Success(res);

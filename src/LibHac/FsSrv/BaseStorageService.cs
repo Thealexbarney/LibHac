@@ -76,18 +76,18 @@ public readonly struct BaseStorageService
             return ResultFs.PermissionDenied.Log();
 
         using var storage = new SharedRef<IStorage>();
-        res = _serviceImpl.OpenBisStorage(ref storage.Ref(), id);
+        res = _serviceImpl.OpenBisStorage(ref storage.Ref, id);
         if (res.IsFailure()) return res.Miss();
 
         using var typeSetStorage =
-            new SharedRef<IStorage>(new StorageLayoutTypeSetStorage(ref storage.Ref(), storageFlag));
+            new SharedRef<IStorage>(new StorageLayoutTypeSetStorage(ref storage.Ref, storageFlag));
 
         // Todo: Async storage
 
         using var storageAdapter =
-            new SharedRef<IStorageSf>(new StorageInterfaceAdapter(ref typeSetStorage.Ref()));
+            new SharedRef<IStorageSf>(new StorageInterfaceAdapter(ref typeSetStorage.Ref));
 
-        outStorage.SetByMove(ref storageAdapter.Ref());
+        outStorage.SetByMove(ref storageAdapter.Ref);
 
         return Result.Success;
     }
@@ -118,15 +118,15 @@ public readonly struct BaseStorageService
             return ResultFs.PermissionDenied.Log();
 
         using var storage = new SharedRef<IStorage>();
-        res = _serviceImpl.OpenGameCardPartition(ref storage.Ref(), handle, partitionId);
+        res = _serviceImpl.OpenGameCardPartition(ref storage.Ref, handle, partitionId);
         if (res.IsFailure()) return res.Miss();
 
         // Todo: Async storage
 
         using var storageAdapter =
-            new SharedRef<IStorageSf>(new StorageInterfaceAdapter(ref storage.Ref()));
+            new SharedRef<IStorageSf>(new StorageInterfaceAdapter(ref storage.Ref));
 
-        outStorage.SetByMove(ref storageAdapter.Ref());
+        outStorage.SetByMove(ref storageAdapter.Ref);
 
         return Result.Success;
     }

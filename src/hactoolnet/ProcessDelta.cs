@@ -38,7 +38,7 @@ internal static class ProcessDelta
                     }
 
                     using var deltaFragmentFile = new UniqueRef<IFile>();
-                    fs.OpenFile(ref deltaFragmentFile.Ref(), FragmentFileName.ToU8Span(), OpenMode.Read).ThrowIfFailure();
+                    fs.OpenFile(ref deltaFragmentFile.Ref, FragmentFileName.ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
                     deltaStorage = deltaFragmentFile.Release().AsStorage();
                 }

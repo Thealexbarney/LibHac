@@ -26,14 +26,14 @@ internal static class ProcessSwitchFs
         if (Directory.Exists(Path.Combine(ctx.Options.InFile, "Nintendo", "Contents", "registered")))
         {
             ctx.Logger.LogMessage("Treating path as SD card storage");
-            switchFs = SwitchFs.OpenSdCard(ctx.KeySet, ref baseFs.Ref());
+            switchFs = SwitchFs.OpenSdCard(ctx.KeySet, ref baseFs.Ref);
 
             CheckForNcaFolders(ctx, switchFs);
         }
         else if (Directory.Exists(Path.Combine(ctx.Options.InFile, "Contents", "registered")))
         {
             ctx.Logger.LogMessage("Treating path as NAND storage");
-            switchFs = SwitchFs.OpenNandPartition(ctx.KeySet, ref baseFs.Ref());
+            switchFs = SwitchFs.OpenNandPartition(ctx.KeySet, ref baseFs.Ref);
 
             CheckForNcaFolders(ctx, switchFs);
         }

@@ -68,7 +68,7 @@ public class AesXtsFileSystem : IFileSystem
         var header = new AesXtsFileHeader(key, size, path.ToString(), _kekSource, _validationKey);
 
         using var baseFile = new UniqueRef<IFile>();
-        res = _baseFileSystem.OpenFile(ref baseFile.Ref(), in path, OpenMode.Write);
+        res = _baseFileSystem.OpenFile(ref baseFile.Ref, in path, OpenMode.Write);
         if (res.IsFailure()) return res.Miss();
 
         res = baseFile.Get.Write(0, header.ToBytes(false));
@@ -101,20 +101,20 @@ public class AesXtsFileSystem : IFileSystem
         OpenDirectoryMode mode)
     {
         using var baseDir = new UniqueRef<IDirectory>();
-        Result res = _baseFileSystem.OpenDirectory(ref baseDir.Ref(), path, mode);
+        Result res = _baseFileSystem.OpenDirectory(ref baseDir.Ref, path, mode);
         if (res.IsFailure()) return res.Miss();
 
-        outDirectory.Reset(new AesXtsDirectory(_baseFileSystem, ref baseDir.Ref(), new U8String(path.GetString().ToArray()), mode));
+        outDirectory.Reset(new AesXtsDirectory(_baseFileSystem, ref baseDir.Ref, new U8String(path.GetString().ToArray()), mode));
         return Result.Success;
     }
 
     protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
     {
         using var baseFile = new UniqueRef<IFile>();
-        Result res = _baseFileSystem.OpenFile(ref baseFile.Ref(), path, mode | OpenMode.Read);
+        Result res = _baseFileSystem.OpenFile(ref baseFile.Ref, path, mode | OpenMode.Read);
         if (res.IsFailure()) return res.Miss();
 
-        var xtsFile = new AesXtsFile(mode, ref baseFile.Ref(), new U8String(path.GetString().ToArray()), _kekSource,
+        var xtsFile = new AesXtsFile(mode, ref baseFile.Ref, new U8String(path.GetString().ToArray()), _kekSource,
             _validationKey, BlockSize);
 
         outFile.Reset(xtsFile);
@@ -264,7 +264,7 @@ public class AesXtsFileSystem : IFileSystem
         header = null;
 
         using var file = new UniqueRef<IFile>();
-        Result res = _baseFileSystem.OpenFile(ref file.Ref(), filePath.ToU8Span(), OpenMode.Read);
+        Result res = _baseFileSystem.OpenFile(ref file.Ref, filePath.ToU8Span(), OpenMode.Read);
         if (res.IsFailure()) return false;
 
         header = new AesXtsFileHeader(file.Get);
@@ -280,7 +280,7 @@ public class AesXtsFileSystem : IFileSystem
         header.EncryptHeader(keyPath, _kekSource, _validationKey);
 
         using var file = new UniqueRef<IFile>();
-        _baseFileSystem.OpenFile(ref file.Ref(), filePath.ToU8Span(), OpenMode.ReadWrite);
+        _baseFileSystem.OpenFile(ref file.Ref, filePath.ToU8Span(), OpenMode.ReadWrite);
 
         file.Get.Write(0, header.ToBytes(false), WriteOption.Flush).ThrowIfFailure();
     }

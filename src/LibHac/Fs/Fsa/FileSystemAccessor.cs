@@ -364,10 +364,10 @@ internal class FileSystemAccessor : IDisposable
         if (res.IsFailure()) return res.Miss();
 
         using var file = new UniqueRef<IFile>();
-        res = _fileSystem.Get.OpenFile(ref file.Ref(), in pathNormalized, mode);
+        res = _fileSystem.Get.OpenFile(ref file.Ref, in pathNormalized, mode);
         if (res.IsFailure()) return res.Miss();
 
-        var accessor = new FileAccessor(Hos, ref file.Ref(), this, mode);
+        var accessor = new FileAccessor(Hos, ref file.Ref, this, mode);
 
         using (ScopedLock.Lock(ref _openListLock))
         {
@@ -403,10 +403,10 @@ internal class FileSystemAccessor : IDisposable
         if (res.IsFailure()) return res.Miss();
 
         using var directory = new UniqueRef<IDirectory>();
-        res = _fileSystem.Get.OpenDirectory(ref directory.Ref(), in pathNormalized, mode);
+        res = _fileSystem.Get.OpenDirectory(ref directory.Ref, in pathNormalized, mode);
         if (res.IsFailure()) return res.Miss();
 
-        var accessor = new DirectoryAccessor(ref directory.Ref(), this);
+        var accessor = new DirectoryAccessor(ref directory.Ref, this);
 
         using (ScopedLock.Lock(ref _openListLock))
         {

@@ -174,11 +174,11 @@ public class SaveDataExporterVersion2 : ISaveDataDivisionExporter
     {
         using var iteratorObject = new SharedRef<FsSrv.Sf.ISaveDataChunkIterator>();
 
-        Result res = _baseInterface.Get.OpenSaveDataDiffChunkIterator(ref iteratorObject.Ref());
+        Result res = _baseInterface.Get.OpenSaveDataDiffChunkIterator(ref iteratorObject.Ref);
         _fsClient.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
-        outIterator.Reset(new SaveDataChunkIterator(_fsClient, ref iteratorObject.Ref()));
+        outIterator.Reset(new SaveDataChunkIterator(_fsClient, ref iteratorObject.Ref));
         return Result.Success;
     }
 
@@ -186,11 +186,11 @@ public class SaveDataExporterVersion2 : ISaveDataDivisionExporter
     {
         using var exporterObject = new SharedRef<FsSrv.Sf.ISaveDataChunkExporter>();
 
-        Result res = _baseInterface.Get.OpenSaveDataChunkExporter(ref exporterObject.Ref(), chunkId);
+        Result res = _baseInterface.Get.OpenSaveDataChunkExporter(ref exporterObject.Ref, chunkId);
         _fsClient.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
-        outExporter.Reset(new SaveDataChunkExporter(_fsClient, ref exporterObject.Ref()));
+        outExporter.Reset(new SaveDataChunkExporter(_fsClient, ref exporterObject.Ref));
         return Result.Success;
     }
 
@@ -400,11 +400,11 @@ public class SaveDataImporterVersion2 : ISaveDataDivisionImporter
     {
         using var iteratorObject = new SharedRef<FsSrv.Sf.ISaveDataChunkIterator>();
 
-        Result res = _baseInterface.Get.OpenSaveDataDiffChunkIterator(ref iteratorObject.Ref());
+        Result res = _baseInterface.Get.OpenSaveDataDiffChunkIterator(ref iteratorObject.Ref);
         _fsClient.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
-        outIterator.Reset(new SaveDataChunkIterator(_fsClient, ref iteratorObject.Ref()));
+        outIterator.Reset(new SaveDataChunkIterator(_fsClient, ref iteratorObject.Ref));
         return Result.Success;
     }
 
@@ -412,11 +412,11 @@ public class SaveDataImporterVersion2 : ISaveDataDivisionImporter
     {
         using var importerObject = new SharedRef<FsSrv.Sf.ISaveDataChunkImporter>();
 
-        Result res = _baseInterface.Get.OpenSaveDataChunkImporter(ref importerObject.Ref(), chunkId);
+        Result res = _baseInterface.Get.OpenSaveDataChunkImporter(ref importerObject.Ref, chunkId);
         _fsClient.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
-        outImporter.Reset(new SaveDataChunkImporter(_fsClient, ref importerObject.Ref()));
+        outImporter.Reset(new SaveDataChunkImporter(_fsClient, ref importerObject.Ref));
         return Result.Success;
     }
 

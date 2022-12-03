@@ -227,7 +227,7 @@ public class ConcatenationFileSystem : IFileSystem
                     if (res.IsFailure()) return res.Miss();
 
                     using var newInternalFile = new UniqueRef<IFile>();
-                    res = _baseFileSystem.OpenFile(ref newInternalFile.Ref(), in internalFilePath, _mode);
+                    res = _baseFileSystem.OpenFile(ref newInternalFile.Ref, in internalFilePath, _mode);
                     if (res.IsFailure()) return res.Miss();
 
                     _fileArray.Add(newInternalFile.Release());
@@ -459,7 +459,7 @@ public class ConcatenationFileSystem : IFileSystem
 
             using Path path = _path.DangerousGetPath();
 
-            Result res = _baseFileSystem.OpenDirectory(ref directory.Ref(), in path,
+            Result res = _baseFileSystem.OpenDirectory(ref directory.Ref, in path,
                 OpenDirectoryMode.All | OpenDirectoryMode.NoFileSize);
             if (res.IsFailure()) return res.Miss();
 
@@ -679,7 +679,7 @@ public class ConcatenationFileSystem : IFileSystem
                 if (res.IsFailure()) return res.Miss();
 
                 using var internalFile = new UniqueRef<IFile>();
-                res = _baseFileSystem.Get.OpenFile(ref internalFile.Ref(), in filePath, mode);
+                res = _baseFileSystem.Get.OpenFile(ref internalFile.Ref, in filePath, mode);
                 if (res.IsFailure()) return res.Miss();
 
                 internalFiles.Add(internalFile.Release());
@@ -694,7 +694,7 @@ public class ConcatenationFileSystem : IFileSystem
             res = concatFile.Get.Initialize(in path);
             if (res.IsFailure()) return res.Miss();
 
-            outFile.Set(ref concatFile.Ref());
+            outFile.Set(ref concatFile.Ref);
             return Result.Success;
         }
         finally
@@ -720,15 +720,15 @@ public class ConcatenationFileSystem : IFileSystem
         }
 
         using var baseDirectory = new UniqueRef<IDirectory>();
-        Result res = _baseFileSystem.Get.OpenDirectory(ref baseDirectory.Ref(), path, OpenDirectoryMode.All);
+        Result res = _baseFileSystem.Get.OpenDirectory(ref baseDirectory.Ref, path, OpenDirectoryMode.All);
         if (res.IsFailure()) return res.Miss();
 
         using var concatDirectory = new UniqueRef<ConcatenationDirectory>(
-            new ConcatenationDirectory(mode, ref baseDirectory.Ref(), this, _baseFileSystem.Get));
+            new ConcatenationDirectory(mode, ref baseDirectory.Ref, this, _baseFileSystem.Get));
         res = concatDirectory.Get.Initialize(in path);
         if (res.IsFailure()) return res.Miss();
 
-        outDirectory.Set(ref concatDirectory.Ref());
+        outDirectory.Set(ref concatDirectory.Ref);
         return Result.Success;
     }
 

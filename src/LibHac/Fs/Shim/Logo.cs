@@ -60,17 +60,17 @@ public static class Logo
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
             using var fileSystem = new SharedRef<IFileSystemSf>();
 
-            res = fileSystemProxy.Get.OpenFileSystemWithId(ref fileSystem.Ref(), in sfPath, programId.Value,
+            res = fileSystemProxy.Get.OpenFileSystemWithId(ref fileSystem.Ref, in sfPath, programId.Value,
                 FileSystemProxyType.Logo);
             if (res.IsFailure()) return res.Miss();
 
             using var fileSystemAdapter =
-                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
+                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref));
 
             if (!fileSystemAdapter.HasValue)
                 return ResultFs.AllocationMemoryFailedInLogoA.Log();
 
-            res = fs.Impl.Fs.Register(mountName, ref fileSystemAdapter.Ref());
+            res = fs.Impl.Fs.Register(mountName, ref fileSystemAdapter.Ref);
             if (res.IsFailure()) return res.Miss();
 
             return Result.Success;

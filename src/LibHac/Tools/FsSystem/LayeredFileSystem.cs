@@ -86,7 +86,7 @@ public class LayeredFileSystem : IFileSystem
 
             if (res.IsSuccess())
             {
-                outDirectory.Set(ref dir.Ref());
+                outDirectory.Set(ref dir.Ref);
             }
 
             return res;
@@ -95,11 +95,11 @@ public class LayeredFileSystem : IFileSystem
         if (!(singleSource is null))
         {
             using var dir = new UniqueRef<IDirectory>();
-            Result res = singleSource.OpenDirectory(ref dir.Ref(), in path, mode);
+            Result res = singleSource.OpenDirectory(ref dir.Ref, in path, mode);
 
             if (res.IsSuccess())
             {
-                outDirectory.Set(ref dir.Ref());
+                outDirectory.Set(ref dir.Ref);
             }
 
             return res;
@@ -227,7 +227,7 @@ public class LayeredFileSystem : IFileSystem
 
             foreach (IFileSystem fs in SourceFileSystems)
             {
-                res = fs.OpenDirectory(ref dir.Ref(), in path, Mode);
+                res = fs.OpenDirectory(ref dir.Ref, in path, Mode);
                 if (res.IsFailure()) return res.Miss();
 
                 SourceDirs.Add(dir.Release());
@@ -276,7 +276,7 @@ public class LayeredFileSystem : IFileSystem
             // Open new directories for each source because we need to remove duplicate entries
             foreach (IFileSystem fs in SourceFileSystems)
             {
-                Result res = fs.OpenDirectory(ref dir.Ref(), in path, Mode);
+                Result res = fs.OpenDirectory(ref dir.Ref, in path, Mode);
                 if (res.IsFailure()) return res.Miss();
 
                 long entriesRead;

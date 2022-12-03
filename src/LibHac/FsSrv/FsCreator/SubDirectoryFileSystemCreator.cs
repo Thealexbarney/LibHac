@@ -12,7 +12,7 @@ public class SubDirectoryFileSystemCreator : ISubDirectoryFileSystemCreator
     {
         using var directory = new UniqueRef<IDirectory>();
 
-        Result res = baseFileSystem.Get.OpenDirectory(ref directory.Ref(), in path, OpenDirectoryMode.Directory);
+        Result res = baseFileSystem.Get.OpenDirectory(ref directory.Ref, in path, OpenDirectoryMode.Directory);
         if (res.IsFailure()) return res.Miss();
 
         directory.Reset();
@@ -25,7 +25,7 @@ public class SubDirectoryFileSystemCreator : ISubDirectoryFileSystemCreator
         res = subFs.Get.Initialize(in path);
         if (res.IsFailure()) return res.Miss();
 
-        outSubDirFileSystem.SetByMove(ref subFs.Ref());
+        outSubDirFileSystem.SetByMove(ref subFs.Ref);
         return Result.Success;
     }
 }

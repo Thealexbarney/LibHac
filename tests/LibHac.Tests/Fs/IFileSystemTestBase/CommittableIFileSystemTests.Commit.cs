@@ -27,8 +27,8 @@ public abstract partial class CommittableIFileSystemTests
         using var file1 = new UniqueRef<IFile>();
         using var file2 = new UniqueRef<IFile>();
 
-        fs.OpenFile(ref file1.Ref(), "/dir1/file", OpenMode.Write).ThrowIfFailure();
-        fs.OpenFile(ref file2.Ref(), "/dir2/file", OpenMode.Write).ThrowIfFailure();
+        fs.OpenFile(ref file1.Ref, "/dir1/file", OpenMode.Write).ThrowIfFailure();
+        fs.OpenFile(ref file2.Ref, "/dir2/file", OpenMode.Write).ThrowIfFailure();
 
         file1.Get.Write(0, data1, WriteOption.Flush).ThrowIfFailure();
         file2.Get.Write(0, data2, WriteOption.Flush).ThrowIfFailure();
@@ -45,7 +45,7 @@ public abstract partial class CommittableIFileSystemTests
         byte[] readData1 = new byte[data1.Length];
         byte[] readData2 = new byte[data2.Length];
 
-        Assert.Success(fs.OpenFile(ref file1.Ref(), "/dir1/file", OpenMode.Read));
+        Assert.Success(fs.OpenFile(ref file1.Ref, "/dir1/file", OpenMode.Read));
 
         Assert.Success(file1.Get.Read(out long bytesReadFile1, 0, readData1, ReadOption.None));
         file1.Reset();
@@ -53,7 +53,7 @@ public abstract partial class CommittableIFileSystemTests
 
         Assert.Equal(data1, readData1);
 
-        Assert.Success(fs.OpenFile(ref file2.Ref(), "/dir2/file", OpenMode.Read));
+        Assert.Success(fs.OpenFile(ref file2.Ref, "/dir2/file", OpenMode.Read));
 
         Assert.Success(file2.Get.Read(out long bytesReadFile2, 0, readData2, ReadOption.None));
         Assert.Equal(data2.Length, bytesReadFile2);
@@ -109,7 +109,7 @@ public abstract partial class CommittableIFileSystemTests
         fs.CreateFile("/dir/file", data1.Length, CreateFileOptions.None).ThrowIfFailure();
 
         using var file = new UniqueRef<IFile>();
-        fs.OpenFile(ref file.Ref(), "/dir/file", OpenMode.Write).ThrowIfFailure();
+        fs.OpenFile(ref file.Ref, "/dir/file", OpenMode.Write).ThrowIfFailure();
         file.Get.Write(0, data1, WriteOption.Flush).ThrowIfFailure();
         file.Reset();
 
@@ -120,7 +120,7 @@ public abstract partial class CommittableIFileSystemTests
         fs = fsCreator.Create();
 
         // Make changes to the file
-        fs.OpenFile(ref file.Ref(), "/dir/file", OpenMode.Write).ThrowIfFailure();
+        fs.OpenFile(ref file.Ref, "/dir/file", OpenMode.Write).ThrowIfFailure();
         file.Get.Write(0, data2, WriteOption.Flush).ThrowIfFailure();
         file.Reset();
 
@@ -129,7 +129,7 @@ public abstract partial class CommittableIFileSystemTests
         // The file should contain the original data after the rollback
         byte[] readData = new byte[data1.Length];
 
-        Assert.Success(fs.OpenFile(ref file.Ref(), "/dir/file", OpenMode.Read));
+        Assert.Success(fs.OpenFile(ref file.Ref, "/dir/file", OpenMode.Read));
 
         Assert.Success(file.Get.Read(out long bytesRead, 0, readData, ReadOption.None));
         Assert.Equal(data1.Length, bytesRead);

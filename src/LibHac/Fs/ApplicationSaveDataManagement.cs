@@ -604,7 +604,7 @@ public static class ApplicationSaveDataManagement
         UnsafeHelpers.SkipParamInit(out outRequiredSize);
 
         using var prohibiter = new UniqueRef<SaveDataTransferProhibiterForCloudBackUp>();
-        Result res = fs.Impl.OpenSaveDataTransferProhibiterForCloudBackUp(ref prohibiter.Ref(), applicationId);
+        Result res = fs.Impl.OpenSaveDataTransferProhibiterForCloudBackUp(ref prohibiter.Ref, applicationId);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 

@@ -105,7 +105,7 @@ public class Package2StorageReader : IDisposable
 
         // Ini is embedded in the kernel
         using var kernelStorage = new UniqueRef<IStorage>();
-        Result res = OpenKernel(ref kernelStorage.Ref());
+        Result res = OpenKernel(ref kernelStorage.Ref);
         if (res.IsFailure()) return res.Miss();
 
         if (!IniExtract.TryGetIni1Offset(out int offset, out int size, kernelStorage.Get))
@@ -243,7 +243,7 @@ public class Package2StorageReader : IDisposable
                 continue;
 
             using var payloadStorage = new UniqueRef<IStorage>();
-            Result res = OpenPayload(ref payloadStorage.Ref(), i);
+            Result res = OpenPayload(ref payloadStorage.Ref, i);
             if (res.IsFailure()) return res.Miss();
 
             storages.Add(payloadStorage.Release());

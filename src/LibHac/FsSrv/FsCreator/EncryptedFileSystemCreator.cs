@@ -29,7 +29,7 @@ public class EncryptedFileSystemCreator : IEncryptedFileSystemCreator
         using var encryptedFileSystem = new SharedRef<AesXtsFileSystem>(new AesXtsFileSystem(ref baseFileSystem,
             KeySet.SdCardEncryptionKeys[(int)idIndex].DataRo.ToArray(), 0x4000));
 
-        outEncryptedFileSystem.SetByMove(ref encryptedFileSystem.Ref());
+        outEncryptedFileSystem.SetByMove(ref encryptedFileSystem.Ref);
 
         return Result.Success;
     }

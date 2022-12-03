@@ -111,7 +111,7 @@ public class SwitchFs : IDisposable
             try
             {
                 using var ncaFile = new UniqueRef<IFile>();
-                ContentFs.OpenFile(ref ncaFile.Ref(), fileEntry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
+                ContentFs.OpenFile(ref ncaFile.Ref, fileEntry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
                 nca = new SwitchFsNca(new Nca(KeySet, ncaFile.Release().AsStorage()));
 
@@ -152,7 +152,7 @@ public class SwitchFs : IDisposable
             try
             {
                 using var file = new UniqueRef<IFile>();
-                SaveFs.OpenFile(ref file.Ref(), fileEntry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
+                SaveFs.OpenFile(ref file.Ref, fileEntry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
                 save = new SaveDataFileSystem(KeySet, file.Release().AsStorage(), IntegrityCheckLevel.None, true);
             }
@@ -180,7 +180,7 @@ public class SwitchFs : IDisposable
                 string cnmtPath = fs.EnumerateEntries("/", "*.cnmt").Single().FullPath;
 
                 using var file = new UniqueRef<IFile>();
-                fs.OpenFile(ref file.Ref(), cnmtPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
+                fs.OpenFile(ref file.Ref, cnmtPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
                 var metadata = new Cnmt(file.Release().AsStream());
                 title.Id = metadata.TitleId;
@@ -227,7 +227,7 @@ public class SwitchFs : IDisposable
 
             using (var control = new UniqueRef<IFile>())
             {
-                romfs.OpenFile(ref control.Ref(), "/control.nacp"u8, OpenMode.Read).ThrowIfFailure();
+                romfs.OpenFile(ref control.Ref, "/control.nacp"u8, OpenMode.Read).ThrowIfFailure();
 
                 control.Get.Read(out _, 0, title.Control.ByteSpan).ThrowIfFailure();
             }

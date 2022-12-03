@@ -47,13 +47,13 @@ public static class CustomStorage
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
             using var fileSystem = new SharedRef<IFileSystemSf>();
 
-            res = fileSystemProxy.Get.OpenCustomStorageFileSystem(ref fileSystem.Ref(), storageId);
+            res = fileSystemProxy.Get.OpenCustomStorageFileSystem(ref fileSystem.Ref, storageId);
             if (res.IsFailure()) return res.Miss();
 
             using var fileSystemAdapter =
-                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
+                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref));
 
-            res = fs.Register(mountName, ref fileSystemAdapter.Ref());
+            res = fs.Register(mountName, ref fileSystemAdapter.Ref);
             if (res.IsFailure()) return res.Miss();
 
             return Result.Success;

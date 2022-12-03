@@ -71,17 +71,17 @@ public static class Code
 
             using var fileSystem = new SharedRef<IFileSystemSf>();
 
-            res = fileSystemProxy.Get.OpenCodeFileSystem(ref fileSystem.Ref(), out verificationData, in sfPath,
+            res = fileSystemProxy.Get.OpenCodeFileSystem(ref fileSystem.Ref, out verificationData, in sfPath,
                 programId);
             if (res.IsFailure()) return res.Miss();
 
             using var fileSystemAdapter =
-                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
+                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref));
 
             if (!fileSystemAdapter.HasValue)
                 return ResultFs.AllocationMemoryFailedInCodeA.Log();
 
-            res = fs.Register(mountName, ref fileSystemAdapter.Ref());
+            res = fs.Register(mountName, ref fileSystemAdapter.Ref);
             if (res.IsFailure()) return res.Miss();
 
             return Result.Success;

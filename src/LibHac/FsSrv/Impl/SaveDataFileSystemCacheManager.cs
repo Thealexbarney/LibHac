@@ -106,7 +106,7 @@ public class SaveDataFileSystemCacheManager : IDisposable
             if (_cachedFileSystems[i].IsCached(spaceId, saveDataId))
             {
                 using SharedRef<ISaveDataFileSystem> cachedFs = _cachedFileSystems[i].Move();
-                outFileSystem.SetByMove(ref cachedFs.Ref());
+                outFileSystem.SetByMove(ref cachedFs.Ref);
 
                 return true;
             }

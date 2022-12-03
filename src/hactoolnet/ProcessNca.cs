@@ -76,8 +76,8 @@ internal static class ProcessNca
                     using var inputFs = new UniqueRef<IFileSystem>(OpenFileSystem(i));
                     using var outputFs = new UniqueRef<IFileSystem>(new LocalFileSystem(ctx.Options.SectionOutDir[i]));
 
-                    fs.Register(mountName.ToU8Span(), ref inputFs.Ref());
-                    fs.Register("output"u8, ref outputFs.Ref());
+                    fs.Register(mountName.ToU8Span(), ref inputFs.Ref);
+                    fs.Register("output"u8, ref outputFs.Ref);
 
                     fs.Impl.EnableFileSystemAccessorAccessLog(mountName.ToU8Span());
                     fs.Impl.EnableFileSystemAccessorAccessLog("output"u8);
@@ -131,8 +131,8 @@ internal static class ProcessNca
                     using var inputFs = new UniqueRef<IFileSystem>(OpenFileSystemByType(NcaSectionType.Data));
                     using var outputFs = new UniqueRef<IFileSystem>(new LocalFileSystem(ctx.Options.RomfsOutDir));
 
-                    fs.Register("rom"u8, ref inputFs.Ref());
-                    fs.Register("output"u8, ref outputFs.Ref());
+                    fs.Register("rom"u8, ref inputFs.Ref);
+                    fs.Register("output"u8, ref outputFs.Ref);
 
                     fs.Impl.EnableFileSystemAccessorAccessLog("rom"u8);
                     fs.Impl.EnableFileSystemAccessorAccessLog("output"u8);
@@ -194,8 +194,8 @@ internal static class ProcessNca
                     using var inputFs = new UniqueRef<IFileSystem>(OpenFileSystemByType(NcaSectionType.Code));
                     using var outputFs = new UniqueRef<IFileSystem>(new LocalFileSystem(ctx.Options.ExefsOutDir));
 
-                    fs.Register("code"u8, ref inputFs.Ref());
-                    fs.Register("output"u8, ref outputFs.Ref());
+                    fs.Register("code"u8, ref inputFs.Ref);
+                    fs.Register("output"u8, ref outputFs.Ref);
 
                     fs.Impl.EnableFileSystemAccessorAccessLog("code"u8);
                     fs.Impl.EnableFileSystemAccessorAccessLog("output"u8);
@@ -260,7 +260,7 @@ internal static class ProcessNca
         if (!pfs.FileExists("main.npdm")) return Validity.Unchecked;
 
         using var npdmFile = new UniqueRef<IFile>();
-        pfs.OpenFile(ref npdmFile.Ref(), "main.npdm"u8, OpenMode.Read).ThrowIfFailure();
+        pfs.OpenFile(ref npdmFile.Ref, "main.npdm"u8, OpenMode.Read).ThrowIfFailure();
         var npdm = new NpdmBinary(npdmFile.Release().AsStream());
 
         return nca.Header.VerifySignature2(npdm.AciD.Rsa2048Modulus);
@@ -293,7 +293,7 @@ internal static class ProcessNca
             IFileSystem fs = nca.OpenFileSystem(NcaSectionType.Code, IntegrityCheckLevel.None);
 
             using var file = new UniqueRef<IFile>();
-            Result res = fs.OpenFile(ref file.Ref(), "/main.npdm"u8, OpenMode.Read);
+            Result res = fs.OpenFile(ref file.Ref, "/main.npdm"u8, OpenMode.Read);
             if (res.IsSuccess())
             {
                 var npdm = new NpdmBinary(file.Release().AsStream(), null);

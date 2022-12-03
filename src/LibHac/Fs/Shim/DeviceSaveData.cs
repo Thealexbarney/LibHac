@@ -47,10 +47,10 @@ public static class DeviceSaveData
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
         using var fileSystem = new SharedRef<IFileSystemSf>();
 
-        res = fileSystemProxy.Get.OpenSaveDataFileSystem(ref fileSystem.Ref(), DeviceSaveDataSpaceId, in attribute);
+        res = fileSystemProxy.Get.OpenSaveDataFileSystem(ref fileSystem.Ref, DeviceSaveDataSpaceId, in attribute);
         if (res.IsFailure()) return res.Miss();
 
-        var fileSystemAdapterRaw = new FileSystemServiceObjectAdapter(ref fileSystem.Ref());
+        var fileSystemAdapterRaw = new FileSystemServiceObjectAdapter(ref fileSystem.Ref);
         using var fileSystemAdapter = new UniqueRef<IFileSystem>(fileSystemAdapterRaw);
 
         if (!fileSystemAdapter.HasValue)
@@ -61,8 +61,8 @@ public static class DeviceSaveData
 
         using var mountNameGenerator = new UniqueRef<ICommonMountNameGenerator>();
 
-        res = fs.Fs.Register(mountName, fileSystemAdapterRaw, ref fileSystemAdapter.Ref(), ref mountNameGenerator.Ref(),
-            ref saveDataAttributeGetter.Ref(), useDataCache: false, storageForPurgeFileDataCache: null,
+        res = fs.Fs.Register(mountName, fileSystemAdapterRaw, ref fileSystemAdapter.Ref, ref mountNameGenerator.Ref,
+            ref saveDataAttributeGetter.Ref, useDataCache: false, storageForPurgeFileDataCache: null,
             usePathCache: true);
         if (res.IsFailure()) return res.Miss();
 

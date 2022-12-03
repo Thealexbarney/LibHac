@@ -135,7 +135,7 @@ public class SaveDataExtraDataAccessorCacheManager : ISaveDataExtraDataAccessorO
         if (!accessor.HasValue)
             return ResultFs.TargetNotFound.Log();
 
-        outAccessor.SetByMove(ref accessor.Ref());
+        outAccessor.SetByMove(ref accessor.Ref);
         return Result.Success;
     }
 

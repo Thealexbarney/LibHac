@@ -95,7 +95,7 @@ public class NcaFileSystemServiceImpl
 
         // Open the root filesystem based on the path's mount name
         using var baseFileSystem = new SharedRef<IFileSystem>();
-        Result res = ParseMountName(ref currentPath, ref baseFileSystem.Ref(), out bool shouldContinue,
+        Result res = ParseMountName(ref currentPath, ref baseFileSystem.Ref, out bool shouldContinue,
             out MountInfo mountNameInfo);
         if (res.IsFailure()) return res.Miss();
 
@@ -132,22 +132,22 @@ public class NcaFileSystemServiceImpl
                 using var hostFileSystem = new SharedRef<IFileSystem>();
                 using var readOnlyFileSystem = new SharedRef<IFileSystem>();
 
-                res = ParseDirWithPathCaseNormalizationOnCaseSensitiveHostFs(ref hostFileSystem.Ref(),
+                res = ParseDirWithPathCaseNormalizationOnCaseSensitiveHostFs(ref hostFileSystem.Ref,
                     in directoryPath);
                 if (res.IsFailure()) return res.Miss();
 
-                readOnlyFileSystem.Reset(new ReadOnlyFileSystem(ref hostFileSystem.Ref()));
-                outFileSystem.SetByMove(ref readOnlyFileSystem.Ref());
+                readOnlyFileSystem.Reset(new ReadOnlyFileSystem(ref hostFileSystem.Ref));
+                outFileSystem.SetByMove(ref readOnlyFileSystem.Ref);
 
                 return Result.Success;
             }
 
-            return ParseDir(in directoryPath, ref outFileSystem, ref baseFileSystem.Ref(), type, true);
+            return ParseDir(in directoryPath, ref outFileSystem, ref baseFileSystem.Ref, type, true);
         }
 
         using var nspFileSystem = new SharedRef<IFileSystem>();
         using SharedRef<IFileSystem> tempFileSystem = SharedRef<IFileSystem>.CreateCopy(in baseFileSystem);
-        res = ParseNsp(ref currentPath, ref nspFileSystem.Ref(), ref baseFileSystem.Ref());
+        res = ParseNsp(ref currentPath, ref nspFileSystem.Ref, ref baseFileSystem.Ref);
 
         if (res.IsSuccess())
         {
@@ -156,14 +156,14 @@ public class NcaFileSystemServiceImpl
             {
                 if (type == FileSystemProxyType.Package)
                 {
-                    outFileSystem.SetByMove(ref nspFileSystem.Ref());
+                    outFileSystem.SetByMove(ref nspFileSystem.Ref);
                     return Result.Success;
                 }
 
                 return ResultFs.InvalidArgument.Log();
             }
 
-            baseFileSystem.SetByMove(ref nspFileSystem.Ref());
+            baseFileSystem.SetByMove(ref nspFileSystem.Ref);
         }
 
         if (!mountNameInfo.CanMountNca)
@@ -173,20 +173,20 @@ public class NcaFileSystemServiceImpl
 
         ulong openProgramId = mountNameInfo.IsHostFs ? ulong.MaxValue : id;
 
-        res = ParseNca(ref currentPath, out Nca nca, ref baseFileSystem.Ref(), openProgramId);
+        res = ParseNca(ref currentPath, out Nca nca, ref baseFileSystem.Ref, openProgramId);
         if (res.IsFailure()) return res.Miss();
 
         using var ncaSectionStorage = new SharedRef<IStorage>();
-        res = OpenStorageByContentType(ref ncaSectionStorage.Ref(), nca, out NcaFormatType fsType, type,
+        res = OpenStorageByContentType(ref ncaSectionStorage.Ref, nca, out NcaFormatType fsType, type,
             mountNameInfo.IsGameCard, canMountSystemDataPrivate);
         if (res.IsFailure()) return res.Miss();
 
         switch (fsType)
         {
             case NcaFormatType.Romfs:
-                return _config.RomFsCreator.Create(ref outFileSystem, ref ncaSectionStorage.Ref());
+                return _config.RomFsCreator.Create(ref outFileSystem, ref ncaSectionStorage.Ref);
             case NcaFormatType.Pfs0:
-                return _config.PartitionFsCreator.Create(ref outFileSystem, ref ncaSectionStorage.Ref());
+                return _config.PartitionFsCreator.Create(ref outFileSystem, ref ncaSectionStorage.Ref);
             default:
                 return ResultFs.InvalidNcaFileSystemType.Log();
         }
@@ -208,11 +208,11 @@ public class NcaFileSystemServiceImpl
         in Path originalNcaPath, in Path currentNcaPath, FileSystemProxyType fsType, ulong id)
     {
         using var romFsStorage = new SharedRef<IStorage>();
-        Result res = OpenStorageWithPatch(ref romFsStorage.Ref(), out Unsafe.NullRef<Hash>(), in originalNcaPath,
+        Result res = OpenStorageWithPatch(ref romFsStorage.Ref, out Unsafe.NullRef<Hash>(), in originalNcaPath,
             in currentNcaPath, fsType, id);
         if (res.IsFailure()) return res.Miss();
 
-        return _config.RomFsCreator.Create(ref outFileSystem, ref romFsStorage.Ref());
+        return _config.RomFsCreator.Create(ref outFileSystem, ref romFsStorage.Ref);
     }
 
     public Result OpenContentStorageFileSystem(ref SharedRef<IFileSystem> outFileSystem,
@@ -225,15 +225,15 @@ public class NcaFileSystemServiceImpl
         switch (contentStorageId)
         {
             case ContentStorageId.System:
-                res = _config.BaseFsService.OpenBisFileSystem(ref fileSystem.Ref(), BisPartitionId.System);
+                res = _config.BaseFsService.OpenBisFileSystem(ref fileSystem.Ref, BisPartitionId.System);
                 if (res.IsFailure()) return res.Miss();
                 break;
             case ContentStorageId.User:
-                res = _config.BaseFsService.OpenBisFileSystem(ref fileSystem.Ref(), BisPartitionId.User);
+                res = _config.BaseFsService.OpenBisFileSystem(ref fileSystem.Ref, BisPartitionId.User);
                 if (res.IsFailure()) return res.Miss();
                 break;
             case ContentStorageId.SdCard:
-                res = _config.BaseFsService.OpenSdCardProxyFileSystem(ref fileSystem.Ref());
+                res = _config.BaseFsService.OpenSdCardProxyFileSystem(ref fileSystem.Ref);
                 if (res.IsFailure()) return res.Miss();
                 break;
             default:
@@ -264,18 +264,18 @@ public class NcaFileSystemServiceImpl
         if (res.IsFailure()) return res.Miss();
 
         using var subDirFs = new SharedRef<IFileSystem>();
-        res = _config.SubDirectoryFsCreator.Create(ref subDirFs.Ref(), ref fileSystem.Ref(), in contentStoragePath);
+        res = _config.SubDirectoryFsCreator.Create(ref subDirFs.Ref, ref fileSystem.Ref, in contentStoragePath);
         if (res.IsFailure()) return res.Miss();
 
         // Only content on the SD card is encrypted
         if (contentStorageId == ContentStorageId.SdCard)
         {
-            using SharedRef<IFileSystem> tempFileSystem = SharedRef<IFileSystem>.CreateMove(ref subDirFs.Ref());
-            res = _config.EncryptedFsCreator.Create(ref subDirFs.Ref(), ref tempFileSystem.Ref(),
+            using SharedRef<IFileSystem> tempFileSystem = SharedRef<IFileSystem>.CreateMove(ref subDirFs.Ref);
+            res = _config.EncryptedFsCreator.Create(ref subDirFs.Ref, ref tempFileSystem.Ref,
                IEncryptedFileSystemCreator.KeyId.Content, in _encryptionSeed);
             if (res.IsFailure()) return res.Miss();
         }
-        outFileSystem.SetByMove(ref subDirFs.Ref());
+        outFileSystem.SetByMove(ref subDirFs.Ref);
 
         return Result.Success;
     }
@@ -514,10 +514,10 @@ public class NcaFileSystemServiceImpl
         ref SharedRef<IFileSystem> baseFileSystem, FileSystemProxyType fsType, bool preserveUnc)
     {
         using var fileSystem = new SharedRef<IFileSystem>();
-        Result res = _config.SubDirectoryFsCreator.Create(ref fileSystem.Ref(), ref baseFileSystem, in path);
+        Result res = _config.SubDirectoryFsCreator.Create(ref fileSystem.Ref, ref baseFileSystem, in path);
         if (res.IsFailure()) return res.Miss();
 
-        return ParseContentTypeForDirectory(ref outContentFileSystem, ref fileSystem.Ref(), fsType);
+        return ParseContentTypeForDirectory(ref outContentFileSystem, ref fileSystem.Ref, fsType);
     }
 
     private Result ParseDirWithPathCaseNormalizationOnCaseSensitiveHostFs(ref SharedRef<IFileSystem> outFileSystem,
@@ -586,8 +586,8 @@ public class NcaFileSystemServiceImpl
         res = nspFileStorage.Get.Initialize(ref baseFileSystem, in pathNsp, OpenMode.Read);
         if (res.IsFailure()) return res.Miss();
 
-        using SharedRef<IStorage> tempStorage = SharedRef<IStorage>.CreateMove(ref nspFileStorage.Ref());
-        res = _config.PartitionFsCreator.Create(ref outFileSystem, ref tempStorage.Ref());
+        using SharedRef<IStorage> tempStorage = SharedRef<IStorage>.CreateMove(ref nspFileStorage.Ref);
+        res = _config.PartitionFsCreator.Create(ref outFileSystem, ref tempStorage.Ref);
 
         if (res.IsSuccess())
         {
@@ -669,10 +669,10 @@ public class NcaFileSystemServiceImpl
             return ResultFs.InvalidArgument.Log();
 
         // Open the subdirectory filesystem
-        res = _config.SubDirectoryFsCreator.Create(ref subDirFs.Ref(), ref baseFileSystem, in directoryPath);
+        res = _config.SubDirectoryFsCreator.Create(ref subDirFs.Ref, ref baseFileSystem, in directoryPath);
         if (res.IsFailure()) return res.Miss();
 
-        outFileSystem.SetByMove(ref subDirFs.Ref());
+        outFileSystem.SetByMove(ref subDirFs.Ref);
         return Result.Success;
     }
 

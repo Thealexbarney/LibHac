@@ -178,7 +178,7 @@ public class NcaReader : IDisposable
         _getDecompressorFunc = compressionConfig.GetDecompressorFunc;
 
         _bodyStorage.SetByMove(ref baseStorage);
-        _headerStorage.Set(ref headerStorage.Ref());
+        _headerStorage.Set(ref headerStorage.Ref);
 
         return Result.Success;
 

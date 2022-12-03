@@ -22,7 +22,7 @@ public class FlatMapKeyValueStoreTests
         FileSystemClient fsClient = FileSystemServerFactory.CreateClient(false);
 
         using var mountedFs = new UniqueRef<IFileSystem>(new InMemoryFileSystem());
-        fsClient.Register(MountName, ref mountedFs.Ref()).ThrowIfFailure();
+        fsClient.Register(MountName, ref mountedFs.Ref).ThrowIfFailure();
 
         FlatMapKeyValueStore<T> kvStore = Create<T>(fsClient, capacity);
 

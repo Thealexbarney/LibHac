@@ -43,7 +43,7 @@ public static class FileSystemServerInitializer
         ulong processId = client.Os.GetCurrentProcessId().Value;
         fileSystemProxy.Get.SetCurrentProcess(processId).IgnoreResult();
 
-        client.Fs.Impl.InitializeDfcFileSystemProxyServiceObject(ref fileSystemProxy.Ref());
+        client.Fs.Impl.InitializeDfcFileSystemProxyServiceObject(ref fileSystemProxy.Ref);
 
         InitializeFileSystemProxyServer(client, server);
 
@@ -201,7 +201,7 @@ public static class FileSystemServerInitializer
         public Result GetServiceObject(ref SharedRef<IDisposable> serviceObject)
         {
             using SharedRef<IFileSystemProxy> derivedObject = _server.Impl.GetFileSystemProxyServiceObject();
-            serviceObject.SetByMove(ref derivedObject.Ref());
+            serviceObject.SetByMove(ref derivedObject.Ref);
             return Result.Success;
         }
 
@@ -220,7 +220,7 @@ public static class FileSystemServerInitializer
         public Result GetServiceObject(ref SharedRef<IDisposable> serviceObject)
         {
             using SharedRef<IFileSystemProxyForLoader> derivedObject = _server.Impl.GetFileSystemProxyForLoaderServiceObject();
-            serviceObject.SetByMove(ref derivedObject.Ref());
+            serviceObject.SetByMove(ref derivedObject.Ref);
             return Result.Success;
         }
 
@@ -239,7 +239,7 @@ public static class FileSystemServerInitializer
         public Result GetServiceObject(ref SharedRef<IDisposable> serviceObject)
         {
             using SharedRef<IProgramRegistry> derivedObject = _server.Impl.GetProgramRegistryServiceObject();
-            serviceObject.SetByMove(ref derivedObject.Ref());
+            serviceObject.SetByMove(ref derivedObject.Ref);
             return Result.Success;
         }
 

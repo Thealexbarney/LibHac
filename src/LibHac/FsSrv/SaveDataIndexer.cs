@@ -840,7 +840,7 @@ public class SaveDataIndexer : ISaveDataIndexer
         res = RegisterReader(in reader);
         if (res.IsFailure()) return res.Miss();
 
-        outInfoReader.SetByMove(ref reader.Ref());
+        outInfoReader.SetByMove(ref reader.Ref);
         return Result.Success;
     }
 

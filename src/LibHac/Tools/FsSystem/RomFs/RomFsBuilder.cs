@@ -41,7 +41,7 @@ public class RomFsBuilder
             .OrderBy(x => x.FullPath, StringComparer.Ordinal))
         {
             using var file = new UniqueRef<IFile>();
-            input.OpenFile(ref file.Ref(), entry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
+            input.OpenFile(ref file.Ref, entry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
             AddFile(entry.FullPath, file.Release());
         }

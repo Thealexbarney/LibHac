@@ -97,10 +97,10 @@ public class ReadOnlyFileSystem : IFileSystem
             return ResultFs.InvalidModeForFileOpen.Log();
 
         using var baseFile = new UniqueRef<IFile>();
-        Result res = _baseFileSystem.Get.OpenFile(ref baseFile.Ref(), in path, mode);
+        Result res = _baseFileSystem.Get.OpenFile(ref baseFile.Ref, in path, mode);
         if (res.IsFailure()) return res.Miss();
 
-        outFile.Reset(new ReadOnlyFile(ref baseFile.Ref()));
+        outFile.Reset(new ReadOnlyFile(ref baseFile.Ref));
         return Result.Success;
     }
 

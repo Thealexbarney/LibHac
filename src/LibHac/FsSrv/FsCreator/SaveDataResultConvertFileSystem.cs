@@ -85,13 +85,13 @@ public class SaveDataResultConvertFileSystem : IResultConvertFileSystem<ISaveDat
     protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
     {
         using var file = new UniqueRef<IFile>();
-        Result res = ConvertResult(GetFileSystem().OpenFile(ref file.Ref(), in path, mode));
+        Result res = ConvertResult(GetFileSystem().OpenFile(ref file.Ref, in path, mode));
         if (res.IsFailure()) return res.Miss();
 
         using UniqueRef<SaveDataResultConvertFile> resultConvertFile =
-            new(new SaveDataResultConvertFile(ref file.Ref(), _isReconstructible));
+            new(new SaveDataResultConvertFile(ref file.Ref, _isReconstructible));
 
-        outFile.Set(ref resultConvertFile.Ref());
+        outFile.Set(ref resultConvertFile.Ref);
         return Result.Success;
     }
 
@@ -99,13 +99,13 @@ public class SaveDataResultConvertFileSystem : IResultConvertFileSystem<ISaveDat
         OpenDirectoryMode mode)
     {
         using var directory = new UniqueRef<IDirectory>();
-        Result res = ConvertResult(GetFileSystem().OpenDirectory(ref directory.Ref(), in path, mode));
+        Result res = ConvertResult(GetFileSystem().OpenDirectory(ref directory.Ref, in path, mode));
         if (res.IsFailure()) return res.Miss();
 
         using UniqueRef<SaveDataResultConvertDirectory> resultConvertDirectory =
-            new(new SaveDataResultConvertDirectory(ref directory.Ref(), _isReconstructible));
+            new(new SaveDataResultConvertDirectory(ref directory.Ref, _isReconstructible));
 
-        outDirectory.Set(ref resultConvertDirectory.Ref());
+        outDirectory.Set(ref resultConvertDirectory.Ref);
         return Result.Success;
     }
 

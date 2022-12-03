@@ -98,7 +98,7 @@ public static class Bis
 
             using var fileSystem = new SharedRef<IFileSystemSf>();
 
-            res = fileSystemProxy.Get.OpenBisFileSystem(ref fileSystem.Ref(), in sfPath, partitionId);
+            res = fileSystemProxy.Get.OpenBisFileSystem(ref fileSystem.Ref, in sfPath, partitionId);
             if (res.IsFailure()) return res.Miss();
 
             using var mountNameGenerator =
@@ -108,12 +108,12 @@ public static class Bis
                 return ResultFs.AllocationMemoryFailedInBisA.Log();
 
             using var fileSystemAdapter =
-                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref()));
+                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref));
 
             if (!fileSystemAdapter.HasValue)
                 return ResultFs.AllocationMemoryFailedInBisB.Log();
 
-            res = fs.Fs.Register(mountName, ref fileSystemAdapter.Ref(), ref mountNameGenerator.Ref());
+            res = fs.Fs.Register(mountName, ref fileSystemAdapter.Ref, ref mountNameGenerator.Ref);
             if (res.IsFailure()) return res.Miss();
 
             return Result.Success;
@@ -170,11 +170,11 @@ public static class Bis
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var storage = new SharedRef<IStorageSf>();
 
-        Result res = fileSystemProxy.Get.OpenBisStorage(ref storage.Ref(), partitionId);
+        Result res = fileSystemProxy.Get.OpenBisStorage(ref storage.Ref, partitionId);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
-        using var storageAdapter = new UniqueRef<IStorage>(new StorageServiceObjectAdapter(ref storage.Ref()));
+        using var storageAdapter = new UniqueRef<IStorage>(new StorageServiceObjectAdapter(ref storage.Ref));
 
         if (!storageAdapter.HasValue)
         {
@@ -183,7 +183,7 @@ public static class Bis
             if (res.IsFailure()) return res.Log();
         }
 
-        outPartitionStorage.Set(ref storageAdapter.Ref());
+        outPartitionStorage.Set(ref storageAdapter.Ref);
         return Result.Success;
     }
 

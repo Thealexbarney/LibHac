@@ -18,12 +18,12 @@ public abstract partial class IFileSystemTests
         fs.CreateFile("/file", data.Length, CreateFileOptions.None);
 
         using var file = new UniqueRef<IFile>();
-        fs.OpenFile(ref file.Ref(), "/file", OpenMode.Write);
+        fs.OpenFile(ref file.Ref, "/file", OpenMode.Write);
         file.Get.Write(0, data, WriteOption.None);
         file.Reset();
 
         byte[] readData = new byte[data.Length];
-        fs.OpenFile(ref file.Ref(), "/file", OpenMode.Read);
+        fs.OpenFile(ref file.Ref, "/file", OpenMode.Read);
 
         Assert.Success(file.Get.Read(out long bytesRead, 0, readData, ReadOption.None));
         Assert.Equal(data.Length, bytesRead);
@@ -40,7 +40,7 @@ public abstract partial class IFileSystemTests
 
         byte[] buffer = new byte[10];
         using var file = new UniqueRef<IFile>();
-        fs.OpenFile(ref file.Ref(), "/file", OpenMode.Write);
+        fs.OpenFile(ref file.Ref, "/file", OpenMode.Write);
 
         Result res = file.Get.Write(5, buffer, WriteOption.None);
         Assert.Result(ResultFs.FileExtensionWithoutOpenModeAllowAppend, res);
@@ -55,7 +55,7 @@ public abstract partial class IFileSystemTests
 
         byte[] buffer = new byte[10];
         using var file = new UniqueRef<IFile>();
-        fs.OpenFile(ref file.Ref(), "/file", OpenMode.Read);
+        fs.OpenFile(ref file.Ref, "/file", OpenMode.Read);
 
         Result res = file.Get.Write(5, buffer, WriteOption.None);
         Assert.Result(ResultFs.WriteUnpermitted, res);
@@ -70,7 +70,7 @@ public abstract partial class IFileSystemTests
 
         byte[] buffer = new byte[10];
         using var file = new UniqueRef<IFile>();
-        fs.OpenFile(ref file.Ref(), "/file", OpenMode.Read);
+        fs.OpenFile(ref file.Ref, "/file", OpenMode.Read);
 
         Result res = file.Get.Write(-5, buffer, WriteOption.None);
         Assert.Result(ResultFs.OutOfRange, res);
@@ -85,7 +85,7 @@ public abstract partial class IFileSystemTests
 
         byte[] buffer = new byte[10];
         using var file = new UniqueRef<IFile>();
-        fs.OpenFile(ref file.Ref(), "/file", OpenMode.Read);
+        fs.OpenFile(ref file.Ref, "/file", OpenMode.Read);
 
         Result res = file.Get.Write(long.MaxValue - 5, buffer, WriteOption.None);
         Assert.Result(ResultFs.OutOfRange, res);
@@ -100,7 +100,7 @@ public abstract partial class IFileSystemTests
 
         byte[] buffer = new byte[10];
         using var file = new UniqueRef<IFile>();
-        fs.OpenFile(ref file.Ref(), "/file", OpenMode.All);
+        fs.OpenFile(ref file.Ref, "/file", OpenMode.All);
 
         Assert.Success(file.Get.Write(5, buffer, WriteOption.None));
 
@@ -117,7 +117,7 @@ public abstract partial class IFileSystemTests
 
         byte[] buffer = new byte[10];
         using var file = new UniqueRef<IFile>();
-        fs.OpenFile(ref file.Ref(), "/file", OpenMode.All);
+        fs.OpenFile(ref file.Ref, "/file", OpenMode.All);
 
         Assert.Success(file.Get.Write(15, buffer, WriteOption.None));
 
@@ -139,7 +139,7 @@ public abstract partial class IFileSystemTests
         writeBuffer.AsSpan().Fill(0xCC);
 
         using var file = new UniqueRef<IFile>();
-        fs.OpenFile(ref file.Ref(), "/file", OpenMode.All);
+        fs.OpenFile(ref file.Ref, "/file", OpenMode.All);
 
         Assert.Success(file.Get.Write(15, writeBuffer, WriteOption.None));
 
@@ -149,7 +149,7 @@ public abstract partial class IFileSystemTests
 
         byte[] readBuffer = new byte[25];
 
-        fs.OpenFile(ref file.Ref(), "/file", OpenMode.Read);
+        fs.OpenFile(ref file.Ref, "/file", OpenMode.Read);
 
         file.Get.Read(out _, 0, readBuffer, ReadOption.None);
         Assert.Equal(bufferExpected, readBuffer);

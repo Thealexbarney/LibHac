@@ -16,7 +16,7 @@ public abstract partial class IFileSystemTests
         Span<DirectoryEntry> entries = stackalloc DirectoryEntry[1];
 
         using var directory = new UniqueRef<IDirectory>();
-        Assert.Success(fs.OpenDirectory(ref directory.Ref(), "/", OpenDirectoryMode.All));
+        Assert.Success(fs.OpenDirectory(ref directory.Ref, "/", OpenDirectoryMode.All));
 
         Assert.Success(directory.Get.Read(out long entriesRead, entries));
         Assert.Equal(0, entriesRead);
@@ -28,7 +28,7 @@ public abstract partial class IFileSystemTests
         IFileSystem fs = CreateFileSystem();
 
         using var directory = new UniqueRef<IDirectory>();
-        Assert.Success(fs.OpenDirectory(ref directory.Ref(), "/", OpenDirectoryMode.All));
+        Assert.Success(fs.OpenDirectory(ref directory.Ref, "/", OpenDirectoryMode.All));
 
         Assert.Success(directory.Get.GetEntryCount(out long entryCount));
         Assert.Equal(0, entryCount);
@@ -45,7 +45,7 @@ public abstract partial class IFileSystemTests
         fs.CreateFile("/dir/file2", 0, CreateFileOptions.None);
 
         using var dir = new UniqueRef<IDirectory>();
-        Assert.Success(fs.OpenDirectory(ref dir.Ref(), "/dir", OpenDirectoryMode.All));
+        Assert.Success(fs.OpenDirectory(ref dir.Ref, "/dir", OpenDirectoryMode.All));
 
         var entry1 = new DirectoryEntry();
         var entry2 = new DirectoryEntry();

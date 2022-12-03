@@ -45,7 +45,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         using var sharedService = new SharedRef<NcaFileSystemService>(ncaService);
         ncaService._selfReference.Set(in sharedService);
 
-        return SharedRef<NcaFileSystemService>.CreateMove(ref sharedService.Ref());
+        return SharedRef<NcaFileSystemService>.CreateMove(ref sharedService.Ref);
     }
 
     public void Dispose()
@@ -127,7 +127,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
                 return originalResult;
 
             // There is an original version and no patch version. Open the original directly
-            res = _serviceImpl.OpenFileSystem(ref fileSystem.Ref(), in originalPath, fsType, programId.Value,
+            res = _serviceImpl.OpenFileSystem(ref fileSystem.Ref, in originalPath, fsType, programId.Value,
                 isDirectory);
             if (res.IsFailure()) return res.Miss();
         }
@@ -141,28 +141,28 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
                 : ref PathExtensions.GetNullRef();
 
             // Open the file system using both the original and patch versions
-            res = _serviceImpl.OpenFileSystemWithPatch(ref fileSystem.Ref(), in originalNcaPath, in patchPath,
+            res = _serviceImpl.OpenFileSystemWithPatch(ref fileSystem.Ref, in originalNcaPath, in patchPath,
                 fsType, programId.Value);
             if (res.IsFailure()) return res.Miss();
         }
 
         // Add all the file system wrappers
         using var typeSetFileSystem =
-            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref(), storageFlag));
+            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref, storageFlag));
 
         using var asyncFileSystem =
-            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref()));
+            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref));
 
         using SharedRef<IRomFileSystemAccessFailureManager> accessFailureManager =
             SharedRef<IRomFileSystemAccessFailureManager>.Create(in _selfReference);
 
         using SharedRef<IFileSystem> retryFileSystem =
-            DeepRetryFileSystem.CreateShared(ref asyncFileSystem.Ref(), ref accessFailureManager.Ref());
+            DeepRetryFileSystem.CreateShared(ref asyncFileSystem.Ref, ref accessFailureManager.Ref);
 
         using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref retryFileSystem.Ref(), false);
+            FileSystemInterfaceAdapter.CreateShared(ref retryFileSystem.Ref, false);
 
-        outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+        outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
         return Result.Success;
     }
@@ -290,21 +290,21 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         bool isDirectory = PathUtility.IsDirectoryPath(in path);
 
         using var fileSystem = new SharedRef<IFileSystem>();
-        res = _serviceImpl.OpenFileSystem(ref fileSystem.Ref(), in pathNormalized, fsType, canMountSystemDataPrivate,
+        res = _serviceImpl.OpenFileSystem(ref fileSystem.Ref, in pathNormalized, fsType, canMountSystemDataPrivate,
             id, isDirectory);
         if (res.IsFailure()) return res.Miss();
 
         // Add all the wrappers for the file system
         using var typeSetFileSystem =
-            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref(), storageFlag));
+            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref, storageFlag));
 
         using var asyncFileSystem =
-            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref fileSystem.Ref()));
+            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref fileSystem.Ref));
 
         using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref(), false);
+            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref, false);
 
-        outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+        outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
         return Result.Success;
     }
@@ -330,7 +330,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         if (res.IsFailure()) return res.Miss();
 
         using var fileSystem = new SharedRef<IFileSystem>();
-        res = OpenDataFileSystemCore(ref fileSystem.Ref(), out _, targetProgramId.Value, programInfo.StorageId);
+        res = OpenDataFileSystemCore(ref fileSystem.Ref, out _, targetProgramId.Value, programInfo.StorageId);
         if (res.IsFailure()) return res.Miss();
 
         // Verify the caller has access to the file system
@@ -342,12 +342,12 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
 
         // Add all the file system wrappers
         using var asyncFileSystem =
-            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref fileSystem.Ref()));
+            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref fileSystem.Ref));
 
         using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref(), false);
+            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref, false);
 
-        outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+        outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
         return Result.Success;
     }
@@ -436,15 +436,15 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         isHostFs = Utility.IsHostFsMountName(programPath.GetString());
 
         using var fileSystem = new SharedRef<IFileSystem>();
-        res = _serviceImpl.OpenDataFileSystem(ref fileSystem.Ref(), in programPath, FileSystemProxyType.Rom,
+        res = _serviceImpl.OpenDataFileSystem(ref fileSystem.Ref, in programPath, FileSystemProxyType.Rom,
             programId, isDirectory);
         if (res.IsFailure()) return res.Miss();
 
         // Add all the file system wrappers
         using var typeSetFileSystem =
-            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref(), storageFlag));
+            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref, storageFlag));
 
-        outFileSystem.SetByMove(ref typeSetFileSystem.Ref());
+        outFileSystem.SetByMove(ref typeSetFileSystem.Ref);
 
         return Result.Success;
     }
@@ -465,20 +465,20 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
             return ResultFs.PermissionDenied.Log();
 
         using var fileSystem = new SharedRef<IFileSystem>();
-        res = _serviceImpl.OpenContentStorageFileSystem(ref fileSystem.Ref(), contentStorageId);
+        res = _serviceImpl.OpenContentStorageFileSystem(ref fileSystem.Ref, contentStorageId);
         if (res.IsFailure()) return res.Miss();
 
         // Add all the file system wrappers
         using var typeSetFileSystem =
-            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref(), storageFlag));
+            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref, storageFlag));
 
         using var asyncFileSystem =
-            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref()));
+            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref));
 
         using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref(), false);
+            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref, false);
 
-        outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+        outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
         return Result.Success;
     }
@@ -547,20 +547,20 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
             return ResultFs.PermissionDenied.Log();
 
         using var fileSystem = new SharedRef<IFileSystem>();
-        res = _serviceImpl.OpenRegisteredUpdatePartition(ref fileSystem.Ref());
+        res = _serviceImpl.OpenRegisteredUpdatePartition(ref fileSystem.Ref);
         if (res.IsFailure()) return res.Miss();
 
         // Add all the file system wrappers
         using var typeSetFileSystem =
-            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref(), storageFlag));
+            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref, storageFlag));
 
         using var asyncFileSystem =
-            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref()));
+            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref));
 
         using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref(), false);
+            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref, false);
 
-        outFileSystem.SetByMove(ref fileSystemAdapter.Ref());
+        outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
         return Result.Success;
     }

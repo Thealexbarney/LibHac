@@ -23,9 +23,9 @@ public class DeepRetryFileSystem : ForwardingFileSystem
         using var retryFileSystem = new SharedRef<DeepRetryFileSystem>(
             new DeepRetryFileSystem(ref baseFileSystem, ref accessFailureManager));
 
-        retryFileSystem.Get._selfReference.Set(in retryFileSystem.Ref());
+        retryFileSystem.Get._selfReference.Set(in retryFileSystem.Ref);
 
-        return SharedRef<IFileSystem>.CreateMove(ref retryFileSystem.Ref());
+        return SharedRef<IFileSystem>.CreateMove(ref retryFileSystem.Ref);
     }
 
     public override void Dispose()
