@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
 using LibHac.Diag.Impl;
@@ -499,8 +500,7 @@ public static class Assert
         [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
-        [CallerLineNumber]
-            int lineNumber = 0)
+        [CallerLineNumber] int lineNumber = 0)
         where T : class
     {
         NullImpl(AssertionType.UserAssert, value, valueText, functionName, fileName, lineNumber);
@@ -664,11 +664,12 @@ public static class Assert
     }
 
     // ---------------------------------------------------------------------
-    // In range int
+    // In range T
     // ---------------------------------------------------------------------
 
-    private static void InRangeImpl(AssertionType assertionType, int value, int lower, int upper, string valueText,
+    private static void InRangeImpl<T>(AssertionType assertionType, T value, T lower, T upper, string valueText,
         string lowerText, string upperText, string functionName, string fileName, int lineNumber)
+        where T : IComparisonOperators<T, T, bool>
     {
         if (AssertImpl.WithinRange(value, lower, upper))
             return;
@@ -678,103 +679,54 @@ public static class Assert
     }
 
     [Conditional(AssertCondition)]
-    public static void InRange(int value, int lowerInclusive, int upperExclusive,
+    public static void InRange<T>(T value, T lowerInclusive, T upperExclusive,
         [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerArgumentExpression(nameof(lowerInclusive))] string lowerInclusiveText = "",
         [CallerArgumentExpression(nameof(upperExclusive))] string upperExclusiveText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
+        where T : IComparisonOperators<T, T, bool>
     {
         InRangeImpl(AssertionType.UserAssert, value, lowerInclusive, upperExclusive, valueText, lowerInclusiveText,
             upperExclusiveText, functionName, fileName, lineNumber);
     }
 
     [Conditional(AssertCondition)]
-    internal static void SdkInRange(int value, int lowerInclusive, int upperExclusive,
+    internal static void SdkInRange<T>(T value, T lowerInclusive, T upperExclusive,
         [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerArgumentExpression(nameof(lowerInclusive))] string lowerInclusiveText = "",
         [CallerArgumentExpression(nameof(upperExclusive))] string upperExclusiveText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
+        where T : IComparisonOperators<T, T, bool>
     {
         InRangeImpl(AssertionType.SdkAssert, value, lowerInclusive, upperExclusive, valueText, lowerInclusiveText,
             upperExclusiveText, functionName, fileName, lineNumber);
     }
 
     [Conditional(AssertCondition)]
-    internal static void SdkRequiresInRange(int value, int lowerInclusive, int upperExclusive,
+    internal static void SdkRequiresInRange<T>(T value, T lowerInclusive, T upperExclusive,
         [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerArgumentExpression(nameof(lowerInclusive))] string lowerInclusiveText = "",
         [CallerArgumentExpression(nameof(upperExclusive))] string upperExclusiveText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
+        where T : IComparisonOperators<T, T, bool>
     {
         InRangeImpl(AssertionType.SdkRequires, value, lowerInclusive, upperExclusive, valueText, lowerInclusiveText,
             upperExclusiveText, functionName, fileName, lineNumber);
     }
 
     // ---------------------------------------------------------------------
-    // In range long
+    // Within min-max T
     // ---------------------------------------------------------------------
 
-    private static void InRangeImpl(AssertionType assertionType, long value, long lower, long upper, string valueText,
-        string lowerText, string upperText, string functionName, string fileName, int lineNumber)
-    {
-        if (AssertImpl.WithinRange(value, lower, upper))
-            return;
-
-        AssertImpl.InvokeAssertionInRange(assertionType, value, lower, upper, valueText, lowerText, upperText, functionName,
-            fileName, lineNumber);
-    }
-
-    [Conditional(AssertCondition)]
-    public static void InRange(long value, long lowerInclusive, long upperExclusive,
-        [CallerArgumentExpression(nameof(value))] string valueText = "",
-        [CallerArgumentExpression(nameof(lowerInclusive))] string lowerInclusiveText = "",
-        [CallerArgumentExpression(nameof(upperExclusive))] string upperExclusiveText = "",
-        [CallerMemberName] string functionName = "",
-        [CallerFilePath] string fileName = "",
-        [CallerLineNumber] int lineNumber = 0)
-    {
-        InRangeImpl(AssertionType.UserAssert, value, lowerInclusive, upperExclusive, valueText, lowerInclusiveText,
-            upperExclusiveText, functionName, fileName, lineNumber);
-    }
-
-    [Conditional(AssertCondition)]
-    internal static void SdkInRange(long value, long lowerInclusive, long upperExclusive,
-        [CallerArgumentExpression(nameof(value))] string valueText = "",
-        [CallerArgumentExpression(nameof(lowerInclusive))] string lowerInclusiveText = "",
-        [CallerArgumentExpression(nameof(upperExclusive))] string upperExclusiveText = "",
-        [CallerMemberName] string functionName = "",
-        [CallerFilePath] string fileName = "",
-        [CallerLineNumber] int lineNumber = 0)
-    {
-        InRangeImpl(AssertionType.SdkAssert, value, lowerInclusive, upperExclusive, valueText, lowerInclusiveText,
-            upperExclusiveText, functionName, fileName, lineNumber);
-    }
-
-    [Conditional(AssertCondition)]
-    internal static void SdkRequiresInRange(long value, long lowerInclusive, long upperExclusive,
-        [CallerArgumentExpression(nameof(value))] string valueText = "",
-        [CallerArgumentExpression(nameof(lowerInclusive))] string lowerInclusiveText = "",
-        [CallerArgumentExpression(nameof(upperExclusive))] string upperExclusiveText = "",
-        [CallerMemberName] string functionName = "",
-        [CallerFilePath] string fileName = "",
-        [CallerLineNumber] int lineNumber = 0)
-    {
-        InRangeImpl(AssertionType.SdkRequires, value, lowerInclusive, upperExclusive, valueText, lowerInclusiveText,
-            upperExclusiveText, functionName, fileName, lineNumber);
-    }
-
-    // ---------------------------------------------------------------------
-    // Within min-max int
-    // ---------------------------------------------------------------------
-
-    private static void WithinMinMaxImpl(AssertionType assertionType, int value, int min, int max, string valueText,
+    private static void WithinMinMaxImpl<T>(AssertionType assertionType, T value, T min, T max, string valueText,
         string minText, string maxText, string functionName, string fileName, int lineNumber)
+        where T : IComparisonOperators<T, T, bool>
     {
         if (AssertImpl.WithinMinMax(value, min, max))
             return;
@@ -784,92 +736,42 @@ public static class Assert
     }
 
     [Conditional(AssertCondition)]
-    public static void WithinMinMax(int value, int min, int max,
+    public static void WithinMinMax<T>(T value, T min, T max,
         [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerArgumentExpression(nameof(min))] string minText = "",
         [CallerArgumentExpression(nameof(max))] string maxText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
+        where T : IComparisonOperators<T, T, bool>
     {
         WithinMinMaxImpl(AssertionType.UserAssert, value, min, max, valueText, minText, maxText, functionName,
             fileName, lineNumber);
     }
 
     [Conditional(AssertCondition)]
-    internal static void SdkWithinMinMax(int value, int min, int max,
+    internal static void SdkWithinMinMax<T>(T value, T min, T max,
         [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerArgumentExpression(nameof(min))] string minText = "",
         [CallerArgumentExpression(nameof(max))] string maxText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
+        where T : IComparisonOperators<T, T, bool>
     {
         WithinMinMaxImpl(AssertionType.SdkAssert, value, min, max, valueText, minText, maxText, functionName,
             fileName, lineNumber);
     }
 
     [Conditional(AssertCondition)]
-    internal static void SdkRequiresWithinMinMax(int value, int min, int max,
+    internal static void SdkRequiresWithinMinMax<T>(T value, T min, T max,
         [CallerArgumentExpression(nameof(value))] string valueText = "",
         [CallerArgumentExpression(nameof(min))] string minText = "",
         [CallerArgumentExpression(nameof(max))] string maxText = "",
         [CallerMemberName] string functionName = "",
         [CallerFilePath] string fileName = "",
         [CallerLineNumber] int lineNumber = 0)
-    {
-        WithinMinMaxImpl(AssertionType.SdkRequires, value, min, max, valueText, minText, maxText, functionName,
-            fileName, lineNumber);
-    }
-
-    // ---------------------------------------------------------------------
-    // Within min-max long
-    // ---------------------------------------------------------------------
-
-    private static void WithinMinMaxImpl(AssertionType assertionType, long value, long min, long max,
-        string valueText, string minText, string maxText, string functionName, string fileName, int lineNumber)
-    {
-        if (AssertImpl.WithinMinMax(value, min, max))
-            return;
-
-        AssertImpl.InvokeAssertionWithinMinMax(assertionType, value, min, max, valueText, minText, maxText, functionName,
-            fileName, lineNumber);
-    }
-
-    [Conditional(AssertCondition)]
-    public static void WithinMinMax(long value, long min, long max,
-        [CallerArgumentExpression(nameof(value))] string valueText = "",
-        [CallerArgumentExpression(nameof(min))] string minText = "",
-        [CallerArgumentExpression(nameof(max))] string maxText = "",
-        [CallerMemberName] string functionName = "",
-        [CallerFilePath] string fileName = "",
-        [CallerLineNumber] int lineNumber = 0)
-    {
-        WithinMinMaxImpl(AssertionType.UserAssert, value, min, max, valueText, minText, maxText, functionName,
-            fileName, lineNumber);
-    }
-
-    [Conditional(AssertCondition)]
-    internal static void SdkWithinMinMax(long value, long min, long max,
-        [CallerArgumentExpression(nameof(value))] string valueText = "",
-        [CallerArgumentExpression(nameof(min))] string minText = "",
-        [CallerArgumentExpression(nameof(max))] string maxText = "",
-        [CallerMemberName] string functionName = "",
-        [CallerFilePath] string fileName = "",
-        [CallerLineNumber] int lineNumber = 0)
-    {
-        WithinMinMaxImpl(AssertionType.SdkAssert, value, min, max, valueText, minText, maxText, functionName,
-            fileName, lineNumber);
-    }
-
-    [Conditional(AssertCondition)]
-    internal static void SdkRequiresWithinMinMax(long value, long min, long max,
-        [CallerArgumentExpression(nameof(value))] string valueText = "",
-        [CallerArgumentExpression(nameof(min))] string minText = "",
-        [CallerArgumentExpression(nameof(max))] string maxText = "",
-        [CallerMemberName] string functionName = "",
-        [CallerFilePath] string fileName = "",
-        [CallerLineNumber] int lineNumber = 0)
+        where T : IComparisonOperators<T, T, bool>
     {
         WithinMinMaxImpl(AssertionType.SdkRequires, value, min, max, valueText, minText, maxText, functionName,
             fileName, lineNumber);

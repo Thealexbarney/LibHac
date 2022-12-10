@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LibHac.Common;
@@ -22,8 +23,9 @@ internal static class AssertImpl
             $"{valueText} must be nullptr.");
     }
 
-    internal static void InvokeAssertionInRange(AssertionType assertionType, long value, long lower, long upper,
+    internal static void InvokeAssertionInRange<T>(AssertionType assertionType, T value, T lower, T upper,
         string valueText, string lowerText, string upperText, string functionName, string fileName, int lineNumber)
+        where T : IComparisonOperators<T, T, bool>
     {
         string message =
             string.Format(
@@ -33,8 +35,9 @@ internal static class AssertImpl
         Assert.OnAssertionFailure(assertionType, "RangeCheck", functionName, fileName, lineNumber, message);
     }
 
-    internal static void InvokeAssertionWithinMinMax(AssertionType assertionType, long value, long min, long max,
+    internal static void InvokeAssertionWithinMinMax<T>(AssertionType assertionType, T value, T min, T max,
         string valueText, string minText, string maxText, string functionName, string fileName, int lineNumber)
+        where T : IComparisonOperators<T, T, bool>
     {
         string message =
             string.Format(
@@ -166,22 +169,13 @@ internal static class AssertImpl
         return item.HasValue;
     }
 
-    public static bool WithinRange(int value, int lowerInclusive, int upperExclusive)
+    public static bool WithinRange<T>(T value, T lowerInclusive, T upperExclusive)
+        where T : IComparisonOperators<T, T, bool>
     {
         return lowerInclusive <= value && value < upperExclusive;
     }
 
-    public static bool WithinRange(long value, long lowerInclusive, long upperExclusive)
-    {
-        return lowerInclusive <= value && value < upperExclusive;
-    }
-
-    public static bool WithinMinMax(int value, int min, int max)
-    {
-        return min <= value && value <= max;
-    }
-
-    public static bool WithinMinMax(long value, long min, long max)
+    public static bool WithinMinMax<T>(T value, T min, T max) where T : IComparisonOperators<T, T, bool>
     {
         return min <= value && value <= max;
     }
