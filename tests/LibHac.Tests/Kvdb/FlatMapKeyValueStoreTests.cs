@@ -47,7 +47,7 @@ public class FlatMapKeyValueStoreTests
         for (int i = 0; i < count; i++)
         {
             byte[] value = new byte[startingSize + i];
-            value.AsSpan().Fill((byte)count);
+            value.AsSpan().Fill(unchecked((byte)count));
             values[i] = value;
         }
 

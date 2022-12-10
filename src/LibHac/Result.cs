@@ -386,7 +386,7 @@ public readonly struct Result : IEquatable<Result>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ulong SetBitsValueLong(int value, int bitsOffset, int bitsCount)
         {
-            return ((uint)value & ~(~default(ulong) << bitsCount)) << bitsOffset;
+            return unchecked(((uint)value & ~(~default(ulong) << bitsCount)) << bitsOffset);
         }
 
         /// <summary>

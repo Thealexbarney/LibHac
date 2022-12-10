@@ -39,14 +39,14 @@ public class DeviceOperator : IDeviceOperator
 
     private static Span<byte> GetSpan(OutBuffer buffer, long size)
     {
-        Assert.True(IntUtil.IsIntValueRepresentableAsInt(size));
+        Assert.True(IntUtil.IsIntValueRepresentable<int, long>(size));
 
         return buffer.Buffer.Slice(0, (int)size);
     }
 
     private static ReadOnlySpan<byte> GetSpan(InBuffer buffer, long size)
     {
-        Assert.True(IntUtil.IsIntValueRepresentableAsInt(size));
+        Assert.True(IntUtil.IsIntValueRepresentable<int, long>(size));
 
         return buffer.Buffer.Slice(0, (int)size);
     }
