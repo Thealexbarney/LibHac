@@ -15,22 +15,22 @@ public static class AlignmentMatchingStorageImpl
 {
     public static uint GetRoundDownDifference(int value, uint alignment)
     {
-        return (uint)(value - Alignment.AlignDownPow2(value, alignment));
+        return (uint)(value - Alignment.AlignDown(value, alignment));
     }
 
     public static uint GetRoundDownDifference(long value, uint alignment)
     {
-        return (uint)(value - Alignment.AlignDownPow2(value, alignment));
+        return (uint)(value - Alignment.AlignDown(value, alignment));
     }
 
     public static uint GetRoundUpDifference(int value, uint alignment)
     {
-        return (uint)(Alignment.AlignUpPow2(value, alignment) - value);
+        return (uint)(Alignment.AlignUp(value, alignment) - value);
     }
 
     private static uint GetRoundUpDifference(long value, uint alignment)
     {
-        return (uint)(Alignment.AlignUpPow2(value, alignment) - value);
+        return (uint)(Alignment.AlignUp(value, alignment) - value);
     }
 
     public static Result Read(in SharedRef<IStorage> storage, Span<byte> workBuffer, uint dataAlignment,
@@ -60,10 +60,10 @@ public static class AlignmentMatchingStorageImpl
         // Calculate the range that contains only full data blocks.
         uint offsetRoundUpDifference = GetRoundUpDifference(offset, dataAlignment);
 
-        long coreOffset = Alignment.AlignUpPow2(offset, dataAlignment);
+        long coreOffset = Alignment.AlignUp(offset, dataAlignment);
         long coreSize = destination.Length < offsetRoundUpDifference
             ? 0
-            : Alignment.AlignDownPow2(destination.Length - offsetRoundUpDifference, dataAlignment);
+            : Alignment.AlignDown(destination.Length - offsetRoundUpDifference, dataAlignment);
 
         long coveredOffset = coreSize > 0 ? coreOffset : offset;
 
@@ -77,7 +77,7 @@ public static class AlignmentMatchingStorageImpl
         // Read any partial block at the head of the requested range
         if (offset < coveredOffset)
         {
-            long headOffset = Alignment.AlignDownPow2(offset, dataAlignment);
+            long headOffset = Alignment.AlignDown(offset, dataAlignment);
             int headSize = (int)(coveredOffset - offset);
 
             Assert.SdkAssert(GetRoundDownDifference(offset, dataAlignment) + headSize <= workBuffer.Length);
@@ -94,7 +94,7 @@ public static class AlignmentMatchingStorageImpl
         // Read any partial block at the tail of the requested range
         while (remainingTailSize > 0)
         {
-            long alignedTailOffset = Alignment.AlignDownPow2(tailOffset, dataAlignment);
+            long alignedTailOffset = Alignment.AlignDown(tailOffset, dataAlignment);
             long copySize = Math.Min(alignedTailOffset + dataAlignment - tailOffset, remainingTailSize);
 
             Result res = storage.Read(alignedTailOffset, workBuffer.Slice(0, (int)dataAlignment));
@@ -127,10 +127,10 @@ public static class AlignmentMatchingStorageImpl
         // Calculate the range that contains only full data blocks.
         uint offsetRoundUpDifference = GetRoundUpDifference(offset, dataAlignment);
 
-        long coreOffset = Alignment.AlignUpPow2(offset, dataAlignment);
+        long coreOffset = Alignment.AlignUp(offset, dataAlignment);
         long coreSize = source.Length < offsetRoundUpDifference
             ? 0
-            : Alignment.AlignDownPow2(source.Length - offsetRoundUpDifference, dataAlignment);
+            : Alignment.AlignDown(source.Length - offsetRoundUpDifference, dataAlignment);
 
         long coveredOffset = coreSize > 0 ? coreOffset : offset;
 
@@ -144,7 +144,7 @@ public static class AlignmentMatchingStorageImpl
         // Write any partial block at the head of the specified range
         if (offset < coveredOffset)
         {
-            long headOffset = Alignment.AlignDownPow2(offset, dataAlignment);
+            long headOffset = Alignment.AlignDown(offset, dataAlignment);
             int headSize = (int)(coveredOffset - offset);
 
             Assert.SdkAssert((offset - headOffset) + headSize <= workBuffer.Length);
@@ -168,7 +168,7 @@ public static class AlignmentMatchingStorageImpl
         {
             Assert.SdkAssert(tailOffset - offset < source.Length);
 
-            long alignedTailOffset = Alignment.AlignDownPow2(tailOffset, dataAlignment);
+            long alignedTailOffset = Alignment.AlignDown(tailOffset, dataAlignment);
             long copySize = Math.Min(alignedTailOffset + dataAlignment - tailOffset, remainingTailSize);
 
             // Read the existing block, copy the partial block to the appropriate portion,

@@ -98,7 +98,7 @@ public class FileSystemBufferManager : IBufferManager
 
             int entrySize = Unsafe.SizeOf<Entry>() * maxCacheCount;
             int attrListSize = Unsafe.SizeOf<AttrInfo>() * 0x100;
-            return (int)Alignment.AlignUpPow2(
+            return (int)Alignment.AlignUp(
                 (ulong)(entrySize + attrListSize + entryAlignment + attrInfoAlignment), 8);
         }
 

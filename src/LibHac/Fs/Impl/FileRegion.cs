@@ -39,8 +39,8 @@ public readonly struct FileRegion
 
     public FileRegion ExpandAndAlign(uint alignment)
     {
-        long alignedStartOffset = Alignment.AlignDownPow2(Offset, alignment);
-        long alignedEndOffset = Alignment.AlignUpPow2(GetEndOffset(), alignment);
+        long alignedStartOffset = Alignment.AlignDown(Offset, alignment);
+        long alignedEndOffset = Alignment.AlignUp(GetEndOffset(), alignment);
         long alignedSize = alignedEndOffset - alignedStartOffset;
 
         return new FileRegion(alignedStartOffset, alignedSize);
@@ -48,8 +48,8 @@ public readonly struct FileRegion
 
     public FileRegion ShrinkAndAlign(uint alignment)
     {
-        long alignedStartOffset = Alignment.AlignUpPow2(Offset, alignment);
-        long alignedEndOffset = Alignment.AlignDownPow2(GetEndOffset(), alignment);
+        long alignedStartOffset = Alignment.AlignUp(Offset, alignment);
+        long alignedEndOffset = Alignment.AlignDown(GetEndOffset(), alignment);
         long alignedSize = alignedEndOffset - alignedStartOffset;
 
         return new FileRegion(alignedStartOffset, alignedSize);

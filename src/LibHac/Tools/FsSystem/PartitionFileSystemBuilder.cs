@@ -126,7 +126,7 @@ public class PartitionFileSystemBuilder
             size += entry.NameLength + 1;
         }
 
-        int endOffset = Alignment.AlignUpPow2(startOffset + size, GetMetaDataAlignment(type));
+        int endOffset = Alignment.AlignUp(startOffset + size, GetMetaDataAlignment(type));
         return endOffset - startOffset;
     }
 

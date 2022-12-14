@@ -120,10 +120,10 @@ public static class SaveData
     public static Result EnsureSaveDataImpl(this FileSystemClientImpl fs, UserId userId, long saveDataSize,
         long saveDataJournalSize, bool extendIfNeeded)
     {
-        if (!Alignment.IsAlignedPow2(saveDataSize, SaveDataBlockSize))
+        if (!Alignment.IsAligned(saveDataSize, SaveDataBlockSize))
             return ResultFs.InvalidSize.Log();
 
-        if (!Alignment.IsAlignedPow2(saveDataJournalSize, SaveDataBlockSize))
+        if (!Alignment.IsAligned(saveDataJournalSize, SaveDataBlockSize))
             return ResultFs.InvalidSize.Log();
 
         if (saveDataSize + saveDataJournalSize > SaveDataTotalSizeMax)

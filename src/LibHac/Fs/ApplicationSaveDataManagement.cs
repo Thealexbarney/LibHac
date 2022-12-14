@@ -20,7 +20,7 @@ public static class ApplicationSaveDataManagement
 
     private static long RoundUpOccupationSize(long size)
     {
-        return Alignment.AlignUpPow2(size, SaveDataBlockSize);
+        return Alignment.AlignUp(size, SaveDataBlockSize);
     }
 
     private static long CalculateSaveDataExtensionContextFileSize(long saveDataSize, long saveDataJournalSize)
@@ -48,10 +48,10 @@ public static class ApplicationSaveDataManagement
         if (availableSize < saveDataSize || journalSize < saveDataJournalSize)
         {
             // Make sure the new sizes are valid
-            if (availableSize < saveDataSize && !Alignment.IsAlignedPow2(saveDataSize, SaveDataExtensionSizeAlignment))
+            if (availableSize < saveDataSize && !Alignment.IsAligned(saveDataSize, SaveDataExtensionSizeAlignment))
                 return ResultFs.ExtensionSizeInvalid.Log();
 
-            if (journalSize < saveDataJournalSize && !Alignment.IsAlignedPow2(saveDataJournalSize, SaveDataExtensionSizeAlignment))
+            if (journalSize < saveDataJournalSize && !Alignment.IsAligned(saveDataJournalSize, SaveDataExtensionSizeAlignment))
                 return ResultFs.ExtensionSizeInvalid.Log();
 
             long newSaveDataSize = Math.Max(saveDataSize, availableSize);

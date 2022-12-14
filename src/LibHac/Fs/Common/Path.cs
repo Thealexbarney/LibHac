@@ -171,7 +171,7 @@ public ref struct Path
             if (_buffer is not null && _buffer.Length > length)
                 return Result.Success;
 
-            int alignedLength = Alignment.AlignUpPow2(length, WriteBufferAlignmentLength);
+            int alignedLength = Alignment.AlignUp(length, WriteBufferAlignmentLength);
             byte[] buffer = ArrayPool<byte>.Shared.Rent(alignedLength);
 
             byte[] oldBuffer = _buffer;
@@ -321,7 +321,7 @@ public ref struct Path
     {
         Assert.SdkRequiresNotNull(buffer);
         Assert.SdkRequires(length > 0);
-        Assert.SdkRequires(Alignment.IsAlignedPow2(length, WriteBufferAlignmentLength));
+        Assert.SdkRequires(Alignment.IsAligned(length, WriteBufferAlignmentLength));
 
         byte[] oldBuffer = _writeBuffer;
         _writeBuffer = buffer;
@@ -359,7 +359,7 @@ public ref struct Path
         if (_writeBufferLength > length)
             return Result.Success;
 
-        int alignedLength = Alignment.AlignUpPow2(length, WriteBufferAlignmentLength);
+        int alignedLength = Alignment.AlignUp(length, WriteBufferAlignmentLength);
         byte[] buffer = ArrayPool<byte>.Shared.Rent(alignedLength);
         SetModifiableBuffer(buffer, alignedLength);
 
@@ -1134,7 +1134,7 @@ public ref struct Path
         if (flags.IsWindowsPathAllowed() && WindowsPath.IsWindowsPath(_string, true))
             bufferLength += 1;
 
-        int alignedBufferLength = Alignment.AlignUpPow2(bufferLength, WriteBufferAlignmentLength);
+        int alignedBufferLength = Alignment.AlignUp(bufferLength, WriteBufferAlignmentLength);
 
         byte[] rentedArray = null;
         try

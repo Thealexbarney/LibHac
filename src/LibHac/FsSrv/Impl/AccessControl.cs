@@ -146,7 +146,7 @@ public class AccessControl
                     accessControlData.Slice(data.SaveDataOwnerInfoOffset + sizeof(int), infoCount));
 
             // The ID list must be 4-byte aligned
-            int idsOffset = Alignment.AlignUpPow2(data.SaveDataOwnerInfoOffset + sizeof(int) + infoCount, 4);
+            int idsOffset = Alignment.AlignUp(data.SaveDataOwnerInfoOffset + sizeof(int) + infoCount, 4);
             ReadOnlySpan<ulong> ids = MemoryMarshal.Cast<byte, ulong>(
                 accessControlData.Slice(idsOffset, infoCount * sizeof(ulong)));
 

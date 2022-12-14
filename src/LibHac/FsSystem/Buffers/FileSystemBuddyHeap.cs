@@ -175,7 +175,7 @@ public unsafe class FileSystemBuddyHeap : IDisposable
         uint pageListAlignment = (uint)Unsafe.SizeOf<nint>();
         const uint ulongAlignment = 8;
 
-        return (nuint)Alignment.AlignUpPow2(pageListSize * (orderMax + 1) + pageListAlignment, ulongAlignment);
+        return (nuint)Alignment.AlignUp(pageListSize * (orderMax + 1) + pageListAlignment, ulongAlignment);
     }
 
     public static int QueryOrderMax(nuint size, nuint blockSize)
@@ -184,7 +184,7 @@ public unsafe class FileSystemBuddyHeap : IDisposable
         Assert.SdkRequiresGreaterEqual(blockSize, BlockSizeMin);
         Assert.SdkRequires(BitUtil.IsPowerOfTwo(blockSize));
 
-        int blockCount = (int)(Alignment.AlignUpPow2(size, (uint)blockSize) / blockSize);
+        int blockCount = (int)(Alignment.AlignUp(size, (uint)blockSize) / blockSize);
         for (int order = 1; ; order++)
         {
             if (blockCount <= GetBlockCountFromOrder(order))
@@ -203,7 +203,7 @@ public unsafe class FileSystemBuddyHeap : IDisposable
         Assert.SdkRequiresGreaterEqual(workBufferSize, QueryWorkBufferSize(orderMax));
 
         uint pageListAlignment = (uint)Unsafe.SizeOf<nint>();
-        var alignedWork = (void*)Alignment.AlignUpPow2((ulong)workBuffer, pageListAlignment);
+        var alignedWork = (void*)Alignment.AlignUp((ulong)workBuffer, pageListAlignment);
         ExternalFreeLists = (PageList*)alignedWork;
 
         // Note: The original code does not have a buffer size assert after adjusting for alignment.
@@ -531,7 +531,7 @@ public unsafe class FileSystemBuddyHeap : IDisposable
     private int GetBlockCountFromSize(nuint size)
     {
         nuint blockSize = GetBlockSize();
-        return (int)(Alignment.AlignUpPow2(size, (uint)blockSize) / blockSize);
+        return (int)(Alignment.AlignUp(size, (uint)blockSize) / blockSize);
     }
 
     private UIntPtr GetAddressFromPageEntry(PageEntry* pageEntry)
@@ -551,7 +551,7 @@ public unsafe class FileSystemBuddyHeap : IDisposable
         Assert.SdkRequiresLess((nuint)address, HeapStart + HeapSize);
 
         ulong blockStart = (ulong)HeapStart +
-                           Alignment.AlignDownPow2((nuint)address - HeapStart, (uint)GetBlockSize());
+                           Alignment.AlignDown((nuint)address - HeapStart, (uint)GetBlockSize());
         return (PageEntry*)blockStart;
     }
 
@@ -568,7 +568,7 @@ public unsafe class FileSystemBuddyHeap : IDisposable
 
     private bool IsAlignedToOrder(PageEntry* pageEntry, int order)
     {
-        return Alignment.IsAlignedPow2(GetIndexFromPageEntry(pageEntry), (uint)GetBlockCountFromOrder(order));
+        return Alignment.IsAligned(GetIndexFromPageEntry(pageEntry), (uint)GetBlockCountFromOrder(order));
     }
 
     // Addition: The below fields and methods allow using Memory<byte> with the class instead

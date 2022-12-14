@@ -109,7 +109,7 @@ public class AlignmentMatchingStorage<TDataAlignment, TBufferAlignment> : IStora
 
     public override Result SetSize(long size)
     {
-        Result res = _baseStorage.SetSize(Alignment.AlignUpPow2(size, DataAlign));
+        Result res = _baseStorage.SetSize(Alignment.AlignUp(size, DataAlign));
         _isBaseStorageSizeDirty = true;
 
         return res;
@@ -150,8 +150,8 @@ public class AlignmentMatchingStorage<TDataAlignment, TBufferAlignment> : IStora
         if (res.IsFailure()) return res.Miss();
 
         long validSize = Math.Min(size, baseStorageSize - offset);
-        long alignedOffset = Alignment.AlignDownPow2(offset, DataAlign);
-        long alignedOffsetEnd = Alignment.AlignUpPow2(offset + validSize, DataAlign);
+        long alignedOffset = Alignment.AlignDown(offset, DataAlign);
+        long alignedOffsetEnd = Alignment.AlignUp(offset + validSize, DataAlign);
         long alignedSize = alignedOffsetEnd - alignedOffset;
 
         return _baseStorage.OperateRange(outBuffer, operationId, alignedOffset, alignedSize, inBuffer);
@@ -255,7 +255,7 @@ public class AlignmentMatchingStoragePooledBuffer<TBufferAlignment> : IStorage
 
     public override Result SetSize(long size)
     {
-        Result res = _baseStorage.SetSize(Alignment.AlignUpPow2(size, _dataAlignment));
+        Result res = _baseStorage.SetSize(Alignment.AlignUp(size, _dataAlignment));
         _isBaseStorageSizeDirty = true;
 
         return res;
@@ -296,8 +296,8 @@ public class AlignmentMatchingStoragePooledBuffer<TBufferAlignment> : IStorage
         if (res.IsFailure()) return res.Miss();
 
         long validSize = Math.Min(size, baseStorageSize - offset);
-        long alignedOffset = Alignment.AlignDownPow2(offset, _dataAlignment);
-        long alignedOffsetEnd = Alignment.AlignUpPow2(offset + validSize, _dataAlignment);
+        long alignedOffset = Alignment.AlignDown(offset, _dataAlignment);
+        long alignedOffsetEnd = Alignment.AlignUp(offset + validSize, _dataAlignment);
         long alignedSize = alignedOffsetEnd - alignedOffset;
 
         return _baseStorage.OperateRange(outBuffer, operationId, alignedOffset, alignedSize, inBuffer);
@@ -367,8 +367,8 @@ public class AlignmentMatchingStorageInBulkRead<TBufferAlignment> : IStorage
 
         // Calculate the aligned offsets of the requested region.
         long offsetEnd = offset + destination.Length;
-        long alignedOffset = Alignment.AlignDownPow2(offset, _dataAlignment);
-        long alignedOffsetEnd = Alignment.AlignUpPow2(offsetEnd, _dataAlignment);
+        long alignedOffset = Alignment.AlignDown(offset, _dataAlignment);
+        long alignedOffsetEnd = Alignment.AlignUp(offsetEnd, _dataAlignment);
         long alignedSize = alignedOffsetEnd - alignedOffset;
 
         using var pooledBuffer = new PooledBuffer();
@@ -406,8 +406,8 @@ public class AlignmentMatchingStorageInBulkRead<TBufferAlignment> : IStorage
         }
 
         // Determine read extents for the aligned portion.
-        long coreOffset = Alignment.AlignUpPow2(offset, _dataAlignment);
-        long coreOffsetEnd = Alignment.AlignDownPow2(offsetEnd, _dataAlignment);
+        long coreOffset = Alignment.AlignUp(offset, _dataAlignment);
+        long coreOffsetEnd = Alignment.AlignDown(offsetEnd, _dataAlignment);
 
         // Handle any data before the aligned portion.
         if (offset < coreOffset)
@@ -469,7 +469,7 @@ public class AlignmentMatchingStorageInBulkRead<TBufferAlignment> : IStorage
 
     public override Result SetSize(long size)
     {
-        Result res = _baseStorage.SetSize(Alignment.AlignUpPow2(size, _dataAlignment));
+        Result res = _baseStorage.SetSize(Alignment.AlignUp(size, _dataAlignment));
         _baseStorageSize = -1;
 
         return res;
@@ -509,8 +509,8 @@ public class AlignmentMatchingStorageInBulkRead<TBufferAlignment> : IStorage
         if (res.IsFailure()) return res.Miss();
 
         long validSize = Math.Min(size, baseStorageSize - offset);
-        long alignedOffset = Alignment.AlignDownPow2(offset, _dataAlignment);
-        long alignedOffsetEnd = Alignment.AlignUpPow2(offset + validSize, _dataAlignment);
+        long alignedOffset = Alignment.AlignDown(offset, _dataAlignment);
+        long alignedOffsetEnd = Alignment.AlignUp(offset + validSize, _dataAlignment);
         long alignedSize = alignedOffsetEnd - alignedOffset;
 
         return _baseStorage.OperateRange(outBuffer, operationId, alignedOffset, alignedSize, inBuffer);

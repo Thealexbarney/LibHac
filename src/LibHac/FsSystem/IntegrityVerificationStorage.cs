@@ -170,7 +170,7 @@ public class IntegrityVerificationStorage : IStorage
         if (dataSize < offset)
             return ResultFs.InvalidOffset.Log();
 
-        long alignedDataSize = Alignment.AlignUpPow2(dataSize, (uint)_verificationBlockSize);
+        long alignedDataSize = Alignment.AlignUp(dataSize, (uint)_verificationBlockSize);
         res = CheckAccessRange(offset, destination.Length, alignedDataSize);
         if (res.IsFailure()) return res.Miss();
 
@@ -268,7 +268,7 @@ public class IntegrityVerificationStorage : IStorage
         if (offset >= dataSize)
             return ResultFs.InvalidOffset.Log();
 
-        res = CheckAccessRange(offset, source.Length, Alignment.AlignUpPow2(dataSize, (uint)_verificationBlockSize));
+        res = CheckAccessRange(offset, source.Length, Alignment.AlignUp(dataSize, (uint)_verificationBlockSize));
         if (res.IsFailure()) return res.Miss();
 
         Assert.SdkRequiresAligned(offset, _verificationBlockSize);
@@ -292,7 +292,7 @@ public class IntegrityVerificationStorage : IStorage
                 return Result.Success;
         }
 
-        int alignedWriteSize = Alignment.AlignUpPow2(writeSize, (uint)_verificationBlockSize);
+        int alignedWriteSize = Alignment.AlignUp(writeSize, (uint)_verificationBlockSize);
 
         Result updateResult = Result.Success;
         int updatedSignatureCount = 0;

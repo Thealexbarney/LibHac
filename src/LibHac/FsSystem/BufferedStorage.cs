@@ -554,7 +554,7 @@ public class BufferedStorage : IStorage
         private readonly void CalcFetchParameter(out FetchParameter fetchParam, long offset)
         {
             long blockSize = _bufferedStorage._blockSize;
-            long storageOffset = Alignment.AlignDownPow2(offset, (uint)_bufferedStorage._blockSize);
+            long storageOffset = Alignment.AlignDown(offset, (uint)_bufferedStorage._blockSize);
             long baseSize = _bufferedStorage._baseStorageSize;
             long remainingSize = baseSize - storageOffset;
             long cacheSize = Math.Min(blockSize, remainingSize);
@@ -1107,7 +1107,7 @@ public class BufferedStorage : IStorage
         if (prevSize < size)
         {
             // Prepare to expand.
-            if (!Alignment.IsAlignedPow2(prevSize, (uint)_blockSize))
+            if (!Alignment.IsAligned(prevSize, (uint)_blockSize))
             {
                 using var cache = new SharedCache(this);
                 long invalidateOffset = prevSize;
@@ -1130,7 +1130,7 @@ public class BufferedStorage : IStorage
             using var cache = new SharedCache(this);
             long invalidateOffset = prevSize;
             long invalidateSize = size - prevSize;
-            bool isFragment = Alignment.IsAlignedPow2(size, (uint)_blockSize);
+            bool isFragment = Alignment.IsAligned(size, (uint)_blockSize);
 
             while (cache.AcquireNextOverlappedCache(invalidateOffset, invalidateSize))
             {
@@ -1317,7 +1317,7 @@ public class BufferedStorage : IStorage
             int currentSize;
 
             // If the offset is in the middle of a block, read the remaining part of that block.
-            if (!Alignment.IsAlignedPow2(currentOffset, (uint)_blockSize))
+            if (!Alignment.IsAligned(currentOffset, (uint)_blockSize))
             {
                 long alignedSize = _blockSize - (currentOffset & (_blockSize - 1));
                 currentSize = (int)Math.Min(alignedSize, remainingSize);
@@ -1330,7 +1330,7 @@ public class BufferedStorage : IStorage
             // We have at least one full block to read. Read all the remaining full blocks at once.
             else
             {
-                currentSize = (int)Alignment.AlignDownPow2(remainingSize, (uint)_blockSize);
+                currentSize = (int)Alignment.AlignDown(remainingSize, (uint)_blockSize);
             }
 
             Span<byte> currentDestination = destination.Slice((int)bufferOffset, currentSize);
@@ -1421,15 +1421,15 @@ public class BufferedStorage : IStorage
     /// Otherwise, <see langword="false"/>.</returns>
     private bool ReadHeadCache(ref long offset, Span<byte> buffer, ref long size, ref long bufferOffset)
     {
-        bool isCacheNeeded = !Alignment.IsAlignedPow2(offset, (uint)_blockSize);
+        bool isCacheNeeded = !Alignment.IsAligned(offset, (uint)_blockSize);
 
         while (size > 0)
         {
             long currentSize;
 
-            if (!Alignment.IsAlignedPow2(offset, (uint)_blockSize))
+            if (!Alignment.IsAligned(offset, (uint)_blockSize))
             {
-                long alignedSize = Alignment.AlignUpPow2(offset, (uint)_blockSize) - offset;
+                long alignedSize = Alignment.AlignUp(offset, (uint)_blockSize) - offset;
                 currentSize = Math.Min(alignedSize, size);
             }
             else if (size < _blockSize)
@@ -1458,16 +1458,16 @@ public class BufferedStorage : IStorage
 
     private bool ReadTailCache(long offset, Span<byte> buffer, ref long size, long bufferOffset)
     {
-        bool isCacheNeeded = !Alignment.IsAlignedPow2(offset + size, (uint)_blockSize);
+        bool isCacheNeeded = !Alignment.IsAligned(offset + size, (uint)_blockSize);
 
         while (size > 0)
         {
             long currentOffsetEnd = offset + size;
             long currentSize;
 
-            if (!Alignment.IsAlignedPow2(currentOffsetEnd, (uint)_blockSize))
+            if (!Alignment.IsAligned(currentOffsetEnd, (uint)_blockSize))
             {
-                long alignedSize = currentOffsetEnd - Alignment.AlignDownPow2(currentOffsetEnd, (uint)_blockSize);
+                long alignedSize = currentOffsetEnd - Alignment.AlignDown(currentOffsetEnd, (uint)_blockSize);
                 currentSize = Math.Min(alignedSize, size);
             }
             else if (size < _blockSize)
@@ -1511,8 +1511,8 @@ public class BufferedStorage : IStorage
         Result res;
 
         // Determine aligned extents.
-        long alignedOffset = Alignment.AlignDownPow2(offset, (uint)_blockSize);
-        long alignedOffsetEnd = Math.Min(Alignment.AlignUpPow2(offset + buffer.Length, (uint)_blockSize),
+        long alignedOffset = Alignment.AlignDown(offset, (uint)_blockSize);
+        long alignedOffsetEnd = Math.Min(Alignment.AlignUp(offset + buffer.Length, (uint)_blockSize),
             _baseStorageSize);
         long alignedSize = alignedOffsetEnd - alignedOffset;
 
@@ -1606,7 +1606,7 @@ public class BufferedStorage : IStorage
 
                 if (upgradeResult.wasUpgradeSuccessful)
                 {
-                    long tailCacheOffset = Alignment.AlignDownPow2(offset + buffer.Length, (uint)_blockSize);
+                    long tailCacheOffset = Alignment.AlignDown(offset + buffer.Length, (uint)_blockSize);
                     long tailCacheSize = alignedSize - tailCacheOffset + alignedOffset;
 
                     res = fetchCache.FetchFromBuffer(tailCacheOffset,
@@ -1649,7 +1649,7 @@ public class BufferedStorage : IStorage
             ReadOnlySpan<byte> currentSource = source.Slice(bufferOffset);
             int currentSize;
 
-            if (!Alignment.IsAlignedPow2(currentOffset, (uint)_blockSize))
+            if (!Alignment.IsAligned(currentOffset, (uint)_blockSize))
             {
                 int alignedSize = (int)(_blockSize - (currentOffset & (_blockSize - 1)));
                 currentSize = Math.Min(alignedSize, remainingSize);
@@ -1660,7 +1660,7 @@ public class BufferedStorage : IStorage
             }
             else
             {
-                currentSize = Alignment.AlignDownPow2(remainingSize, (uint)_blockSize);
+                currentSize = Alignment.AlignDown(remainingSize, (uint)_blockSize);
             }
 
             Result res;

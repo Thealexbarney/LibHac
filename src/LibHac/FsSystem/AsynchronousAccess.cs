@@ -77,13 +77,13 @@ public class DefaultAsynchronousAccessSplitter : IAsynchronousAccessSplitter
 
     public Result QueryAppropriateOffset(out long offsetAppropriate, long startOffset, long accessSize, long alignmentSize)
     {
-        offsetAppropriate = Alignment.AlignDownPow2(startOffset + accessSize, alignmentSize);
+        offsetAppropriate = Alignment.AlignDown(startOffset + accessSize, alignmentSize);
         return Result.Success;
     }
 
     public Result QueryInvocationCount(out long count, long startOffset, long endOffset, long accessSize, long alignmentSize)
     {
-        long alignedStartOffset = Alignment.AlignDownPow2(startOffset, alignmentSize);
+        long alignedStartOffset = Alignment.AlignDown(startOffset, alignmentSize);
         count = BitUtil.DivideUp(endOffset - alignedStartOffset, accessSize);
         return Result.Success;
     }

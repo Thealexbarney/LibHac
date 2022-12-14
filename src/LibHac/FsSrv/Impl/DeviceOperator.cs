@@ -358,7 +358,7 @@ public class DeviceOperator : IDeviceOperator
 
         // Changed: Removed the alignment check for the buffer address
 
-        if (!Alignment.IsAlignedPow2(bufferSize, 0x1000))
+        if (!Alignment.IsAligned(bufferSize, 0x1000))
             return ResultFs.InvalidAlignment.Log();
 
         return _fsServer.Storage.WriteToGameCardDirectly(offset, GetSpan(buffer, bufferSize)).Ret();

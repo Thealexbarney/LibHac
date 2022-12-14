@@ -217,10 +217,10 @@ public class AesCtrCounterExtendedStorage : IStorage
             return Result.Success;
 
         // Reads cannot contain any partial blocks.
-        if (!Alignment.IsAlignedPow2(offset, (uint)BlockSize))
+        if (!Alignment.IsAligned(offset, (uint)BlockSize))
             return ResultFs.InvalidOffset.Log();
 
-        if (!Alignment.IsAlignedPow2(destination.Length, (uint)BlockSize))
+        if (!Alignment.IsAligned(destination.Length, (uint)BlockSize))
             return ResultFs.InvalidSize.Log();
 
         // Ensure the the requested range is within the bounds of the table.
@@ -244,7 +244,7 @@ public class AesCtrCounterExtendedStorage : IStorage
 
         // Verify that the entry's offset is aligned to an AES block and within the bounds of the table.
         long entryOffset = visitor.Get<Entry>().GetOffset();
-        if (!Alignment.IsAlignedPow2(entryOffset, (uint)BlockSize) || entryOffset < 0 ||
+        if (!Alignment.IsAligned(entryOffset, (uint)BlockSize) || entryOffset < 0 ||
             !offsets.IsInclude(entryOffset))
         {
             return ResultFs.InvalidAesCtrCounterExtendedEntryOffset.Log();
@@ -283,7 +283,7 @@ public class AesCtrCounterExtendedStorage : IStorage
                 entryEndOffset = offsets.EndOffset;
             }
 
-            if (!Alignment.IsAlignedPow2((ulong)entryEndOffset, (uint)BlockSize) || currentOffset >= entryEndOffset)
+            if (!Alignment.IsAligned((ulong)entryEndOffset, (uint)BlockSize) || currentOffset >= entryEndOffset)
                 return ResultFs.InvalidAesCtrCounterExtendedEntryOffset.Log();
 
             // Get the part of the entry that contains the data we read.
@@ -383,10 +383,10 @@ public class AesCtrCounterExtendedStorage : IStorage
                     return Result.Success;
                 }
 
-                if (!Alignment.IsAlignedPow2(offset, (uint)BlockSize))
+                if (!Alignment.IsAligned(offset, (uint)BlockSize))
                     return ResultFs.InvalidOffset.Log();
 
-                if (!Alignment.IsAlignedPow2(size, (uint)BlockSize))
+                if (!Alignment.IsAligned(size, (uint)BlockSize))
                     return ResultFs.InvalidSize.Log();
 
                 // Ensure the storage contains the provided offset and size.

@@ -168,7 +168,7 @@ public class UnionStorage : IStorage
 
         // Get the start offset of the block containing the requested offset
         long offsetBuffer = 0;
-        long offsetOriginal = Alignment.AlignDownPow2(offset, _blockSize);
+        long offsetOriginal = Alignment.AlignDown(offset, _blockSize);
         long sizeSkipBlock = offset - offsetOriginal;
 
         while (offsetBuffer < destination.Length)
@@ -214,7 +214,7 @@ public class UnionStorage : IStorage
 
         // Get the start offset of the block containing the requested offset
         long offsetBuffer = 0;
-        long offsetOriginal = Alignment.AlignDownPow2(offset, _blockSize);
+        long offsetOriginal = Alignment.AlignDown(offset, _blockSize);
         long sizeSkipBlock = offset - offsetOriginal;
 
         while (offsetBuffer < source.Length)
@@ -302,7 +302,7 @@ public class UnionStorage : IStorage
     public override Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
         ReadOnlySpan<byte> inBuffer)
     {
-        for (long currentOffset = Alignment.AlignDownPow2(offset, _blockSize);
+        for (long currentOffset = Alignment.AlignDown(offset, _blockSize);
              currentOffset < offset + size;
              currentOffset += _blockSize)
         {

@@ -78,10 +78,10 @@ public class AesXtsStorageExternal : IStorage
             return ResultFs.NullptrArgument.Log();
 
         // We can only read at block aligned offsets.
-        if (!Alignment.IsAlignedPow2(offset, AesBlockSize))
+        if (!Alignment.IsAligned(offset, AesBlockSize))
             return ResultFs.InvalidArgument.Log();
 
-        if (!Alignment.IsAlignedPow2(destination.Length, AesBlockSize))
+        if (!Alignment.IsAligned(destination.Length, AesBlockSize))
             return ResultFs.InvalidArgument.Log();
 
         // Read the encrypted data.
@@ -102,7 +102,7 @@ public class AesXtsStorageExternal : IStorage
         if (offset % _blockSize != 0)
         {
             // Determine the size of the pre-data read.
-            int skipSize = (int)(offset - Alignment.AlignDownPow2(offset, _blockSize));
+            int skipSize = (int)(offset - Alignment.AlignDown(offset, _blockSize));
             int dataSize = (int)Math.Min(destination.Length, _blockSize - skipSize);
 
             // Decrypt into a pooled buffer.
@@ -159,10 +159,10 @@ public class AesXtsStorageExternal : IStorage
             return ResultFs.NullptrArgument.Log();
 
         // We can only write at block aligned offsets.
-        if (!Alignment.IsAlignedPow2(offset, AesBlockSize))
+        if (!Alignment.IsAligned(offset, AesBlockSize))
             return ResultFs.InvalidArgument.Log();
 
-        if (!Alignment.IsAlignedPow2(source.Length, AesBlockSize))
+        if (!Alignment.IsAligned(source.Length, AesBlockSize))
             return ResultFs.InvalidArgument.Log();
 
         // Get a pooled buffer.
@@ -186,7 +186,7 @@ public class AesXtsStorageExternal : IStorage
         if (offset % _blockSize != 0)
         {
             // Determine the size of the pre-data write.
-            int skipSize = (int)(offset - Alignment.AlignDownPow2(offset, _blockSize));
+            int skipSize = (int)(offset - Alignment.AlignDown(offset, _blockSize));
             int dataSize = (int)Math.Min(source.Length, _blockSize - skipSize);
 
             // Encrypt into a pooled buffer.
@@ -289,10 +289,10 @@ public class AesXtsStorageExternal : IStorage
                 return Result.Success;
 
             // Ensure alignment.
-            if (!Alignment.IsAlignedPow2(offset, AesBlockSize))
+            if (!Alignment.IsAligned(offset, AesBlockSize))
                 return ResultFs.InvalidArgument.Log();
 
-            if (!Alignment.IsAlignedPow2(size, AesBlockSize))
+            if (!Alignment.IsAligned(size, AesBlockSize))
                 return ResultFs.InvalidArgument.Log();
         }
 

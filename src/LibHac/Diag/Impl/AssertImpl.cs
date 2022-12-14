@@ -242,11 +242,11 @@ internal static class AssertImpl
 
     public static bool IsAligned(long value, int alignment)
     {
-        return Alignment.IsAlignedPow2(value, (uint)alignment);
+        return Alignment.IsAligned(value, (uint)alignment);
     }
 
     public static bool IsAligned(ulong value, int alignment)
     {
-        return Alignment.IsAlignedPow2(value, (uint)alignment);
+        return Alignment.IsAligned(value, (uint)alignment);
     }
 }

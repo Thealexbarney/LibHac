@@ -137,14 +137,14 @@ public class HierarchicalIntegrityVerificationStorageControlArea : IDisposable
             Span<long> levelSize = stackalloc long[IntegrityMaxLayerCount];
             int level = layerCount - 1;
 
-            levelSize[level] = Alignment.AlignUpPow2(dataSize, (uint)inputParam.LevelBlockSizes[level - 1]);
+            levelSize[level] = Alignment.AlignUp(dataSize, (uint)inputParam.LevelBlockSizes[level - 1]);
             level--;
 
             for (; level > 0; level--)
             {
                 // Calculate how much space is needed to store the hashes of the above level, rounding up to the next block size.
                 levelSize[level] =
-                    Alignment.AlignUpPow2(levelSize[level + 1] / inputParam.LevelBlockSizes[level] * HashSize,
+                    Alignment.AlignUp(levelSize[level + 1] / inputParam.LevelBlockSizes[level] * HashSize,
                         (uint)inputParam.LevelBlockSizes[level - 1]);
             }
 

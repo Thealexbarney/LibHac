@@ -76,10 +76,10 @@ public class AesCtrStorage : IStorage
             return Result.Success;
 
         // Reads cannot contain any partial blocks.
-        if (!Alignment.IsAlignedPow2(offset, (uint)BlockSize))
+        if (!Alignment.IsAligned(offset, (uint)BlockSize))
             return ResultFs.InvalidArgument.Log();
 
-        if (!Alignment.IsAlignedPow2(destination.Length, (uint)BlockSize))
+        if (!Alignment.IsAligned(destination.Length, (uint)BlockSize))
             return ResultFs.InvalidArgument.Log();
 
         Result res = _baseStorage.Read(offset, destination);
@@ -103,10 +103,10 @@ public class AesCtrStorage : IStorage
             return Result.Success;
 
         // We can only write full, aligned blocks.
-        if (!Alignment.IsAlignedPow2(offset, (uint)BlockSize))
+        if (!Alignment.IsAligned(offset, (uint)BlockSize))
             return ResultFs.InvalidArgument.Log();
 
-        if (!Alignment.IsAlignedPow2(source.Length, (uint)BlockSize))
+        if (!Alignment.IsAligned(source.Length, (uint)BlockSize))
             return ResultFs.InvalidArgument.Log();
 
         // Get a pooled buffer.
@@ -192,10 +192,10 @@ public class AesCtrStorage : IStorage
                 return Result.Success;
             }
 
-            if (!Alignment.IsAlignedPow2(offset, (uint)BlockSize))
+            if (!Alignment.IsAligned(offset, (uint)BlockSize))
                 return ResultFs.InvalidArgument.Log();
 
-            if (!Alignment.IsAlignedPow2(size, (uint)BlockSize))
+            if (!Alignment.IsAligned(size, (uint)BlockSize))
                 return ResultFs.InvalidArgument.Log();
         }
 
