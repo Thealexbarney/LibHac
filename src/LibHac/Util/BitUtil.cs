@@ -5,47 +5,28 @@ namespace LibHac.Util;
 
 public static class BitUtil
 {
-    public static bool IsPowerOfTwo(int value)
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsPowerOfTwo<T>(T value) where T : IBitwiseOperators<T, T, T>, INumberBase<T>
     {
-        return value > 0 && ResetLeastSignificantOneBit(value) == 0;
+        return !T.IsNegative(value) && !T.IsZero(value) && T.IsZero(ResetLeastSignificantOneBit(value));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsPowerOfTwo(long value)
+    public static T ResetLeastSignificantOneBit<T>(T value) where T : IBitwiseOperators<T, T, T>, INumberBase<T>
     {
-        return value > 0 && ResetLeastSignificantOneBit(value) == 0;
+        return value & unchecked(value - T.One);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsPowerOfTwo(ulong value)
+    public static int CountLeadingZeros<T>(T value) where T : IBinaryInteger<T>
     {
-        return value > 0 && ResetLeastSignificantOneBit(value) == 0;
+        return int.CreateTruncating(T.LeadingZeroCount(value));
     }
 
-    private static int ResetLeastSignificantOneBit(int value)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static T DivideUp<T>(T value, T divisor) where T : INumberBase<T>
     {
-        return value & (value - 1);
+        return unchecked(value + divisor - T.One) / divisor;
     }
-
-    private static long ResetLeastSignificantOneBit(long value)
-    {
-        return value & (value - 1);
-    }
-
-    private static ulong ResetLeastSignificantOneBit(ulong value)
-    {
-        return value & (value - 1);
-    }
-
-    public static int CountLeadingZeros(uint value)
-    {
-        return BitOperations.LeadingZeroCount(value);
-    }
-
-    // DivideUp comes from a C++ template that always casts to unsigned types
-    public static uint DivideUp(uint value, uint divisor) => (value + divisor - 1) / divisor;
-    public static ulong DivideUp(ulong value, ulong divisor) => (value + divisor - 1) / divisor;
-
-    public static int DivideUp(int value, int divisor) => (int)DivideUp((uint)value, (uint)divisor);
-    public static long DivideUp(long value, long divisor) => (long)DivideUp((ulong)value, (ulong)divisor);
 }
