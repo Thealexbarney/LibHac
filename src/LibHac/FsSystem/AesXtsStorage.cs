@@ -35,7 +35,7 @@ public class AesXtsStorage : IStorage
     {
         Assert.Equal(outIv.Length, IvSize);
         Assert.SdkRequiresGreaterEqual(offset, 0);
-        Assert.SdkRequiresAligned((ulong)blockSize, AesBlockSize);
+        Assert.SdkRequiresAligned(blockSize, AesBlockSize);
 
         BinaryPrimitives.WriteInt64BigEndian(outIv.Slice(sizeof(long)), offset / blockSize);
     }
@@ -50,7 +50,7 @@ public class AesXtsStorage : IStorage
         Assert.SdkRequiresEqual(KeySize, key1.Length);
         Assert.SdkRequiresEqual(KeySize, key2.Length);
         Assert.SdkRequiresEqual(IvSize, iv.Length);
-        Assert.SdkRequiresAligned((ulong)blockSize, AesBlockSize);
+        Assert.SdkRequiresAligned(blockSize, AesBlockSize);
 
         key1.CopyTo(_key1.Items);
         key2.CopyTo(_key2.Items);
@@ -68,7 +68,7 @@ public class AesXtsStorage : IStorage
         Assert.SdkRequiresEqual(KeySize, key1.Length);
         Assert.SdkRequiresEqual(KeySize, key2.Length);
         Assert.SdkRequiresEqual(IvSize, iv.Length);
-        Assert.SdkRequiresAligned((ulong)blockSize, AesBlockSize);
+        Assert.SdkRequiresAligned(blockSize, AesBlockSize);
 
         key1.CopyTo(_key1.Items);
         key2.CopyTo(_key2.Items);

@@ -221,8 +221,8 @@ public unsafe class FileSystemBuddyHeap : IDisposable
     public Result Initialize(UIntPtr address, nuint size, nuint blockSize, int orderMax)
     {
         Assert.SdkRequires(FreeLists == null);
-        Assert.SdkRequiresNotEqual(address, UIntPtr.Zero);
-        Assert.SdkRequiresAligned(address.ToUInt64(), (int)BufferAlignment);
+        Assert.SdkRequiresNotEqual(address, nuint.Zero);
+        Assert.SdkRequiresAligned(address, (int)BufferAlignment);
         Assert.SdkRequiresGreaterEqual(blockSize, BlockSizeMin);
         Assert.SdkRequires(BitUtil.IsPowerOfTwo(blockSize));
         Assert.SdkRequiresGreaterEqual(size, blockSize);
@@ -240,7 +240,7 @@ public unsafe class FileSystemBuddyHeap : IDisposable
         // Determine page sizes
         nuint maxPageSize = BlockSize << OrderMax;
         nuint maxPageCount = (nuint)Alignment.AlignUp(HeapSize, (uint)maxPageSize) / maxPageSize;
-        Assert.SdkGreater((int)maxPageCount, 0);
+        Assert.SdkGreater(maxPageCount, nuint.Zero);
 
         // Setup the free lists
         if (ExternalFreeLists != null)
@@ -539,8 +539,8 @@ public unsafe class FileSystemBuddyHeap : IDisposable
         var address = new UIntPtr(pageEntry);
 
         Assert.SdkRequiresGreaterEqual(address, HeapStart);
-        Assert.SdkRequiresLess((nuint)address, HeapStart + HeapSize);
-        Assert.SdkRequiresAligned((nuint)address - HeapStart, (int)GetBlockSize());
+        Assert.SdkRequiresLess(address, HeapStart + HeapSize);
+        Assert.SdkRequiresAligned(address - HeapStart, (int)GetBlockSize());
 
         return address;
     }
@@ -548,10 +548,10 @@ public unsafe class FileSystemBuddyHeap : IDisposable
     private PageEntry* GetPageEntryFromAddress(UIntPtr address)
     {
         Assert.SdkRequiresGreaterEqual(address, HeapStart);
-        Assert.SdkRequiresLess((nuint)address, HeapStart + HeapSize);
+        Assert.SdkRequiresLess(address, HeapStart + HeapSize);
 
         ulong blockStart = (ulong)HeapStart +
-                           Alignment.AlignDown((nuint)address - HeapStart, (uint)GetBlockSize());
+                           Alignment.AlignDown(address - HeapStart, (uint)GetBlockSize());
         return (PageEntry*)blockStart;
     }
 
@@ -559,7 +559,7 @@ public unsafe class FileSystemBuddyHeap : IDisposable
     {
         var address = (nuint)pageEntry;
 
-        Assert.SdkRequiresGreaterEqual(address, (nuint)HeapStart);
+        Assert.SdkRequiresGreaterEqual(address, HeapStart);
         Assert.SdkRequiresLess(address, HeapStart + HeapSize);
         Assert.SdkRequiresAligned(address - HeapStart, (int)GetBlockSize());
 

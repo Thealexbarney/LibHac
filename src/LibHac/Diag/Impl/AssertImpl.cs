@@ -240,12 +240,7 @@ internal static class AssertImpl
         return lhs.CompareTo(rhs) >= 0;
     }
 
-    public static bool IsAligned(long value, int alignment)
-    {
-        return Alignment.IsAligned(value, (uint)alignment);
-    }
-
-    public static bool IsAligned(ulong value, int alignment)
+    public static bool IsAligned<T>(T value, int alignment) where T : IBinaryNumber<T>
     {
         return Alignment.IsAligned(value, (uint)alignment);
     }

@@ -5,7 +5,6 @@ namespace LibHac.Util;
 
 public static class BitUtil
 {
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsPowerOfTwo<T>(T value) where T : IBitwiseOperators<T, T, T>, INumberBase<T>
     {

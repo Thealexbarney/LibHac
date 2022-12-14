@@ -431,7 +431,7 @@ public class BufferedStorage : IStorage
             Assert.SdkRequiresEqual(_prevIndex, InvalidIndex);
             Assert.SdkRequires(!IsValid());
             Assert.SdkRequires(!_isDirty);
-            Assert.SdkRequiresAligned((ulong)offset, (int)_bufferedStorage._blockSize);
+            Assert.SdkRequiresAligned(offset, (int)_bufferedStorage._blockSize);
 
             // Make sure this Cache has an allocated buffer
             if (_memoryRange.IsNull)
