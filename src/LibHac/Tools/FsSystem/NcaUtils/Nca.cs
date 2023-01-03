@@ -481,7 +481,9 @@ public class Nca
         switch (header.FormatType)
         {
             case NcaFormatType.Pfs0:
-                return new PartitionFileSystem(storage);
+                var pfs = new PartitionFileSystem();
+                pfs.Initialize(storage).ThrowIfFailure();
+                return pfs;
             case NcaFormatType.Romfs:
                 return new RomFsFileSystem(storage);
             default:

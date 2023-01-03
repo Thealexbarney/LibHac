@@ -5,6 +5,8 @@ namespace LibHac.Crypto;
 
 public class Sha256Generator : IHash
 {
+    public const int HashSize = Sha256.DigestSize;
+
     private Sha256Impl _baseHash;
 
     public Sha256Generator()

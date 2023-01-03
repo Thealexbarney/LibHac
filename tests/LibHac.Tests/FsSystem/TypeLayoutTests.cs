@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using LibHac.FsSystem;
+using LibHac.FsSystem.Impl;
 using Xunit;
 using static LibHac.Tests.Common.Layout;
 
@@ -335,5 +336,46 @@ public class TypeLayoutTests
         HierarchicalIntegrityVerificationStorageControlArea.InputParam s = default;
 
         Assert.Equal(Constants.IntegrityMaxLayerCount - 1, s.LevelBlockSizes.ItemsRo.Length);
+    }
+
+    [Fact]
+    public static void PartitionFileSystemFormat_PartitionEntry_Layout()
+    {
+        PartitionFileSystemFormat.PartitionEntry s = default;
+
+        Assert.Equal(0x18, Unsafe.SizeOf<PartitionFileSystemFormat.PartitionEntry>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.Offset));
+        Assert.Equal(0x08, GetOffset(in s, in s.Size));
+        Assert.Equal(0x10, GetOffset(in s, in s.NameOffset));
+        Assert.Equal(0x14, GetOffset(in s, in s.Reserved));
+    }
+
+    [Fact]
+    public static void PartitionFileSystemFormat_PartitionFileSystemHeaderImpl_Layout()
+    {
+        PartitionFileSystemFormat.PartitionFileSystemHeaderImpl s = default;
+
+        Assert.Equal(0x10, Unsafe.SizeOf<PartitionFileSystemFormat.PartitionFileSystemHeaderImpl>());
+
+        Assert.Equal(0x0, GetOffset(in s, in s.Signature[0]));
+        Assert.Equal(0x4, GetOffset(in s, in s.EntryCount));
+        Assert.Equal(0x8, GetOffset(in s, in s.NameTableSize));
+        Assert.Equal(0xC, GetOffset(in s, in s.Reserved));
+    }
+
+    [Fact]
+    public static void Sha256PartitionFileSystemFormat_PartitionEntry_Layout()
+    {
+        Sha256PartitionFileSystemFormat.PartitionEntry s = default;
+
+        Assert.Equal(0x40, Unsafe.SizeOf<Sha256PartitionFileSystemFormat.PartitionEntry>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.Offset));
+        Assert.Equal(0x08, GetOffset(in s, in s.Size));
+        Assert.Equal(0x10, GetOffset(in s, in s.NameOffset));
+        Assert.Equal(0x14, GetOffset(in s, in s.HashTargetSize));
+        Assert.Equal(0x18, GetOffset(in s, in s.HashTargetOffset));
+        Assert.Equal(0x20, GetOffset(in s, in s.Hash));
     }
 }

@@ -37,9 +37,10 @@ public class Xci
     {
         XciPartition root = GetRootPartition();
         if (type == XciPartitionType.Root) return root;
+        string partitionFileName = $"/{type.GetFileName()}";
 
         using var partitionFile = new UniqueRef<IFile>();
-        root.OpenFile(ref partitionFile.Ref, type.GetFileName().ToU8Span(), OpenMode.Read).ThrowIfFailure();
+        root.OpenFile(ref partitionFile.Ref, partitionFileName.ToU8Span(), OpenMode.Read).ThrowIfFailure();
         return new XciPartition(partitionFile.Release().AsStorage());
     }
 
@@ -69,10 +70,13 @@ public class Xci
     }
 }
 
-public class XciPartition : PartitionFileSystem
+public class XciPartition : Sha256PartitionFileSystem
 {
     public long Offset { get; internal set; }
     public Validity HashValidity { get; set; } = Validity.Unchecked;
 
-    public XciPartition(IStorage storage) : base(storage) { }
+    public XciPartition(IStorage storage)
+    {
+        Initialize(storage).ThrowIfFailure();
+    }
 }

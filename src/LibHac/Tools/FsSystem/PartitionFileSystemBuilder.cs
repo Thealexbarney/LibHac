@@ -2,16 +2,23 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using LibHac.Common;
 using LibHac.Crypto;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
-using LibHac.FsSystem;
+using LibHac.FsSystem.Impl;
 using LibHac.Tools.Fs;
 using LibHac.Util;
 
 namespace LibHac.Tools.FsSystem;
+
+public enum PartitionFileSystemType
+{
+    Standard,
+    Hashed
+}
 
 public class PartitionFileSystemBuilder
 {
@@ -75,7 +82,7 @@ public class PartitionFileSystemBuilder
     {
         if (type == PartitionFileSystemType.Hashed) CalculateHashes();
 
-        int entryTableSize = Entries.Count * PartitionFileEntry.GetEntrySize(type);
+        int entryTableSize = Entries.Count * GetEntrySize(type);
         int stringTableSize = CalcStringTableSize(HeaderSize + entryTableSize, type);
         int metaDataSize = HeaderSize + entryTableSize + stringTableSize;
 
@@ -171,6 +178,19 @@ public class PartitionFileSystemBuilder
             sha.Initialize();
             sha.Update(data);
             sha.GetHash(entry.Hash);
+        }
+    }
+    
+    public static int GetEntrySize(PartitionFileSystemType type)
+    {
+        switch (type)
+        {
+            case PartitionFileSystemType.Standard:
+                return Unsafe.SizeOf<PartitionFileSystemFormat.PartitionEntry>();
+            case PartitionFileSystemType.Hashed:
+                return Unsafe.SizeOf<Sha256PartitionFileSystemFormat.PartitionEntry>();
+            default:
+                throw new ArgumentOutOfRangeException(nameof(type), type, null);
         }
     }
 

@@ -1,14 +1,19 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using LibHac;
+using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 using LibHac.Tools.Es;
 using LibHac.Tools.Fs;
 using LibHac.Tools.FsSystem;
 using LibHac.Util;
 using static hactoolnet.Print;
+using Path = LibHac.Fs.Path;
 
 namespace hactoolnet;
 
@@ -16,24 +21,58 @@ internal static class ProcessPfs
 {
     public static void Process(Context ctx)
     {
-        using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
+        using var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read);
+
+        IFileSystem fs = null;
+        using UniqueRef<PartitionFileSystem> pfs = new UniqueRef<PartitionFileSystem>();
+        using UniqueRef<Sha256PartitionFileSystem> hfs = new UniqueRef<Sha256PartitionFileSystem>();
+
+        pfs.Reset(new PartitionFileSystem());
+        Result res = pfs.Get.Initialize(file);
+        if (res.IsSuccess())
         {
-            var pfs = new PartitionFileSystem(file);
-            ctx.Logger.LogMessage(pfs.Print());
-
-            if (ctx.Options.OutDir != null)
+            fs = pfs.Get;
+            ctx.Logger.LogMessage(pfs.Get.Print());
+        }
+        else if (!ResultFs.PartitionSignatureVerificationFailed.Includes(res))
+        {
+            res.ThrowIfFailure();
+        }
+        else
+        {
+            // Reading the input as a PartitionFileSystem didn't work. Try reading it as an Sha256PartitionFileSystem
+            hfs.Reset(new Sha256PartitionFileSystem());
+            res = hfs.Get.Initialize(file);
+            if (res.IsFailure())
             {
-                pfs.Extract(ctx.Options.OutDir, ctx.Logger);
+                if (ResultFs.Sha256PartitionSignatureVerificationFailed.Includes(res))
+                {
+                    ResultFs.PartitionSignatureVerificationFailed.Value.ThrowIfFailure();
+                }
+
+                res.ThrowIfFailure();
             }
 
-            if (pfs.EnumerateEntries("*.nca", SearchOptions.Default).Any())
-            {
-                ProcessAppFs.Process(ctx, pfs);
-            }
+            fs = hfs.Get;
+            ctx.Logger.LogMessage(hfs.Get.Print());
+        }
+
+        if (ctx.Options.OutDir != null)
+        {
+            fs.Extract(ctx.Options.OutDir, ctx.Logger);
+        }
+
+        if (fs.EnumerateEntries("*.nca", SearchOptions.Default).Any())
+        {
+            ProcessAppFs.Process(ctx, fs);
         }
     }
 
-    private static string Print(this PartitionFileSystem pfs)
+    private static string Print<TMetaData, TFormat, THeader, TEntry>(this PartitionFileSystemCore<TMetaData, TFormat, THeader, TEntry> pfs)
+        where TMetaData : PartitionFileSystemMetaCore<TFormat, THeader, TEntry>, new()
+        where TFormat : IPartitionFileSystemFormat
+        where THeader : unmanaged, IPartitionFileSystemHeader
+        where TEntry : unmanaged, IPartitionFileSystemEntry
     {
         const int colLen = 36;
 
@@ -42,17 +81,31 @@ internal static class ProcessPfs
 
         sb.AppendLine("PFS0:");
 
-        PrintItem(sb, colLen, "Magic:", pfs.Header.Magic);
-        PrintItem(sb, colLen, "Number of files:", pfs.Header.NumFiles);
-
-        for (int i = 0; i < pfs.Files.Length; i++)
+        using (var rootDir = new UniqueRef<IDirectory>())
         {
-            PartitionFileEntry file = pfs.Files[i];
+            using var rootPath = new Path();
+            PathFunctions.SetUpFixedPath(ref rootPath.Ref(), "/"u8).ThrowIfFailure();
+            pfs.OpenDirectory(ref rootDir.Ref, in rootPath, OpenDirectoryMode.All).ThrowIfFailure();
+            rootDir.Get.GetEntryCount(out long entryCount).ThrowIfFailure();
 
-            string label = i == 0 ? "Files:" : "";
-            string data = $"pfs0:/{file.Name}";
+            PrintItem(sb, colLen, "Magic:", StringUtils.Utf8ZToString(TFormat.VersionSignature));
+            PrintItem(sb, colLen, "Number of files:", entryCount);
 
-            PrintItem(sb, colLen, label, data);
+            var dirEntry = new DirectoryEntry();
+            bool isFirstFile = true;
+
+            while (true)
+            {
+                rootDir.Get.Read(out long entriesRead, new Span<DirectoryEntry>(ref dirEntry)).ThrowIfFailure();
+                if (entriesRead == 0)
+                    break;
+
+                string label = isFirstFile ? "Files:" : "";
+                string printedFilePath = $"pfs0:/{StringUtils.Utf8ZToString(dirEntry.Name)}";
+
+                PrintItem(sb, colLen, label, printedFilePath);
+                isFirstFile = false;
+            }
         }
 
         return sb.ToString();

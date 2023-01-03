@@ -4,7 +4,6 @@ using LibHac.Common.Keys;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
-using LibHac.FsSystem.Impl;
 using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
 using NcaFsHeader = LibHac.Tools.FsSystem.NcaUtils.NcaFsHeader;
@@ -33,14 +32,12 @@ public class StorageOnNcaCreator : IStorageOnNcaCreator
 
         if (isCodeFs)
         {
-            using (var codeFs = new PartitionFileSystemCore<StandardEntry>())
-            {
-                res = codeFs.Initialize(storageTemp);
-                if (res.IsFailure()) return res.Miss();
+            using var codeFs = new PartitionFileSystem();
+            res = codeFs.Initialize(storageTemp);
+            if (res.IsFailure()) return res.Miss();
 
-                res = VerifyAcidSignature(codeFs, nca);
-                if (res.IsFailure()) return res.Miss();
-            }
+            res = VerifyAcidSignature(codeFs, nca);
+            if (res.IsFailure()) return res.Miss();
         }
 
         outStorage.Reset(storageTemp);

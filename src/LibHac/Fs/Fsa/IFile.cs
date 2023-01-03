@@ -157,10 +157,9 @@ public abstract class IFile : IDisposable
         return DoOperateRange(Span<byte>.Empty, operationId, offset, size, ReadOnlySpan<byte>.Empty);
     }
 
-    protected Result DryRead(out long readableBytes, long offset, long size, in ReadOption option,
-        OpenMode openMode)
+    protected Result DryRead(out long outReadSize, long offset, long size, in ReadOption option, OpenMode openMode)
     {
-        UnsafeHelpers.SkipParamInit(out readableBytes);
+        UnsafeHelpers.SkipParamInit(out outReadSize);
 
         // Check that we can read.
         if (!openMode.HasFlag(OpenMode.Read))
@@ -173,12 +172,12 @@ public abstract class IFile : IDisposable
         if (offset > fileSize)
             return ResultFs.OutOfRange.Log();
 
-        readableBytes = Math.Min(fileSize - offset, size);
+        long readableSize = fileSize - offset;
+        outReadSize = Math.Min(readableSize, size);
         return Result.Success;
     }
 
-    protected Result DryWrite(out bool needsAppend, long offset, long size, in WriteOption option,
-        OpenMode openMode)
+    protected Result DryWrite(out bool needsAppend, long offset, long size, in WriteOption option, OpenMode openMode)
     {
         UnsafeHelpers.SkipParamInit(out needsAppend);
 

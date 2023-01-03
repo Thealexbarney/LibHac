@@ -3,11 +3,14 @@ using System.IO;
 using System.Linq;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSystem;
 using LibHac.Gc.Impl;
 using LibHac.Tools.Fs;
 using LibHac.Tools.FsSystem;
+using LibHac.Util;
+using Path = LibHac.Fs.Path;
 
 namespace hactoolnet;
 
@@ -15,59 +18,61 @@ internal static class ProcessXci
 {
     public static void Process(Context ctx)
     {
-        using (var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read))
+        using var file = new LocalStorage(ctx.Options.InFile, FileAccess.Read);
+        var xci = new Xci(ctx.KeySet, file);
+
+        ctx.Logger.LogMessage(xci.Print());
+
+        if (ctx.Options.RootDir != null)
         {
-            var xci = new Xci(ctx.KeySet, file);
+            xci.OpenPartition(XciPartitionType.Root).Extract(ctx.Options.RootDir, ctx.Logger);
+        }
 
-            ctx.Logger.LogMessage(xci.Print());
+        if (ctx.Options.UpdateDir != null && xci.HasPartition(XciPartitionType.Update))
+        {
+            xci.OpenPartition(XciPartitionType.Update).Extract(ctx.Options.UpdateDir, ctx.Logger);
+        }
 
-            if (ctx.Options.RootDir != null)
+        if (ctx.Options.NormalDir != null && xci.HasPartition(XciPartitionType.Normal))
+        {
+            xci.OpenPartition(XciPartitionType.Normal).Extract(ctx.Options.NormalDir, ctx.Logger);
+        }
+
+        if (ctx.Options.SecureDir != null && xci.HasPartition(XciPartitionType.Secure))
+        {
+            xci.OpenPartition(XciPartitionType.Secure).Extract(ctx.Options.SecureDir, ctx.Logger);
+        }
+
+        if (ctx.Options.LogoDir != null && xci.HasPartition(XciPartitionType.Logo))
+        {
+            xci.OpenPartition(XciPartitionType.Logo).Extract(ctx.Options.LogoDir, ctx.Logger);
+        }
+
+        if (ctx.Options.OutDir != null)
+        {
+            XciPartition root = xci.OpenPartition(XciPartitionType.Root);
+            if (root == null)
             {
-                xci.OpenPartition(XciPartitionType.Root).Extract(ctx.Options.RootDir, ctx.Logger);
+                ctx.Logger.LogMessage("Could not find root partition");
+                return;
             }
 
-            if (ctx.Options.UpdateDir != null && xci.HasPartition(XciPartitionType.Update))
+            foreach (DirectoryEntryEx sub in root.EnumerateEntries())
             {
-                xci.OpenPartition(XciPartitionType.Update).Extract(ctx.Options.UpdateDir, ctx.Logger);
+                using var subPfsFile = new UniqueRef<IFile>();
+                root.OpenFile(ref subPfsFile.Ref, sub.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
+
+                using var subPfs = new UniqueRef<Sha256PartitionFileSystem>(new Sha256PartitionFileSystem());
+                subPfs.Get.Initialize(subPfsFile.Get.AsStorage()).ThrowIfFailure();
+
+                string subDir = System.IO.Path.Combine(ctx.Options.OutDir, sub.Name);
+                subPfs.Get.Extract(subDir, ctx.Logger);
             }
+        }
 
-            if (ctx.Options.NormalDir != null && xci.HasPartition(XciPartitionType.Normal))
-            {
-                xci.OpenPartition(XciPartitionType.Normal).Extract(ctx.Options.NormalDir, ctx.Logger);
-            }
-
-            if (ctx.Options.SecureDir != null && xci.HasPartition(XciPartitionType.Secure))
-            {
-                xci.OpenPartition(XciPartitionType.Secure).Extract(ctx.Options.SecureDir, ctx.Logger);
-            }
-
-            if (ctx.Options.LogoDir != null && xci.HasPartition(XciPartitionType.Logo))
-            {
-                xci.OpenPartition(XciPartitionType.Logo).Extract(ctx.Options.LogoDir, ctx.Logger);
-            }
-
-            if (ctx.Options.OutDir != null)
-            {
-                XciPartition root = xci.OpenPartition(XciPartitionType.Root);
-                if (root == null)
-                {
-                    ctx.Logger.LogMessage("Could not find root partition");
-                    return;
-                }
-
-                foreach (PartitionFileEntry sub in root.Files)
-                {
-                    var subPfs = new PartitionFileSystem(root.OpenFile(sub, OpenMode.Read).AsStorage());
-                    string subDir = System.IO.Path.Combine(ctx.Options.OutDir, sub.Name);
-
-                    subPfs.Extract(subDir, ctx.Logger);
-                }
-            }
-
-            if (xci.HasPartition(XciPartitionType.Secure))
-            {
-                ProcessAppFs.Process(ctx, xci.OpenPartition(XciPartitionType.Secure));
-            }
+        if (xci.HasPartition(XciPartitionType.Secure))
+        {
+            ProcessAppFs.Process(ctx, xci.OpenPartition(XciPartitionType.Secure));
         }
     }
 
@@ -173,21 +178,32 @@ internal static class ProcessXci
         using ScopedIndentation mainHeader =
             sb.AppendHeader($"{type.Print()} Partition:{partition.HashValidity.GetValidityString()}");
 
-        sb.PrintItem("Magic:", partition.Header.Magic);
-        sb.PrintItem("Number of files:", partition.Files.Length);
+        using var rootDir = new UniqueRef<IDirectory>();
+        using var rootPath = new Path();
+        PathFunctions.SetUpFixedPath(ref rootPath.Ref(), "/"u8).ThrowIfFailure();
+        partition.OpenDirectory(ref rootDir.Ref, in rootPath, OpenDirectoryMode.All).ThrowIfFailure();
+        rootDir.Get.GetEntryCount(out long entryCount).ThrowIfFailure();
 
-        string name = type.GetFileName();
+        sb.PrintItem("Magic:", "HFS0");
+        sb.PrintItem("Number of files:", entryCount);
 
-        if (partition.Files.Length > 0 && partition.Files.Length < 100)
+        if (entryCount > 0 && entryCount < 100)
         {
-            for (int i = 0; i < partition.Files.Length; i++)
-            {
-                PartitionFileEntry file = partition.Files[i];
+            string partitionName = type.GetFileName();
+            var dirEntry = new DirectoryEntry();
+            bool isFirstFile = true;
 
-                string label = i == 0 ? "Files:" : "";
-                string data = $"{name}:/{file.Name}";
+            while (true)
+            {
+                rootDir.Get.Read(out long entriesRead, new Span<DirectoryEntry>(ref dirEntry)).ThrowIfFailure();
+                if (entriesRead == 0)
+                    break;
+
+                string label = isFirstFile ? "Files:" : "";
+                string data = $"{partitionName}:/{StringUtils.Utf8ZToString(dirEntry.Name)}";
 
                 sb.PrintItem(label, data);
+                isFirstFile = false;
             }
         }
     }
