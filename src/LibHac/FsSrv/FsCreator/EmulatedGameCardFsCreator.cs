@@ -17,6 +17,8 @@ public class EmulatedGameCardFsCreator : IGameCardFileSystemCreator
         _gameCard = gameCard;
     }
 
+    public void Dispose() { }
+
     public Result Create(ref SharedRef<IFileSystem> outFileSystem, GameCardHandle handle,
         GameCardPartition partitionType)
     {

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
@@ -8,11 +7,25 @@ using LibHac.Util;
 
 namespace LibHac.FsSystem;
 
-public interface IAlignmentMatchingStorageSize { }
+public interface IAlignmentMatchingStorageSize
+{
+    static abstract uint Alignment { get; }
+}
 
-[StructLayout(LayoutKind.Sequential, Size = 1)] public struct AlignmentMatchingStorageSize1 : IAlignmentMatchingStorageSize { }
-[StructLayout(LayoutKind.Sequential, Size = 16)] public struct AlignmentMatchingStorageSize16 : IAlignmentMatchingStorageSize { }
-[StructLayout(LayoutKind.Sequential, Size = 512)] public struct AlignmentMatchingStorageSize512 : IAlignmentMatchingStorageSize { }
+public struct AlignmentMatchingStorageSize1 : IAlignmentMatchingStorageSize
+{
+    public static uint Alignment => 1;
+}
+
+public struct AlignmentMatchingStorageSize16 : IAlignmentMatchingStorageSize
+{
+    public static uint Alignment => 16;
+}
+
+public struct AlignmentMatchingStorageSize512 : IAlignmentMatchingStorageSize
+{
+    public static uint Alignment => 512;
+}
 
 /// <summary>
 /// Handles accessing a base <see cref="IStorage"/> that must always be accessed via an aligned offset and size. 
@@ -29,8 +42,8 @@ public class AlignmentMatchingStorage<TDataAlignment, TBufferAlignment> : IStora
     where TDataAlignment : struct, IAlignmentMatchingStorageSize
     where TBufferAlignment : struct, IAlignmentMatchingStorageSize
 {
-    public static uint DataAlign => (uint)Unsafe.SizeOf<TDataAlignment>();
-    public static uint BufferAlign => (uint)Unsafe.SizeOf<TBufferAlignment>();
+    public static uint DataAlign => TDataAlignment.Alignment;
+    public static uint BufferAlign => TBufferAlignment.Alignment;
 
     public static uint DataAlignMax => 0x200;
 
@@ -170,7 +183,7 @@ public class AlignmentMatchingStorage<TDataAlignment, TBufferAlignment> : IStora
 public class AlignmentMatchingStoragePooledBuffer<TBufferAlignment> : IStorage
     where TBufferAlignment : struct, IAlignmentMatchingStorageSize
 {
-    public static uint BufferAlign => (uint)Unsafe.SizeOf<TBufferAlignment>();
+    public static uint BufferAlign => TBufferAlignment.Alignment;
 
     private IStorage _baseStorage;
     private long _baseStorageSize;
@@ -314,7 +327,7 @@ public class AlignmentMatchingStoragePooledBuffer<TBufferAlignment> : IStorage
 public class AlignmentMatchingStorageInBulkRead<TBufferAlignment> : IStorage
     where TBufferAlignment : struct, IAlignmentMatchingStorageSize
 {
-    public static uint BufferAlign => (uint)Unsafe.SizeOf<TBufferAlignment>();
+    public static uint BufferAlign => TBufferAlignment.Alignment;
 
     private IStorage _baseStorage;
     private SharedRef<IStorage> _sharedBaseStorage;

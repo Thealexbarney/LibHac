@@ -13,6 +13,8 @@ public class EmulatedGameCardStorageCreator : IGameCardStorageCreator
         GameCard = gameCard;
     }
 
+    public void Dispose() { }
+
     public Result CreateReadOnly(GameCardHandle handle, ref SharedRef<IStorage> outStorage)
     {
         if (GameCard.IsGameCardHandleInvalid(handle))
