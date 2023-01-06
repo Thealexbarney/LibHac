@@ -118,8 +118,8 @@ public struct CardHeader
     public uint ValidDataEndPage;
     public Array4<byte> Reserved11C;
     public Array16<byte> Iv;
-    public ulong PartitionFsHeaderAddress;
-    public ulong PartitionFsHeaderSize;
+    public long PartitionFsHeaderAddress;
+    public long PartitionFsHeaderSize;
     public Array32<byte> PartitionFsHeaderHash;
     public Array32<byte> InitialDataHash;
     public uint SelSec;

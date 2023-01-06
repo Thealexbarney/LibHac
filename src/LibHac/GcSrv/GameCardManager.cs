@@ -39,9 +39,9 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
     // LibHac additions
     private WeakRef<GameCardManager> _selfReference;
     private readonly FileSystemServer _fsServer;
-    private readonly GameCardDummy _gc;
+    private readonly GameCardEmulated _gc;
 
-    private GameCardManager(GameCardDummy gc, FileSystemServer fsServer)
+    private GameCardManager(GameCardEmulated gc, FileSystemServer fsServer)
     {
         _rwLock = new ReaderWriterLock(fsServer.Hos.Os);
 
@@ -49,7 +49,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         _gc = gc;
     }
 
-    public static SharedRef<GameCardManager> CreateShared(GameCardDummy gc, FileSystemServer fsServer)
+    public static SharedRef<GameCardManager> CreateShared(GameCardEmulated gc, FileSystemServer fsServer)
     {
         var manager = new GameCardManager(gc, fsServer);
 
@@ -506,7 +506,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         Result res = HandleGameCardAccessResult(_gc.GetCardStatus(out GameCardStatus cardStatus));
         if (res.IsFailure()) return res.Miss();
 
-        long size = cardStatus.SecureAreaOffset;
+        long size = cardStatus.NormalAreaSize;
 
         outStorage.Reset(new DelegatedSubStorage(ref storage.Ref, 0, size));
 
@@ -522,7 +522,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         Result res = HandleGameCardAccessResult(_gc.GetCardStatus(out GameCardStatus cardStatus));
         if (res.IsFailure()) return res.Miss();
 
-        long offset = cardStatus.SecureAreaOffset;
+        long offset = cardStatus.NormalAreaSize;
         long size = cardStatus.SecureAreaSize;
 
         outStorage.Reset(new DelegatedSubStorage(ref storage.Ref, offset, size));
@@ -912,7 +912,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         Span<byte> originalHeaderBuffer = stackalloc byte[writeSize];
         originalHeaderBuffer.Clear();
 
-        _gc.GetCardHeader(pooledBuffer.GetBuffer());
+        res = _gc.GetCardHeader(pooledBuffer.GetBuffer());
         if (res.IsFailure()) return res.Miss();
 
         pooledBuffer.GetBuffer().CopyTo(originalHeaderBuffer);
@@ -923,7 +923,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         if (res.IsFailure()) return res.Miss();
 
         devHeaderBuffer.CopyTo(pooledBuffer.GetBuffer());
-        res = _gc.Writer.Write(pooledBuffer.GetBuffer(), (uint)GcCardKeyAreaPageCount, 1);
+        res = _gc.Writer.Write(pooledBuffer.GetBuffer(), GcCardKeyAreaPageCount, 1);
         if (res.IsFailure()) return res.Miss();
 
         // Read the cert area
@@ -931,7 +931,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         res = _gc.Activate();
         if (res.IsFailure()) return res.Miss();
 
-        res = _gc.Read(pooledBuffer.GetBuffer(), (uint)GcCertAreaStartPageAddress, 1);
+        res = _gc.Read(pooledBuffer.GetBuffer(), GcCertAreaPageAddress, 1);
         if (res.IsFailure()) return res.Miss();
 
         Span<byte> deviceCert = stackalloc byte[writeSize];
@@ -943,7 +943,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         if (res.IsFailure()) return res.Miss();
 
         originalHeaderBuffer.CopyTo(pooledBuffer.GetBuffer());
-        res = _gc.Writer.Write(pooledBuffer.GetBuffer(), (uint)GcCardKeyAreaPageCount, 1);
+        res = _gc.Writer.Write(pooledBuffer.GetBuffer(), GcCardKeyAreaPageCount, 1);
         if (res.IsFailure()) return res.Miss();
 
         deviceCert.CopyTo(outBuffer);

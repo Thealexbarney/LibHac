@@ -251,8 +251,8 @@ public class DeviceOperator : IDeviceOperator
         Result res = _fsServer.Storage.GetGameCardStatus(out GameCardStatus gameCardStatus, handle);
         if (res.IsFailure()) return res.Miss();
 
-        outCupVersion = gameCardStatus.UpdatePartitionVersion;
-        outCupId = gameCardStatus.UpdatePartitionId;
+        outCupVersion = gameCardStatus.CupVersion;
+        outCupId = gameCardStatus.CupId;
 
         return Result.Success;
     }
@@ -273,7 +273,7 @@ public class DeviceOperator : IDeviceOperator
         Result res = _fsServer.Storage.GetGameCardStatus(out GameCardStatus gameCardStatus, handle);
         if (res.IsFailure()) return res.Miss();
 
-        outAttribute = gameCardStatus.GameCardAttribute;
+        outAttribute = gameCardStatus.Flags;
         return Result.Success;
     }
 

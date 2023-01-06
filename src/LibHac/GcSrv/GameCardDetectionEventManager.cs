@@ -9,9 +9,9 @@ namespace LibHac.GcSrv;
 /// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
 internal class GameCardDetectionEventManager : CardDeviceDetectionEventManager
 {
-    private GameCardDummy _gc;
+    private GameCardEmulated _gc;
 
-    public GameCardDetectionEventManager(GameCardDummy gc)
+    public GameCardDetectionEventManager(GameCardEmulated gc)
     {
         _gc = gc;
 

@@ -15,14 +15,14 @@ internal class GameCardDeviceOperator : IStorageDeviceOperator
     private SharedRef<GameCardStorageDevice> _storageDevice;
 
     // LibHac additions
-    private readonly GameCardDummy _gc;
+    private readonly GameCardEmulated _gc;
 
     public static uint BytesToPages(long byteCount)
     {
-        return (uint)((ulong)byteCount / (ulong)GcPageSize);
+        return (uint)((ulong)byteCount / GcPageSize);
     }
 
-    public GameCardDeviceOperator(ref SharedRef<GameCardStorageDevice> storageDevice, GameCardDummy gc)
+    public GameCardDeviceOperator(ref SharedRef<GameCardStorageDevice> storageDevice, GameCardEmulated gc)
     {
         _storageDevice = SharedRef<GameCardStorageDevice>.CreateMove(ref storageDevice);
         _gc = gc;
@@ -179,11 +179,11 @@ internal class GameCardDeviceOperator : IStorageDeviceOperator
                 Result res = _storageDevice.Get.AcquireReadLock(ref readLock.Ref());
                 if (res.IsFailure()) return res.Miss();
 
-                if (outBuffer.Size < GcCardExistenceResponseDataSize)
+                if (outBuffer.Size < GcChallengeCardExistenceResponseSize)
                     return ResultFs.InvalidArgument.Log();
 
                 result = _gc.ChallengeCardExistence(outBuffer.Buffer, inBuffer1.Buffer, inBuffer2.Buffer);
-                bytesWritten = GcCardExistenceResponseDataSize;
+                bytesWritten = GcChallengeCardExistenceResponseSize;
 
                 break;
             }

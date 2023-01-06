@@ -108,6 +108,7 @@ public class GameCardRootPartition : IDisposable
             return ResultFs.PartitionNotFound.Log();
 
         ref readonly PartitionEntry entry = ref _partitionFsMeta.Get.GetEntry(entryIndex);
+        outEntry = new ReadOnlyRef<PartitionEntry>(in entry);
 
         switch (partitionType)
         {
@@ -261,9 +262,9 @@ public class GameCardFileSystemCreator : IGameCardFileSystemCreator
                 if (res.IsFailure()) return res.Miss();
 
                 // Get an IStorage of the start of the root partition to the start of the secure area.
-                long updateAndNormalPartitionSize = status.SecureAreaOffset - status.PartitionFsHeaderOffset;
+                long updateAndNormalPartitionSize = status.NormalAreaSize - status.PartitionFsHeaderAddress;
                 using var rootFsStorage = new SharedRef<IStorage>(new SubStorage(in alignedRootStorage,
-                    status.PartitionFsHeaderOffset, updateAndNormalPartitionSize));
+                    status.PartitionFsHeaderAddress, updateAndNormalPartitionSize));
 
                 if (!rootFsStorage.HasValue)
                     return ResultFs.AllocationMemoryFailedInGameCardFileSystemCreatorD.Log();

@@ -6,18 +6,18 @@ namespace LibHac.Gc;
 public struct GameCardStatus
 {
     public Array32<byte> PartitionFsHeaderHash;
-    public ulong PackageId;
-    public long Size;
-    public long PartitionFsHeaderOffset;
+    public Array8<byte>  PackageId;
+    public long CardSize;
+    public long PartitionFsHeaderAddress;
     public long PartitionFsHeaderSize;
-    public long SecureAreaOffset;
+    public long NormalAreaSize;
     public long SecureAreaSize;
-    public uint UpdatePartitionVersion;
-    public ulong UpdatePartitionId;
+    public uint CupVersion;
+    public ulong CupId;
     public byte CompatibilityType;
-    public Array3<byte> Reserved61;
-    public byte GameCardAttribute;
-    public Array11<byte> Reserved65;
+    public Array3<byte> Reserved1;
+    public byte Flags;
+    public Array11<byte> Reserved2;
 }
 
 public struct RmaInformation

@@ -320,7 +320,7 @@ internal static class GameCardService
             size: 0, operationId);
         if (res.IsFailure()) return res.Miss();
 
-        Assert.SdkEqual(GcCardExistenceResponseDataSize, bytesWritten);
+        Assert.SdkEqual(GcChallengeCardExistenceResponseSize, bytesWritten);
 
         return Result.Success;
     }

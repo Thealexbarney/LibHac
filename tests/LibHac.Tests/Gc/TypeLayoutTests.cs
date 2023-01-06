@@ -17,17 +17,17 @@ public class TypeLayoutTests
 
         Assert.Equal(0x00, GetOffset(in s, in s.PartitionFsHeaderHash));
         Assert.Equal(0x20, GetOffset(in s, in s.PackageId));
-        Assert.Equal(0x28, GetOffset(in s, in s.Size));
-        Assert.Equal(0x30, GetOffset(in s, in s.PartitionFsHeaderOffset));
+        Assert.Equal(0x28, GetOffset(in s, in s.CardSize));
+        Assert.Equal(0x30, GetOffset(in s, in s.PartitionFsHeaderAddress));
         Assert.Equal(0x38, GetOffset(in s, in s.PartitionFsHeaderSize));
-        Assert.Equal(0x40, GetOffset(in s, in s.SecureAreaOffset));
+        Assert.Equal(0x40, GetOffset(in s, in s.NormalAreaSize));
         Assert.Equal(0x48, GetOffset(in s, in s.SecureAreaSize));
-        Assert.Equal(0x50, GetOffset(in s, in s.UpdatePartitionVersion));
-        Assert.Equal(0x58, GetOffset(in s, in s.UpdatePartitionId));
+        Assert.Equal(0x50, GetOffset(in s, in s.CupVersion));
+        Assert.Equal(0x58, GetOffset(in s, in s.CupId));
         Assert.Equal(0x60, GetOffset(in s, in s.CompatibilityType));
-        Assert.Equal(0x61, GetOffset(in s, in s.Reserved61));
-        Assert.Equal(0x64, GetOffset(in s, in s.GameCardAttribute));
-        Assert.Equal(0x65, GetOffset(in s, in s.Reserved65));
+        Assert.Equal(0x61, GetOffset(in s, in s.Reserved1));
+        Assert.Equal(0x64, GetOffset(in s, in s.Flags));
+        Assert.Equal(0x65, GetOffset(in s, in s.Reserved2));
     }
 
     [Fact]

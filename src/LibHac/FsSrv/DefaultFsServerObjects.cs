@@ -14,7 +14,7 @@ public class DefaultFsServerObjects
     public FileSystemCreatorInterfaces FsCreators { get; set; }
     public EmulatedGameCard GameCard { get; set; }
     public SdmmcApi Sdmmc { get; set; }
-    public GameCardDummy GameCardNew { get; set; }
+    public GameCardEmulated GameCardNew { get; set; }
     public EmulatedStorageDeviceManagerFactory StorageDeviceManagerFactory { get; set; }
 
     public static DefaultFsServerObjects GetDefaultEmulatedCreators(IFileSystem rootFileSystem, KeySet keySet,
@@ -23,10 +23,10 @@ public class DefaultFsServerObjects
         var creators = new FileSystemCreatorInterfaces();
         var gameCard = new EmulatedGameCard(keySet);
 
-        var gameCardNew = new GameCardDummy();
+        var gameCardNew = new GameCardEmulated();
         var sdmmcNew = new SdmmcApi(fsServer);
 
-        var gcStorageCreator = new EmulatedGameCardStorageCreator(gameCard);
+        var gcStorageCreator = new GameCardStorageCreator(fsServer);
 
         using var sharedRootFileSystem = new SharedRef<IFileSystem>(rootFileSystem);
         using SharedRef<IFileSystem> sharedRootFileSystemCopy =
@@ -39,7 +39,7 @@ public class DefaultFsServerObjects
         creators.SubDirectoryFileSystemCreator = new SubDirectoryFileSystemCreator();
         creators.SaveDataFileSystemCreator = new SaveDataFileSystemCreator(fsServer, keySet, null, randomGenerator);
         creators.GameCardStorageCreator = gcStorageCreator;
-        creators.GameCardFileSystemCreator = new EmulatedGameCardFsCreator(gcStorageCreator, gameCard);
+        creators.GameCardFileSystemCreator = new GameCardFileSystemCreator(new ArrayPoolMemoryResource(), gcStorageCreator, fsServer);
         creators.EncryptedFileSystemCreator = new EncryptedFileSystemCreator(keySet);
         creators.BuiltInStorageFileSystemCreator = new EmulatedBisFileSystemCreator(ref sharedRootFileSystem.Ref);
         creators.SdCardFileSystemCreator = new EmulatedSdCardFileSystemCreator(sdmmcNew, ref sharedRootFileSystemCopy.Ref);

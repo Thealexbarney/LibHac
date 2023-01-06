@@ -1,14 +1,21 @@
-﻿namespace LibHac.Gc;
+﻿using LibHac.Crypto;
+
+namespace LibHac.Gc;
 
 public static class Values
 {
-    public static int GcPageSize => 0x200;
-    public static int GcAsicFirmwareSize => 0x7800;
-    public static int GcCardDeviceIdSize => 0x10;
-    public static int GcCardExistenceResponseDataSize => 0x58;
-    public static int GcCardImageHashSize => 0x20;
-    public static int GcDeviceCertificateSize => 0x200;
-    public static int GcCardKeyAreaSize => 0x1000;
-    public static int GcCardKeyAreaPageCount => 8;
-    public static int GcCertAreaStartPageAddress => 56;
+    public const int GcPageSize = 0x200;
+    public const int GcAsicFirmwareSize = 1024 * 30; // 30 KiB
+    public const int GcCardDeviceIdSize = 0x10;
+    public const int GcChallengeCardExistenceResponseSize = 0x58;
+    public const int GcCardImageHashSize = 0x20;
+    public const int GcDeviceCertificateSize = 0x200;
+    public const int GcCardKeyAreaSize = GcCardKeyAreaPageCount * GcPageSize;
+    public const int GcCardKeyAreaPageCount = 8;
+    public const int GcCertAreaPageAddress = 56;
+    public const int GcAesCbcIvLength = Aes.KeySize128;
+
+    public const long UnusedAreaSizeBase = 1024 * 1024 * 72; // 72 MiB
+    public const long MemorySizeBase = 1024 * 1024 * 1024; // 1 GiB
+    public const long AvailableSizeBase = MemorySizeBase - UnusedAreaSizeBase;
 }

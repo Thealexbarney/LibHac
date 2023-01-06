@@ -205,7 +205,7 @@ public struct SharedLock<TMutex> : IDisposable where TMutex : class, ISharedMute
 
     public void Unlock()
     {
-        if (_ownsLock)
+        if (!_ownsLock)
             throw new SynchronizationLockException("SharedLock.Unlock: Not locked");
 
         _mutex.UnlockShared();

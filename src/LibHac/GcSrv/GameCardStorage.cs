@@ -20,9 +20,9 @@ internal class ReadOnlyGameCardStorage : IStorage
     private SharedRef<IGameCardManager> _deviceManager;
 
     // LibHac additions
-    private readonly GameCardDummy _gc;
+    private readonly GameCardEmulated _gc;
 
-    public ReadOnlyGameCardStorage(ref SharedRef<IGameCardManager> deviceManger, GameCardDummy gc)
+    public ReadOnlyGameCardStorage(ref SharedRef<IGameCardManager> deviceManger, GameCardEmulated gc)
     {
         _deviceManager = SharedRef<IGameCardManager>.CreateMove(ref deviceManger);
         _gc = gc;
@@ -65,7 +65,7 @@ internal class ReadOnlyGameCardStorage : IStorage
         Result res = _gc.GetCardStatus(out GameCardStatus status);
         if (res.IsFailure()) return res.Miss();
 
-        size = status.Size;
+        size = status.CardSize;
         return Result.Success;
     }
 
@@ -103,9 +103,9 @@ internal class WriteOnlyGameCardStorage : IStorage
     private SharedRef<IGameCardManager> _deviceManager;
 
     // LibHac additions
-    private readonly GameCardDummy _gc;
+    private readonly GameCardEmulated _gc;
 
-    public WriteOnlyGameCardStorage(ref SharedRef<IGameCardManager> deviceManger, GameCardDummy gc)
+    public WriteOnlyGameCardStorage(ref SharedRef<IGameCardManager> deviceManger, GameCardEmulated gc)
     {
         _deviceManager = SharedRef<IGameCardManager>.CreateMove(ref deviceManger);
         _gc = gc;
