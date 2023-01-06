@@ -39,9 +39,9 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
     // LibHac additions
     private WeakRef<GameCardManager> _selfReference;
     private readonly FileSystemServer _fsServer;
-    private readonly GameCardEmulated _gc;
+    private readonly IGcApi _gc;
 
-    private GameCardManager(GameCardEmulated gc, FileSystemServer fsServer)
+    private GameCardManager(IGcApi gc, FileSystemServer fsServer)
     {
         _rwLock = new ReaderWriterLock(fsServer.Hos.Os);
 
@@ -49,7 +49,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         _gc = gc;
     }
 
-    public static SharedRef<GameCardManager> CreateShared(GameCardEmulated gc, FileSystemServer fsServer)
+    public static SharedRef<GameCardManager> CreateShared(IGcApi gc, FileSystemServer fsServer)
     {
         var manager = new GameCardManager(gc, fsServer);
 

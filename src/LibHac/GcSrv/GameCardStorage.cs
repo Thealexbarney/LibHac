@@ -20,9 +20,9 @@ internal class ReadOnlyGameCardStorage : IStorage
     private SharedRef<IGameCardManager> _deviceManager;
 
     // LibHac additions
-    private readonly GameCardEmulated _gc;
+    private readonly IGcApi _gc;
 
-    public ReadOnlyGameCardStorage(ref SharedRef<IGameCardManager> deviceManger, GameCardEmulated gc)
+    public ReadOnlyGameCardStorage(ref SharedRef<IGameCardManager> deviceManger, IGcApi gc)
     {
         _deviceManager = SharedRef<IGameCardManager>.CreateMove(ref deviceManger);
         _gc = gc;
@@ -103,9 +103,9 @@ internal class WriteOnlyGameCardStorage : IStorage
     private SharedRef<IGameCardManager> _deviceManager;
 
     // LibHac additions
-    private readonly GameCardEmulated _gc;
+    private readonly IGcApi _gc;
 
-    public WriteOnlyGameCardStorage(ref SharedRef<IGameCardManager> deviceManger, GameCardEmulated gc)
+    public WriteOnlyGameCardStorage(ref SharedRef<IGameCardManager> deviceManger, IGcApi gc)
     {
         _deviceManager = SharedRef<IGameCardManager>.CreateMove(ref deviceManger);
         _gc = gc;

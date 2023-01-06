@@ -15,14 +15,14 @@ internal class GameCardDeviceOperator : IStorageDeviceOperator
     private SharedRef<GameCardStorageDevice> _storageDevice;
 
     // LibHac additions
-    private readonly GameCardEmulated _gc;
+    private readonly IGcApi _gc;
 
     public static uint BytesToPages(long byteCount)
     {
         return (uint)((ulong)byteCount / GcPageSize);
     }
 
-    public GameCardDeviceOperator(ref SharedRef<GameCardStorageDevice> storageDevice, GameCardEmulated gc)
+    public GameCardDeviceOperator(ref SharedRef<GameCardStorageDevice> storageDevice, IGcApi gc)
     {
         _storageDevice = SharedRef<GameCardStorageDevice>.CreateMove(ref storageDevice);
         _gc = gc;

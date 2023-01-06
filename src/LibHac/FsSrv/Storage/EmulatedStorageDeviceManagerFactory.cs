@@ -25,10 +25,9 @@ public class EmulatedStorageDeviceManagerFactory : IStorageDeviceManagerFactory
 
     private readonly FileSystemServer _fsServer;
     private readonly SdmmcApi _sdmmc;
-    private readonly GameCardEmulated _gc;
+    private readonly IGcApi _gc;
 
-    public EmulatedStorageDeviceManagerFactory(FileSystemServer fsServer, SdmmcApi sdmmc, GameCardEmulated gc,
-        bool hasGameCard)
+    public EmulatedStorageDeviceManagerFactory(FileSystemServer fsServer, SdmmcApi sdmmc, IGcApi gc, bool hasGameCard)
     {
         _fsServer = fsServer;
         _sdmmc = sdmmc;

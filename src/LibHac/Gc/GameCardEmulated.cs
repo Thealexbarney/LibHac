@@ -10,7 +10,7 @@ using static LibHac.Gc.Values;
 
 namespace LibHac.Gc;
 
-public class GameCardEmulated
+public sealed class GameCardEmulated : IGcApi
 {
     private static ReadOnlySpan<byte> CardHeaderKey => new byte[]
         { 0x01, 0xC5, 0x8F, 0xE7, 0x00, 0x2D, 0x13, 0x5A, 0xB2, 0x9A, 0x3F, 0x69, 0x33, 0x95, 0x74, 0xB1 };
@@ -29,6 +29,7 @@ public class GameCardEmulated
     private Array32<byte> _imageHash;
 
     public GameCardWriter Writer => new GameCardWriter(this);
+    IGcWriterApi IGcApi.Writer => Writer;
 
     private Result CheckCardReady()
     {
@@ -126,7 +127,7 @@ public class GameCardEmulated
         return _cardStorage.Get.Read(baseStorageOffset, destination).Ret();
     }
 
-    public readonly struct GameCardWriter
+    public readonly struct GameCardWriter : IGcWriterApi
     {
         private readonly GameCardEmulated _card;
 
