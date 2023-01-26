@@ -314,6 +314,38 @@ public static class SaveData
         return res.Miss();
     }
 
+    public static Result CleanUpTemporaryStorageImpl(this FileSystemClientImpl fs)
+    {
+        while (true)
+        {
+            Result res = SaveDataFilter.Make(out SaveDataFilter filter, programId: default, SaveDataType.Temporary,
+                userId: default, saveDataId: default, index: default);
+
+            fs.AbortIfNeeded(res);
+            if (res.IsFailure()) return res.Miss();
+
+            // Try to find any temporary save data.
+            res = fs.FindSaveDataWithFilter(out SaveDataInfo info, SaveDataSpaceId.Temporary, in filter);
+
+            if (res.IsFailure())
+            {
+                if (ResultFs.TargetNotFound.Includes(res))
+                {
+                    // No more save data found. We're done cleaning.
+                    return Result.Success;
+                }
+
+                fs.AbortIfNeeded(res);
+                return res.Miss();
+            }
+
+            // Delete the found save data.
+            res = fs.DeleteSaveData(SaveDataSpaceId.Temporary, info.SaveDataId);
+            fs.AbortIfNeeded(res);
+            if (res.IsFailure()) return res.Miss();
+        }
+    }
+
     public static Result MountTemporaryStorage(this FileSystemClient fs, U8Span mountName)
     {
         Result res;
