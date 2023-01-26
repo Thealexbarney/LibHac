@@ -45,6 +45,35 @@ public class ApplicationSaveDataManagementTests
             Assert.Equal(SaveDataType.Account, info[0].Type);
         }
     }
+    
+    [Fact]
+    public static void EnsureApplicationSaveData_CreatesMultipleAccountSaveData_AllSavesExist()
+    {
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+
+        var userId = new Uid(2, 3);
+
+        var controlProperty = new ApplicationControlProperty
+        {
+            UserAccountSaveDataSize = 0x1000,
+            UserAccountSaveDataJournalSize = 0x1000
+        };
+
+        Assert.Success(fs.EnsureApplicationSaveData(out _, new Ncm.ApplicationId(11), in controlProperty, in userId));
+        Assert.Success(fs.EnsureApplicationSaveData(out _, new Ncm.ApplicationId(12), in controlProperty, in userId));
+        AssertSaveExists();
+
+        void AssertSaveExists()
+        {
+            using var iterator = new UniqueRef<SaveDataIterator>();
+            fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User);
+
+            var info = new SaveDataInfo[3];
+            Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
+
+            Assert.Equal(2, entriesRead);
+        }
+    }
 
     [Fact]
     public static void EnsureApplicationSaveData_CreatesDeviceSaveData()
@@ -82,6 +111,35 @@ public class ApplicationSaveDataManagementTests
     }
 
     [Fact]
+    public static void EnsureApplicationSaveData_CreatesMultipleDeviceSaveData_AllSavesExist()
+    {
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+
+        var userId = new Uid(2, 3);
+
+        var controlProperty = new ApplicationControlProperty
+        {
+            DeviceSaveDataSize = 0x1000,
+            DeviceSaveDataJournalSize = 0x1000
+        };
+
+        Assert.Success(fs.EnsureApplicationSaveData(out _, new Ncm.ApplicationId(11), in controlProperty, in userId));
+        Assert.Success(fs.EnsureApplicationSaveData(out _, new Ncm.ApplicationId(12), in controlProperty, in userId));
+        AssertSaveExists();
+
+        void AssertSaveExists()
+        {
+            using var iterator = new UniqueRef<SaveDataIterator>();
+            fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User);
+
+            var info = new SaveDataInfo[3];
+            Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
+
+            Assert.Equal(2, entriesRead);
+        }
+    }
+
+    [Fact]
     public static void EnsureApplicationSaveData_CreatesBcatCacheStorage()
     {
         FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
@@ -112,6 +170,34 @@ public class ApplicationSaveDataManagementTests
             Assert.Equal(applicationId, info[0].ProgramId);
             Assert.Equal(InvalidUserId, info[0].UserId);
             Assert.Equal(SaveDataType.Bcat, info[0].Type);
+        }
+    }
+
+    [Fact]
+    public static void EnsureApplicationSaveData_CreatesMultipleBcatCacheStorages_AllSavesExist()
+    {
+        FileSystemClient fs = FileSystemServerFactory.CreateClient(true);
+
+        var userId = new Uid(2, 3);
+
+        var controlProperty = new ApplicationControlProperty
+        {
+            BcatDeliveryCacheStorageSize = 0x1000
+        };
+
+        Assert.Success(fs.EnsureApplicationSaveData(out _, new Ncm.ApplicationId(11), in controlProperty, in userId));
+        Assert.Success(fs.EnsureApplicationSaveData(out _, new Ncm.ApplicationId(12), in controlProperty, in userId));
+        AssertSaveExists();
+
+        void AssertSaveExists()
+        {
+            using var iterator = new UniqueRef<SaveDataIterator>();
+            fs.OpenSaveDataIterator(ref iterator.Ref, SaveDataSpaceId.User);
+
+            var info = new SaveDataInfo[3];
+            Assert.Success(iterator.Get.ReadSaveDataInfo(out long entriesRead, info));
+
+            Assert.Equal(2, entriesRead);
         }
     }
 

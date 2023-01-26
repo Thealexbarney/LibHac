@@ -210,7 +210,7 @@ public static class ApplicationSaveDataManagement
 
         if (bcatDeliveryCacheStorageSize > 0)
         {
-            Result res = SaveDataFilter.Make(out SaveDataFilter filter, programId: default, SaveDataType.Bcat,
+            Result res = SaveDataFilter.Make(out SaveDataFilter filter, applicationId.Value, SaveDataType.Bcat,
                 userId: default, saveDataId: default, index: default);
             if (res.IsFailure()) return res.Miss();
 
