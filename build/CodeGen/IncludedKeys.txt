@@ -1,3 +1,7 @@
+tsec_auth_signature_00            = A77B86586AE1B03D4FFBA3ADA8F8DE32
+tsec_auth_signature_01            = A3FFB0F6BC49A06DF2FC791697D81D32
+tsec_auth_signature_02            = 0B55CC0820E6307FD087479EAA2E7F98
+
 keyblob_mac_key_source            = 59C7FB6FBE9BBE87656B15C0537336A5
 keyblob_key_source_00             = DF206F594454EFDC7074483B0DED9FD3
 keyblob_key_source_01             = 0C25615D684CEB421C2379EA822512AC

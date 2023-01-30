@@ -23,6 +23,15 @@ public class KeySet
     internal const int UsedKeyBlobCount = 6;
     internal const int SdCardKeyIdCount = 3;
     internal const int KeyRevisionCount = 0x20;
+    internal const int TsecSecretCount = 0x40;
+    internal const int MarikoAesClassKeyCount = 0xC;
+    
+    /// <summary>
+    /// The number of slots reserved for current and future TSEC FW revisions.
+    /// 8 was semi-arbitrarily chosen because there are only 3 FW revisions used for &gt;= 6.2.0 crypto as of Jan 2023,
+    /// and it's unlikely that many more will be issued.
+    /// </summary>
+    internal const int TsecKeyRevisionCount = 8;
 
     private AllKeys _keys;
     private Mode _mode = Mode.Prod;
@@ -30,6 +39,7 @@ public class KeySet
     public ref AllKeys KeyStruct => ref _keys;
     public Mode CurrentMode => _mode;
 
+    private ref TsecSecrets Secrets => ref _keys.TsecSecrets;
     private ref RootKeys RootKeys => ref _mode == Mode.Dev ? ref _keys.RootKeysDev : ref _keys.RootKeysProd;
     private ref StoredKeys StoredKeys => ref _mode == Mode.Dev ? ref _keys.StoredKeysDev : ref _keys.StoredKeysProd;
     private ref DerivedKeys DerivedKeys => ref _mode == Mode.Dev ? ref _keys.DerivedKeysDev : ref _keys.DerivedKeysProd;
@@ -49,10 +59,12 @@ public class KeySet
     public Span<KeyBlob> KeyBlobs => RootKeys.KeyBlobs.Items;
     public Span<AesKey> KeyBlobKeySources => _keys.KeySeeds.KeyBlobKeySources.Items;
     public ref AesKey KeyBlobMacKeySource => ref _keys.KeySeeds.KeyBlobMacKeySource;
-    public ref AesKey TsecRootKek => ref RootKeys.TsecRootKek;
-    public ref AesKey Package1MacKek => ref RootKeys.Package1MacKek;
-    public ref AesKey Package1Kek => ref RootKeys.Package1Kek;
-    public Span<AesKey> TsecAuthSignatures => RootKeys.TsecAuthSignatures.Items;
+    
+    public Span<AesKey> TsecSecrets => Secrets.Secrets.Items;
+    public Span<AesKey> TsecRootKeks => RootKeys.TsecRootKeks.Items;
+    public Span<AesKey> Package1MacKeks => RootKeys.Package1MacKeks.Items;
+    public Span<AesKey> Package1Keks => RootKeys.Package1Keks.Items;
+    public Span<AesKey> TsecAuthSignatures => _keys.KeySeeds.TsecAuthSignatures.Items;
     public Span<AesKey> TsecRootKeys => RootKeys.TsecRootKeys.Items;
     public Span<AesKey> MasterKekSources => _keys.KeySeeds.MasterKekSources.Items;
     public Span<AesKey> GcTitleKeyKeks => RootKeys.GcTitleKeyKeks.Items;
@@ -263,6 +275,7 @@ public class KeySet
 
 public struct AllKeys
 {
+    public TsecSecrets TsecSecrets;
     public RootKeys RootKeysDev;
     public RootKeys RootKeysProd;
     public KeySeeds KeySeeds;
@@ -278,6 +291,11 @@ public struct AllKeys
     public RsaKeys RsaKeys;
 }
 
+public struct TsecSecrets
+{
+    public Array64<AesKey> Secrets;
+}
+
 public struct RootKeys
 {
     // Mariko keys. The AES class keys are currently unused.
@@ -291,13 +309,12 @@ public struct RootKeys
     public Array32<KeyBlob> KeyBlobs;
 
     // Used by TSEC in >= 6.2.0 Erista firmware
-    public Array32<AesKey> TsecAuthSignatures;
-    public AesKey TsecRootKek;
-    public AesKey Package1MacKek;
-    public AesKey Package1Kek;
+    public Array8<AesKey> TsecRootKeks;
+    public Array8<AesKey> Package1MacKeks;
+    public Array8<AesKey> Package1Keks;
 
     // Derived by TSEC. This is the first public root key for >= 6.2.0 Erista
-    public Array32<AesKey> TsecRootKeys;
+    public Array8<AesKey> TsecRootKeys;
 
     // Used to decrypt the title keys found in an XCI's initial data
     public Array16<AesKey> GcTitleKeyKeks;
@@ -305,6 +322,7 @@ public struct RootKeys
 
 public struct KeySeeds
 {
+    public Array8<AesKey> TsecAuthSignatures;
     public Array32<AesKey> KeyBlobKeySources;
     public AesKey KeyBlobMacKeySource;
     public Array32<AesKey> MasterKekSources;

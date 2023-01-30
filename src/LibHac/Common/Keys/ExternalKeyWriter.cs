@@ -12,26 +12,34 @@ namespace LibHac.Common.Keys;
 
 public static class ExternalKeyWriter
 {
-    public static void PrintKeys(KeySet keySet, StringBuilder sb, List<KeyInfo> keys, Type filter, bool isDev)
+    public static void PrintKeys(KeySet keySet, StringBuilder sb, List<KeyInfo> keys, Type filter, bool onlyPrintDifferentDevKeys)
     {
         if (keys.Count == 0) return;
 
-        string devSuffix = isDev ? "_dev" : string.Empty;
+        string devSuffix = onlyPrintDifferentDevKeys ? "_dev" : string.Empty;
         int maxNameLength = keys.Max(x => x.NameLength);
         int currentGroup = 0;
 
-        // Todo: Better filtering
         bool FilterMatches(KeyInfo keyInfo)
         {
-            Type filter1 = filter & (Type.Common | Type.Device);
-            Type filter2 = filter & (Type.Root | Type.Seed | Type.Derived);
-            Type filter3 = filter & Type.DifferentDev;
+            // If we're only printing dev-only keys, skip keys that are the same in both prod and dev environments.
+            if (onlyPrintDifferentDevKeys && !keyInfo.Type.HasFlag(Type.DifferentDev))
+                return false;
 
-            // Skip sub-filters that have no flags set
-            return (filter1 == 0 || (filter1 & keyInfo.Type) != 0) &&
-                   (filter2 == 0 || (filter2 & keyInfo.Type) != 0) &&
-                   filter3 == (filter3 & keyInfo.Type) ||
-                   isDev && keyInfo.Type.HasFlag(Type.DifferentDev);
+            // A KeyType contains two sub-types that specify how a key is used in the cryptosystem, and whether a key
+            // is shared between all consoles or is console-unique. Each of these types are filtered separately.
+            // A key must match both of these sub-types to pass through the filter.
+            // A value of 0 for a sub-filter means that any value of the filtered sub-type is allowed.
+            const Type distributionTypeMask = Type.Common | Type.Device;
+            const Type derivationTypeMask = Type.Root | Type.Seed | Type.Derived;
+
+            Type distributionTypeFilter = filter & distributionTypeMask;
+            Type derivationTypeFilter = filter & derivationTypeMask;
+
+            bool matchesDistributionTypeFilter = distributionTypeFilter == 0 || (distributionTypeFilter & keyInfo.Type) != 0;
+            bool matchesDerivationTypeFilter = derivationTypeFilter == 0 || (derivationTypeFilter & keyInfo.Type) != 0;
+
+            return matchesDistributionTypeFilter && matchesDerivationTypeFilter;
         }
 
         bool isFirstPrint = true;
@@ -118,8 +126,7 @@ public static class ExternalKeyWriter
     public static string PrintCommonKeys(KeySet keySet)
     {
         var sb = new StringBuilder();
-        PrintKeys(keySet, sb, DefaultKeySet.CreateKeyList(), Type.Common | Type.Root | Type.Seed | Type.Derived,
-            false);
+        PrintKeys(keySet, sb, DefaultKeySet.CreateKeyList(), Type.Common, false);
         return sb.ToString();
     }
 
@@ -146,7 +153,7 @@ public static class ExternalKeyWriter
         {
             sb.AppendLine();
             keySet.SetMode(KeySet.Mode.Dev);
-            PrintKeys(keySet, sb, DefaultKeySet.CreateKeyList(), Type.Common | Type.Seed | Type.DifferentDev, true);
+            PrintKeys(keySet, sb, DefaultKeySet.CreateKeyList(), Type.Common | Type.Seed, true);
             keySet.SetMode(KeySet.Mode.Prod);
         }
 
@@ -159,12 +166,11 @@ public static class ExternalKeyWriter
         var sb = new StringBuilder();
 
         keySet.SetMode(KeySet.Mode.Prod);
-        PrintKeys(keySet, sb, DefaultKeySet.CreateKeyList(), Type.Common | Type.Root | Type.Seed | Type.Derived,
-            false);
+        PrintKeys(keySet, sb, DefaultKeySet.CreateKeyList(), Type.Common, false);
 
         sb.AppendLine();
         keySet.SetMode(KeySet.Mode.Dev);
-        PrintKeys(keySet, sb, DefaultKeySet.CreateKeyList(), Type.Common | Type.Root | Type.Derived, true);
+        PrintKeys(keySet, sb, DefaultKeySet.CreateKeyList(), Type.Common, true);
 
         keySet.SetMode(originalMode);
         return sb.ToString();

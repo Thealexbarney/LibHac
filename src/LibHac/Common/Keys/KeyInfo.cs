@@ -17,8 +17,17 @@ public readonly struct KeyInfo
     [Flags]
     public enum KeyType : byte
     {
+        // These two flags specify whether a key is common to all consoles or is console-unique.
+        // Only one of these flags should be set at a time.
         Common = 1 << 0,
         Device = 1 << 1,
+        
+        // These three flags specify how a key is obtained. Only one of these flags should be set at a time.
+        // Root keys are generally used to transform the key seeds into actual keys.
+        // These root keys are usually not supposed to be exposed outside of TrustZone or the TSEC firmware.
+        // Other root keys might be stored directly in system software and used without transforming the key first.
+        // Seeds are generally stored as plaintext in system software and are used as seeds to generate the actual keys.
+        // Derived keys are the keys that are generated from the key seeds.
         Root = 1 << 2,
         Seed = 1 << 3,
         Derived = 1 << 4,
@@ -26,10 +35,11 @@ public readonly struct KeyInfo
         /// <summary>Specifies that a seed is different in prod and dev.</summary>
         DifferentDev = 1 << 5,
 
-        CommonRoot = Common | Root,
+        CommonRoot = Common | Root | DifferentDev,
+        CommonRootSame = Common | Root,
         CommonSeed = Common | Seed,
         CommonSeedDiff = Common | Seed | DifferentDev,
-        CommonDrvd = Common | Derived,
+        CommonDrvd = Common | Derived | DifferentDev,
         DeviceRoot = Device | Root,
         DeviceDrvd = Device | Derived
     }
