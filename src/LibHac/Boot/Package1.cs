@@ -6,10 +6,12 @@ using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Common.FixedArrays;
 using LibHac.Common.Keys;
+using LibHac.Crypto;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Tools.FsSystem;
 using LibHac.Util;
+using AesKey = LibHac.Crypto.AesKey;
 
 namespace LibHac.Boot;
 
@@ -149,6 +151,35 @@ public class Package1
         {
             return ResultLibHac.InvalidPackage1Pk11Size.Log();
         }
+
+        return Result.Success;
+    }
+
+    /// <summary>
+    /// Calculates the MAC for a modern Erista pk11.
+    /// </summary>
+    /// <param name="macBuffer">The buffer where the generated MAC will be placed. Must be at least 16 bytes long.</param>
+    /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+    /// <see cref="ResultLibHac.UnsupportedCalculateMacForPackage1"/>: The package1 type does not support calculating
+    /// a MAC over its pk11.<br/>
+    /// <see cref="ResultLibHac.Package1MacKeyNotFound"/>: The key used to calculate the MAC was not found
+    /// in the <see cref="KeySet"/>.</returns>
+    public Result CalculateModernEristaMac(Span<byte> macBuffer)
+    {
+        if (IsMariko || !IsModern)
+            return ResultLibHac.UnsupportedCalculateMacForPackage1.Log();
+
+        AesKey macKey = KeySet.Package1MacKeys[KeyRevision];
+        if (macKey.IsZeros())
+            return ResultLibHac.Package1MacKeyNotFound.Log();
+
+        // Todo: Use a smaller buffer instead of reading the entire thing in at once.
+        byte[] macTarget = new byte[Pk11Size + 0x20];
+
+        Result res = _bodyStorage.Read(0x7000 - 0x20, macTarget);
+        if (res.IsFailure()) return res.Miss();
+
+        Aes.CalculateCmac(macBuffer, macTarget, macKey);
 
         return Result.Success;
     }
@@ -336,7 +367,7 @@ public class Package1
         Assert.SdkRequires(IsDecrypted);
 
         int pk11Size = Unsafe.SizeOf<Package1Pk11Header>() + GetSectionSize(Package1Section.WarmBoot) +
-                GetSectionSize(Package1Section.Bootloader) + GetSectionSize(Package1Section.SecureMonitor);
+                       GetSectionSize(Package1Section.Bootloader) + GetSectionSize(Package1Section.SecureMonitor);
 
         pk11Size = Alignment.AlignUp(pk11Size, 0x10);
 

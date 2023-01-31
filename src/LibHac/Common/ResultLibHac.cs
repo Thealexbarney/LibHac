@@ -92,4 +92,16 @@ public static class ResultLibHac
             public static Result.Base InvalidPackage1MarikoBodySize => new Result.Base(ModuleLibHac, 1042);
             /// <summary>Error code: 2428-1043; Inner value: 0x827ac</summary>
             public static Result.Base InvalidPackage1Pk11Size => new Result.Base(ModuleLibHac, 1043);
+
+    /// <summary>Error code: 2428-2000; Range: 2000-2199; Inner value: 0xfa1ac</summary>
+    public static Result.Base PreconditionViolation { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleLibHac, 2000, 2199); }
+        /// <summary>Error code: 2428-2001; Range: 2001-2019; Inner value: 0xfa3ac</summary>
+        public static Result.Base UnsupportedOperation { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleLibHac, 2001, 2019); }
+            /// <summary>The package1 type doesn't support calculating a MAC over its pk11. Only modern Erista package1s support this.<br/>Error code: 2428-2002; Inner value: 0xfa5ac</summary>
+            public static Result.Base UnsupportedCalculateMacForPackage1 => new Result.Base(ModuleLibHac, 2002);
+
+        /// <summary>Error code: 2428-2050; Range: 2050-2069; Inner value: 0x1005ac</summary>
+        public static Result.Base KeyNotFound { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleLibHac, 2050, 2069); }
+            /// <summary>Error code: 2428-2051; Inner value: 0x1007ac</summary>
+            public static Result.Base Package1MacKeyNotFound => new Result.Base(ModuleLibHac, 2051);
 }

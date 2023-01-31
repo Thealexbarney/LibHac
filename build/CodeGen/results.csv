@@ -1935,3 +1935,10 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 428,1041,,,,InvalidPackage1SectionSize,
 428,1042,,,,InvalidPackage1MarikoBodySize,
 428,1043,,,,InvalidPackage1Pk11Size,
+
+428,2000,2199,,,PreconditionViolation,
+428,2001,2019,,,UnsupportedOperation,
+428,2002,,,,UnsupportedCalculateMacForPackage1,The package1 type doesn't support calculating a MAC over its pk11. Only modern Erista package1s support this.
+
+428,2050,2069,,,KeyNotFound,
+428,2051,,,,Package1MacKeyNotFound,

@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 using LibHac;
@@ -82,7 +83,22 @@ internal static class ProcessPackage
 
         if (!package1.IsMariko && package1.IsModern)
         {
-            PrintItem(sb, colLen, "    PK11 MAC:", package1.Pk11Mac.ItemsRo.ToArray());
+            string validity = "";
+
+            Span<byte> mac = stackalloc byte[0x10];
+            Result res = package1.CalculateModernEristaMac(mac);
+
+            if (res.IsFailure())
+            {
+                if (!ResultLibHac.Package1MacKeyNotFound.Includes(res))
+                    res.ThrowIfFailure();
+            }
+            else
+            {
+                validity = mac.SequenceEqual(package1.Pk11Mac) ? " (Valid)" : " (Invalid)";
+            }
+
+            PrintItem(sb, colLen, $"    PK11 MAC:{validity}", package1.Pk11Mac.ItemsRo.ToArray());
         }
 
         if (package1.IsDecrypted)
@@ -91,7 +107,7 @@ internal static class ProcessPackage
 
             if (!package1.IsMariko)
             {
-                PrintItem(sb, colLen, "    Key Revision:", $"{package1.KeyRevision:x2} ({Utilities.GetKeyRevisionSummary(package1.KeyRevision)})");
+                PrintItem(sb, colLen, "    Key Revision:", $"{package1.KeyRevision:x2}");
             }
 
             PrintItem(sb, colLen, "    PK11 Size:", $"{package1.Pk11Size:x8}");
