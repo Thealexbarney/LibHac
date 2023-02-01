@@ -17,6 +17,11 @@ internal static partial class DefaultKeySet
 
         // Fill the key set with any key structs included in the library.
         // This is split into multiple parts so the binary size isn't increased when providing only some keys.
+        if (TsecSecrets.Length == Unsafe.SizeOf<TsecSecrets>())
+        {
+            keySet.KeyStruct.TsecSecrets = SpanHelpers.AsReadOnlyStruct<TsecSecrets>(TsecSecrets);
+        }
+        
         if (RootKeysDev.Length == Unsafe.SizeOf<RootKeys>())
         {
             keySet.KeyStruct.RootKeysDev = SpanHelpers.AsReadOnlyStruct<RootKeys>(RootKeysDev);
@@ -80,6 +85,11 @@ internal static partial class DefaultKeySet
         if (RsaKeys.Length == Unsafe.SizeOf<RsaKeys>())
         {
             keySet.KeyStruct.RsaKeys = SpanHelpers.AsReadOnlyStruct<RsaKeys>(RsaKeys);
+        }
+
+        if (DeviceRsaKeys.Length == Unsafe.SizeOf<DeviceRsaKeys>())
+        {
+            keySet.KeyStruct.DeviceRsaKeys = SpanHelpers.AsReadOnlyStruct<DeviceRsaKeys>(DeviceRsaKeys);
         }
 
         return keySet;
@@ -183,7 +193,7 @@ internal static partial class DefaultKeySet
 
         keys.Add(new KeyInfo(280, Type.CommonRoot, "eticket_rsa_kek", (set, _) => set.ETicketRsaKek));
         keys.Add(new KeyInfo(281, Type.CommonRoot, "ssl_rsa_kek", (set, _) => set.SslRsaKek));
-        keys.Add(new KeyInfo(282, Type.DeviceDrvd, "eticket_rsa_keypair", (set, _) => set.ETicketRsaKeyPair));
+        keys.Add(new KeyInfo(282, Type.DeviceDrvd, "eticket_rsa_keypair", (set, _) => SpanHelpers.AsByteSpan(ref set.ETicketRsaKey)));
 
         keys.Add(new KeyInfo(290, Type.CommonDrvd, "key_area_key_application", 0, KeyRevisionCount, (set, i) => set.KeyAreaKeys[i][0]));
         keys.Add(new KeyInfo(300, Type.CommonDrvd, "key_area_key_ocean", 0, KeyRevisionCount, (set, i) => set.KeyAreaKeys[i][1]));

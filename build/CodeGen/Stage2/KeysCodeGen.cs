@@ -37,6 +37,7 @@ public static class KeysCodeGen
         sb.AppendLine("internal static partial class DefaultKeySet");
         sb.AppendLineAndIncrease("{");
 
+        BuildArray(sb, "TsecSecrets", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.TsecSecrets));
         BuildArray(sb, "RootKeysDev", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.RootKeysDev));
         BuildArray(sb, "RootKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.RootKeysProd));
         BuildArray(sb, "KeySeeds", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.KeySeeds));
@@ -50,6 +51,7 @@ public static class KeysCodeGen
         BuildArray(sb, "RsaSigningKeysDev", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.RsaSigningKeysDev));
         BuildArray(sb, "RsaSigningKeysProd", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.RsaSigningKeysProd));
         BuildArray(sb, "RsaKeys", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.RsaKeys));
+        BuildArray(sb, "DeviceRsaKeys", SpanHelpers.AsReadOnlyByteSpan(in keySet.KeyStruct.DeviceRsaKeys));
 
         sb.DecreaseAndAppend("}");
 
@@ -147,7 +149,7 @@ public static class KeysCodeGen
 
     private static ReadOnlySpan<byte> StandardPublicExponent => new byte[]
     {
-        0x01, 0x00, 0x01
+        0x00, 0x01, 0x00, 0x01
     };
 
     private static ReadOnlySpan<byte> BetaNca0Modulus => new byte[]
