@@ -36,7 +36,6 @@ internal static class ProcessPfs
     private static string Print(this PartitionFileSystem pfs)
     {
         const int colLen = 36;
-        const int fileNameLen = 39;
 
         var sb = new StringBuilder();
         sb.AppendLine();
@@ -51,8 +50,7 @@ internal static class ProcessPfs
             PartitionFileEntry file = pfs.Files[i];
 
             string label = i == 0 ? "Files:" : "";
-            string offsets = $"{file.Offset:x12}-{file.Offset + file.Size:x12}{file.HashValidity.GetValidityString()}";
-            string data = $"pfs0:/{file.Name}".PadRight(fileNameLen) + offsets;
+            string data = $"pfs0:/{file.Name}";
 
             PrintItem(sb, colLen, label, data);
         }
