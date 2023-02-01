@@ -46,6 +46,7 @@ public class KeySet
     private ref DerivedDeviceKeys DerivedDeviceKeys => ref _mode == Mode.Dev ? ref _keys.DerivedDeviceKeysDev : ref _keys.DerivedDeviceKeysProd;
     private ref RsaSigningKeys RsaSigningKeys => ref _mode == Mode.Dev ? ref _keys.RsaSigningKeysDev : ref _keys.RsaSigningKeysProd;
     private ref RsaKeys RsaKeys => ref _keys.RsaKeys;
+    private ref DeviceRsaKeys DeviceRsaKeys => ref _keys.DeviceRsaKeys;
 
     private ref RsaSigningKeyParameters RsaSigningKeyParams => ref _mode == Mode.Dev
         ? ref _rsaSigningKeyParamsDev
@@ -124,12 +125,12 @@ public class KeySet
     public Span<RsaKey> AcidSigningKeys => RsaSigningKeys.AcidSigningKeys.Items;
     public ref RsaKey Package2SigningKey => ref RsaSigningKeys.Package2SigningKey;
     public ref RsaFullKey BetaNca0KeyAreaKey => ref RsaKeys.BetaNca0KeyAreaKey;
+    public ref RsaKeyPair ETicketRsaKey => ref DeviceRsaKeys.ETicketRsaKey;
 
     private RsaSigningKeyParameters _rsaSigningKeyParamsDev;
     private RsaSigningKeyParameters _rsaSigningKeyParamsProd;
     private RsaKeyParameters _rsaKeyParams;
 
-    public ref RsaKeyPair ETicketRsaKeyPair => ref DerivedDeviceKeys.ETicketRsaKeyPair;
 
     public Span<RSAParameters> NcaHeaderSigningKeyParams
     {
@@ -190,6 +191,22 @@ public class KeySet
             if (!keys.HasValue)
             {
                 keys.Set(CreateRsaParameters(in BetaNca0KeyAreaKey));
+            }
+
+            return ref keys.Value;
+        }
+    }
+
+    public ref RSAParameters ETicketRsaKeyParams
+    {
+        get
+        {
+            ref Optional<RSAParameters> keys = ref _rsaKeyParams.ETicketRsaKey;
+
+            if (!keys.HasValue && !ETicketRsaKey.PublicExponent.ItemsRo.IsZeros())
+            {
+                RSAParameters rsaParams = Rsa.RecoverParameters(ETicketRsaKey.Modulus, ETicketRsaKey.PublicExponent, ETicketRsaKey.PrivateExponent);
+                keys.Set(rsaParams);
             }
 
             return ref keys.Value;
@@ -270,6 +287,7 @@ public class KeySet
     private struct RsaKeyParameters
     {
         public Optional<RSAParameters> BetaNca0KeyAreaKey;
+        public Optional<RSAParameters> ETicketRsaKey;
     }
 }
 
@@ -289,6 +307,7 @@ public struct AllKeys
     public RsaSigningKeys RsaSigningKeysDev;
     public RsaSigningKeys RsaSigningKeysProd;
     public RsaKeys RsaKeys;
+    public DeviceRsaKeys DeviceRsaKeys;
 }
 
 public struct TsecSecrets
@@ -389,7 +408,6 @@ public struct DerivedDeviceKeys
     public Array2<AesKey> DeviceUniqueSaveMacKeys;
     public AesKey SeedUniqueSaveMacKey;
     public Array3<AesXtsKey> SdCardEncryptionKeys;
-    public RsaKeyPair ETicketRsaKeyPair;
 }
 
 public struct RsaSigningKeys
@@ -402,4 +420,9 @@ public struct RsaSigningKeys
 public struct RsaKeys
 {
     public RsaFullKey BetaNca0KeyAreaKey;
+}
+
+public struct DeviceRsaKeys
+{
+    public RsaKeyPair ETicketRsaKey;
 }

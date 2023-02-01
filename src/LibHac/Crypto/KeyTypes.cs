@@ -115,43 +115,31 @@ public struct AesCmac
 #endif
 }
 
+[StructLayout(LayoutKind.Sequential)]
 public struct RsaFullKey
 {
-    // ReSharper disable once UnassignedField.Global
     public Array256<byte> PrivateExponent;
+    public Array256<byte> Modulus;
+    public Array4<byte> PublicExponent;
     public Array128<byte> Dp;
     public Array128<byte> Dq;
-    public Array3<byte> PublicExponent;
     public Array128<byte> InverseQ;
-    public Array256<byte> Modulus;
     public Array128<byte> P;
     public Array128<byte> Q;
 }
 
+[StructLayout(LayoutKind.Sequential)]
 public struct RsaKey
 {
     public Array256<byte> Modulus;
-    public Array3<byte> PublicExponent;
+    public Array4<byte> PublicExponent;
 }
 
-[StructLayout(LayoutKind.Explicit, Size = Size)]
+[StructLayout(LayoutKind.Sequential)]
 public struct RsaKeyPair
 {
-    private const int Size = 0x210;
-
-    [FieldOffset(0)] private byte _byte;
-    [FieldOffset(0)] private ulong _ulong;
-
-    [FieldOffset(0)] public Array256<byte> PrivateExponent;
-    [FieldOffset(0x100)] public Array256<byte> Modulus;
-    [FieldOffset(0x200)] public Array4<byte> PublicExponent;
-    [FieldOffset(0x204)] public Array12<byte> Reserved;
-
-    public Span<byte> Data => SpanHelpers.CreateSpan(ref _byte, Size);
-    public readonly ReadOnlySpan<byte> DataRo => SpanHelpers.CreateReadOnlySpan(in _byte, Size);
-
-    public static implicit operator Span<byte>(in RsaKeyPair value) => Unsafe.AsRef(in value).Data;
-    public static implicit operator ReadOnlySpan<byte>(in RsaKeyPair value) => value.DataRo;
-
-    public readonly override string ToString() => DataRo.ToHexString();
+    public Array256<byte> PrivateExponent;
+    public Array256<byte> Modulus;
+    public Array4<byte> PublicExponent;
+    public Array12<byte> Reserved;
 }

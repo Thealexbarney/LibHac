@@ -1,9 +1,7 @@
 ﻿using System;
 using System.IO;
-using System.Security.Cryptography;
 using LibHac.Common;
 using LibHac.Common.Keys;
-using LibHac.Crypto;
 using LibHac.Tools.Crypto;
 using LibHac.Util;
 
@@ -159,11 +157,10 @@ public class Ticket
             return commonKey;
         }
 
-        RSAParameters rsaParameters = Rsa.RecoverParameters(
-            keySet.ETicketRsaKeyPair.Modulus,
-            keySet.ETicketRsaKeyPair.PublicExponent,
-            keySet.ETicketRsaKeyPair.PrivateExponent);
-        return CryptoOld.DecryptRsaOaep(TitleKeyBlock, rsaParameters);
+        if (keySet.ETicketRsaKey.PublicExponent.ItemsRo.IsZeros())
+            return null;
+
+        return CryptoOld.DecryptRsaOaep(TitleKeyBlock, keySet.ETicketRsaKeyParams);
     }
 }
 
