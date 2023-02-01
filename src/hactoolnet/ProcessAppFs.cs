@@ -23,14 +23,15 @@ internal static class ProcessAppFs
 
             var ticket = new Ticket(tikFile.Get.AsStream());
 
-            if (ticket.TitleKeyType != TitleKeyType.Common)
-                continue;
-
             if (ticket.RightsId.IsZeros())
                 continue;
 
+            byte[] key = ticket.GetTitleKey(ctx.KeySet);
+            if (key is null)
+                continue;
+
             var rightsId = SpanHelpers.AsStruct<RightsId>(ticket.RightsId);
-            var accessKey = SpanHelpers.AsStruct<AccessKey>(ticket.TitleKeyBlock);
+            var accessKey = SpanHelpers.AsStruct<AccessKey>(key);
 
             ctx.KeySet.ExternalKeySet.Add(rightsId, accessKey).ThrowIfFailure();
         }
