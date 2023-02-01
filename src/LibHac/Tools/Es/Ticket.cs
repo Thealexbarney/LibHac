@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Security.Cryptography;
 using LibHac.Common;
 using LibHac.Common.Keys;
 using LibHac.Tools.Crypto;
@@ -160,7 +161,14 @@ public class Ticket
         if (keySet.ETicketRsaKey.PublicExponent.ItemsRo.IsZeros())
             return null;
 
-        return CryptoOld.DecryptRsaOaep(TitleKeyBlock, keySet.ETicketRsaKeyParams);
+        try
+        {
+            return CryptoOld.DecryptRsaOaep(TitleKeyBlock, keySet.ETicketRsaKeyParams);
+        }
+        catch (CryptographicException)
+        {
+            return null;
+        }
     }
 }
 
