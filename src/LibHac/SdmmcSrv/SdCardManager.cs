@@ -13,6 +13,12 @@ using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.SdmmcSrv;
 
+/// <summary>
+/// Manages the state of the SD card and allows reading and writing the SD card storage.
+/// </summary>
+/// <remarks><para>This class implements the <see cref="IStorageDeviceOperator"/> interface, and all available
+/// operations are listed in <see cref="SdCardManagerOperationIdValue"/>.</para>
+/// <para>Based on nnSdk 15.3.0 (FS 15.0.0)</para></remarks>
 public class SdCardManager : IStorageDeviceManager, IStorageDeviceOperator, ISdmmcDeviceManager
 {
     private const SdmmcHandle InvalidHandle = 0;
@@ -37,6 +43,8 @@ public class SdCardManager : IStorageDeviceManager, IStorageDeviceOperator, ISdm
 
     private SdCardManager(SdmmcApi sdmmc)
     {
+        // Missing: An optional parameter with the device address space info is passed in and stored in the SdCardManager.
+
         _port = Port.SdCard0;
         _mutex = new SdkMutexType();
         _sdStorage = new SdmmcStorage(_port, sdmmc);
@@ -141,7 +149,6 @@ public class SdCardManager : IStorageDeviceManager, IStorageDeviceOperator, ISdm
         outDeviceOperator.SetByMove(ref deviceOperator.Ref);
 
         return Result.Success;
-
     }
 
     public Result OpenDevice(ref SharedRef<IStorageDevice> outStorageDevice, ulong attribute)
@@ -195,7 +202,7 @@ public class SdCardManager : IStorageDeviceManager, IStorageDeviceOperator, ISdm
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
         DeactivateIfCardRemoved();
-        
+
         if (IsShutDown())
         {
             outHandle = InvalidHandle;

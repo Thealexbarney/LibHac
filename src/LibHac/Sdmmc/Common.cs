@@ -107,6 +107,11 @@ public partial class SdmmcApi
 
     public void Deactivate(Port port)
     {
+        if (port == Port.SdCard0)
+        {
+            return;
+        }
+        
         throw new NotImplementedException();
     }
 

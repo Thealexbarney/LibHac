@@ -10,6 +10,10 @@ using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.GcSrv;
 
+/// <summary>
+/// The game card manager used on consoles without a game card slot.
+/// </summary>
+/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
 public class DummyGameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IGameCardKeyManager
 {
     private SharedRef<DummyEventNotifier> _eventNotifier;

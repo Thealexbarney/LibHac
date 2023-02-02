@@ -199,6 +199,8 @@ public class EmulatedStorageDeviceManagerFactory : IStorageDeviceManagerFactory
 
         if (!_sdCardDeviceManager.HasValue)
         {
+            // Missing: Register device address space
+
             using SharedRef<SdCardManager> manager = SdCardManager.CreateShared(_sdmmc);
             _sdCardDeviceManager.SetByMove(ref manager.Ref);
 

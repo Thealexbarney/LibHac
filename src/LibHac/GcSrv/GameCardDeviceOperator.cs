@@ -10,6 +10,11 @@ using static LibHac.Gc.Values;
 
 namespace LibHac.GcSrv;
 
+/// <summary>
+/// Performs various operations on the inserted game card.
+/// All available operations are listed in <see cref="GameCardOperationIdValue"/>.
+/// </summary>
+/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
 internal class GameCardDeviceOperator : IStorageDeviceOperator
 {
     private SharedRef<GameCardStorageDevice> _storageDevice;

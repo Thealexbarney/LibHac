@@ -11,6 +11,12 @@ using MmcPartition = LibHac.Fs.MmcPartition;
 
 namespace LibHac.SdmmcSrv;
 
+/// <summary>
+/// Manages the state of the internal MMC and allows reading and writing the MMC storage.
+/// </summary>
+/// <remarks><para>This class implements the <see cref="IStorageDeviceOperator"/> interface, and all available
+/// operations are listed in <see cref="MmcManagerOperationIdValue"/>.</para>
+/// <para>Based on nnSdk 15.3.0 (FS 15.0.0)</para></remarks>
 internal class MmcManager : IStorageDeviceManager, IStorageDeviceOperator, ISdmmcDeviceManager
 {
     private const SdmmcHandle MmcHandle = 1;
@@ -28,6 +34,8 @@ internal class MmcManager : IStorageDeviceManager, IStorageDeviceOperator, ISdmm
 
     private MmcManager(SdmmcApi sdmmc)
     {
+        // Missing: An optional parameter with the device address space info is passed in and stored in the MmcManager.
+
         _port = Port.Mmc0;
         _mutex = new SdkMutex();
 

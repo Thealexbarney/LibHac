@@ -21,7 +21,7 @@ namespace LibHac.SdmmcSrv;
 /// Every 2 hours it will save the current state of the patrol read to Boot Partition 1 on the MMC.
 /// This state contains the next sector index to be read and the number of times the MMC has been patrolled
 /// from start to finish.</para>
-/// <para>Based on nnSdk 14.3.0 (FS 14.1.0)</para></remarks>
+/// <para>Based on nnSdk 15.3.0 (FS 15.0.0)</para></remarks>
 internal class PatrolReader
 {
     // Note: This class won't work until events and timer events are properly implemented.

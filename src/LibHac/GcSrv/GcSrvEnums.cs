@@ -1,5 +1,9 @@
 ﻿namespace LibHac.GcSrv;
 
+/// <summary>
+/// The operations that <see cref="GameCardManager"/> can perform on the game card ASIC and writable game cards.
+/// </summary>
+/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
 public enum GameCardManagerOperationIdValue
 {
     Finalize = 1,
@@ -18,6 +22,10 @@ public enum GameCardManagerOperationIdValue
     SimulateDetectionEventSignaled = 14
 }
 
+/// <summary>
+/// The operations that <see cref="GameCardDeviceOperator"/> can perform on the inserted game card.
+/// </summary>
+/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
 public enum GameCardOperationIdValue
 {
     EraseGameCard = 1,
@@ -29,6 +37,10 @@ public enum GameCardOperationIdValue
     GetGameCardStatus = 7
 }
 
+/// <summary>
+/// Specifies which mode the game card storage should be opened as.
+/// </summary>
+/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
 public enum OpenGameCardAttribute : long
 {
     ReadOnly = 0,

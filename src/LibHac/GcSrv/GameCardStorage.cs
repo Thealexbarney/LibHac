@@ -14,7 +14,7 @@ namespace LibHac.GcSrv;
 /// <summary>
 /// Provides an <see cref="IStorage"/> interface for reading from the game card.
 /// </summary>
-/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
+/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
 internal class ReadOnlyGameCardStorage : IStorage
 {
     private SharedRef<IGameCardManager> _deviceManager;
@@ -97,7 +97,7 @@ internal class ReadOnlyGameCardStorage : IStorage
 /// <summary>
 /// Provides an <see cref="IStorage"/> interface for writing to the game card.
 /// </summary>
-/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
+/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
 internal class WriteOnlyGameCardStorage : IStorage
 {
     private SharedRef<IGameCardManager> _deviceManager;
@@ -165,9 +165,10 @@ internal class WriteOnlyGameCardStorage : IStorage
 }
 
 /// <summary>
-/// An adapter that provides an <see cref="IStorageSf"/> interface for a <see cref="IStorage"/>.
+/// An adapter that directly translates <see cref="IStorageSf"/> sf calls to <see cref="IStorage"/> calls with no checks
+/// or validations.
 /// </summary>
-/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
+/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
 internal abstract class GameCardStorageInterfaceAdapter : IStorageSf
 {
     private SharedRef<IStorage> _baseStorage;

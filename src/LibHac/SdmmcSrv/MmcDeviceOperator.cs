@@ -12,6 +12,11 @@ using MmcPartition = LibHac.Sdmmc.MmcPartition;
 
 namespace LibHac.SdmmcSrv;
 
+/// <summary>
+/// Performs various operations on the internal MMC storage.
+/// All available operations are listed in <see cref="MmcOperationIdValue"/>.
+/// </summary>
+/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
 internal class MmcDeviceOperator : IStorageDeviceOperator
 {
     private SharedRef<MmcPartitionStorageDevice> _storageDevice;

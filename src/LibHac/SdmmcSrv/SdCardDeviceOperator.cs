@@ -9,6 +9,11 @@ using static LibHac.SdmmcSrv.SdmmcResultConverter;
 
 namespace LibHac.SdmmcSrv;
 
+/// <summary>
+/// Performs various operations on the inserted SD card.
+/// All available operations are listed in <see cref="SdCardOperationIdValue"/>.
+/// </summary>
+/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
 internal class SdCardDeviceOperator : IStorageDeviceOperator
 {
     private SharedRef<SdCardStorageDevice> _storageDevice;

@@ -1,5 +1,9 @@
 ﻿namespace LibHac.SdmmcSrv;
 
+/// <summary>
+/// The operations that <see cref="SdCardManager"/> can perform on the SD card device.
+/// </summary>
+/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
 public enum SdCardManagerOperationIdValue
 {
     GetAndClearErrorInfo = 1,
@@ -8,6 +12,10 @@ public enum SdCardManagerOperationIdValue
     SimulateDetectionEventSignaled = 4
 }
 
+/// <summary>
+/// The operations that <see cref="SdCardDeviceOperator"/> can perform on the inserted SD card.
+/// </summary>
+/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
 public enum SdCardOperationIdValue
 {
     GetSpeedMode = 1,
@@ -18,6 +26,10 @@ public enum SdCardOperationIdValue
     GetProtectedAreaSize = 6
 }
 
+/// <summary>
+/// The operations that <see cref="MmcManager"/> can perform on the internal MMC device.
+/// </summary>
+/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
 public enum MmcManagerOperationIdValue
 {
     GetAndClearErrorInfo = 1,
@@ -29,6 +41,10 @@ public enum MmcManagerOperationIdValue
     ResumePatrol = 7
 }
 
+/// <summary>
+/// The operations that <see cref="MmcDeviceOperator"/> can perform on the internal MMC storage.
+/// </summary>
+/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
 public enum MmcOperationIdValue
 {
     GetSpeedMode = 1,

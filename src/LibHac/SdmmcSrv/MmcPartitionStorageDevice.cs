@@ -7,9 +7,15 @@ using LibHac.Os;
 using LibHac.Sdmmc;
 using LibHac.Sf;
 using MmcPartition = LibHac.Sdmmc.MmcPartition;
+using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.SdmmcSrv;
 
+/// <summary>
+/// Provides base functionality for MMC <see cref="IStorageDevice"/> classes. Derived classes will need to provide
+/// methods for reading/writing the MMC storage.
+/// </summary>
+/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
 internal abstract class MmcPartitionStorageDevice : IDisposable
 {
     private SharedRef<ISdmmcDeviceManager> _manager;
@@ -81,9 +87,15 @@ internal abstract class MmcPartitionStorageDevice : IDisposable
     }
 }
 
-// The Mmc*PartitionStorageDevice classes inherit both from SdmmcStorageInterfaceAdapter and MmcPartitionStorageDevice
-// Because C# doesn't have multiple inheritance, we make a copy of the SdmmcStorageInterfaceAdapter class that inherits
-// from MmcPartitionStorageDevice. This class must mirror any changes made to SdmmcStorageInterfaceAdapter.
+/// <summary>
+/// An adapter that directly translates <see cref="IStorageSf"/> sf calls to <see cref="IStorage"/> calls with no checks
+/// or validations.
+/// </summary>
+/// <remarks><para>The Mmc*PartitionStorageDevice classes inherit both from <see cref="SdmmcStorageInterfaceAdapter"/>
+/// and <see cref="MmcPartitionStorageDevice"/>. Because C# doesn't have multiple inheritance, we make a copy of the
+/// <see cref="SdmmcStorageInterfaceAdapter"/> class that inherits from <see cref="MmcPartitionStorageDevice"/>.
+/// This class must mirror any changes made to <see cref="SdmmcStorageInterfaceAdapter"/>.</para>
+/// <para>Based on nnSdk 15.3.0 (FS 15.0.0)</para></remarks>
 internal abstract class MmcPartitionStorageDeviceInterfaceAdapter : MmcPartitionStorageDevice, IStorageDevice
 {
     private readonly IStorage _baseStorage;
@@ -129,12 +141,16 @@ internal abstract class MmcPartitionStorageDeviceInterfaceAdapter : MmcPartition
     }
 }
 
+/// <summary>
+/// An <see cref="IStorageDevice"/> that handles interacting with the <see cref="MmcPartition.UserData"/> partition
+/// on the internal MMC.
+/// </summary>
+/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
 internal class MmcUserDataPartitionStorageDevice : MmcPartitionStorageDeviceInterfaceAdapter
 {
     private MmcUserDataPartitionStorageDevice(ref SharedRef<ISdmmcDeviceManager> manager, SdmmcHandle handle,
         SdmmcApi sdmmc)
-        : base(manager.Get.GetStorage(), MmcPartition.UserData, ref manager, handle, sdmmc)
-    { }
+        : base(manager.Get.GetStorage(), MmcPartition.UserData, ref manager, handle, sdmmc) { }
 
     public static SharedRef<MmcUserDataPartitionStorageDevice> CreateShared(ref SharedRef<ISdmmcDeviceManager> manager,
         SdmmcHandle handle, SdmmcApi sdmmc)
@@ -189,12 +205,16 @@ internal class MmcUserDataPartitionStorageDevice : MmcPartitionStorageDeviceInte
     }
 }
 
+/// <summary>
+/// An <see cref="IStorageDevice"/> that handles interacting with the <see cref="MmcPartition.BootPartition1"/> and
+/// <see cref="MmcPartition.BootPartition2"/> partitions on the internal MMC.
+/// </summary>
+/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
 internal class MmcBootPartitionStorageDevice : MmcPartitionStorageDeviceInterfaceAdapter
 {
     private MmcBootPartitionStorageDevice(Fs.MmcPartition partition, ref SharedRef<ISdmmcDeviceManager> manager,
         SdmmcHandle handle, SdmmcApi sdmmc)
-        : base(manager.Get.GetStorage(), GetPartition(partition), ref manager, handle, sdmmc)
-    { }
+        : base(manager.Get.GetStorage(), GetPartition(partition), ref manager, handle, sdmmc) { }
 
     public static SharedRef<MmcBootPartitionStorageDevice> CreateShared(Fs.MmcPartition partition,
         ref SharedRef<ISdmmcDeviceManager> manager, SdmmcHandle handle, SdmmcApi sdmmc)

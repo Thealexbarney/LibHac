@@ -19,6 +19,17 @@ using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.GcSrv;
 
+/// <summary>
+/// Provides access to the game card and game card ASIC.
+/// </summary>
+/// <remarks><para> he manager keeps track of the state of the ASIC and uses a handle system to control access to the
+/// storage device. When a consumer wants to access the device, they are given a handle that will be used to make sure
+/// they're accessing the same device that they originally opened. The manager's internal handle is incremented every
+/// time the game card is deactivated. This ensures the consumer doesn't do things like accidentally continue reading
+/// from the game card after the card has been swapped.</para>
+/// <para>This class implements the <see cref="IStorageDeviceOperator"/> interface, and all available operations are
+/// listed in <see cref="GameCardManagerOperationIdValue"/>.</para>
+/// <para>Based on nnSdk 15.3.0 (FS 15.0.0)</para></remarks>
 public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IGameCardManager, IGameCardKeyManager
 {
     private enum CardState

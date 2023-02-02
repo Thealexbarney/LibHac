@@ -14,6 +14,11 @@ using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.SdmmcSrv;
 
+/// <summary>
+/// Provides an <see cref="IStorage"/> interface for calling the sdmmc Read and Write functions.
+/// The offset and size of reads and writes must be aligned to 0x200 bytes (<see cref="SdmmcApi.SectorSize"/>).
+/// </summary>
+/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
 internal class SdmmcStorage : IStorage
 {
     private Port _port;
@@ -142,6 +147,11 @@ internal class SdmmcStorage : IStorage
     }
 }
 
+/// <summary>
+/// An adapter that directly translates <see cref="IStorageSf"/> sf calls to <see cref="IStorage"/> calls with no checks
+/// or validations.
+/// </summary>
+/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
 internal class SdmmcStorageInterfaceAdapter : IStorageSf
 {
     private IStorage _baseStorage;

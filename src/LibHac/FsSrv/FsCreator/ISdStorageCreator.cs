@@ -1,8 +1,10 @@
-﻿using LibHac.Fs;
+﻿using System;
+using LibHac.Common;
+using LibHac.Fs;
 
 namespace LibHac.FsSrv.FsCreator;
 
-public interface ISdStorageCreator
+public interface ISdStorageCreator: IDisposable
 {
-    Result Create(out IStorage storage);
+    Result Create(ref SharedRef<IStorage> outStorage);
 }

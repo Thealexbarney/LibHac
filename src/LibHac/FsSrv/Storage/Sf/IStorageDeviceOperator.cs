@@ -3,6 +3,13 @@ using LibHac.Sf;
 
 namespace LibHac.FsSrv.Storage.Sf;
 
+/// <summary>
+/// A generic interface for operating on a storage device or a storage device manager, containing methods that all take
+/// an operation ID and various combinations of on offset/size, input buffers, and output buffers. 
+/// </summary>
+/// <remarks><para>Operation IDs are not common between implementers of the interface. Every implementer will have its own operations
+/// and expected input data.</para>
+/// <para>Based on nnSdk 15.3.0 (FS 15.0.0)</para></remarks>
 public interface IStorageDeviceOperator : IDisposable
 {
     Result Operate(int operationId);

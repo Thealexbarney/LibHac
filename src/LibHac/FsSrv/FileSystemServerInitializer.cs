@@ -76,7 +76,7 @@ public static class FileSystemServerInitializer
         var debugConfigurationService = new DebugConfigurationServiceImpl(in debugConfigurationServiceConfig);
 
         var saveDataIndexerManager = new SaveDataIndexerManager(server.Hos.Fs, Fs.SaveData.SaveIndexerId,
-            new ArrayPoolMemoryResource(), new SdHandleManager(), false);
+            new ArrayPoolMemoryResource(), new SdHandleManager(server), false);
 
         var programRegistryConfig = new ProgramRegistryServiceImpl.Configuration();
         programRegistryConfig.FsServer = server;

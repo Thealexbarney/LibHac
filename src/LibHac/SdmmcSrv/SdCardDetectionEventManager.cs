@@ -3,6 +3,10 @@ using LibHac.Sdmmc;
 
 namespace LibHac.SdmmcSrv;
 
+/// <summary>
+/// Registers an sdmmc detection callback when constructed, and unregisters the callback when disposed.
+/// </summary>
+/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
 internal class SdCardDetectionEventManager : CardDeviceDetectionEventManager
 {
     // LibHac addition

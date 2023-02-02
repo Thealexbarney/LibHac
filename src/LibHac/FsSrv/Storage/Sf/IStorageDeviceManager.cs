@@ -5,6 +5,10 @@ using IStorageSf = LibHac.FsSrv.Sf.IStorage;
 
 namespace LibHac.FsSrv.Storage.Sf;
 
+/// <summary>
+/// Allows getting the current state of a storage device and opening various interfaces to operate on it.
+/// </summary>
+/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
 public interface IStorageDeviceManager : IDisposable
 {
     Result IsInserted(out bool isInserted);
