@@ -168,9 +168,10 @@ Below is a complete list of keys that are currently recognized.
 ### Common keys
 
 ```
-tsec_root_kek
-package1_mac_kek
-package1_kek
+tsec_secret_##
+tsec_root_kek_##
+package1_mac_kek_##
+package1_kek_##
 tsec_auth_signature_##
 tsec_root_key_##
 
@@ -252,4 +253,6 @@ encrypted_keyblob_##
 
 sd_seed
 save_mac_sd_card_key
+
+eticket_rsa_keypair
 ```
