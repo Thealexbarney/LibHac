@@ -831,8 +831,8 @@ namespace LibHac.Fs.Impl
         /// <summary>"<c>$fs</c>"</summary>
         public static ReadOnlySpan<byte> FsModuleName => "$fs"u8;
 
-        /// <summary>"<c>0.17.0</c>"</summary>
-        public static ReadOnlySpan<byte> LogLibHacVersion => "0.17.0"u8;
+        /// <summary>"<c>0.18.0</c>"</summary>
+        public static ReadOnlySpan<byte> LogLibHacVersion => "0.18.0"u8;
 
         /// <summary>"<c>"</c>"</summary>
         public static byte LogQuote => (byte)'"';
