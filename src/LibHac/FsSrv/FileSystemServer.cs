@@ -26,7 +26,6 @@ public class FileSystemServer : IDisposable
     public void Dispose()
     {
         Globals.Dispose();
-        Globals = default;
     }
 }
 

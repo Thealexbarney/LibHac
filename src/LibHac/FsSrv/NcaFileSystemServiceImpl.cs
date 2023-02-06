@@ -15,6 +15,7 @@ using LibHac.Tools.FsSystem.NcaUtils;
 using LibHac.Util;
 using static LibHac.Fs.Impl.CommonMountNames;
 using NcaFsHeader = LibHac.Tools.FsSystem.NcaUtils.NcaFsHeader;
+using NcaHeader = LibHac.FsSystem.NcaHeader;
 using RightsId = LibHac.Fs.RightsId;
 using Utility = LibHac.FsSystem.Utility;
 
@@ -698,7 +699,7 @@ public class NcaFileSystemServiceImpl
     {
         UnsafeHelpers.SkipParamInit(out fsType);
 
-        NcaContentType contentType = nca.Header.ContentType;
+        NcaHeader.ContentType contentType = (NcaHeader.ContentType)nca.Header.ContentType;
 
         switch (fsProxyType)
         {
@@ -706,31 +707,31 @@ public class NcaFileSystemServiceImpl
             case FileSystemProxyType.Rom:
             case FileSystemProxyType.Logo:
             case FileSystemProxyType.RegisteredUpdate:
-                if (contentType != NcaContentType.Program)
+                if (contentType != NcaHeader.ContentType.Program)
                     return ResultFs.PreconditionViolation.Log();
 
                 break;
 
             case FileSystemProxyType.Control:
-                if (contentType != NcaContentType.Control)
+                if (contentType != NcaHeader.ContentType.Control)
                     return ResultFs.PreconditionViolation.Log();
 
                 break;
             case FileSystemProxyType.Manual:
-                if (contentType != NcaContentType.Manual)
+                if (contentType != NcaHeader.ContentType.Manual)
                     return ResultFs.PreconditionViolation.Log();
 
                 break;
             case FileSystemProxyType.Meta:
-                if (contentType != NcaContentType.Meta)
+                if (contentType != NcaHeader.ContentType.Meta)
                     return ResultFs.PreconditionViolation.Log();
 
                 break;
             case FileSystemProxyType.Data:
-                if (contentType != NcaContentType.Data && contentType != NcaContentType.PublicData)
+                if (contentType != NcaHeader.ContentType.Data && contentType != NcaHeader.ContentType.PublicData)
                     return ResultFs.PreconditionViolation.Log();
 
-                if (contentType == NcaContentType.Data && !canMountSystemDataPrivate)
+                if (contentType == NcaHeader.ContentType.Data && !canMountSystemDataPrivate)
                     return ResultFs.PermissionDenied.Log();
 
                 break;

@@ -1,8 +1,8 @@
 ﻿using LibHac.Common;
 using LibHac.Fs;
-using LibHac.FsSystem;
 using LibHac.Ncm;
 using LibHac.Tools.Fs;
+using LibHac.Tools.FsSystem.NcaUtils;
 using ContentType = LibHac.Ncm.ContentType;
 
 namespace hactoolnet;

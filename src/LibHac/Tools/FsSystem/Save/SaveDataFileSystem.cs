@@ -264,7 +264,9 @@ public class SaveDataFileSystem : IFileSystem
         byte[] hashData = new byte[0x3d00];
 
         headerStream.Position = 0x300;
-        headerStream.Read(hashData, 0, hashData.Length);
+        int bytesRead = headerStream.Read(hashData, 0, hashData.Length);
+        if (bytesRead != hashData.Length)
+            return ResultFs.OutOfRange.Log();
 
         byte[] hash = new byte[Sha256.DigestSize];
         Sha256.GenerateSha256Hash(hashData, hash);
@@ -278,7 +280,9 @@ public class SaveDataFileSystem : IFileSystem
         byte[] cmac = new byte[0x10];
 
         headerStream.Position = 0x100;
-        headerStream.Read(cmacData, 0, 0x200);
+        bytesRead = headerStream.Read(cmacData, 0, cmacData.Length);
+        if (bytesRead != cmacData.Length)
+            return ResultFs.OutOfRange.Log();
 
         Aes.CalculateCmac(cmac, cmacData, keySet.DeviceUniqueSaveMacKeys[0]);
 

@@ -5,7 +5,6 @@ using LibHac.Common;
 using LibHac.Crypto;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
-using LibHac.FsSystem;
 
 namespace LibHac.Tools.FsSystem.NcaUtils;
 

@@ -82,7 +82,7 @@ public class PartitionFileSystemBuilder
         byte[] metaData = new byte[metaDataSize];
         var writer = new BinaryWriter(new MemoryStream(metaData));
 
-        writer.WriteUTF8(GetMagicValue(type));
+        writer.WriteUtf8(GetMagicValue(type));
         writer.Write(Entries.Count);
         writer.Write(stringTableSize);
         writer.Write(0);
@@ -111,7 +111,7 @@ public class PartitionFileSystemBuilder
 
         foreach (Entry entry in Entries)
         {
-            writer.WriteUTF8Z(entry.Name);
+            writer.WriteUtf8Z(entry.Name);
         }
 
         return metaData;

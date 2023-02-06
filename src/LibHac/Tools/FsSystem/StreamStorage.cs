@@ -29,7 +29,9 @@ public class StreamStorage : IStorage
                 BaseStream.Position = offset;
             }
 
-            BaseStream.Read(destination);
+            int bytesRead = BaseStream.Read(destination);
+            if (bytesRead != destination.Length)
+                return ResultFs.OutOfRange.Log();
         }
 
         return Result.Success;

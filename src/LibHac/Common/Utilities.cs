@@ -161,15 +161,15 @@ public static class Utilities
         return text;
     }
 
-    public static void WriteUTF8(this BinaryWriter writer, string value)
+    public static void WriteUtf8(this BinaryWriter writer, string value)
     {
         byte[] text = Encoding.UTF8.GetBytes(value);
         writer.Write(text);
     }
 
-    public static void WriteUTF8Z(this BinaryWriter writer, string value)
+    public static void WriteUtf8Z(this BinaryWriter writer, string value)
     {
-        writer.WriteUTF8(value);
+        writer.WriteUtf8(value);
         writer.Write((byte)0);
     }
 

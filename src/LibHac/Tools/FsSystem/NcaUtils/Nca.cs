@@ -229,7 +229,7 @@ public class Nca
         {
             case NcaEncryptionType.None:
                 return baseStorage;
-            case NcaEncryptionType.XTS:
+            case NcaEncryptionType.AesXts:
                 return OpenAesXtsStorage(baseStorage, index, decrypting);
             case NcaEncryptionType.AesCtr:
                 return OpenAesCtrStorage(baseStorage, index, Header.GetSectionStartOffset(index), header.Counter);

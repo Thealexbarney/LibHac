@@ -11,6 +11,7 @@ using LibHac.FsSystem;
 using LibHac.Ns;
 using LibHac.Tools.Fs;
 using LibHac.Tools.FsSystem;
+using LibHac.Tools.FsSystem.NcaUtils;
 using LibHac.Tools.FsSystem.Save;
 using Path = System.IO.Path;
 

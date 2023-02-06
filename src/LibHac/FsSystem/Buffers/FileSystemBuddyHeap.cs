@@ -239,7 +239,7 @@ public unsafe class FileSystemBuddyHeap : IDisposable
 
         // Determine page sizes
         nuint maxPageSize = BlockSize << OrderMax;
-        nuint maxPageCount = (nuint)Alignment.AlignUp(HeapSize, (uint)maxPageSize) / maxPageSize;
+        nuint maxPageCount = Alignment.AlignUp(HeapSize, (uint)maxPageSize) / maxPageSize;
         Assert.SdkGreater(maxPageCount, nuint.Zero);
 
         // Setup the free lists

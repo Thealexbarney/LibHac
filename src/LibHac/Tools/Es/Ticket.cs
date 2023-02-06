@@ -126,7 +126,7 @@ public class Ticket
         }
 
         stream.Position = bodyStart;
-        if (Issuer != null) writer.WriteUTF8(Issuer);
+        if (Issuer != null) writer.WriteUtf8(Issuer);
         stream.Position = bodyStart + 0x40;
         if (TitleKeyBlock?.Length <= 0x100) writer.Write(TitleKeyBlock);
         stream.Position = bodyStart + 0x140;
