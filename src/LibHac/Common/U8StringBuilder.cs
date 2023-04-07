@@ -75,7 +75,7 @@ public ref struct U8StringBuilder
     // These functions are internal so they can be called by the extension methods
     // in U8StringBuilderExtensions. It's not an ideal setup, but it allows append
     // calls to be chained without accidentally creating a copy of the U8StringBuilder.
-    internal void AppendInternal(ReadOnlySpan<byte> value)
+    internal void AppendInternal(scoped ReadOnlySpan<byte> value)
     {
         // Once in the Overflowed state, nothing else is written to the buffer.
         if (Overflowed) return;
@@ -443,7 +443,7 @@ public ref struct U8StringBuilder
 public static class U8StringBuilderExtensions
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ref U8StringBuilder Append(this ref U8StringBuilder sb, ReadOnlySpan<byte> value)
+    public static ref U8StringBuilder Append(this ref U8StringBuilder sb, scoped ReadOnlySpan<byte> value)
     {
         sb.AppendInternal(value);
         return ref sb;

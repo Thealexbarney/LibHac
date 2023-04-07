@@ -145,7 +145,9 @@ public class KeySet
                 keys.Value[1] = CreateRsaParameters(in NcaHeaderSigningKeys[1]);
             }
 
-            return keys.Value.Items;
+            // Todo: Remove local variable after Roslyn issue #67697 is fixed
+            ref Array2<RSAParameters> array = ref keys.Value;
+            return array.Items;
         }
     }
 
@@ -162,7 +164,9 @@ public class KeySet
                 keys.Value[1] = CreateRsaParameters(in AcidSigningKeys[1]);
             }
 
-            return keys.Value.Items;
+            // Todo: Remove local variable after Roslyn issue #67697 is fixed
+            ref Array2<RSAParameters> array = ref keys.Value;
+            return array.Items;
         }
     }
 

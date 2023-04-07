@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using LibHac.Boot;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using static LibHac.Common.Keys.KeySet;
 using Type = LibHac.Common.Keys.KeyInfo.KeyType;
@@ -131,9 +132,19 @@ internal static partial class DefaultKeySet
 
         keys.Add(new KeyInfo(60, Type.DeviceDrvd, "keyblob_mac_key", 0, UsedKeyBlobCount, (set, i) => set.KeyBlobMacKeys[i]));
 
-        keys.Add(new KeyInfo(70, Type.DeviceRoot, "encrypted_keyblob", 0, UsedKeyBlobCount, (set, i) => set.EncryptedKeyBlobs[i].Bytes));
+        keys.Add(new KeyInfo(70, Type.DeviceRoot, "encrypted_keyblob", 0, 6, (set, i) =>
+        {
+            // Todo: Remove local variable after Roslyn issue #67697 is fixed
+            ref EncryptedKeyBlob keySetKeyBlob = ref set.EncryptedKeyBlobs[i];
+            return keySetKeyBlob.Bytes;
+        }));
 
-        keys.Add(new KeyInfo(80, Type.CommonRoot, "keyblob", 0, UsedKeyBlobCount, (set, i) => set.KeyBlobs[i].Bytes));
+        keys.Add(new KeyInfo(80, Type.CommonRoot, "keyblob", 0, 6, (set, i) =>
+        {
+            // Todo: Remove local variable after Roslyn issue #67697 is fixed
+            ref KeyBlob keySetKeyBlob = ref set.KeyBlobs[i];
+            return keySetKeyBlob.Bytes;
+        }));
 
         keys.Add(new KeyInfo(90, Type.CommonSeed, "master_kek_source", UsedKeyBlobCount, KeyRevisionCount, (set, i) => set.MasterKekSources[i]));
 
