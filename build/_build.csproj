@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -15,7 +15,7 @@
   <ItemGroup>
     <PackageDownload Include="GitVersion.Tool" Version="[5.9.0]" />
     <PackageReference Include="CsvHelper" Version="30.0.1" />
-    <PackageReference Include="NuGet.CommandLine" Version="6.4.0" />
+    <PackageReference Include="NuGet.CommandLine" Version="6.4.2" />
     <PackageReference Include="Nuke.Common" Version="6.3.0" />
     <PackageReference Include="SharpZipLib" Version="1.4.2" />
   </ItemGroup>
