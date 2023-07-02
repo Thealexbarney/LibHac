@@ -19,6 +19,7 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 
     <!-- When doing a release build with a Git directory, SourceLink will set the SourceRoot needed for DeterministicSourcePaths -->
     <!-- Otherwise use a manually specified path -->
@@ -39,6 +40,9 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+    <PackageReference Include="Mono.Posix" Version="7.1.0-final.1.21458.1" />
+    <PackageReference Include="Vanara.PInvoke.Shell32" Version="3.4.15" />
+    <PackageReference Include="Vanara.PInvoke.ShlwApi" Version="3.4.15" />
   </ItemGroup>
 
   <ItemGroup>

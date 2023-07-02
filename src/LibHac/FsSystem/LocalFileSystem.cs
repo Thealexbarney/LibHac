@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text.Unicode;
 using System.Threading;
 using LibHac.Common;
@@ -12,6 +13,7 @@ using LibHac.Tools.FsSystem;
 using LibHac.Util;
 using static LibHac.Fs.StringTraits;
 using Path = LibHac.Fs.Path;
+using Mono.Unix.Native;
 
 namespace LibHac.FsSystem;
 
@@ -785,7 +787,16 @@ public class LocalFileSystem : IAttributeFileSystem
 
         try
         {
-            source.MoveTo(dest.FullName);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                FileOperation fileOp = new FileOperation();
+                fileOp.RenameItem(source.FullName, dest.Name);
+                fileOp.PerformOperations();
+            }
+            else
+            {
+                Syscall.rename(source.FullName, dest.FullName);
+            }
         }
         catch (Exception ex) when (ex.HResult < 0)
         {
