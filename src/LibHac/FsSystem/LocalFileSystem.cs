@@ -785,7 +785,16 @@ public class LocalFileSystem : IAttributeFileSystem
 
         try
         {
-            source.MoveTo(dest.FullName);
+            Directory.CreateDirectory(dest.FullName);
+            foreach (DirectoryInfo dir in source.GetDirectories())
+            {
+                dir.MoveTo(System.IO.Path.Combine(dest.FullName, dir.Name));
+            }
+            foreach (FileInfo file in source.GetFiles())
+            {
+                file.MoveTo(System.IO.Path.Combine(dest.FullName, file.Name));
+            }
+            source.Delete();
         }
         catch (Exception ex) when (ex.HResult < 0)
         {
