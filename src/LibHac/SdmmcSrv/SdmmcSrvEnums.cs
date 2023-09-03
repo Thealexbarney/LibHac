@@ -3,7 +3,7 @@
 /// <summary>
 /// The operations that <see cref="SdCardManager"/> can perform on the SD card device.
 /// </summary>
-/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 public enum SdCardManagerOperationIdValue
 {
     GetAndClearErrorInfo = 1,
@@ -15,7 +15,7 @@ public enum SdCardManagerOperationIdValue
 /// <summary>
 /// The operations that <see cref="SdCardDeviceOperator"/> can perform on the inserted SD card.
 /// </summary>
-/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 public enum SdCardOperationIdValue
 {
     GetSpeedMode = 1,
@@ -29,7 +29,7 @@ public enum SdCardOperationIdValue
 /// <summary>
 /// The operations that <see cref="MmcManager"/> can perform on the internal MMC device.
 /// </summary>
-/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 public enum MmcManagerOperationIdValue
 {
     GetAndClearErrorInfo = 1,
@@ -44,7 +44,7 @@ public enum MmcManagerOperationIdValue
 /// <summary>
 /// The operations that <see cref="MmcDeviceOperator"/> can perform on the internal MMC storage.
 /// </summary>
-/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 public enum MmcOperationIdValue
 {
     GetSpeedMode = 1,

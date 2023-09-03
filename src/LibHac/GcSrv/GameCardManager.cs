@@ -29,7 +29,7 @@ namespace LibHac.GcSrv;
 /// from the game card after the card has been swapped.</para>
 /// <para>This class implements the <see cref="IStorageDeviceOperator"/> interface, and all available operations are
 /// listed in <see cref="GameCardManagerOperationIdValue"/>.</para>
-/// <para>Based on nnSdk 15.3.0 (FS 15.0.0)</para></remarks>
+/// <para>Based on nnSdk 16.2.0 (FS 16.0.0)</para></remarks>
 public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IGameCardManager, IGameCardKeyManager
 {
     private enum CardState

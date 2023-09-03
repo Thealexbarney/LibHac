@@ -18,7 +18,7 @@ namespace LibHac.SdmmcSrv;
 /// </summary>
 /// <remarks><para>This class implements the <see cref="IStorageDeviceOperator"/> interface, and all available
 /// operations are listed in <see cref="SdCardManagerOperationIdValue"/>.</para>
-/// <para>Based on nnSdk 15.3.0 (FS 15.0.0)</para></remarks>
+/// <para>Based on nnSdk 16.2.0 (FS 16.0.0)</para></remarks>
 public class SdCardManager : IStorageDeviceManager, IStorageDeviceOperator, ISdmmcDeviceManager
 {
     private const SdmmcHandle InvalidHandle = 0;

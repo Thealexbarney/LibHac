@@ -16,7 +16,7 @@ namespace LibHac.SdmmcSrv;
 /// </summary>
 /// <remarks><para>This class implements the <see cref="IStorageDeviceOperator"/> interface, and all available
 /// operations are listed in <see cref="MmcManagerOperationIdValue"/>.</para>
-/// <para>Based on nnSdk 15.3.0 (FS 15.0.0)</para></remarks>
+/// <para>Based on nnSdk 16.2.0 (FS 16.0.0)</para></remarks>
 internal class MmcManager : IStorageDeviceManager, IStorageDeviceOperator, ISdmmcDeviceManager
 {
     private const SdmmcHandle MmcHandle = 1;

@@ -6,7 +6,7 @@ namespace LibHac.SdmmcSrv;
 /// <summary>
 /// Contains functions to convert <see cref="ResultSdmmc"/> <see cref="Result"/>s to their <see cref="ResultFs"/> equivalent.
 /// </summary>
-/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 public static class SdmmcResultConverter
 {
     public static Result GetFsResult(Port port, Result result)

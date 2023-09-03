@@ -10,7 +10,7 @@ namespace LibHac.SdmmcSrv;
 /// <summary>
 /// An <see cref="IStorageDevice"/> that handles interacting with the currently inserted game card.
 /// </summary>
-/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 internal class SdCardStorageDevice : SdmmcStorageInterfaceAdapter, IStorageDevice
 {
     private SharedRef<ISdmmcDeviceManager> _manager;

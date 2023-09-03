@@ -14,7 +14,7 @@ namespace LibHac.GcSrv;
 /// Performs various operations on the inserted game card.
 /// All available operations are listed in <see cref="GameCardOperationIdValue"/>.
 /// </summary>
-/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 internal class GameCardDeviceOperator : IStorageDeviceOperator
 {
     private SharedRef<GameCardStorageDevice> _storageDevice;

@@ -15,7 +15,7 @@ namespace LibHac.SdmmcSrv;
 /// Provides base functionality for MMC <see cref="IStorageDevice"/> classes. Derived classes will need to provide
 /// methods for reading/writing the MMC storage.
 /// </summary>
-/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 internal abstract class MmcPartitionStorageDevice : IDisposable
 {
     private SharedRef<ISdmmcDeviceManager> _manager;
@@ -95,7 +95,7 @@ internal abstract class MmcPartitionStorageDevice : IDisposable
 /// and <see cref="MmcPartitionStorageDevice"/>. Because C# doesn't have multiple inheritance, we make a copy of the
 /// <see cref="SdmmcStorageInterfaceAdapter"/> class that inherits from <see cref="MmcPartitionStorageDevice"/>.
 /// This class must mirror any changes made to <see cref="SdmmcStorageInterfaceAdapter"/>.</para>
-/// <para>Based on nnSdk 15.3.0 (FS 15.0.0)</para></remarks>
+/// <para>Based on nnSdk 16.2.0 (FS 16.0.0)</para></remarks>
 internal abstract class MmcPartitionStorageDeviceInterfaceAdapter : MmcPartitionStorageDevice, IStorageDevice
 {
     private readonly IStorage _baseStorage;
@@ -145,7 +145,7 @@ internal abstract class MmcPartitionStorageDeviceInterfaceAdapter : MmcPartition
 /// An <see cref="IStorageDevice"/> that handles interacting with the <see cref="MmcPartition.UserData"/> partition
 /// on the internal MMC.
 /// </summary>
-/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 internal class MmcUserDataPartitionStorageDevice : MmcPartitionStorageDeviceInterfaceAdapter
 {
     private MmcUserDataPartitionStorageDevice(ref SharedRef<ISdmmcDeviceManager> manager, SdmmcHandle handle,
@@ -209,7 +209,7 @@ internal class MmcUserDataPartitionStorageDevice : MmcPartitionStorageDeviceInte
 /// An <see cref="IStorageDevice"/> that handles interacting with the <see cref="MmcPartition.BootPartition1"/> and
 /// <see cref="MmcPartition.BootPartition2"/> partitions on the internal MMC.
 /// </summary>
-/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 internal class MmcBootPartitionStorageDevice : MmcPartitionStorageDeviceInterfaceAdapter
 {
     private MmcBootPartitionStorageDevice(Fs.MmcPartition partition, ref SharedRef<ISdmmcDeviceManager> manager,

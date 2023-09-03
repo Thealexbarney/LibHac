@@ -8,7 +8,7 @@ namespace LibHac.SdmmcSrv;
 /// <summary>
 /// Manages locking and getting the storage from sdmmc devices.
 /// </summary>
-/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 internal interface ISdmmcDeviceManager : IDisposable
 {
     Result Lock(ref UniqueLockRef<SdkMutexType> outLock, SdmmcHandle handle);

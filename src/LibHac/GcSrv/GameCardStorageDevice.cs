@@ -13,7 +13,7 @@ namespace LibHac.GcSrv;
 /// <summary>
 /// An <see cref="IStorageDevice"/> that handles interacting with the currently inserted game card.
 /// </summary>
-/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 internal class GameCardStorageDevice : GameCardStorageInterfaceAdapter, IStorageDevice
 {
     private SharedRef<IGameCardManager> _manager;
