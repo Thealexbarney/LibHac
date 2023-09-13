@@ -1,4 +1,5 @@
-﻿using LibHac.Common.FixedArrays;
+﻿using System.Runtime.InteropServices;
+using LibHac.Common.FixedArrays;
 
 namespace LibHac.Gc.Impl;
 
@@ -22,9 +23,60 @@ public struct CardId3
     public Array4<byte> Reserved;
 }
 
+public enum DevCardRomSize : byte
+{
+    // ReSharper disable InconsistentNaming
+    Size1GB = 3,
+    Size2GB = 4,
+    Size4GB = 5,
+    Size8GB = 6,
+    Size16GB = 7,
+    Size32GB = 8
+    // ReSharper restore InconsistentNaming
+}
+
+public enum DevCardNandSize : byte
+{
+    // ReSharper disable InconsistentNaming
+    Size16GB = 7,
+    Size32GB = 8,
+    Size64GB = 9
+    // ReSharper restore InconsistentNaming
+}
+
+[StructLayout(LayoutKind.Sequential)]
 public struct DevCardParameter
 {
-    public Array512<byte> Data;
+    public CardId1 CardId1;
+    public CardId2 CardId2;
+    public CardId3 CardId3;
+    public uint RomAreaStartAddr;
+    public uint BackupAreaStartAddr;
+    public Array3<byte> ReservedAreaStartAddr;
+    public DevCardRomSize RomSize;
+    public Array2<byte> WaitCycle1ForRead;
+    public Array2<byte> WaitCycle2ForRead;
+    public byte SpeedChangeEmulateWaitCycle1FrequencyForRead;
+    public Array3<byte> SpeedChangeEmulateWaitCycle1ForRead;
+    public byte SpeedChangeEmulateWaitCycle2FrequencyForRead;
+    public Array3<byte> SpeedChangeEmulateWaitCycle2ForRead;
+    public Array3<byte> FirstReadPageWaitCycleForRead;
+    public Array2<byte> WaitCycle1ForWrite;
+    public Array3<byte> WaitCycle2ForWrite;
+    public byte SpeedChangeEmulateWaitCycle1FrequencyForWrite;
+    public Array3<byte> SpeedChangeEmulateWaitCycle1ForWrite;
+    public byte SpeedChangeEmulateWaitCycle2FrequencyForWrite;
+    public Array3<byte> SpeedChangeEmulateWaitCycle2ForWrite;
+    public Array2<byte> WaitCycle1ForSetAccessPattern;
+    public Array3<byte> WaitCycle2ForSetAccessPattern;
+    public Array3<byte> WaitCycleForRefresh;
+    public Array3<byte> WaitCycleForSetKey;
+    public Array3<byte> WaitCycleForIRdInit;
+    public Array3<byte> WaitCycleForISetInit1;
+    public Array3<byte> WaitCycleForISetGen;
+    public Array3<byte> WaitCycleForISetInit2;
+    public DevCardNandSize NandSize;
+    public Array436<byte> Reserved;
 }
 
 public struct CardInitialDataPayload

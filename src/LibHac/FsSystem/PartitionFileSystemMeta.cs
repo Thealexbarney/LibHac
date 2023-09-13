@@ -59,7 +59,7 @@ namespace LibHac.FsSystem
     /// <typeparam name="TFormat">A traits class that provides values used to read and build the metadata.</typeparam>
     /// <typeparam name="THeader">The type of the header at the beginning of the metadata.</typeparam>
     /// <typeparam name="TEntry">The type of the entries in the file table in the metadata.</typeparam>
-    /// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+    /// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
     public class PartitionFileSystemMetaCore<TFormat, THeader, TEntry> : IDisposable
         where TFormat : IPartitionFileSystemFormat
         where THeader : unmanaged, IPartitionFileSystemHeader
@@ -290,7 +290,7 @@ namespace LibHac.FsSystem
     /// <summary>
     /// Reads the metadata for a <see cref="Sha256PartitionFileSystem"/>.
     /// </summary>
-    /// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+    /// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
     public class Sha256PartitionFileSystemMeta : PartitionFileSystemMetaCore<TFormat, THeader, TFormat.PartitionEntry>
     {
         public Result Initialize(IStorage baseStorage, MemoryResource allocator, ReadOnlySpan<byte> hash)
@@ -360,7 +360,7 @@ namespace LibHac.FsSystem
     /// <summary>
     /// Reads the metadata for a <see cref="PartitionFileSystem"/>.
     /// </summary>
-    /// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+    /// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
     public class PartitionFileSystemMeta : PartitionFileSystemMetaCore<PartitionFileSystemFormat,
         PartitionFileSystemFormat.PartitionFileSystemHeaderImpl, PartitionFileSystemFormat.PartitionEntry> { }
 }

@@ -9,7 +9,7 @@ namespace LibHac.FsSrv.Storage.Sf;
 /// Allows reading from or writing to a storage device's storage like an <see cref="IStorage"/>, getting or validating
 /// its current handle, and opening an <see cref="IStorageDeviceOperator"/> for the storage device.
 /// </summary>
-/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 public interface IStorageDevice : IStorage
 {
     Result GetHandle(out uint handle);

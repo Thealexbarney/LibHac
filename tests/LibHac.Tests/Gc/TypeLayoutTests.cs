@@ -102,6 +102,45 @@ public class TypeLayoutTests
     }
 
     [Fact]
+    public static void DevCardParameter_Layout()
+    {
+        var s = new DevCardParameter();
+
+        Assert.Equal(0x200, Unsafe.SizeOf<DevCardParameter>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.CardId1));
+        Assert.Equal(0x04, GetOffset(in s, in s.CardId2));
+        Assert.Equal(0x08, GetOffset(in s, in s.CardId3));
+        Assert.Equal(0x0C, GetOffset(in s, in s.RomAreaStartAddr));
+        Assert.Equal(0x10, GetOffset(in s, in s.BackupAreaStartAddr));
+        Assert.Equal(0x14, GetOffset(in s, in s.ReservedAreaStartAddr));
+        Assert.Equal(0x17, GetOffset(in s, in s.RomSize));
+        Assert.Equal(0x18, GetOffset(in s, in s.WaitCycle1ForRead));
+        Assert.Equal(0x1A, GetOffset(in s, in s.WaitCycle2ForRead));
+        Assert.Equal(0x1C, GetOffset(in s, in s.SpeedChangeEmulateWaitCycle1FrequencyForRead));
+        Assert.Equal(0x1D, GetOffset(in s, in s.SpeedChangeEmulateWaitCycle1ForRead));
+        Assert.Equal(0x20, GetOffset(in s, in s.SpeedChangeEmulateWaitCycle2FrequencyForRead));
+        Assert.Equal(0x21, GetOffset(in s, in s.SpeedChangeEmulateWaitCycle2ForRead));
+        Assert.Equal(0x24, GetOffset(in s, in s.FirstReadPageWaitCycleForRead));
+        Assert.Equal(0x27, GetOffset(in s, in s.WaitCycle1ForWrite));
+        Assert.Equal(0x29, GetOffset(in s, in s.WaitCycle2ForWrite));
+        Assert.Equal(0x2C, GetOffset(in s, in s.SpeedChangeEmulateWaitCycle1FrequencyForWrite));
+        Assert.Equal(0x2D, GetOffset(in s, in s.SpeedChangeEmulateWaitCycle1ForWrite));
+        Assert.Equal(0x30, GetOffset(in s, in s.SpeedChangeEmulateWaitCycle2FrequencyForWrite));
+        Assert.Equal(0x31, GetOffset(in s, in s.SpeedChangeEmulateWaitCycle2ForWrite));
+        Assert.Equal(0x34, GetOffset(in s, in s.WaitCycle1ForSetAccessPattern));
+        Assert.Equal(0x36, GetOffset(in s, in s.WaitCycle2ForSetAccessPattern));
+        Assert.Equal(0x39, GetOffset(in s, in s.WaitCycleForRefresh));
+        Assert.Equal(0x3C, GetOffset(in s, in s.WaitCycleForSetKey));
+        Assert.Equal(0x3F, GetOffset(in s, in s.WaitCycleForIRdInit));
+        Assert.Equal(0x42, GetOffset(in s, in s.WaitCycleForISetInit1));
+        Assert.Equal(0x45, GetOffset(in s, in s.WaitCycleForISetGen));
+        Assert.Equal(0x48, GetOffset(in s, in s.WaitCycleForISetInit2));
+        Assert.Equal(0x4B, GetOffset(in s, in s.NandSize));
+        Assert.Equal(0x4C, GetOffset(in s, in s.Reserved));
+    }
+
+    [Fact]
     public static void CardInitialData_Layout()
     {
         var s = new CardInitialData();

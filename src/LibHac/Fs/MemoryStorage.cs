@@ -8,7 +8,7 @@ namespace LibHac.Fs;
 /// <summary>
 /// Allows interacting with a <see cref="byte"/> array via the <see cref="IStorage"/> interface.
 /// </summary>
-/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 public class MemoryStorage : IStorage
 {
     private byte[] _buffer;
@@ -25,7 +25,6 @@ public class MemoryStorage : IStorage
         Assert.SdkRequiresNotNull(buffer);
         Assert.SdkRequiresInRange(size, 0, buffer.Length);
 
-        // ReSharper disable once ConditionIsAlwaysTrueOrFalse
         Abort.DoAbortUnless(buffer is null || 0 <= size && size < buffer.Length);
 
         _buffer = buffer;

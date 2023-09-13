@@ -9,7 +9,7 @@ namespace LibHac.FsSrv.Storage;
 /// Manages setting storage devices as ready or not ready, and allows opening <see cref="IStorageDeviceManager"/>s for
 /// each storage device.
 /// </summary>
-/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 public interface IStorageDeviceManagerFactory : IDisposable
 {
     Result Create(ref SharedRef<IStorageDeviceManager> outDeviceManager, StorageDevicePortId portId);

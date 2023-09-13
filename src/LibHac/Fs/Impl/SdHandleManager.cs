@@ -6,7 +6,7 @@ namespace LibHac.Fs.Impl;
 /// <summary>
 /// Allows getting the current handle for the SD card and checking to see if a provided handle is still valid.
 /// </summary>
-/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 internal class SdHandleManager : IDeviceHandleManager
 {
     // LibHac addition

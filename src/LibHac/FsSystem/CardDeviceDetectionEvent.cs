@@ -12,7 +12,7 @@ namespace LibHac.FsSystem;
 /// <summary>
 /// Base class for classes that manage registering events and signaling them when a card device is inserted or removed.
 /// </summary>
-/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 internal class CardDeviceDetectionEventManager : IDisposable
 {
     private LinkedList<CardDeviceDetectionEvent> _events;

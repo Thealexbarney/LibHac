@@ -277,7 +277,7 @@ public sealed class GameCardEmulated : IGcApi
 
         int limArea = (int)_cardHeader.LimAreaPage;
         bool isNormal = pageAddress < limArea;
-        bool isSecure = (pageAddress + pageCount - 1) >= limArea;
+        bool isSecure = pageAddress + pageCount - 1 >= limArea;
 
         // Reads cannot span the boundary between the normal area and secure area.
         if (isNormal && isSecure)

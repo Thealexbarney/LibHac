@@ -8,7 +8,7 @@ namespace LibHac.FsSrv.FsCreator;
 /// <summary>
 /// Creates <see cref="IStorage"/>s to the currently mounted game card.
 /// </summary>
-/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 public class GameCardStorageCreator : IGameCardStorageCreator
 {
     // LibHac addition so we can access fssrv::storage functions

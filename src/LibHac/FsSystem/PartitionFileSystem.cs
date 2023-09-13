@@ -16,7 +16,7 @@ namespace LibHac.FsSystem;
 /// </summary>
 /// <remarks><para>The original allocator in FS simply calls <c>nn::fs::detail::Allocate</c> and
 /// <c>nn::fs::detail::Deallocate</c>. In our implementation we use the shared .NET <see cref="ArrayPool{T}"/>.</para>
-/// <para>Based on nnSdk 15.3.0 (FS 15.0.0)</para></remarks>
+/// <para>Based on nnSdk 16.2.0 (FS 16.0.0)</para></remarks>
 file sealed class DefaultAllocatorForPartitionFileSystem : MemoryResource
 {
     public static readonly DefaultAllocatorForPartitionFileSystem Instance = new();
@@ -50,7 +50,7 @@ file sealed class DefaultAllocatorForPartitionFileSystem : MemoryResource
 /// Reads a standard partition file system. These files start with "PFS0" and are typically found inside NCAs
 /// or as .nsp files.
 /// </summary>
-/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 public class PartitionFileSystem : PartitionFileSystemCore<PartitionFileSystemMeta,
     Impl.PartitionFileSystemFormat,
     Impl.PartitionFileSystemFormat.PartitionFileSystemHeaderImpl,
@@ -59,7 +59,7 @@ public class PartitionFileSystem : PartitionFileSystemCore<PartitionFileSystemMe
 /// <summary>
 /// Reads a hashed partition file system. These files start with "HFS0" and are typically found inside XCIs.
 /// </summary>
-/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 public class Sha256PartitionFileSystem : PartitionFileSystemCore<Sha256PartitionFileSystemMeta,
     Impl.Sha256PartitionFileSystemFormat,
     Impl.PartitionFileSystemFormat.PartitionFileSystemHeaderImpl,
@@ -74,7 +74,7 @@ public class Sha256PartitionFileSystem : PartitionFileSystemCore<Sha256Partition
 /// <typeparam name="TFormat">A traits class that provides values used to read and build the metadata.</typeparam>
 /// <typeparam name="THeader">The type of the header at the beginning of the metadata.</typeparam>
 /// <typeparam name="TEntry">The type of the entries in the file table in the metadata.</typeparam>
-/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 public class PartitionFileSystemCore<TMetaData, TFormat, THeader, TEntry> : IFileSystem
     where TMetaData : PartitionFileSystemMetaCore<TFormat, THeader, TEntry>, new()
     where TFormat : IPartitionFileSystemFormat
@@ -93,7 +93,7 @@ public class PartitionFileSystemCore<TMetaData, TFormat, THeader, TEntry> : IFil
     /// <summary>
     /// Provides access to a file from a <see cref="PartitionFileSystemCore{TMetaData,TFormat,THeader,TEntry}"/>.
     /// </summary>
-    /// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+    /// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
     private class PartitionFile : IFile
     {
         private TEntry _partitionEntry;
@@ -337,7 +337,7 @@ public class PartitionFileSystemCore<TMetaData, TFormat, THeader, TEntry> : IFil
     /// </summary>
     /// <remarks><para>A <see cref="PartitionFileSystemCore{TMetaData,TFormat,THeader,TEntry}"/> cannot contain any
     /// subdirectories, so a <see cref="PartitionDirectory"/> will only access the root directory.</para>
-    /// <para>Based on nnSdk 15.3.0 (FS 15.0.0)</para></remarks>
+    /// <para>Based on nnSdk 16.2.0 (FS 16.0.0)</para></remarks>
     private class PartitionDirectory : IDirectory
     {
         private int _currentIndex;

@@ -12,7 +12,7 @@ namespace LibHac.Fs;
 /// <summary>
 /// Contains functions for ensuring that an application's save data exists and is the correct size.
 /// </summary>
-/// <remarks>Based on nnSdk 15.3.0</remarks>
+/// <remarks>Based on nnSdk 16.2.0</remarks>
 public static class ApplicationSaveDataManagement
 {
     private const int LeftoverFreeSpaceRequiredForUserAndDeviceSaves = 0x4000;

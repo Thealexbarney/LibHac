@@ -9,7 +9,7 @@ namespace LibHac.FsSrv.Storage.Sf;
 /// </summary>
 /// <remarks><para>Operation IDs are not common between implementers of the interface. Every implementer will have its own operations
 /// and expected input data.</para>
-/// <para>Based on nnSdk 15.3.0 (FS 15.0.0)</para></remarks>
+/// <para>Based on nnSdk 16.2.0 (FS 16.0.0)</para></remarks>
 public interface IStorageDeviceOperator : IDisposable
 {
     Result Operate(int operationId);

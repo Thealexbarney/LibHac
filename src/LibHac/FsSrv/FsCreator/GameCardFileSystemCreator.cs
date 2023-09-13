@@ -16,7 +16,7 @@ namespace LibHac.FsSrv.FsCreator;
 /// <summary>
 /// Reads the root partition of a game card and handles opening the various partitions it contains.
 /// </summary>
-/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 public class GameCardRootPartition : IDisposable
 {
     private const int LogoPartitionSizeMax = 0x12000;
@@ -209,7 +209,7 @@ public class GameCardRootPartition : IDisposable
 /// <summary>
 /// Creates <see cref="IFileSystem"/>s of the various partitions contained by the currently mounted game card.
 /// </summary>
-/// <remarks>Based on nnSdk 15.3.0 (FS 15.0.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 public class GameCardFileSystemCreator : IGameCardFileSystemCreator
 {
     private MemoryResource _allocator;
