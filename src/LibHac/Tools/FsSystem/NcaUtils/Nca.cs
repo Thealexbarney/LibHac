@@ -299,8 +299,8 @@ public class Nca
 
         var treeHeader = new BucketTree.Header();
         info.EncryptionTreeHeader.CopyTo(SpanHelpers.AsByteSpan(ref treeHeader));
-        long nodeStorageSize = IndirectStorage.QueryNodeStorageSize(treeHeader.EntryCount);
-        long entryStorageSize = IndirectStorage.QueryEntryStorageSize(treeHeader.EntryCount);
+        long nodeStorageSize = AesCtrCounterExtendedStorage.QueryNodeStorageSize(treeHeader.EntryCount);
+        long entryStorageSize = AesCtrCounterExtendedStorage.QueryEntryStorageSize(treeHeader.EntryCount);
 
         var tableNodeStorage = new SubStorage(cachedBucketTreeData, 0, nodeStorageSize);
         var tableEntryStorage = new SubStorage(cachedBucketTreeData, nodeStorageSize, entryStorageSize);
