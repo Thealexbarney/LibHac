@@ -17,7 +17,7 @@ namespace LibHac.FsSrv.Storage;
 /// <summary>
 /// Contains functions for interacting with the SD card storage device.
 /// </summary>
-/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 internal static class SdCardService
 {
     private static int MakeOperationId(SdCardManagerOperationIdValue operation) => (int)operation;

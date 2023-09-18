@@ -15,7 +15,7 @@ namespace LibHac.FsSrv.Storage;
 /// <summary>
 /// Contains global MMC-storage-related functions.
 /// </summary>
-/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 public static class MmcServiceGlobalMethods
 {
     public static Result GetAndClearPatrolReadAllocateBufferCount(this FileSystemServer fsSrv, out long successCount,
@@ -28,7 +28,7 @@ public static class MmcServiceGlobalMethods
 /// <summary>
 /// Contains functions for interacting with the MMC storage device.
 /// </summary>
-/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 internal static class MmcService
 {
     private static int MakeOperationId(MmcManagerOperationIdValue operation) => (int)operation;
