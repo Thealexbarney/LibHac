@@ -12,13 +12,123 @@ using Buffer = LibHac.Mem.Buffer;
 
 namespace LibHac.FsSystem;
 
+file struct StorageNode
+{
+    private static int NodeHeaderSize => Unsafe.SizeOf<BucketTree.NodeHeader>();
+
+    private Offset _start;
+    private int _count;
+    private int _index;
+
+    public StorageNode(long offset, long size, int count)
+    {
+        _start = new Offset(offset + NodeHeaderSize, (int)size);
+        _count = count;
+        _index = -1;
+    }
+
+    public StorageNode(long size, int count)
+    {
+        _start = new Offset(NodeHeaderSize, (int)size);
+        _count = count;
+        _index = -1;
+    }
+
+    public readonly int GetIndex() => _index;
+
+    public void Find(ReadOnlySpan<byte> buffer, long virtualAddress)
+    {
+        int end = _count;
+        Offset pos = _start;
+
+        while (end > 0)
+        {
+            int half = end / 2;
+            Offset mid = pos + half;
+
+            long offset = BinaryPrimitives.ReadInt64LittleEndian(buffer.Slice((int)mid.Get()));
+
+            if (offset <= virtualAddress)
+            {
+                pos = mid + 1;
+                end -= half + 1;
+            }
+            else
+            {
+                end = half;
+            }
+        }
+
+        _index = (int)(pos - _start) - 1;
+    }
+
+    public Result Find(in ValueSubStorage storage, long virtualAddress)
+    {
+        int end = _count;
+        Offset pos = _start;
+
+        while (end > 0)
+        {
+            int half = end / 2;
+            Offset mid = pos + half;
+
+            long offset = 0;
+            Result res = storage.Read(mid.Get(), SpanHelpers.AsByteSpan(ref offset));
+            if (res.IsFailure()) return res.Miss();
+
+            if (offset <= virtualAddress)
+            {
+                pos = mid + 1;
+                end -= half + 1;
+            }
+            else
+            {
+                end = half;
+            }
+        }
+
+        _index = (int)(pos - _start) - 1;
+        return Result.Success;
+    }
+
+    private readonly struct Offset
+    {
+        private readonly long _offset;
+        private readonly int _stride;
+
+        public Offset(long offset, int stride)
+        {
+            _offset = offset;
+            _stride = stride;
+        }
+
+        public long Get() => _offset;
+
+        public static Offset operator ++(Offset left) => left + 1;
+        public static Offset operator --(Offset left) => left - 1;
+
+        public static Offset operator +(Offset left, long right) => new Offset(left._offset + right * left._stride, left._stride);
+        public static Offset operator -(Offset left, long right) => new Offset(left._offset - right * left._stride, left._stride);
+
+        public static long operator -(Offset left, Offset right) =>
+            (left._offset - right._offset) / left._stride;
+
+        public static bool operator ==(Offset left, Offset right) => left._offset == right._offset;
+        public static bool operator !=(Offset left, Offset right) => left._offset != right._offset;
+
+        public bool Equals(Offset other) => _offset == other._offset;
+        public override bool Equals(object obj) => obj is Offset other && Equals(other);
+        public override int GetHashCode() => _offset.GetHashCode();
+    }
+}
+
 /// <summary>
 /// Allows searching and iterating the entries in a bucket tree data structure.
 /// </summary>
-/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
+/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 public partial class BucketTree : IDisposable
 {
-    private const uint ExpectedMagic = 0x52544B42; // BKTR
+    private const uint Signature = 0x52544B42; // BKTR
     private const int MaxVersion = 1;
 
     private const int NodeSizeMin = 1024;
@@ -76,7 +186,7 @@ public partial class BucketTree : IDisposable
 
     public interface IContinuousReadingEntry
     {
-        int FragmentSizeMax { get; }
+        public static abstract int FragmentSizeMax { get; }
 
         long GetVirtualOffset();
         long GetPhysicalOffset();
@@ -179,114 +289,6 @@ public partial class BucketTree : IDisposable
         }
     }
 
-    private struct StorageNode
-    {
-        private Offset _start;
-        private int _count;
-        private int _index;
-
-        public StorageNode(long offset, long size, int count)
-        {
-            _start = new Offset(offset + NodeHeaderSize, (int)size);
-            _count = count;
-            _index = -1;
-        }
-
-        public StorageNode(long size, int count)
-        {
-            _start = new Offset(NodeHeaderSize, (int)size);
-            _count = count;
-            _index = -1;
-        }
-
-        public readonly int GetIndex() => _index;
-
-        public void Find(ReadOnlySpan<byte> buffer, long virtualAddress)
-        {
-            int end = _count;
-            Offset pos = _start;
-
-            while (end > 0)
-            {
-                int half = end / 2;
-                Offset mid = pos + half;
-
-                long offset = BinaryPrimitives.ReadInt64LittleEndian(buffer.Slice((int)mid.Get()));
-
-                if (offset <= virtualAddress)
-                {
-                    pos = mid + 1;
-                    end -= half + 1;
-                }
-                else
-                {
-                    end = half;
-                }
-            }
-
-            _index = (int)(pos - _start) - 1;
-        }
-
-        public Result Find(in ValueSubStorage storage, long virtualAddress)
-        {
-            int end = _count;
-            Offset pos = _start;
-
-            while (end > 0)
-            {
-                int half = end / 2;
-                Offset mid = pos + half;
-
-                long offset = 0;
-                Result res = storage.Read(mid.Get(), SpanHelpers.AsByteSpan(ref offset));
-                if (res.IsFailure()) return res.Miss();
-
-                if (offset <= virtualAddress)
-                {
-                    pos = mid + 1;
-                    end -= half + 1;
-                }
-                else
-                {
-                    end = half;
-                }
-            }
-
-            _index = (int)(pos - _start) - 1;
-            return Result.Success;
-        }
-
-        private readonly struct Offset
-        {
-            private readonly long _offset;
-            private readonly int _stride;
-
-            public Offset(long offset, int stride)
-            {
-                _offset = offset;
-                _stride = stride;
-            }
-
-            public long Get() => _offset;
-
-            public static Offset operator ++(Offset left) => left + 1;
-            public static Offset operator --(Offset left) => left - 1;
-
-            public static Offset operator +(Offset left, long right) => new Offset(left._offset + right * left._stride, left._stride);
-            public static Offset operator -(Offset left, long right) => new Offset(left._offset - right * left._stride, left._stride);
-
-            public static long operator -(Offset left, Offset right) =>
-                (left._offset - right._offset) / left._stride;
-
-            public static bool operator ==(Offset left, Offset right) => left._offset == right._offset;
-            public static bool operator !=(Offset left, Offset right) => left._offset != right._offset;
-
-            public bool Equals(Offset other) => _offset == other._offset;
-            public override bool Equals(object obj) => obj is Offset other && Equals(other);
-            public override int GetHashCode() => _offset.GetHashCode();
-        }
-    }
-
     private struct OffsetCache
     {
         public OffsetCache()
@@ -320,26 +322,24 @@ public partial class BucketTree : IDisposable
 
     public struct Header
     {
-        public uint Magic;
+        public uint HeaderSignature;
         public uint Version;
         public int EntryCount;
-#pragma warning disable 414
-        private int _reserved;
-#pragma warning restore 414
+        public int Reserved;
 
         public void Format(int entryCount)
         {
             Assert.SdkRequiresLessEqual(0, entryCount);
 
-            Magic = ExpectedMagic;
+            HeaderSignature = Signature;
             Version = MaxVersion;
             EntryCount = entryCount;
-            _reserved = 0;
+            Reserved = 0;
         }
 
         public readonly Result Verify()
         {
-            if (Magic != ExpectedMagic)
+            if (HeaderSignature != Signature)
                 return ResultFs.InvalidBucketTreeSignature.Log();
 
             if (EntryCount < 0)
@@ -503,61 +503,66 @@ public partial class BucketTree : IDisposable
         if (entryCount <= 0)
             return ResultFs.InvalidArgument.Log();
 
+        Result result = ResultFs.BufferAllocationFailed.Value;
+
         // Allocate node.
-        if (!_nodeL1.Allocate(allocator, nodeSize))
-            return ResultFs.BufferAllocationFailed.Log();
-
-        bool needFree = true;
-        try
+        if (_nodeL1.Allocate(allocator, nodeSize))
         {
-            // Read node.
-            Result res = nodeStorage.Read(0, _nodeL1.GetBuffer());
-            if (res.IsFailure()) return res.Miss();
+            result = nodeStorage.Read(0, _nodeL1.GetBuffer());
 
-            // Verify node.
-            res = _nodeL1.GetHeader().Verify(0, nodeSize, sizeof(long));
-            if (res.IsFailure()) return res.Miss();
-
-            // Validate offsets.
-            int offsetCount = GetOffsetCount(nodeSize);
-            int entrySetCount = GetEntrySetCount(nodeSize, entrySize, entryCount);
-            BucketTreeNode<long> node = _nodeL1.GetNode<long>();
-
-            long startOffset;
-            if (offsetCount < entrySetCount && node.GetCount() < offsetCount)
+            if (result.IsSuccess())
             {
-                startOffset = node.GetL2BeginOffset();
+                result = _nodeL1.GetHeader().Verify(0, nodeSize, sizeof(long));
+
+                if (result.IsSuccess())
+                {
+                    // Validate offsets.
+                    int offsetCount = GetOffsetCount(nodeSize);
+                    int entrySetCount = GetEntrySetCount(nodeSize, entrySize, entryCount);
+                    BucketTreeNode<long> node = _nodeL1.GetNode<long>();
+
+                    long startOffset;
+                    if (offsetCount < entrySetCount && node.GetCount() < offsetCount)
+                    {
+                        startOffset = node.GetL2BeginOffset();
+                    }
+                    else
+                    {
+                        startOffset = node.GetBeginOffset();
+                    }
+
+                    if (startOffset == 0 && startOffset <= node.GetBeginOffset())
+                    {
+                        long endOffset = node.GetEndOffset();
+
+                        if (startOffset < endOffset)
+                        {
+                            _nodeStorage.Set(in nodeStorage);
+                            _entryStorage.Set(in entryStorage);
+                            _nodeSize = nodeSize;
+                            _entrySize = entrySize;
+                            _entryCount = entryCount;
+                            _offsetCount = offsetCount;
+                            _entrySetCount = entrySetCount;
+                            _offsetCache.IsInitialized = true;
+                            _offsetCache.Offsets.StartOffset = startOffset;
+                            _offsetCache.Offsets.EndOffset = endOffset;
+
+                            return Result.Success;
+                        }
+                    }
+
+                    result = ResultFs.InvalidBucketTreeEntryOffset.Value;
+                }
             }
-            else
-            {
-                startOffset = node.GetBeginOffset();
-            }
 
-            long endOffset = node.GetEndOffset();
-
-            if (startOffset < 0 || startOffset > node.GetBeginOffset() || startOffset >= endOffset)
-                return ResultFs.InvalidBucketTreeEntryOffset.Log();
-
-            _nodeStorage.Set(in nodeStorage);
-            _entryStorage.Set(in entryStorage);
-            _nodeSize = nodeSize;
-            _entrySize = entrySize;
-            _entryCount = entryCount;
-            _offsetCount = offsetCount;
-            _entrySetCount = entrySetCount;
-            _offsetCache.IsInitialized = true;
-            _offsetCache.Offsets.StartOffset = startOffset;
-            _offsetCache.Offsets.EndOffset = endOffset;
-
-            needFree = false;
-
-            return Result.Success;
+            _nodeL1.Free();
         }
-        finally
-        {
-            if (needFree)
-                _nodeL1.Free();
-        }
+
+        if (result.IsFailure())
+            return result.Log();
+
+        return Result.Success;
     }
 
     public void Initialize(long nodeSize, long endOffset)
@@ -795,7 +800,7 @@ public partial class BucketTree : IDisposable
             if (entry.IsFragment())
             {
                 // If we can't merge, stop looping.
-                if (readSize >= entry.FragmentSizeMax || remainingSize <= dataSize)
+                if (readSize >= TEntry.FragmentSizeMax || remainingSize <= dataSize)
                     break;
 
                 // Otherwise, add the current size to the merge size.
@@ -911,7 +916,8 @@ public partial class BucketTree : IDisposable
 
         public readonly bool IsValid() => _entryIndex >= 0;
 
-        public readonly Offsets GetTreeOffsets() => _treeOffsets;
+        [UnscopedRef]
+        public readonly ref readonly Offsets GetTreeOffsets() => ref _treeOffsets;
 
         public readonly bool CanMoveNext()
         {
@@ -1205,7 +1211,7 @@ public partial class BucketTree : IDisposable
             }
             else
             {
-                _entryIndex = 1;
+                _entryIndex = -1;
             }
 
             // Read the new entry
@@ -1275,6 +1281,8 @@ public partial class BucketTree : IDisposable
         public readonly Result ScanContinuousReading<TEntry>(out ContinuousReadingInfo info, long offset, long size)
             where TEntry : unmanaged, IContinuousReadingEntry
         {
+            Assert.SdkRequires(IsValid());
+
             var param = new ContinuousReadingParam<TEntry>
             {
                 Offset = offset,
