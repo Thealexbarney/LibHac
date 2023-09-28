@@ -52,7 +52,7 @@ public class IndirectStorage : IStorage
 
     private struct ContinuousReadingEntry : BucketTree.IContinuousReadingEntry
     {
-        public int FragmentSizeMax => 1024 * 4;
+        public static int FragmentSizeMax => 1024 * 4;
 
 #pragma warning disable CS0649
         // This field will be read in by BucketTree.Visitor.ScanContinuousReading
