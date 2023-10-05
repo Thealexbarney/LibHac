@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using LibHac.Common;
+using LibHac.Common.FixedArrays;
 using LibHac.FsSystem;
 
 namespace LibHac.Fs.Fsa;
@@ -297,6 +299,16 @@ public abstract class IFileSystem : IDisposable
         return DoQueryEntry(outBuffer, inBuffer, queryId, path);
     }
 
+    /// <summary>
+    /// Gets attributes of the <see cref="IFileSystem"/> including info about the maximum path length sizes it supports.
+    /// </summary>
+    /// <param name="outAttribute">If the operation returns successfully, the file system attributes.</param>
+    /// <returns>The <see cref="Result"/> of the requested operation.</returns>
+    public Result GetFileSystemAttribute(out FileSystemAttribute outAttribute)
+    {
+        return DoGetFileSystemAttribute(out outAttribute);
+    }
+
     protected abstract Result DoCreateFile(in Path path, long size, CreateFileOptions option);
     protected abstract Result DoDeleteFile(in Path path);
     protected abstract Result DoCreateDirectory(in Path path);
@@ -320,8 +332,7 @@ public abstract class IFileSystem : IDisposable
     }
 
     protected abstract Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode);
-    protected abstract Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
-        OpenDirectoryMode mode);
+    protected abstract Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path, OpenDirectoryMode mode);
     protected abstract Result DoCommit();
 
     protected virtual Result DoCommitProvisionally(long counter) => ResultFs.NotImplemented.Log();
@@ -336,6 +347,12 @@ public abstract class IFileSystem : IDisposable
 
     protected virtual Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
         in Path path) => ResultFs.NotImplemented.Log();
+
+    protected virtual Result DoGetFileSystemAttribute(out FileSystemAttribute outAttribute)
+    {
+        UnsafeHelpers.SkipParamInit(out outAttribute);
+        return ResultFs.NotImplemented.Log();
+    }
 }
 
 /// <summary>
@@ -373,4 +390,37 @@ public enum QueryId
     UpdateMac = 1,
     IsSignedSystemPartition = 2,
     QueryUnpreparedFileInformation = 3
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct FileSystemAttribute
+{
+    public bool DirectoryNameLengthMaxHasValue;
+    public bool FileNameLengthMaxHasValue;
+    public bool DirectoryPathLengthMaxHasValue;
+    public bool FilePathLengthMaxHasValue;
+    public bool Utf16CreateDirectoryPathLengthMaxHasValue;
+    public bool Utf16DeleteDirectoryPathLengthMaxHasValue;
+    public bool Utf16RenameSourceDirectoryPathLengthMaxHasValue;
+    public bool Utf16RenameDestinationDirectoryPathLengthMaxHasValue;
+    public bool Utf16OpenDirectoryPathLengthMaxHasValue;
+    public bool Utf16DirectoryNameLengthMaxHasValue;
+    public bool Utf16FileNameLengthMaxHasValue;
+    public bool Utf16DirectoryPathLengthMaxHasValue;
+    public bool Utf16FilePathLengthMaxHasValue;
+    public Array27<byte> Reserved1;
+    public int DirectoryNameLengthMax;
+    public int FileNameLengthMax;
+    public int DirectoryPathLengthMax;
+    public int FilePathLengthMax;
+    public int Utf16CreateDirectoryPathLengthMax;
+    public int Utf16DeleteDirectoryPathLengthMax;
+    public int Utf16RenameSourceDirectoryPathLengthMax;
+    public int Utf16RenameDestinationDirectoryPathLengthMax;
+    public int Utf16OpenDirectoryPathLengthMax;
+    public int Utf16DirectoryNameLengthMax;
+    public int Utf16FileNameLengthMax;
+    public int Utf16DirectoryPathLengthMax;
+    public int Utf16FilePathLengthMax;
+    public Array100<byte> Reserved2;
 }

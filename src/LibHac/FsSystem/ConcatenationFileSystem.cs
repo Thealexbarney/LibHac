@@ -502,8 +502,7 @@ public class ConcatenationFileSystem : IFileSystem
     /// <param name="baseFileSystem">The base <see cref="IAttributeFileSystem"/> for the
     /// new <see cref="ConcatenationFileSystem"/>.</param>
     public ConcatenationFileSystem(ref UniqueRef<IAttributeFileSystem> baseFileSystem) : this(ref baseFileSystem,
-        DefaultInternalFileSize)
-    { }
+        DefaultInternalFileSize) { }
 
     /// <summary>
     /// Initializes a new <see cref="ConcatenationFileSystem"/>.
@@ -582,7 +581,7 @@ public class ConcatenationFileSystem : IFileSystem
         Result res = internalFilePath.Initialize(in path);
         if (res.IsFailure()) return res.Miss();
 
-        for (int i = 0; ; i++)
+        for (int i = 0;; i++)
         {
             res = AppendInternalFilePath(ref internalFilePath.Ref(), i);
             if (res.IsFailure()) return res.Miss();
@@ -958,7 +957,7 @@ public class ConcatenationFileSystem : IFileSystem
 
         long sizeTotal = 0;
 
-        for (int i = 0; ; i++)
+        for (int i = 0;; i++)
         {
             res = AppendInternalFilePath(ref internalFilePath.Ref(), i);
             if (res.IsFailure()) return res.Miss();
@@ -1010,5 +1009,12 @@ public class ConcatenationFileSystem : IFileSystem
         using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
 
         return _baseFileSystem.Get.CommitProvisionally(counter).Ret();
+    }
+
+    protected override Result DoGetFileSystemAttribute(out FileSystemAttribute outAttribute)
+    {
+        using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
+
+        return _baseFileSystem.Get.GetFileSystemAttribute(out outAttribute).Ret();
     }
 }

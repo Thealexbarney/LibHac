@@ -592,6 +592,17 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         return Result.Success;
     }
 
+    public Result GetFileSystemAttribute(out FileSystemAttribute outAttribute)
+    {
+        UnsafeHelpers.SkipParamInit(out outAttribute);
+
+        Result res = _baseFileSystem.Get.GetFileSystemAttribute(out FileSystemAttribute attribute);
+        if (res.IsFailure()) return res.Miss();
+
+        outAttribute = attribute;
+        return Result.Success;
+    }
+
     public Result GetImpl(ref SharedRef<IFileSystem> fileSystem)
     {
         fileSystem.SetByCopy(in _baseFileSystem);

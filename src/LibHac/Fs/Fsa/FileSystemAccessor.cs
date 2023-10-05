@@ -31,6 +31,7 @@ internal class FileSystemAccessor : IDisposable
     private LinkedList<FileAccessor> _openFiles;
     private LinkedList<DirectoryAccessor> _openDirectories;
     private SdkMutexType _openListLock;
+    private SdkMutexType _getFsAttributeLock;
     private UniqueRef<ICommonMountNameGenerator> _mountNameGenerator;
     private UniqueRef<ISaveDataAttributeGetter> _saveDataAttributeGetter;
     private bool _isAccessLogEnabled;
@@ -39,6 +40,7 @@ internal class FileSystemAccessor : IDisposable
     private bool _isPathCacheAttached;
     private IMultiCommitTarget _multiCommitTarget;
     private PathFlags _pathFlags;
+    private Optional<FileSystemAttribute> _fsAttribute;
     private IStorage _storageForPurgeFileDataCache;
 
     internal HorizonClient Hos { get; }
@@ -53,6 +55,7 @@ internal class FileSystemAccessor : IDisposable
         _openFiles = new LinkedList<FileAccessor>();
         _openDirectories = new LinkedList<DirectoryAccessor>();
         _openListLock = new SdkMutexType();
+        _getFsAttributeLock = new SdkMutexType();
         _mountNameGenerator = new UniqueRef<ICommonMountNameGenerator>(ref mountNameGenerator);
         _saveDataAttributeGetter = new UniqueRef<ISaveDataAttributeGetter>(ref saveAttributeGetter);
         _multiCommitTarget = multiCommitTarget;
@@ -453,6 +456,25 @@ internal class FileSystemAccessor : IDisposable
 
         res = _fileSystem.Get.GetFileTimeStampRaw(out timeStamp, in pathNormalized);
         if (res.IsFailure()) return res.Miss();
+
+        return Result.Success;
+    }
+
+    public Result GetFileSystemAttribute(out FileSystemAttribute outAttribute)
+    {
+        using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _getFsAttributeLock);
+
+        if (_fsAttribute.HasValue)
+        {
+            outAttribute = _fsAttribute.Value;
+        }
+        else
+        {
+            Result res = _fileSystem.Get.GetFileSystemAttribute(out outAttribute);
+            if (res.IsFailure()) return res.Miss();
+
+            _fsAttribute.Set(in outAttribute);
+        }
 
         return Result.Success;
     }

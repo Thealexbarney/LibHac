@@ -229,6 +229,19 @@ public class SaveDataFileSystemCore : IFileSystem
         return Result.Success;
     }
 
+    protected override Result DoGetFileSystemAttribute(out FileSystemAttribute outAttribute)
+    {
+        const int maxSaveNameLength = 0x40;
+        
+        outAttribute = default;
+        outAttribute.DirectoryNameLengthMax = maxSaveNameLength;
+        outAttribute.DirectoryNameLengthMaxHasValue = true;
+        outAttribute.FileNameLengthMax = maxSaveNameLength;
+        outAttribute.FileNameLengthMaxHasValue = true;
+
+        return Result.Success;
+    }
+
     protected override Result DoCommit()
     {
         return Result.Success;

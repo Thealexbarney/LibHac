@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using Xunit;
 using static LibHac.Tests.Common.Layout;
@@ -256,6 +257,43 @@ public class TypeLayoutTests
         Assert.Equal(0x4, GetOffset(in s, in s.NumActivationErrorCorrections));
         Assert.Equal(0x8, GetOffset(in s, in s.NumReadWriteFailures));
         Assert.Equal(0xC, GetOffset(in s, in s.NumReadWriteErrorCorrections));
+    }
+
+    [Fact]
+    public static void FileSystemAttribute_Layout()
+    {
+        var s = new FileSystemAttribute();
+
+        Assert.Equal(0xC0, Unsafe.SizeOf<FileSystemAttribute>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.DirectoryNameLengthMaxHasValue));
+        Assert.Equal(0x01, GetOffset(in s, in s.FileNameLengthMaxHasValue));
+        Assert.Equal(0x02, GetOffset(in s, in s.DirectoryPathLengthMaxHasValue));
+        Assert.Equal(0x03, GetOffset(in s, in s.FilePathLengthMaxHasValue));
+        Assert.Equal(0x04, GetOffset(in s, in s.Utf16CreateDirectoryPathLengthMaxHasValue));
+        Assert.Equal(0x05, GetOffset(in s, in s.Utf16DeleteDirectoryPathLengthMaxHasValue));
+        Assert.Equal(0x06, GetOffset(in s, in s.Utf16RenameSourceDirectoryPathLengthMaxHasValue));
+        Assert.Equal(0x07, GetOffset(in s, in s.Utf16RenameDestinationDirectoryPathLengthMaxHasValue));
+        Assert.Equal(0x08, GetOffset(in s, in s.Utf16OpenDirectoryPathLengthMaxHasValue));
+        Assert.Equal(0x09, GetOffset(in s, in s.Utf16DirectoryNameLengthMaxHasValue));
+        Assert.Equal(0x0A, GetOffset(in s, in s.Utf16FileNameLengthMaxHasValue));
+        Assert.Equal(0x0B, GetOffset(in s, in s.Utf16DirectoryPathLengthMaxHasValue));
+        Assert.Equal(0x0C, GetOffset(in s, in s.Utf16FilePathLengthMaxHasValue));
+        Assert.Equal(0x0D, GetOffset(in s, in s.Reserved1));
+        Assert.Equal(0x28, GetOffset(in s, in s.DirectoryNameLengthMax));
+        Assert.Equal(0x2C, GetOffset(in s, in s.FileNameLengthMax));
+        Assert.Equal(0x30, GetOffset(in s, in s.DirectoryPathLengthMax));
+        Assert.Equal(0x34, GetOffset(in s, in s.FilePathLengthMax));
+        Assert.Equal(0x38, GetOffset(in s, in s.Utf16CreateDirectoryPathLengthMax));
+        Assert.Equal(0x3C, GetOffset(in s, in s.Utf16DeleteDirectoryPathLengthMax));
+        Assert.Equal(0x40, GetOffset(in s, in s.Utf16RenameSourceDirectoryPathLengthMax));
+        Assert.Equal(0x44, GetOffset(in s, in s.Utf16RenameDestinationDirectoryPathLengthMax));
+        Assert.Equal(0x48, GetOffset(in s, in s.Utf16OpenDirectoryPathLengthMax));
+        Assert.Equal(0x4C, GetOffset(in s, in s.Utf16DirectoryNameLengthMax));
+        Assert.Equal(0x50, GetOffset(in s, in s.Utf16FileNameLengthMax));
+        Assert.Equal(0x54, GetOffset(in s, in s.Utf16DirectoryPathLengthMax));
+        Assert.Equal(0x58, GetOffset(in s, in s.Utf16FilePathLengthMax));
+        Assert.Equal(0x5C, GetOffset(in s, in s.Reserved2));
     }
 
     [Fact]

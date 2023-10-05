@@ -255,4 +255,20 @@ public class SubdirectoryFileSystem : IFileSystem
     {
         return _baseFileSystem.Rollback();
     }
+
+    protected override Result DoGetFileSystemAttribute(out FileSystemAttribute outAttribute)
+    {
+        int rootPathCount = _rootPath.GetLength();
+
+        Result res = _baseFileSystem.GetFileSystemAttribute(out outAttribute);
+        if (res.IsFailure()) return res.Miss();
+
+        res = Utility.CountUtf16CharacterForUtf8String(out ulong rootPathUtf16Count, _rootPath.GetString());
+        if (res.IsFailure()) return res.Miss();
+
+        Utility.SubtractAllPathLengthMax(ref outAttribute, rootPathCount);
+        Utility.SubtractAllUtf16CountMax(ref outAttribute, (int)rootPathUtf16Count);
+
+        return Result.Success;
+    }
 }

@@ -1,10 +1,12 @@
 ﻿using System;
 using LibHac.Common;
+using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSrv.Sf;
 using LibHac.Os;
 using LibHac.Sf;
+using LibHac.Util;
 using IDirectory = LibHac.Fs.Fsa.IDirectory;
 using IFile = LibHac.Fs.Fsa.IFile;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
@@ -208,7 +210,7 @@ internal static class Utility
     }
 
     public static Result CopyDirectoryRecursively(IFileSystem destinationFileSystem, IFileSystem sourceFileSystem,
-       in Path destinationPath, in Path sourcePath, ref DirectoryEntry dirEntry, Span<byte> workBuffer)
+        in Path destinationPath, in Path sourcePath, ref DirectoryEntry dirEntry, Span<byte> workBuffer)
     {
         static Result OnEnterDir(in Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure)
         {
@@ -251,7 +253,7 @@ internal static class Utility
     }
 
     public static Result CopyDirectoryRecursively(IFileSystem fileSystem, in Path destinationPath,
-       in Path sourcePath, ref DirectoryEntry dirEntry, Span<byte> workBuffer)
+        in Path sourcePath, ref DirectoryEntry dirEntry, Span<byte> workBuffer)
     {
         var closure = new FsIterationTaskClosure();
         closure.Buffer = workBuffer;
@@ -437,5 +439,74 @@ internal static class Utility
 
         outUniqueLock.Set(ref uniqueLock.Ref);
         return Result.Success;
+    }
+
+    private static void SubtractIfHasValue(ref int inOutValue, int count, bool hasValue)
+    {
+        if (hasValue)
+        {
+            inOutValue -= count;
+            Assert.SdkAssert(inOutValue >= 0);
+            inOutValue = Math.Max(inOutValue, 0);
+        }
+    }
+
+    private static ulong GetCodePointByteLength(byte firstUtf8CodeUnit)
+    {
+        if ((firstUtf8CodeUnit & 0x80) == 0)
+            return 1;
+
+        if ((firstUtf8CodeUnit & 0xE0) == 0xC0)
+            return 2;
+
+        if ((firstUtf8CodeUnit & 0xF0) == 0xE0)
+            return 3;
+
+        if ((firstUtf8CodeUnit & 0xF8) == 0xF0)
+            return 4;
+
+        return 0;
+    }
+
+    public static void SubtractAllPathLengthMax(ref FileSystemAttribute attribute, int count)
+    {
+        SubtractIfHasValue(ref attribute.DirectoryPathLengthMax, count, attribute.DirectoryPathLengthMaxHasValue);
+        SubtractIfHasValue(ref attribute.FilePathLengthMax, count, attribute.FilePathLengthMaxHasValue);
+    }
+
+    public static Result CountUtf16CharacterForUtf8String(out ulong outCount, ReadOnlySpan<byte> utf8String)
+    {
+        UnsafeHelpers.SkipParamInit(out outCount);
+
+        Span<byte> buffer = stackalloc byte[4];
+        ReadOnlySpan<byte> curString = utf8String;
+        ulong utf16CodeUnitTotalCount = 0;
+
+        while (curString.Length > 0 && curString[0] != 0)
+        {
+            int utf16CodeUnitCount = GetCodePointByteLength(curString[0]) >= 4 ? 2 : 1;
+            buffer.Clear();
+
+            if (CharacterEncoding.PickOutCharacterFromUtf8String(buffer, ref curString) != CharacterEncodingResult.Success)
+            {
+                return ResultFs.InvalidPathFormat.Log();
+            }
+
+            utf16CodeUnitTotalCount += (ulong)utf16CodeUnitCount;
+        }
+
+        outCount = utf16CodeUnitTotalCount;
+        return Result.Success;
+    }
+
+    public static void SubtractAllUtf16CountMax(ref FileSystemAttribute attribute, int count)
+    {
+        SubtractIfHasValue(ref attribute.Utf16DirectoryPathLengthMax, count, attribute.Utf16DirectoryPathLengthMaxHasValue);
+        SubtractIfHasValue(ref attribute.Utf16FilePathLengthMax, count, attribute.Utf16FilePathLengthMaxHasValue);
+        SubtractIfHasValue(ref attribute.Utf16CreateDirectoryPathLengthMax, count, attribute.Utf16CreateDirectoryPathLengthMaxHasValue);
+        SubtractIfHasValue(ref attribute.Utf16DeleteDirectoryPathLengthMax, count, attribute.Utf16DeleteDirectoryPathLengthMaxHasValue);
+        SubtractIfHasValue(ref attribute.Utf16RenameSourceDirectoryPathLengthMax, count, attribute.Utf16RenameSourceDirectoryPathLengthMaxHasValue);
+        SubtractIfHasValue(ref attribute.Utf16RenameDestinationDirectoryPathLengthMax, count, attribute.Utf16RenameDestinationDirectoryPathLengthMaxHasValue);
+        SubtractIfHasValue(ref attribute.Utf16OpenDirectoryPathLengthMax, count, attribute.Utf16OpenDirectoryPathLengthMaxHasValue);
     }
 }

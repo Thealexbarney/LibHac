@@ -139,6 +139,9 @@ public class ForwardingFileSystem : IFileSystem
     protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path) =>
         BaseFileSystem.Get.GetFileTimeStampRaw(out timeStamp, in path);
 
+    protected override Result DoGetFileSystemAttribute(out FileSystemAttribute outAttribute) =>
+        BaseFileSystem.Get.GetFileSystemAttribute(out outAttribute);
+
     protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
         in Path path) => BaseFileSystem.Get.QueryEntry(outBuffer, inBuffer, queryId, in path);
 }

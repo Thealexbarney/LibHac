@@ -523,6 +523,44 @@ public class LocalFileSystem : IAttributeFileSystem
         return Result.Success;
     }
 
+    protected override Result DoGetFileSystemAttribute(out FileSystemAttribute outAttribute)
+    {
+        const int winMaxPathComponentLength = 255;
+        const int winMaxPathLength = 259;
+        const int winMaxDirectoryPathLength = 247;
+        
+        outAttribute = default;
+
+        outAttribute.Utf16DirectoryNameLengthMax = winMaxPathComponentLength;
+        outAttribute.Utf16DirectoryNameLengthMaxHasValue = true;
+        outAttribute.Utf16FileNameLengthMax = winMaxPathComponentLength;
+        outAttribute.Utf16FileNameLengthMaxHasValue = true;
+        outAttribute.Utf16DirectoryPathLengthMax = winMaxPathLength;
+        outAttribute.Utf16DirectoryPathLengthMaxHasValue = true;
+        outAttribute.Utf16FilePathLengthMax = winMaxPathLength;
+        outAttribute.Utf16FilePathLengthMaxHasValue = true;
+        outAttribute.Utf16CreateDirectoryPathLengthMax = winMaxDirectoryPathLength;
+        outAttribute.Utf16CreateDirectoryPathLengthMaxHasValue = true;
+        outAttribute.Utf16DeleteDirectoryPathLengthMax = winMaxPathLength;
+        outAttribute.Utf16DeleteDirectoryPathLengthMaxHasValue = true;
+        outAttribute.Utf16RenameSourceDirectoryPathLengthMax = winMaxDirectoryPathLength;
+        outAttribute.Utf16RenameSourceDirectoryPathLengthMaxHasValue = true;
+        outAttribute.Utf16RenameDestinationDirectoryPathLengthMax = winMaxDirectoryPathLength;
+        outAttribute.Utf16RenameDestinationDirectoryPathLengthMaxHasValue = true;
+        outAttribute.Utf16OpenDirectoryPathLengthMax = winMaxPathLength;
+        outAttribute.Utf16OpenDirectoryPathLengthMaxHasValue = true;
+
+        int rootPathCount = _rootPath.GetLength();
+
+        Result res = Utility.CountUtf16CharacterForUtf8String(out ulong rootPathUtf16Count, _rootPath.GetString());
+        if (res.IsFailure()) return res.Miss();
+
+        Utility.SubtractAllPathLengthMax(ref outAttribute, rootPathCount);
+        Utility.SubtractAllUtf16CountMax(ref outAttribute, (int)rootPathUtf16Count);
+
+        return Result.Success;
+    }
+
     protected override Result DoCommit()
     {
         return Result.Success;

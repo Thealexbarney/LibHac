@@ -114,4 +114,9 @@ public class SaveDataFileSystemCacheRegister : IFileSystem
     {
         return _baseFileSystem.Get.GetTotalSpaceSize(out totalSpace, in path);
     }
+
+    protected override Result DoGetFileSystemAttribute(out FileSystemAttribute outAttribute)
+    {
+        return _baseFileSystem.Get.GetFileSystemAttribute(out outAttribute);
+    }
 }

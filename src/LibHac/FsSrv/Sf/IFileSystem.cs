@@ -1,6 +1,7 @@
 ﻿using System;
 using LibHac.Common;
 using LibHac.Fs;
+using LibHac.Fs.Fsa;
 using LibHac.Sf;
 using IFileSf = LibHac.FsSrv.Sf.IFile;
 using IDirectorySf = LibHac.FsSrv.Sf.IDirectory;
@@ -26,4 +27,5 @@ public interface IFileSystem : IDisposable
     Result CleanDirectoryRecursively(in Path path);
     Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path);
     Result QueryEntry(OutBuffer outBuffer, InBuffer inBuffer, int queryId, in Path path);
+    Result GetFileSystemAttribute(out FileSystemAttribute outAttribute);
 }
