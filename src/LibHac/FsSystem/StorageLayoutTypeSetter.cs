@@ -38,10 +38,7 @@ internal struct ScopedStorageLayoutTypeSetter : IDisposable
         // Todo: Implement
     }
 
-    public void Dispose()
-    {
-
-    }
+    public void Dispose() { }
 }
 
 /// <summary>
@@ -375,6 +372,12 @@ internal class StorageLayoutTypeSetFileSystem : IFileSystem
     {
         using var scopedContext = new ScopedStorageLayoutTypeSetter(_storageFlag);
         return _baseFileSystem.Get.GetFileTimeStampRaw(out timeStamp, path);
+    }
+
+    protected override Result DoGetFileSystemAttribute(out FileSystemAttribute outAttribute)
+    {
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(_storageFlag);
+        return _baseFileSystem.Get.GetFileSystemAttribute(out outAttribute);
     }
 
     protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,

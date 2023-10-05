@@ -117,6 +117,17 @@ public class RomFsFileSystem : IFileSystem
         return ResultFs.UnsupportedGetTotalSpaceSizeForRomFsFileSystem.Log();
     }
 
+    protected override Result DoGetFileSystemAttribute(out FileSystemAttribute outAttribute)
+    {
+        outAttribute = default;
+        outAttribute.DirectoryNameLengthMax = PathTool.EntryNameLengthMax;
+        outAttribute.DirectoryNameLengthMaxHasValue = true;
+        outAttribute.FileNameLengthMax = PathTool.EntryNameLengthMax;
+        outAttribute.FileNameLengthMaxHasValue = true;
+
+        return Result.Success;
+    }
+
     internal static Result ConvertRomFsDriverPrivateResult(Result result)
     {
         if (result.IsSuccess())

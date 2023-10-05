@@ -76,6 +76,9 @@ public static class Registrar
         protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path) =>
             _fileSystem.Get.GetFreeSpaceSize(out freeSpace, in path);
 
+        protected override Result DoGetFileSystemAttribute(out FileSystemAttribute outAttribute) =>
+            _fileSystem.Get.GetFileSystemAttribute(out outAttribute);
+
         protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path) =>
             _fileSystem.Get.GetTotalSpaceSize(out totalSpace, in path);
 
@@ -183,7 +186,7 @@ public static class Registrar
             Assert.SdkAssert(storageForPurgeFileDataCache is not null);
 
         using (var unmountHookFileSystem =
-               new UniqueRef<UnmountHookFileSystem>(new UnmountHookFileSystem(ref fileSystem, ref unmountHook)))
+            new UniqueRef<UnmountHookFileSystem>(new UnmountHookFileSystem(ref fileSystem, ref unmountHook)))
         {
             fileSystem.Set(ref unmountHookFileSystem.Ref);
         }

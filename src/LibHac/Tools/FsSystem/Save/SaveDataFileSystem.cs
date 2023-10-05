@@ -247,6 +247,13 @@ public class SaveDataFileSystem : IFileSystem
         return SaveResults.ConvertToExternalResult(result).LogConverted(result);
     }
 
+    protected override Result DoGetFileSystemAttribute(out FileSystemAttribute outAttribute)
+    {
+        Result result = SaveDataFileSystemCore.GetFileSystemAttribute(out outAttribute);
+
+        return SaveResults.ConvertToExternalResult(result).LogConverted(result);
+    }
+
     protected override Result DoCommit()
     {
         Result result = Commit(KeySet);

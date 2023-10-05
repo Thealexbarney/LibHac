@@ -682,6 +682,18 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         return Result.Success;
     }
 
+    protected override Result DoGetFileSystemAttribute(out FileSystemAttribute outAttribute)
+    {
+        const int baseDirectoryNameLength = 2;
+
+        Result res = _baseFs.GetFileSystemAttribute(out outAttribute);
+        if (res.IsFailure()) return res.Miss();
+
+        Utility.SubtractAllPathLengthMax(ref outAttribute, baseDirectoryNameLength);
+        Utility.SubtractAllUtf16CountMax(ref outAttribute, baseDirectoryNameLength);
+        return Result.Success;
+    }
+
     public override bool IsSaveDataFileSystemCacheEnabled()
     {
         return false;

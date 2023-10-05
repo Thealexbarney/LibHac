@@ -293,6 +293,11 @@ internal class FileSystemServiceObjectAdapter : IFileSystem, IMultiCommitTarget
         return _baseFs.Get.GetFileTimeStampRaw(out timeStamp, in sfPath);
     }
 
+    protected override Result DoGetFileSystemAttribute(out FileSystemAttribute outAttribute)
+    {
+        return _baseFs.Get.GetFileSystemAttribute(out outAttribute);
+    }
+
     protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
         in Path path)
     {

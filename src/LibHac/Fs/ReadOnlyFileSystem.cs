@@ -10,7 +10,7 @@ namespace LibHac.Fs;
 /// Wraps an <see cref="IFile"/> and only allows read operations on it.
 /// </summary>
 /// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
-internal class ReadOnlyFile : IFile
+file class ReadOnlyFile : IFile
 {
     private UniqueRef<IFile> _baseFile;
 
@@ -155,5 +155,10 @@ public class ReadOnlyFileSystem : IFileSystem
     {
         Unsafe.SkipInit(out totalSpace);
         return ResultFs.UnsupportedGetTotalSpaceSizeForReadOnlyFileSystem.Log();
+    }
+
+    protected override Result DoGetFileSystemAttribute(out FileSystemAttribute outAttribute)
+    {
+        return _baseFileSystem.Get.GetFileSystemAttribute(out outAttribute);
     }
 }

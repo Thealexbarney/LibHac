@@ -207,4 +207,9 @@ public abstract class IResultConvertFileSystem<T> : ISaveDataFileSystem where T 
     {
         return ConvertResult(_baseFileSystem.Get.GetTotalSpaceSize(out totalSpace, in path)).Ret();
     }
+
+    protected override Result DoGetFileSystemAttribute(out FileSystemAttribute outAttribute)
+    {
+        return ConvertResult(_baseFileSystem.Get.GetFileSystemAttribute(out outAttribute)).Ret();
+    }
 }
