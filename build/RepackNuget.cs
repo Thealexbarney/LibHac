@@ -23,7 +23,7 @@ public partial class Build
 
         try
         {
-            EnsureCleanDirectory(tempDir);
+            tempDir.CreateOrCleanDirectory();
             List<string> fileList = UnzipPackage(path, tempDir);
 
             string newPsmdcpName = CalcPsmdcpName(libDir);
@@ -123,9 +123,7 @@ public partial class Build
 
     public void SignNupkg(string pkgPath, string password)
     {
-        NuGetTasks.NuGet(
-            $"sign \"{pkgPath}\" -CertificatePath cert.pfx -CertificatePassword {password} -Timestamper http://timestamp.digicert.com",
-            outputFilter: x => x.Replace(password, "hunter2"));
+        NuGetTasks.NuGet($"sign \"{pkgPath}\" -CertificatePath cert.pfx -CertificatePassword {password:r} -Timestamper http://timestamp.digicert.com");
     }
 
     public static string ToHexString(byte[] arr)

@@ -19,8 +19,6 @@ using Nuke.Common.Tooling;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tools.SignTool;
-using static Nuke.Common.IO.FileSystemTasks;
-using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 
 namespace LibHacBuild;
@@ -99,10 +97,9 @@ partial class Build : NukeBuild
 
             try
             {
-                gitRepository = (GitRepository)new GitRepositoryAttribute().GetValue(null, null);
+                gitRepository = GitRepository.FromLocalDirectory(RootDirectory);
 
                 gitVersion = GitVersionTasks.GitVersion(s => s
-                        .SetFramework("net6.0")
                         .DisableProcessLogOutput())
                     .Result;
             }
@@ -127,7 +124,7 @@ partial class Build : NukeBuild
             HasGitDir = true;
 
             if (DateTimeOffset.TryParseExact(gitVersion.CommitDate, "yyyy-MM-dd HH:mm:ss",
-                    CultureInfo.InvariantCulture.DateTimeFormat, DateTimeStyles.AssumeUniversal, out DateTimeOffset commitTime))
+                CultureInfo.InvariantCulture.DateTimeFormat, DateTimeStyles.AssumeUniversal, out DateTimeOffset commitTime))
             {
                 CommitTime = commitTime.LocalDateTime;
             }
@@ -179,17 +176,17 @@ partial class Build : NukeBuild
     Target Clean => _ => _
         .Executes(() =>
         {
-            List<string> toDelete = GlobDirectories(SourceDirectory, "**/bin", "**/obj")
-                .Concat(GlobDirectories(TestsDirectory, "**/bin", "**/obj")).ToList();
+            List<AbsolutePath> toDelete = SourceDirectory.GlobDirectories("**/bin", "**/obj")
+                .Concat(TestsDirectory.GlobDirectories("**/bin", "**/obj")).ToList();
 
-            foreach (string dir in toDelete)
+            foreach (AbsolutePath dir in toDelete)
             {
-                DeleteDirectory(dir);
+                dir.DeleteDirectory();
             }
 
-            EnsureCleanDirectory(ArtifactsDirectory);
-            EnsureCleanDirectory(CliCoreDir);
-            EnsureCleanDirectory(CliNativeDir);
+            ArtifactsDirectory.CreateOrCleanDirectory();
+            CliCoreDir.CreateOrCleanDirectory();
+            CliNativeDir.CreateOrCleanDirectory();
         });
 
     Target Restore => _ => _
@@ -293,7 +290,7 @@ partial class Build : NukeBuild
                 .Concat(Directory.EnumerateFiles(CliCoreDir, "*.dll"))
                 .ToArray();
 
-            EnsureExistingDirectory(ArtifactsDirectory);
+            ArtifactsDirectory.CreateDirectory();
 
             ZipFiles(CliCoreZip, namesCore, CommitTime);
             Serilog.Log.Debug($"Created {CliCoreZip}");
@@ -396,7 +393,7 @@ partial class Build : NukeBuild
             ProcessTasks.StartProcess("strip", CliNativeExe).AssertZeroExitCode();
         }
 
-        EnsureExistingDirectory(ArtifactsDirectory);
+        ArtifactsDirectory.CreateOrCleanDirectory();
 
         ZipFile(CliNativeZip, CliNativeExe, $"hactoolnet{NativeProgramExtension}", CommitTime);
         Serilog.Log.Debug($"Created {CliNativeZip}");
