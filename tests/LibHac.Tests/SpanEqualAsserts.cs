@@ -16,6 +16,6 @@ public partial class Assert
     public static void Equal<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual) where T : unmanaged, IEquatable<T>
     {
         if (!expected.SequenceEqual(actual))
-            throw new EqualException(expected.ToArray(), actual.ToArray());
+            throw EqualException.ForMismatchedValues(expected.ToArray(), actual.ToArray());
     }
 }

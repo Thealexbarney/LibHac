@@ -19,6 +19,6 @@ public partial class Assert
     public static void Result(Result.Base expected, Result actual)
     {
         if (!expected.Includes(actual))
-            throw new EqualException(expected.Value, actual);
+            throw EqualException.ForMismatchedValues(expected.Value, actual);
     }
 }
