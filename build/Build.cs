@@ -157,8 +157,8 @@ partial class Build : NukeBuild
                 {
                     string prString = $"PullRequest{prNumber:D4}";
 
-                    VersionString = VersionString.Replace(branchName, prString);
-                    suffix = suffix?.Replace(branchName, prString) ?? "";
+                    VersionString = VersionString.Replace(gitVersion.EscapedBranchName, prString);
+                    suffix = suffix?.Replace(gitVersion.EscapedBranchName, prString) ?? "";
                 }
 
                 appVeyor.UpdateBuildVersion(VersionString);
