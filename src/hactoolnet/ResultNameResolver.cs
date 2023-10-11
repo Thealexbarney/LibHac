@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if !NATIVEAOT
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -37,3 +38,4 @@ internal class ResultNameResolver : Result.IResultNameResolver
         return dict;
     }
 }
+#endif
