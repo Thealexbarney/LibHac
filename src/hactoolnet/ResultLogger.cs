@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using LibHac;
@@ -8,6 +9,7 @@ using LibHac.Fs.Fsa;
 
 namespace hactoolnet;
 
+[UnconditionalSuppressMessage("Trimmer", "IL2026", Justification = "If MethodInfo from GetMethod is missing, the logger will simply not log the method info.")]
 internal class ResultLogger : Result.IResultLogger, IDisposable
 {
     private TextWriter Writer { get; }
@@ -40,17 +42,19 @@ internal class ResultLogger : Result.IResultLogger, IDisposable
         StackTrace st = GetStackTrace();
         MethodBase method = st.GetFrame(0)?.GetMethod();
 
-        if (method is null)
-            return;
-
-        // This result from these functions is usually noise because they
-        // are frequently used to detect if a file exists
-        if (ResultFs.PathNotFound.Includes(result) &&
-            typeof(IFileSystem).IsAssignableFrom(method.DeclaringType) &&
-            method.Name.StartsWith(nameof(IFileSystem.GetEntryType)) ||
-            method.Name.StartsWith(nameof(IAttributeFileSystem.GetFileAttributes)))
+        if (method is not null)
         {
-            return;
+            // This result from these functions is usually noise because they
+            // are frequently used to detect if a file exists
+            if (ResultFs.PathNotFound.Includes(result) &&
+                typeof(IFileSystem).IsAssignableFrom(method.DeclaringType) &&
+                (method.Name.StartsWith(nameof(IFileSystem.GetEntryType)) ||
+                 method.Name.StartsWith($"Do{nameof(IFileSystem.GetEntryType)}") ||
+                 method.Name.StartsWith(nameof(IAttributeFileSystem.GetFileAttributes)) ||
+                 method.Name.StartsWith($"Do{nameof(IAttributeFileSystem.GetFileAttributes)}")))
+            {
+                return;
+            }
         }
 
         AddLogEntry(new LogEntry(result, st));
@@ -94,28 +98,28 @@ internal class ResultLogger : Result.IResultLogger, IDisposable
 
     private void PrintLogEntry(LogEntry entry)
     {
-        MethodBase method = entry.StackTrace.GetFrame(0)?.GetMethod();
-
-        if (method is null)
-            return;
-
-        string methodName = $"{method.DeclaringType?.FullName}.{method.Name}";
-
         bool printStackTrace = PrintStackTrace && !entry.IsConvertedResult;
 
         // Make sure there's a new line if printing a stack trace
         // A stack trace includes a new line at the end of it, so add the new line only if needed
         string entryText = printStackTrace && !LastEntryPrintedNewLine ? Environment.NewLine : string.Empty;
 
-        string lineNumber = entry.LineNumber > 0 ? $":line{entry.LineNumber}" : string.Empty;
-
         if (entry.IsConvertedResult)
         {
-            entryText += $"{entry.OriginalResult.ToStringWithName()} was converted to {entry.Result.ToStringWithName()} by {methodName}{lineNumber}";
+            entryText += $"{entry.OriginalResult.ToStringWithName()} was converted to {entry.Result.ToStringWithName()}";
         }
         else
         {
-            entryText += $"{entry.Result.ToStringWithName()} was returned by {methodName}{lineNumber}";
+            entryText += $"{entry.Result.ToStringWithName()} was returned";
+        }
+
+        MethodBase method = entry.StackTrace.GetFrame(0)?.GetMethod();
+        if (method is not null)
+        {
+            string methodName = $"{method.DeclaringType?.FullName}.{method.Name}";
+            string lineNumber = entry.LineNumber > 0 ? $":line{entry.LineNumber}" : string.Empty;
+
+            entryText += $" by {methodName}{lineNumber}";
         }
 
         if (entry.TimesCalled > 1)
@@ -202,7 +206,7 @@ internal class ResultLogger : Result.IResultLogger, IDisposable
             if (method is null)
             {
                 CallingMethod = string.Empty;
-                StackTraceText = string.Empty;
+                StackTraceText = stackTrace.ToString();
                 LineNumber = 0;
                 TimesCalled = 1;
 

@@ -6,7 +6,7 @@
 // This code is copied from the .NET runtime with modifications to avoid that.
 // The downside is that it won't work in Linux unless the HOME environmental variable is set.
 
-#if CORERT_NO_REFLECTION
+#if NATIVEAOT_NO_REFLECTION
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;

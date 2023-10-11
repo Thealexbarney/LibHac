@@ -25,6 +25,7 @@
 
   <PropertyGroup Condition=" $(BuildType.StartsWith('native')) ">
 	  <PublishAot>true</PublishAot>
+      <DefineConstants>NATIVEAOT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition=" $(BuildType.StartsWith('native')) and '$(BuildType)' != 'native-untrimmed' ">
@@ -37,7 +38,7 @@
   <!-- No-reflection mode might not work on Linux if the HOME environment variable is not set -->
   <PropertyGroup Condition=" '$(BuildType)' == 'native-noreflection' ">
     <IlcDisableReflection>true</IlcDisableReflection>
-    <DefineConstants>CORERT_NO_REFLECTION;$(DefineConstants)</DefineConstants>
+    <DefineConstants>NATIVEAOT_NO_REFLECTION;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
 </Project>

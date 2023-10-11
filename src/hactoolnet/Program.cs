@@ -45,7 +45,7 @@ public static class Program
             Console.Error.WriteLine($"\nERROR: {ex.Message}\n");
 
             Console.Error.WriteLine("Additional information:");
-#if !CORERT_NO_REFLECTION
+#if !NATIVEAOT_NO_REFLECTION
             Console.Error.WriteLine(ex.GetType().FullName);
 #endif
 
@@ -189,7 +189,7 @@ public static class Program
 
     private static void OpenKeySet(Context ctx)
     {
-#if CORERT_NO_REFLECTION
+#if NATIVEAOT_NO_REFLECTION
             string home = HomeFolder.GetFolderPath(Environment.SpecialFolder.UserProfile);
 #else
         string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
