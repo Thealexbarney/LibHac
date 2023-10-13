@@ -20,6 +20,7 @@ master_kek_source_0c              = 683BCA54B86F9248C305768788707923
 master_kek_source_0d              = F013379AD56351C3B49635BC9CE87681
 master_kek_source_0e              = 6E7786AC830A8D3E7DB766A022B76E67
 master_kek_source_0f              = 99220957A7F95E94FE787F41D6E756E6
+master_kek_source_10              = 71B9A6C0FF976B0CB440B9D5815D8190
 
 mariko_master_kek_source_05       = 77605AD2EE6EF83C3F72E2599DAC5E56
 mariko_master_kek_source_06       = 1E80B8173EC060AA11BE1A4AA66FE4AE
@@ -32,6 +33,7 @@ mariko_master_kek_source_0c       = 52719BDFA78B61D8D58511E48E4F74C6
 mariko_master_kek_source_0d       = D268C6539D94F9A8A5A8A7C88F534B7A
 mariko_master_kek_source_0e       = EC61BC821E0F5AC32B643F9DD619222D
 mariko_master_kek_source_0f       = A5EC16391A3016082ECF096F5E7CEEA9
+mariko_master_kek_source_10       = 8DEE9E11363A9B0A6AC7BBE9D103F780
 
 mariko_master_kek_source_dev_05   = 32C0976B636D4464F23AA5C0DE46CCE9
 mariko_master_kek_source_dev_06   = CC974C462A0CB0A6C9C0B7BE302EC368
@@ -44,6 +46,7 @@ mariko_master_kek_source_dev_0c   = 4D5AB2C9E9E44EA4D3BF94123630D07F
 mariko_master_kek_source_dev_0d   = EC5EB511D5431E6A4E546FD4D322CE87
 mariko_master_kek_source_dev_0e   = 18A56FEF721162C51A14F18C218327B7
 mariko_master_kek_source_dev_0f   = 3A9CF0397023F6AF714460F46DEDA1D6
+mariko_master_kek_source_dev_10   = 43DB9D88DB38E9BF3DD78339EFB14FA7
 
 master_key_source                 = D8A2410AC6C59001C61D6A267C513F3C
 
