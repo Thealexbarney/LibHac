@@ -292,7 +292,7 @@ public static class MountUtility
         if (mountNameLength + commonPathLength > commonPathBuffer.Length)
             return ResultFs.TooLongPath.Log();
 
-        StringUtils.Copy(commonPathBuffer.Slice(commonPathLength), subPath);
+        StringUtils.Copy(commonPathBuffer.Slice(mountNameLength), subPath);
         return Result.Success;
     }
 }
