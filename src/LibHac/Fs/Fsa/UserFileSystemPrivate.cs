@@ -133,7 +133,7 @@ public static class UserFileSystemPrivate
         int retValue = 0;
         bool hasRetValue = false;
         SetOrChangeMin(ref retValue, ref hasRetValue, attribute.DirectoryPathLengthMax, attribute.DirectoryPathLengthMaxHasValue);
-        SetOrChangeMin(ref retValue, ref hasRetValue, attribute.FilePathLengthMax, attribute.FileNameLengthMaxHasValue);
+        SetOrChangeMin(ref retValue, ref hasRetValue, attribute.FilePathLengthMax, attribute.FilePathLengthMaxHasValue);
         SetOrChangeMin(ref retValue, ref hasRetValue, FspPath.MaxLength, true);
 
         Assert.SdkAssert(hasRetValue);
