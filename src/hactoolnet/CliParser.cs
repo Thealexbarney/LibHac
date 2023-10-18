@@ -18,6 +18,7 @@ internal static class CliParser
         new CliOption("dev", 'd', 0, (o, _) => o.UseDevKeys = true),
         new CliOption("enablehash", 'h', 0, (o, _) => o.EnableHash = true),
         new CliOption("disablekeywarns", 0, (o, _) => o.DisableKeyWarns = true),
+        new CliOption("enableallkeywarns", 0, (o, _) => o.EnableAllKeyWarns = true),
         new CliOption("keyset", 'k', 1, (o, a) => o.Keyfile = a[0]),
         new CliOption("titlekeys", 1, (o, a) => o.TitleKeyFile = a[0]),
         new CliOption("consolekeys", 1, (o, a) => o.ConsoleKeyFile = a[0]),
@@ -254,6 +255,7 @@ internal static class CliParser
         sb.AppendLine("  --titlekeys <file>   Load title keys from an external file.");
         sb.AppendLine("  --accesslog <file>   Specify the access log file path.");
         sb.AppendLine("  --disablekeywarns    Disables warning output when loading external keys.");
+        sb.AppendLine("  --enableallkeywarns  Enables warning output when loading unknown external keys.");
         sb.AppendLine("  --version            Display version information and exit.");
         sb.AppendLine("  --help               Display this help and exit.");
         sb.AppendLine("NCA options:");
