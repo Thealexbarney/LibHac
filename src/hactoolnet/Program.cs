@@ -190,7 +190,7 @@ public static class Program
     private static void OpenKeySet(Context ctx)
     {
 #if NATIVEAOT_NO_REFLECTION
-            string home = HomeFolder.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        string home = HomeFolder.GetFolderPath(Environment.SpecialFolder.UserProfile);
 #else
         string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 #endif
@@ -224,7 +224,7 @@ public static class Program
 
         var keySet = KeySet.CreateDefaultKeySet();
 
-        IProgressReport logger = ctx.Options.DisableKeyWarns ? null : ctx.Logger;
+        IProgressReport logger = GetKeySetReaderLogger(ctx);
 
         // If the user specifies a key file then only load that file into the mode they specified,
         // otherwise load both prod.keys and dev.keys.
@@ -282,6 +282,32 @@ public static class Program
                 ExternalKeyWriter.PrintCommonKeysWithDev(ctx.KeySet));
         }
     }
+
+    private static IProgressReport GetKeySetReaderLogger(Context ctx)
+    {
+        if (ctx.Options.DisableKeyWarns) return null;
+        if (ctx.Options.EnableAllKeyWarns) return ctx.Logger;
+        return new UnknownKeyFilteringLogger(ctx.Logger);
+    }
+
+    // Key dumpers output keys LibHac doesn't read. This can cause a lot of noise in the CLI output,
+    // so we'll remove those messages.
+    private class UnknownKeyFilteringLogger : IProgressReport
+    {
+        private IProgressReport _baseLogger;
+        public UnknownKeyFilteringLogger(IProgressReport baseLogger) => _baseLogger = baseLogger;
+
+        public void Report(long value) => _baseLogger.Report(value);
+        public void ReportAdd(long value) => _baseLogger.ReportAdd(value);
+        public void SetTotal(long value) => _baseLogger.SetTotal(value);
+
+        public void LogMessage(string message)
+        {
+            if (!message.StartsWith("Failed to match key"))
+                _baseLogger.LogMessage(message);
+        }
+    }
+
 
     // For running random stuff
     // ReSharper disable once UnusedParameter.Local
