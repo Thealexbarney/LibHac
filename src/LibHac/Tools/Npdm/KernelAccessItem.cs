@@ -4,6 +4,7 @@ namespace LibHac.Tools.Npdm;
 
 public class KernelAccessControlItem
 {
+    public int LowBits { get; }
     public bool HasKernelFlags { get; set; }
     public uint LowestThreadPriority { get; set; }
     public uint HighestThreadPriority { get; set; }
@@ -30,10 +31,11 @@ public class KernelAccessControlItem
     public bool AllowDebug { get; set; }
     public bool ForceDebug { get; set; }
 
-    public KernelAccessControlItem()
+    public KernelAccessControlItem(int lowBits)
     {
         NormalMmio = new List<KernelAccessControlMmio>();
         PageMmio = new List<KernelAccessControlMmio>();
         Irq = new List<KernelAccessControlIrq>();
+        LowBits = lowBits;
     }
 }

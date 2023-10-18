@@ -64,6 +64,7 @@ internal class Options
     public ulong TitleId;
     public string BenchType;
     public double CpuFrequencyGhz;
+    public string JsonFile;
 
     public string ParseErrorMessage;
     public bool IsParseSuccessful;
@@ -100,7 +101,8 @@ internal enum FileType
     Kip1,
     Ini1,
     Ndv0,
-    Bench
+    Bench,
+    Npdm
 }
 
 internal class Context
