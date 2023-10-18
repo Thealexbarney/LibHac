@@ -26,42 +26,73 @@ public static class IniExtract
 
         uint kernelSize = (uint)kernelSizeLong;
 
-        using (var array = new RentedArray<byte>(0x1000 + Unsafe.SizeOf<KernelMap>()))
-        {
-            // The kernel map should be in the first 0x1000 bytes
-            if (kernelStorage.Read(0, array.Span).IsFailure())
-                return false;
-
-            ref byte start = ref array.Span[0];
-
-            // Search every 4 bytes for a valid kernel map
-            for (int i = 0; i < 0x1000; i += sizeof(int))
-            {
-                ref KernelMap map = ref Unsafe.As<byte, KernelMap>(ref Unsafe.Add(ref start, i));
-
-                if (IsValidKernelMap(in map, kernelSize))
-                {
-                    // Verify the ini header at the offset in the found map
-                    var header = new InitialProcessBinaryReader.IniHeader();
-
-                    if (kernelStorage.Read(map.Ini1StartOffset, SpanHelpers.AsByteSpan(ref header)).IsFailure())
-                        return false;
-
-                    if (header.Magic != InitialProcessBinaryReader.ExpectedMagic)
-                        return false;
-
-                    offset = (int)map.Ini1StartOffset;
-                    size = header.Size;
-                    return true;
-                }
-            }
-
+        // .crt0 is located at the start of the kernel pre-17.0.0 
+        // 17.0.0+ kernels start with a "b crt0" branch instruction followed by 0x7FC of zeros 
+        // The kernel map in this case will contain offsets relative to itself rather than to the start of the kernel
+        int crt0Offset = 0;
+        bool isMapAddressRelativeToItself = false;
+        
+        // Check if the first 4 bytes of the kernel is a branch instruction, and get the target if it is
+        ulong inst = 0;
+        if (kernelStorage.Read(0, SpanHelpers.AsByteSpan(ref inst)).IsFailure())
             return false;
+        
+        if ((inst & 0xFFFFFFFFFF000000) == 0x0000000014000000)
+        {
+            crt0Offset = (int)((inst & 0x00FFFFFF) << 2);
+            isMapAddressRelativeToItself = true;
         }
+        
+        using var array = new RentedArray<byte>(0x1000 + Unsafe.SizeOf<KernelMap>());
+        if (kernelStorage.Read(crt0Offset, array.Span).IsFailure())
+            return false;
+
+        ref byte start = ref MemoryMarshal.GetReference(array.Span);
+        
+        // Search every 4 bytes for a valid kernel map
+        for (int i = 0; i < 0x1000 - Unsafe.SizeOf<KernelMap>(); i += sizeof(int))
+        {
+            ref KernelMap map = ref Unsafe.As<byte, KernelMap>(ref Unsafe.Add(ref start, i));
+            uint mapOffsetAdjustment = isMapAddressRelativeToItself ? (uint)(crt0Offset + i) : 0;
+
+            if (IsValidKernelMap(in map, kernelSize, mapOffsetAdjustment))
+            {
+                // Verify the ini header at the offset in the found map
+                var header = new InitialProcessBinaryReader.IniHeader();
+
+                if (kernelStorage.Read(map.Ini1StartOffset + mapOffsetAdjustment, SpanHelpers.AsByteSpan(ref header)).IsFailure())
+                    return false;
+
+                if (header.Magic != InitialProcessBinaryReader.ExpectedMagic)
+                    continue;
+
+                offset = (int)(map.Ini1StartOffset + mapOffsetAdjustment);
+                size = header.Size;
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    private static bool IsValidKernelMap(in KernelMap map, uint maxSize)
+    private static bool IsValidKernelMap(in KernelMap rawMap, uint maxSize, uint adj)
     {
+        KernelMap adjustedMap = rawMap;
+        adjustedMap.TextStartOffset += adj;
+        adjustedMap.TextEndOffset += adj;
+        adjustedMap.RodataStartOffset += adj;
+        adjustedMap.RodataEndOffset += adj;
+        adjustedMap.DataStartOffset += adj;
+        adjustedMap.DataEndOffset += adj;
+        adjustedMap.BssStartOffset += adj;
+        adjustedMap.BssEndOffset += adj;
+        adjustedMap.Ini1StartOffset += adj;
+        adjustedMap.DynamicOffset += adj;
+        adjustedMap.InitArrayStartOffset += adj;
+        adjustedMap.InitArrayStartOffset += adj;
+
+        ref KernelMap map = ref adjustedMap;
+
         if (map.TextStartOffset != 0) return false;
         if (map.TextStartOffset >= map.TextEndOffset) return false;
         if ((map.TextEndOffset & 0xFFF) != 0) return false;
