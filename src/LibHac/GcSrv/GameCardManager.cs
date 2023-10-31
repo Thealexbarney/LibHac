@@ -768,6 +768,17 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
                 bytesWritten = Unsafe.SizeOf<DevCardParameter>();
                 return Result.Success;
             }
+            case GameCardManagerOperationIdValue.GetGameCardAsicCertificate:
+            {
+                if (buffer.Size < Unsafe.SizeOf<GameCardAsicCertificateSet>())
+                    return ResultFs.InvalidArgument.Log();
+
+                res = GetGameCardAsicCertificate(out buffer.As<GameCardAsicCertificateSet>());
+                if (res.IsFailure()) return res.Miss();
+
+                bytesWritten = Unsafe.SizeOf<GameCardAsicCertificateSet>();
+                return Result.Success;
+            }
 
             default:
                 return ResultFs.InvalidArgument.Log();
@@ -1040,6 +1051,16 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
+    }
+
+    private Result GetGameCardAsicCertificate(out GameCardAsicCertificateSet outCertificateSet)
+    {
+        UnsafeHelpers.SkipParamInit(out outCertificateSet);
+
+        Result res = InitializeGcLibrary();
+        if (res.IsFailure()) return res.Miss();
+
+        return _gc.GetAsicCertificate(out outCertificateSet).Ret();
     }
 
     public Result AcquireReadLock(ref SharedLock<ReaderWriterLock> outLock, GameCardHandle handle)
