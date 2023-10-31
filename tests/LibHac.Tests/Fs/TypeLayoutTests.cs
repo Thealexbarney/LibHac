@@ -502,14 +502,14 @@ public class TypeLayoutTests
 
         Assert.Equal(0x10, Unsafe.SizeOf<GameCardErrorInfo>());
 
-        Assert.Equal(0x0, GetOffset(in s, in s.GameCardCrcErrorCount));
+        Assert.Equal(0x0, GetOffset(in s, in s.GameCardCrcErrorNum));
         Assert.Equal(0x2, GetOffset(in s, in s.Reserved2));
-        Assert.Equal(0x4, GetOffset(in s, in s.AsicCrcErrorCount));
+        Assert.Equal(0x4, GetOffset(in s, in s.AsicCrcErrorNum));
         Assert.Equal(0x6, GetOffset(in s, in s.Reserved6));
-        Assert.Equal(0x8, GetOffset(in s, in s.RefreshCount));
+        Assert.Equal(0x8, GetOffset(in s, in s.RefreshNum));
         Assert.Equal(0xA, GetOffset(in s, in s.ReservedA));
-        Assert.Equal(0xC, GetOffset(in s, in s.ReadRetryCount));
-        Assert.Equal(0xE, GetOffset(in s, in s.TimeoutRetryErrorCount));
+        Assert.Equal(0xC, GetOffset(in s, in s.RetryLimitOutNum));
+        Assert.Equal(0xE, GetOffset(in s, in s.TimeoutRetryNum));
     }
 
     [Fact]
@@ -519,16 +519,23 @@ public class TypeLayoutTests
 
         Assert.Equal(0x40, Unsafe.SizeOf<GameCardErrorReportInfo>());
 
-        Assert.Equal(0x00, GetOffset(in s, in s.ErrorInfo));
+        Assert.Equal(0x00, GetOffset(in s, in s.GameCardCrcErrorNum));
+        Assert.Equal(0x02, GetOffset(in s, in s.Reserved2));
+        Assert.Equal(0x04, GetOffset(in s, in s.AsicCrcErrorNum));
+        Assert.Equal(0x06, GetOffset(in s, in s.Reserved6));
+        Assert.Equal(0x08, GetOffset(in s, in s.RefreshNum));
+        Assert.Equal(0x0A, GetOffset(in s, in s.ReservedA));
+        Assert.Equal(0x0C, GetOffset(in s, in s.RetryLimitOutNum));
+        Assert.Equal(0x0E, GetOffset(in s, in s.TimeoutRetryNum));
         Assert.Equal(0x10, GetOffset(in s, in s.AsicReinitializeFailureDetail));
         Assert.Equal(0x12, GetOffset(in s, in s.InsertionCount));
         Assert.Equal(0x14, GetOffset(in s, in s.RemovalCount));
-        Assert.Equal(0x16, GetOffset(in s, in s.AsicReinitializeCount));
-        Assert.Equal(0x18, GetOffset(in s, in s.AsicInitializeCount));
-        Assert.Equal(0x1C, GetOffset(in s, in s.AsicReinitializeFailureCount));
-        Assert.Equal(0x1E, GetOffset(in s, in s.AwakenFailureCount));
+        Assert.Equal(0x16, GetOffset(in s, in s.AsicReinitializeNum));
+        Assert.Equal(0x18, GetOffset(in s, in s.AsicInitializeNum));
+        Assert.Equal(0x1C, GetOffset(in s, in s.AsicReinitializeFailureNum));
+        Assert.Equal(0x1E, GetOffset(in s, in s.AwakenFailureNum));
         Assert.Equal(0x20, GetOffset(in s, in s.Reserved20));
-        Assert.Equal(0x22, GetOffset(in s, in s.RefreshCount));
+        Assert.Equal(0x22, GetOffset(in s, in s.RefreshSucceededCount));
         Assert.Equal(0x24, GetOffset(in s, in s.LastReadErrorPageAddress));
         Assert.Equal(0x28, GetOffset(in s, in s.LastReadErrorPageCount));
         Assert.Equal(0x2C, GetOffset(in s, in s.AwakenCount));
