@@ -865,11 +865,11 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         Result res = _gc.GetErrorInfo(out GameCardErrorReportInfo errorInfo);
         if (res.IsFailure()) return res.Miss();
 
-        outErrorInfo.GameCardCrcErrorCount = errorInfo.ErrorInfo.GameCardCrcErrorCount;
-        outErrorInfo.AsicCrcErrorCount = errorInfo.ErrorInfo.AsicCrcErrorCount;
-        outErrorInfo.RefreshCount = errorInfo.ErrorInfo.RefreshCount;
-        outErrorInfo.TimeoutRetryErrorCount = errorInfo.ErrorInfo.TimeoutRetryErrorCount;
-        outErrorInfo.ReadRetryCount = errorInfo.ErrorInfo.ReadRetryCount;
+        outErrorInfo.GameCardCrcErrorNum = errorInfo.GameCardCrcErrorNum;
+        outErrorInfo.AsicCrcErrorNum = errorInfo.AsicCrcErrorNum;
+        outErrorInfo.RefreshNum = errorInfo.RefreshNum;
+        outErrorInfo.TimeoutRetryNum = errorInfo.TimeoutRetryNum;
+        outErrorInfo.RetryLimitOutNum = errorInfo.RetryLimitOutNum;
 
         return Result.Success;
     }
