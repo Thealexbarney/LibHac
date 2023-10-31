@@ -35,4 +35,5 @@ public interface IGcApi
     void UnregisterDetectionEventCallback();
     Result GetCardHeader(Span<byte> destBuffer);
     Result GetErrorInfo(out GameCardErrorReportInfo outErrorReportInfo);
+    Result GetAsicCertificate(out GameCardAsicCertificateSet outCertificateSet);
 }

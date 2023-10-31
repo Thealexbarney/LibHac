@@ -428,4 +428,12 @@ public sealed class GameCardEmulated : IGcApi
         outErrorReportInfo = default;
         return Result.Success;
     }
+
+    public Result GetAsicCertificate(out GameCardAsicCertificateSet outCertificateSet)
+    {
+        Abort.DoAbortUnless(_initialized, LibNotInitializedMessage);
+
+        outCertificateSet = default;
+        return Result.Success;
+    }
 }

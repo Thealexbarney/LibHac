@@ -88,6 +88,24 @@ public class TypeLayoutTests
     }
 
     [Fact]
+    public static void GameCardAsicCertificateSet_Layout()
+    {
+        var s = new GameCardAsicCertificateSet();
+
+        Assert.Equal(Values.GcCertificateSetSize, Unsafe.SizeOf<GameCardAsicCertificateSet>());
+
+        Assert.Equal(0x000, GetOffset(in s, in s.Certificate));
+        Assert.Equal(0x400, GetOffset(in s, in s.SerialNumber));
+        Assert.Equal(0x410, GetOffset(in s, in s.PublicKeyModulus));
+        Assert.Equal(0x510, GetOffset(in s, in s.PublicKeyExponent));
+
+        Assert.Equal(Values.GcCertificateSize, s.Certificate.Length);
+        Assert.Equal(Values.GcAsicSerialNumberLength, s.SerialNumber.Length);
+        Assert.Equal(Values.GcRsaKeyLength, s.PublicKeyModulus.Length);
+        Assert.Equal(Values.GcRsaPublicExponentLength, s.PublicKeyExponent.Length);
+    }
+
+    [Fact]
     public static void CardInitialDataPayload_Layout()
     {
         var s = new CardInitialDataPayload();

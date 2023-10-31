@@ -31,3 +31,11 @@ public struct GameCardIdSet
     public CardId2 Id2;
     public CardId3 Id3;
 }
+
+public struct GameCardAsicCertificateSet
+{
+    public Array1024<byte> Certificate;
+    public Array16<byte> SerialNumber;
+    public Array256<byte> PublicKeyModulus;
+    public Array3<byte> PublicKeyExponent;
+}

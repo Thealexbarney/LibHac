@@ -50,6 +50,7 @@ namespace LibHac.Common.FixedArrays;
 [InlineArray(640)] public struct Array640<T> { public readonly int Length => 640; private T _0; }
 [InlineArray(768)] public struct Array768<T> { public readonly int Length => 768; private T _0; }
 [InlineArray(769)] public struct Array769<T> { public readonly int Length => 769; private T _0; }
+[InlineArray(1024)] public struct Array1024<T> { public readonly int Length => 1024; private T _0; }
 [InlineArray(3000)] public struct Array3000<T> { public readonly int Length => 3000; private T _0; }
 [InlineArray(3438)] public struct Array3438<T> { public readonly int Length => 3438; private T _0; }
 [InlineArray(5366)] public struct Array5366<T> { public readonly int Length => 5366; private T _0; }
