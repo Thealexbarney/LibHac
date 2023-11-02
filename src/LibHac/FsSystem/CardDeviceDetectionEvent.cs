@@ -23,7 +23,6 @@ internal class CardDeviceDetectionEventManager : IDisposable
     {
         public CardDeviceDetectionEventManager EventManager;
         public SdkMutex Mutex;
-        public Sdmmc.Port Port;
     }
 
     public CardDeviceDetectionEventManager()

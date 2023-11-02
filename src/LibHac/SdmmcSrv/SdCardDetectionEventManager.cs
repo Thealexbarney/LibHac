@@ -9,12 +9,14 @@ namespace LibHac.SdmmcSrv;
 /// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 internal class SdCardDetectionEventManager : CardDeviceDetectionEventManager
 {
+    public Port Port;
+
     // LibHac addition
     private readonly SdmmcApi _sdmmc;
 
     public SdCardDetectionEventManager(Port port, SdmmcApi sdmmc)
     {
-        CallbackArgs.Port = port;
+        Port = port;
         _sdmmc = sdmmc;
 
         _sdmmc.RegisterSdCardDetectionEventCallback(port, DetectionEventCallback, CallbackArgs);
@@ -22,7 +24,7 @@ internal class SdCardDetectionEventManager : CardDeviceDetectionEventManager
 
     public override void Dispose()
     {
-        _sdmmc.UnregisterSdCardDetectionEventCallback(CallbackArgs.Port);
+        _sdmmc.UnregisterSdCardDetectionEventCallback(Port);
 
         base.Dispose();
     }
