@@ -520,7 +520,8 @@ public class TypeLayoutTests
         Assert.Equal(0x40, Unsafe.SizeOf<GameCardErrorReportInfo>());
 
         Assert.Equal(0x00, GetOffset(in s, in s.GameCardCrcErrorNum));
-        Assert.Equal(0x02, GetOffset(in s, in s.Reserved2));
+        Assert.Equal(0x02, GetOffset(in s, in s.LastDeactivateReason));
+        Assert.Equal(0x03, GetOffset(in s, in s.Reserved3));
         Assert.Equal(0x04, GetOffset(in s, in s.AsicCrcErrorNum));
         Assert.Equal(0x06, GetOffset(in s, in s.Reserved6));
         Assert.Equal(0x08, GetOffset(in s, in s.RefreshNum));
@@ -541,7 +542,8 @@ public class TypeLayoutTests
         Assert.Equal(0x2C, GetOffset(in s, in s.AwakenCount));
         Assert.Equal(0x30, GetOffset(in s, in s.ReadCountFromInsert));
         Assert.Equal(0x34, GetOffset(in s, in s.ReadCountFromAwaken));
-        Assert.Equal(0x38, GetOffset(in s, in s.Reserved38));
+        Assert.Equal(0x38, GetOffset(in s, in s.LastDeactivateReasonResult));
+        Assert.Equal(0x3C, GetOffset(in s, in s.Reserved3C));
     }
 
     [Fact]
