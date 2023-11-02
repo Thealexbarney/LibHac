@@ -85,7 +85,8 @@ public struct GameCardErrorInfo
 public struct GameCardErrorReportInfo
 {
     public ushort GameCardCrcErrorNum;
-    public ushort Reserved2;
+    public byte LastDeactivateReason;
+    public byte Reserved3;
     public ushort AsicCrcErrorNum;
     public ushort Reserved6;
     public ushort RefreshNum;
@@ -106,7 +107,8 @@ public struct GameCardErrorReportInfo
     public uint AwakenCount;
     public uint ReadCountFromInsert;
     public uint ReadCountFromAwaken;
-    public Array8<byte> Reserved38;
+    public uint LastDeactivateReasonResult;
+    public Array4<byte> Reserved3C;
 }
 
 public struct GameCardUpdatePartitionInfo
