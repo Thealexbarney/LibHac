@@ -289,7 +289,7 @@ internal static class CliParser
         sb.AppendLine("  --romfsdir <dir>     Specify RomFS directory path.");
         sb.AppendLine("  --listromfs          List files in RomFS.");
         sb.AppendLine("  --basenca            Set Base NCA to use with update partitions.");
-        sb.AppendLine("  --titlekey           Specify singular (encrypted) titlekey.");
+        sb.AppendLine("  --titlekey           Specify single (encrypted) titlekey.");
         sb.AppendLine("KIP1 options:");
         sb.AppendLine("  --uncompressed <f>   Specify file path for saving uncompressed KIP1.");
         sb.AppendLine("RomFS options:");
