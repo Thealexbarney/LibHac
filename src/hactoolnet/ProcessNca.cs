@@ -1,7 +1,9 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Text;
 using LibHac;
 using LibHac.Common;
+using LibHac.Common.Keys;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
@@ -28,16 +30,11 @@ internal static class ProcessNca
 
             if(!string.IsNullOrEmpty(ctx.Options.TitleKey) && nca.Header.HasRightsId)
             {
-                var titleKey = new AccessKey();
-                var rightsId = new RightsId(nca.Header.RightsId);
-
-                if (!StringUtils.TryFromHexString(ctx.Options.TitleKey, SpanHelpers.AsByteSpan(ref titleKey)))
+                if(!TryAddTitleKey(ctx.KeySet, ctx.Options.TitleKey, nca.Header.RightsId))
                 {
                     ctx.Logger.LogMessage($"Invalid title key \"{ctx.Options.TitleKey}\"");
                     return;
                 }
-
-                ctx.KeySet.ExternalKeySet.Add(rightsId, titleKey);
             }
 
             var ncaHolder = new NcaHolder { Nca = nca };
@@ -54,6 +51,15 @@ internal static class ProcessNca
             {
                 IStorage baseFile = new LocalStorage(ctx.Options.BaseNca, FileAccess.Read);
                 baseNca = new Nca(ctx.KeySet, baseFile);
+
+                if(!string.IsNullOrEmpty(ctx.Options.BaseTitleKey) && baseNca.Header.HasRightsId)
+                {
+                    if(!TryAddTitleKey(ctx.KeySet, ctx.Options.BaseTitleKey, baseNca.Header.RightsId))
+                    {
+                        ctx.Logger.LogMessage($"Invalid base title key \"{ctx.Options.BaseTitleKey}\"");
+                        return;
+                    }
+                }
             }
 
             for (int i = 0; i < 4; i++)
@@ -266,6 +272,19 @@ internal static class ProcessNca
                 return OpenFileSystem(Nca.GetSectionIndexFromType(type, nca.Header.ContentType));
             }
         }
+    }
+
+    private static bool TryAddTitleKey(KeySet keySet, string cliTitleKey, Span<byte> rightsId)
+    {
+        var titleKey = new AccessKey();
+
+        if (!StringUtils.TryFromHexString(cliTitleKey, SpanHelpers.AsByteSpan(ref titleKey)))
+        {
+            return false;
+        }
+
+        keySet.ExternalKeySet.Add(new RightsId(rightsId), titleKey);
+        return true;
     }
 
     private static Validity VerifySignature2(this Nca nca)

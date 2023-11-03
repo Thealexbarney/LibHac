@@ -63,6 +63,7 @@ internal class Options
     public bool ExtractIni1;
     public ulong TitleId;
     public string TitleKey;
+    public string BaseTitleKey;
     public string BenchType;
     public double CpuFrequencyGhz;
 
