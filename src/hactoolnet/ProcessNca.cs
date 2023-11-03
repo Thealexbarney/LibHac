@@ -6,10 +6,12 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSystem;
+using LibHac.Spl;
 using LibHac.Tools.Fs;
 using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
 using LibHac.Tools.Npdm;
+using LibHac.Util;
 using static hactoolnet.Print;
 using NcaFsHeader = LibHac.Tools.FsSystem.NcaUtils.NcaFsHeader;
 
@@ -23,6 +25,20 @@ internal static class ProcessNca
         {
             var nca = new Nca(ctx.KeySet, file);
             Nca baseNca = null;
+
+            if(!string.IsNullOrEmpty(ctx.Options.TitleKey) && nca.Header.HasRightsId)
+            {
+                var titleKey = new AccessKey();
+                var rightsId = new RightsId(nca.Header.RightsId);
+
+                if (!StringUtils.TryFromHexString(ctx.Options.TitleKey, SpanHelpers.AsByteSpan(ref titleKey)))
+                {
+                    ctx.Logger.LogMessage($"Invalid title key \"{ctx.Options.TitleKey}\"");
+                    return;
+                }
+
+                ctx.KeySet.ExternalKeySet.Add(rightsId, titleKey);
+            }
 
             var ncaHolder = new NcaHolder { Nca = nca };
 

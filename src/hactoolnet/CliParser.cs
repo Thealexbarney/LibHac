@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using LibHac.Util;
 
 namespace hactoolnet;
 
@@ -49,6 +50,7 @@ internal static class CliParser
         new CliOption("sdseed", 1, (o, a) => o.SdSeed = a[0]),
         new CliOption("sdpath", 1, (o, a) => o.SdPath = a[0]),
         new CliOption("basenca", 1, (o, a) => o.BaseNca = a[0]),
+        new CliOption("titlekey", 1, (o, a) => o.TitleKey = ParseTitleKey(o, a[0])),
         new CliOption("basefile", 1, (o, a) => o.BaseFile = a[0]),
         new CliOption("rootdir", 1, (o, a) => o.RootDir = a[0]),
         new CliOption("updatedir", 1, (o, a) => o.UpdateDir = a[0]),
@@ -214,6 +216,17 @@ internal static class CliParser
         return id;
     }
 
+    private static string ParseTitleKey(Options options, string input)
+    {
+        if (input.Length != 32)
+        {
+            options.ParseErrorMessage ??= "TitleKey must be 32 hex characters long";
+            return default;
+        }
+
+        return input.ToUpperInvariant();
+    }
+
     private static double ParseDouble(Options options, string input)
     {
         if (!double.TryParse(input, out double value))
@@ -276,6 +289,7 @@ internal static class CliParser
         sb.AppendLine("  --romfsdir <dir>     Specify RomFS directory path.");
         sb.AppendLine("  --listromfs          List files in RomFS.");
         sb.AppendLine("  --basenca            Set Base NCA to use with update partitions.");
+        sb.AppendLine("  --titlekey           Specify singular (encrypted) titlekey.");
         sb.AppendLine("KIP1 options:");
         sb.AppendLine("  --uncompressed <f>   Specify file path for saving uncompressed KIP1.");
         sb.AppendLine("RomFS options:");
