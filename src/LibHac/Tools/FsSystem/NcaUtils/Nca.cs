@@ -65,6 +65,18 @@ public class Nca
 
     private static readonly string[] KakNames = { "application", "ocean", "system" };
 
+    public byte[] GetEncryptedTitleKey()
+    {
+        var rightsId = new RightsId(Header.RightsId);
+
+        if (KeySet.ExternalKeySet.Get(rightsId, out AccessKey accessKey).IsFailure())
+        {
+            throw new MissingKeyException("Missing NCA title key.", rightsId.ToString(), KeyType.Title);
+        }
+        
+        return accessKey.Value.ToArray();
+    }
+
     public byte[] GetDecryptedTitleKey()
     {
         int keyRevision = Utilities.GetMasterKeyRevision(Header.KeyGeneration);

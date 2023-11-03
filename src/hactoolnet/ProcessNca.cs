@@ -346,6 +346,8 @@ internal static class ProcessNca
         if (nca.Header.HasRightsId)
         {
             PrintItem(sb, colLen, "Rights ID:", nca.Header.RightsId.ToArray());
+            PrintItem(sb, colLen, "Titlekey (Encrypted):", nca.GetEncryptedTitleKey());
+            PrintItem(sb, colLen, "Titlekey (Decrypted):", nca.GetDecryptedTitleKey());
         }
         else
         {
