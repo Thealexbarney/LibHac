@@ -277,19 +277,20 @@ internal static class ProcessNca
     private static bool TryAddTitleKey(KeySet keySet, string cliTitleKey, Span<byte> rightsId)
     {
         var titleKey = new AccessKey();
+        var rId = new RightsId(rightsId);
 
         if (!StringUtils.TryFromHexString(cliTitleKey, SpanHelpers.AsByteSpan(ref titleKey)))
         {
             return false;
         }
 
-        var rId = new RightsId(rightsId);
-
-        if(!keySet.ExternalKeySet.Contains(rId))
+        if (keySet.ExternalKeySet.Contains(rId))
         {
-            keySet.ExternalKeySet.Add(rId, titleKey);
+            keySet.ExternalKeySet.Remove(rId);
         }
 
+        keySet.ExternalKeySet.Add(rId, titleKey);
+        
         return true;
     }
 
