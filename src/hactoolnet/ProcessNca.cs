@@ -283,7 +283,13 @@ internal static class ProcessNca
             return false;
         }
 
-        keySet.ExternalKeySet.Add(new RightsId(rightsId), titleKey);
+        var rId = new RightsId(rightsId);
+
+        if(!keySet.ExternalKeySet.Contains(rId))
+        {
+            keySet.ExternalKeySet.Add(rId, titleKey);
+        }
+
         return true;
     }
 
