@@ -217,15 +217,17 @@ internal static class CliParser
         return id;
     }
 
-    private static string ParseTitleKey(Options options, string input)
+    private static byte[] ParseTitleKey(Options options, string input)
     {
-        if (input.Length != 32)
+        byte[] key = new byte[32];
+        
+        if (input.Length != 32 || !StringUtils.TryFromHexString(input, key))
         {
             options.ParseErrorMessage ??= "TitleKey must be 32 hex characters long";
             return default;
         }
 
-        return input.ToUpperInvariant();
+        return key;
     }
 
     private static double ParseDouble(Options options, string input)

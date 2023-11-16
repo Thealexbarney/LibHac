@@ -28,9 +28,9 @@ internal static class ProcessNca
             var nca = new Nca(ctx.KeySet, file);
             Nca baseNca = null;
 
-            if(!string.IsNullOrEmpty(ctx.Options.TitleKey) && nca.Header.HasRightsId)
+            if (ctx.Options.TitleKey != null && nca.Header.HasRightsId)
             {
-                if(!TryAddTitleKey(ctx.KeySet, ctx.Options.TitleKey, nca.Header.RightsId))
+                if (!TryAddTitleKey(ctx.KeySet, ctx.Options.TitleKey, nca.Header.RightsId))
                 {
                     ctx.Logger.LogMessage($"Invalid title key \"{ctx.Options.TitleKey}\"");
                     return;
@@ -52,9 +52,9 @@ internal static class ProcessNca
                 IStorage baseFile = new LocalStorage(ctx.Options.BaseNca, FileAccess.Read);
                 baseNca = new Nca(ctx.KeySet, baseFile);
 
-                if(!string.IsNullOrEmpty(ctx.Options.BaseTitleKey) && baseNca.Header.HasRightsId)
+                if (ctx.Options.BaseTitleKey != null && baseNca.Header.HasRightsId)
                 {
-                    if(!TryAddTitleKey(ctx.KeySet, ctx.Options.BaseTitleKey, baseNca.Header.RightsId))
+                    if (!TryAddTitleKey(ctx.KeySet, ctx.Options.BaseTitleKey, baseNca.Header.RightsId))
                     {
                         ctx.Logger.LogMessage($"Invalid base title key \"{ctx.Options.BaseTitleKey}\"");
                         return;
@@ -274,23 +274,17 @@ internal static class ProcessNca
         }
     }
 
-    private static bool TryAddTitleKey(KeySet keySet, string cliTitleKey, Span<byte> rightsId)
+    private static bool TryAddTitleKey(KeySet keySet, ReadOnlySpan<byte> key, ReadOnlySpan<byte> rightsId)
     {
-        var titleKey = new AccessKey();
+        if (key.Length != 32)
+            return false;
+
+        var titleKey = new AccessKey(key);
         var rId = new RightsId(rightsId);
 
-        if (!StringUtils.TryFromHexString(cliTitleKey, SpanHelpers.AsByteSpan(ref titleKey)))
-        {
-            return false;
-        }
-
-        if (keySet.ExternalKeySet.Contains(rId))
-        {
-            keySet.ExternalKeySet.Remove(rId);
-        }
-
+        keySet.ExternalKeySet.Remove(rId);
         keySet.ExternalKeySet.Add(rId, titleKey);
-        
+
         return true;
     }
 
