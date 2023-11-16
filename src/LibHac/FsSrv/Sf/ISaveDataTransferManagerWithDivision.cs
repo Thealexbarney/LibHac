@@ -15,7 +15,7 @@ public interface ISaveDataTransferManagerWithDivision : IDisposable
     public Result OpenSaveDataImporterDeprecated(ref SharedRef<ISaveDataDivisionImporter> outImporter, InBuffer initialData, in UserId userId, SaveDataSpaceId spaceId);
     public Result OpenSaveDataImporterForDiffImport(ref SharedRef<ISaveDataDivisionImporter> outImporter, InBuffer initialData, SaveDataSpaceId spaceId, ulong saveDataId);
     public Result OpenSaveDataImporterForDuplicateDiffImport(ref SharedRef<ISaveDataDivisionImporter> outImporter, InBuffer initialData, SaveDataSpaceId spaceId, ulong saveDataId);
-    public Result OpenSaveDataImporter(ref SharedRef<ISaveDataDivisionImporter> outImporter, InBuffer initialData, in UserId userId, SaveDataSpaceId spaceId, bool useSwap);
+    public Result OpenSaveDataImporter(ref SharedRef<ISaveDataDivisionImporter> outImporter, InBuffer initialData, in SaveDataCreationInfo2 creationInfo, SaveDataSpaceId spaceId, bool useSwap);
     public Result OpenSaveDataImporterByContext(ref SharedRef<ISaveDataDivisionImporter> outImporter, InBuffer importContext);
     public Result CancelSuspendingImport(Ncm.ApplicationId applicationId, in UserId userId);
     public Result CancelSuspendingImportByAttribute(in SaveDataAttribute attribute);

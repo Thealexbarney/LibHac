@@ -165,12 +165,18 @@ namespace LibHac.Fs
         }
 
         public Result OpenSaveDataImporterImpl(ref UniqueRef<ISaveDataDivisionImporter> outImporter,
-            in InitialDataVersion2 initialData, in UserId userId, SaveDataSpaceId spaceId, bool useSwap)
+            in InitialDataVersion2 initialData, ulong staticSaveDataId, in UserId userId, ulong ownerId,
+            SaveDataSpaceId spaceId, bool useSwap)
         {
             using var importerInterface = new SharedRef<FsSrv.Sf.ISaveDataDivisionImporter>();
 
+            SaveDataCreationInfo2 creationInfo = default;
+            creationInfo.Attribute.StaticSaveDataId = staticSaveDataId;
+            creationInfo.Attribute.UserId = userId;
+            creationInfo.OwnerId = ownerId;
+
             Result res = _baseInterface.Get.OpenSaveDataImporter(ref importerInterface.Ref,
-                InBuffer.FromStruct(in initialData), in userId, spaceId, useSwap);
+                InBuffer.FromStruct(in initialData), in creationInfo, spaceId, useSwap);
 
             _fsClient.Impl.LogResultErrorMessage(res);
             if (res.IsFailure()) return res.Miss();
@@ -182,7 +188,8 @@ namespace LibHac.Fs
         public Result OpenSaveDataImporter(ref UniqueRef<ISaveDataDivisionImporter> outImporter,
             in InitialDataVersion2 initialData, SaveDataSpaceId spaceId, bool useSwap)
         {
-            return OpenSaveDataImporterImpl(ref outImporter, in initialData, InvalidUserId, spaceId, useSwap);
+            return OpenSaveDataImporterImpl(ref outImporter, in initialData, InvalidSystemSaveDataId, InvalidUserId,
+                ownerId: 0, spaceId, useSwap);
         }
 
         public Result OpenSaveDataImporterByContext(ref UniqueRef<ISaveDataDivisionImporter> outImporter,
