@@ -226,7 +226,7 @@ public class SaveDataTransferManagerVersion2 : ISaveDataTransferManagerWithDivis
     }
 
     public Result OpenSaveDataImporter(ref SharedRef<ISaveDataDivisionImporter> outImporter, InBuffer initialData,
-        in UserId userId, SaveDataSpaceId spaceId, bool useSwap)
+        in SaveDataCreationInfo2 creationInfo, SaveDataSpaceId spaceId, bool useSwap)
     {
         throw new NotImplementedException();
     }
