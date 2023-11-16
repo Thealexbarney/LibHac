@@ -1,15 +1,19 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Text;
 using LibHac;
 using LibHac.Common;
+using LibHac.Common.Keys;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Impl;
 using LibHac.FsSystem;
+using LibHac.Spl;
 using LibHac.Tools.Fs;
 using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
 using LibHac.Tools.Npdm;
+using LibHac.Util;
 using static hactoolnet.Print;
 using NcaFsHeader = LibHac.Tools.FsSystem.NcaUtils.NcaFsHeader;
 
@@ -23,6 +27,15 @@ internal static class ProcessNca
         {
             var nca = new Nca(ctx.KeySet, file);
             Nca baseNca = null;
+
+            if (ctx.Options.TitleKey != null && nca.Header.HasRightsId)
+            {
+                if (!TryAddTitleKey(ctx.KeySet, ctx.Options.TitleKey, nca.Header.RightsId))
+                {
+                    ctx.Logger.LogMessage($"Invalid title key \"{ctx.Options.TitleKey}\"");
+                    return;
+                }
+            }
 
             var ncaHolder = new NcaHolder { Nca = nca };
 
@@ -38,6 +51,15 @@ internal static class ProcessNca
             {
                 IStorage baseFile = new LocalStorage(ctx.Options.BaseNca, FileAccess.Read);
                 baseNca = new Nca(ctx.KeySet, baseFile);
+
+                if (ctx.Options.BaseTitleKey != null && baseNca.Header.HasRightsId)
+                {
+                    if (!TryAddTitleKey(ctx.KeySet, ctx.Options.BaseTitleKey, baseNca.Header.RightsId))
+                    {
+                        ctx.Logger.LogMessage($"Invalid base title key \"{ctx.Options.BaseTitleKey}\"");
+                        return;
+                    }
+                }
             }
 
             for (int i = 0; i < 4; i++)
@@ -250,6 +272,20 @@ internal static class ProcessNca
                 return OpenFileSystem(Nca.GetSectionIndexFromType(type, nca.Header.ContentType));
             }
         }
+    }
+
+    private static bool TryAddTitleKey(KeySet keySet, ReadOnlySpan<byte> key, ReadOnlySpan<byte> rightsId)
+    {
+        if (key.Length != 32)
+            return false;
+
+        var titleKey = new AccessKey(key);
+        var rId = new RightsId(rightsId);
+
+        keySet.ExternalKeySet.Remove(rId);
+        keySet.ExternalKeySet.Add(rId, titleKey);
+
+        return true;
     }
 
     private static Validity VerifySignature2(this Nca nca)

@@ -62,6 +62,8 @@ internal class Options
     public bool BuildHfs;
     public bool ExtractIni1;
     public ulong TitleId;
+    public byte[] TitleKey;
+    public byte[] BaseTitleKey;
     public string BenchType;
     public double CpuFrequencyGhz;
 
