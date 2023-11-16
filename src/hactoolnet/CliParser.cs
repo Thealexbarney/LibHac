@@ -20,6 +20,7 @@ internal static class CliParser
         new CliOption("enablehash", 'h', 0, (o, _) => o.EnableHash = true),
         new CliOption("disablekeywarns", 0, (o, _) => o.DisableKeyWarns = true),
         new CliOption("enableallkeywarns", 0, (o, _) => o.EnableAllKeyWarns = true),
+        new CliOption("suppresskeys", 0, (o, _) => o.SuppressKeydataOutput = true),
         new CliOption("keyset", 'k', 1, (o, a) => o.Keyfile = a[0]),
         new CliOption("titlekeys", 1, (o, a) => o.TitleKeyFile = a[0]),
         new CliOption("consolekeys", 1, (o, a) => o.ConsoleKeyFile = a[0]),
@@ -294,6 +295,7 @@ internal static class CliParser
         sb.AppendLine("  --basenca            Set Base NCA to use with update partitions.");
         sb.AppendLine("  --basetitlekey       Specify single (encrypted) titlekey for the base NCA.");
         sb.AppendLine("  --titlekey           Specify single (encrypted) titlekey for the NCA.");
+        sb.AppendLine("  --suppresskeys       Suppress output of decrypted keys.");
         sb.AppendLine("KIP1 options:");
         sb.AppendLine("  --uncompressed <f>   Specify file path for saving uncompressed KIP1.");
         sb.AppendLine("RomFS options:");

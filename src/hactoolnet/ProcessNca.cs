@@ -239,7 +239,7 @@ internal static class ProcessNca
                 nca.OpenEncryptedNca().WriteAllBytes(ctx.Options.CiphertextOut, ctx.Logger);
             }
 
-            if (!ctx.Options.ReadBench) ctx.Logger.LogMessage(ncaHolder.Print());
+            if (!ctx.Options.ReadBench) ctx.Logger.LogMessage(ncaHolder.Print(ctx.Options));
 
             IStorage OpenStorage(int index)
             {
@@ -309,7 +309,7 @@ internal static class ProcessNca
         return keyGeneration - 1;
     }
 
-    private static string Print(this NcaHolder ncaHolder)
+    private static string Print(this NcaHolder ncaHolder, Options options)
     {
         Nca nca = ncaHolder.Nca;
         int masterKey = GetMasterKeyRevisionFromKeyGeneration(nca.Header.KeyGeneration);
@@ -347,7 +347,11 @@ internal static class ProcessNca
         {
             PrintItem(sb, colLen, "Rights ID:", nca.Header.RightsId.ToArray());
             PrintItem(sb, colLen, "Titlekey (Encrypted):", nca.GetEncryptedTitleKey());
-            PrintItem(sb, colLen, "Titlekey (Decrypted):", nca.GetDecryptedTitleKey());
+
+            if (!options.SuppressKeydataOutput)
+            {
+                PrintItem(sb, colLen, "Titlekey (Decrypted):", nca.GetDecryptedTitleKey());
+            }
         }
         else
         {
@@ -367,10 +371,13 @@ internal static class ProcessNca
                 sb.AppendLine("Key Area (Encrypted):");
                 PrintItem(sb, colLen, "Key (RSA-OAEP Encrypted):", nca.Header.GetKeyArea().ToArray());
 
-                sb.AppendLine("Key Area (Decrypted):");
-                for (int i = 0; i < 2; i++)
+                if (!options.SuppressKeydataOutput)
                 {
-                    PrintItem(sb, colLen, $"    Key {i} (Decrypted):", nca.GetDecryptedKey(i));
+                    sb.AppendLine("Key Area (Decrypted):");
+                    for (int i = 0; i < 2; i++)
+                    {
+                        PrintItem(sb, colLen, $"    Key {i} (Decrypted):", nca.GetDecryptedKey(i));
+                    }
                 }
             }
             else if (version == NcaVersion.Nca0FixedKey)
@@ -392,10 +399,13 @@ internal static class ProcessNca
                     PrintItem(sb, colLen, $"    Key {i} (Encrypted):", nca.Header.GetEncryptedKey(i).ToArray());
                 }
 
-                sb.AppendLine("Key Area (Decrypted):");
-                for (int i = 0; i < keyCount; i++)
+                if (!options.SuppressKeydataOutput)
                 {
-                    PrintItem(sb, colLen, $"    Key {i} (Decrypted):", nca.GetDecryptedKey(i));
+                    sb.AppendLine("Key Area (Decrypted):");
+                    for (int i = 0; i < keyCount; i++)
+                    {
+                        PrintItem(sb, colLen, $"    Key {i} (Decrypted):", nca.GetDecryptedKey(i));
+                    }
                 }
             }
         }
