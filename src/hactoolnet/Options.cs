@@ -18,6 +18,7 @@ internal class Options
     public bool EnableHash;
     public bool DisableKeyWarns;
     public bool EnableAllKeyWarns;
+    public bool SuppressKeydataOutput;
     public string Keyfile;
     public string TitleKeyFile;
     public string ConsoleKeyFile;

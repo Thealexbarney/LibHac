@@ -57,6 +57,7 @@ NCA options:
   --basenca            Set Base NCA to use with update partitions.
   --basetitlekey       Specify single (encrypted) titlekey for the base NCA.
   --titlekey           Specify single (encrypted) titlekey.
+  --suppresskeys       Suppress output of decrypted keys.
 KIP1 options:
   --uncompressed <f>   Specify file path for saving uncompressed KIP1.
 RomFS options:
