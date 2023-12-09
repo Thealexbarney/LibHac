@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <VersionPrefix>0.19.0</VersionPrefix>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -35,10 +35,6 @@
   <ItemGroup>
     <Compile Condition="Exists('Common\ResultNameResolver.Generated.cs')" Remove="Common\ResultNameResolver.Archive.cs" />
     <Compile Condition="Exists('Common\Keys\DefaultKeySet.Generated.cs')" Remove="Common\Keys\DefaultKeySet.Empty.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>

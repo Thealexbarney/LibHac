@@ -43,7 +43,7 @@ partial class Build : NukeBuild
     AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
     AbsolutePath SignedArtifactsDirectory => ArtifactsDirectory / "signed";
     AbsolutePath TempDirectory => RootDirectory / ".nuke" / "temp";
-    AbsolutePath CliCoreDir => TempDirectory / "hactoolnet_net7.0";
+    AbsolutePath CliCoreDir => TempDirectory / "hactoolnet_net8.0";
     AbsolutePath CliNativeDir => TempDirectory / $"hactoolnet_{HostOsName}";
     AbsolutePath CliNativeExe => CliNativeDir / $"hactoolnet{NativeProgramExtension}";
     AbsolutePath CliCoreZip => ArtifactsDirectory / $"hactoolnet-{VersionString}-netcore.zip";
@@ -226,7 +226,7 @@ partial class Build : NukeBuild
 
             DotNetPublish(s => publishSettings
                 .SetProject(HactoolnetProject)
-                .SetFramework("net7.0")
+                .SetFramework("net8.0")
                 .SetOutput(CliCoreDir)
                 .SetNoBuild(true)
                 .SetProperties(VersionProps));
@@ -276,7 +276,7 @@ partial class Build : NukeBuild
                 .EnableNoBuild()
                 .SetConfiguration(Configuration);
 
-            if (EnvironmentInfo.IsUnix) settings = settings.SetProperty("TargetFramework", "net7.0");
+            if (EnvironmentInfo.IsUnix) settings = settings.SetProperty("TargetFramework", "net8.0");
 
             DotNetTest(s => settings);
         });
@@ -593,7 +593,7 @@ partial class Build : NukeBuild
             SignAssemblies(password, toSign.Select(x => x.ToString()).ToArray());
 
             // Avoid having multiple signed versions of the same file
-            File.Copy(nupkgDir / "lib" / "net7.0" / "LibHac.dll", coreFxDir / "LibHac.dll", true);
+            File.Copy(nupkgDir / "lib" / "net8.0" / "LibHac.dll", coreFxDir / "LibHac.dll", true);
 
             ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(nupkgFile), nupkgDir, pkgFileList, CommitTime);
             ZipDirectory(SignedArtifactsDirectory / Path.GetFileName(CliCoreZip), coreFxDir, CommitTime);
