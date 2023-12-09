@@ -77,8 +77,8 @@ public class SaveDataIndexer : ISaveDataIndexer
         {
             Assert.SdkRequires(!_isMounted);
 
-            int mountNameLength = StringUtils.Strlcpy(_mountName.Items, mountName, Array16<byte>.Length);
-            Assert.SdkLess(mountNameLength, Array16<byte>.Length);
+            int mountNameLength = StringUtils.Strlcpy(_mountName, mountName, _mountName.Length);
+            Assert.SdkLess(mountNameLength, _mountName.Length);
 
             _fsClient.DisableAutoSaveDataCreation();
 
@@ -227,7 +227,7 @@ public class SaveDataIndexer : ISaveDataIndexer
         _handle = 1;
         _openReaders = new LinkedList<ReaderAccessor>();
         _isDelayedReaderUnregistrationRequired = false;
-        StringUtils.Copy(_mountName.Items, mountName);
+        StringUtils.Copy(_mountName, mountName);
 
         _fsClient = fsClient;
     }

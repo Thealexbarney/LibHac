@@ -535,9 +535,9 @@ public class ConcatenationFileSystem : IFileSystem
     private static Result AppendInternalFilePath(ref Path path, int index)
     {
         var buffer = new Array3<byte>();
-        Utf8Formatter.TryFormat(index, buffer.Items, out _, new StandardFormat('d', 2));
+        Utf8Formatter.TryFormat(index, buffer, out _, new StandardFormat('d', 2));
 
-        return path.AppendChild(buffer.ItemsRo).Ret();
+        return path.AppendChild(buffer).Ret();
     }
 
     private static Result GenerateInternalFilePath(ref Path outPath, int index, in Path basePath)

@@ -9,6 +9,6 @@ public struct Digest
 
     public readonly override string ToString()
     {
-        return Value.ItemsRo.ToHexString();
+        return Value[..].ToHexString();
     }
 }

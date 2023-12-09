@@ -128,7 +128,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         Unsafe.SkipInit(out Array18<byte> saveImageNameBuffer);
 
         using scoped var saveImageName = new Path();
-        res = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer.Items, saveDataId);
+        res = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
         if (res.IsFailure()) return res.Miss();
 
         res = fileSystem.Get.GetEntryType(out _, in saveImageName);
@@ -170,7 +170,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
             // Create the save data directory on the host if needed.
             Unsafe.SkipInit(out Array18<byte> saveDirectoryNameBuffer);
             using scoped var saveDirectoryName = new Path();
-            res = PathFunctions.SetUpFixedPathSaveId(ref saveDirectoryName.Ref(), saveDirectoryNameBuffer.Items, saveDataId);
+            res = PathFunctions.SetUpFixedPathSaveId(ref saveDirectoryName.Ref(), saveDirectoryNameBuffer, saveDataId);
             if (res.IsFailure()) return res.Miss();
 
             res = FsSystem.Utility.EnsureDirectory(fileSystem.Get, in saveDirectoryName);
@@ -234,7 +234,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
 
         using scoped var saveDataMetaIdDirectoryName = new Path();
         Result res = PathFunctions.SetUpFixedPathSaveMetaDir(ref saveDataMetaIdDirectoryName.Ref(),
-            saveDataMetaIdDirectoryNameBuffer.Items, saveDataId);
+            saveDataMetaIdDirectoryNameBuffer, saveDataId);
         if (res.IsFailure()) return res.Miss();
 
         return OpenSaveDataDirectoryFileSystemImpl(ref outFileSystem, spaceId, in saveDataMetaIdDirectoryName).Ret();
@@ -314,7 +314,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         Unsafe.SkipInit(out Array15<byte> saveDataMetaNameBuffer);
 
         using scoped var saveDataMetaName = new Path();
-        res = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName.Ref(), saveDataMetaNameBuffer.Items,
+        res = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName.Ref(), saveDataMetaNameBuffer,
             (uint)metaType);
         if (res.IsFailure()) return res.Miss();
 
@@ -334,7 +334,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         Unsafe.SkipInit(out Array15<byte> saveDataMetaNameBuffer);
 
         using scoped var saveDataMetaName = new Path();
-        res = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName.Ref(), saveDataMetaNameBuffer.Items,
+        res = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName.Ref(), saveDataMetaNameBuffer,
             (uint)metaType);
         if (res.IsFailure()) return res.Miss();
 
@@ -361,7 +361,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         if (res.IsFailure()) return res.Miss();
 
         using scoped var saveDataIdDirectoryName = new Path();
-        PathFunctions.SetUpFixedPathSaveId(ref saveDataIdDirectoryName.Ref(), saveDataIdDirectoryNameBuffer.Items,
+        PathFunctions.SetUpFixedPathSaveId(ref saveDataIdDirectoryName.Ref(), saveDataIdDirectoryNameBuffer,
             saveDataId);
         if (res.IsFailure()) return res.Miss();
 
@@ -390,7 +390,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         Unsafe.SkipInit(out Array15<byte> saveDataMetaNameBuffer);
 
         using scoped var saveDataMetaName = new Path();
-        res = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName.Ref(), saveDataMetaNameBuffer.Items,
+        res = PathFunctions.SetUpFixedPathSaveMetaName(ref saveDataMetaName.Ref(), saveDataMetaNameBuffer,
             (uint)metaType);
         if (res.IsFailure()) return res.Miss();
 
@@ -418,7 +418,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         if (res.IsFailure()) return res.Miss();
 
         using scoped var saveImageName = new Path();
-        res = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer.Items, saveDataId);
+        res = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
         if (res.IsFailure()) return res.Miss();
 
         bool isPseudoSaveFs = _config.IsPseudoSaveData();
@@ -490,7 +490,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         if (res.IsFailure()) return res.Miss();
 
         using scoped var saveImageName = new Path();
-        res = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer.Items, saveDataId);
+        res = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
         if (res.IsFailure()) return res.Miss();
 
         // Check if the save data is a file or a directory
@@ -758,7 +758,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
                 Unsafe.SkipInit(out Array64<byte> pathParentBuffer);
 
                 using scoped var pathParent = new Path();
-                res = PathFunctions.SetUpFixedPathSingleEntry(ref pathParent.Ref(), pathParentBuffer.Items,
+                res = PathFunctions.SetUpFixedPathSingleEntry(ref pathParent.Ref(), pathParentBuffer,
                     CommonDirNames.SdCardNintendoRootDirectoryName);
                 if (res.IsFailure()) return res.Miss();
 

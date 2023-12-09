@@ -73,7 +73,7 @@ public class IndirectStorage : IStorage
     {
         FinalizeObject();
 
-        Span<ValueSubStorage> items = _dataStorage.Items;
+        Span<ValueSubStorage> items = _dataStorage;
         for (int i = 0; i < items.Length; i++)
             items[i].Dispose();
 
@@ -160,7 +160,7 @@ public class IndirectStorage : IStorage
         {
             _table.FinalizeObject();
 
-            Span<ValueSubStorage> storages = _dataStorage.Items;
+            Span<ValueSubStorage> storages = _dataStorage;
             for (int i = 0; i < storages.Length; i++)
             {
                 using var emptySubStorage = new ValueSubStorage();
@@ -303,9 +303,9 @@ public class IndirectStorage : IStorage
                     Result res = _table.InvalidateCache();
                     if (res.IsFailure()) return res.Miss();
 
-                    for (int i = 0; i < _dataStorage.Items.Length; i++)
+                    for (int i = 0; i < _dataStorage.Length; i++)
                     {
-                        res = _dataStorage.Items[i].OperateRange(OperationId.InvalidateCache, 0, long.MaxValue);
+                        res = _dataStorage[i].OperateRange(OperationId.InvalidateCache, 0, long.MaxValue);
                         if (res.IsFailure()) return res.Miss();
                     }
                 }

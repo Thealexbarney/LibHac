@@ -158,7 +158,7 @@ public class Ticket
             return commonKey;
         }
 
-        if (keySet.ETicketRsaKey.PublicExponent.ItemsRo.IsZeros())
+        if (keySet.ETicketRsaKey.PublicExponent[..].IsZeros())
             return null;
 
         try

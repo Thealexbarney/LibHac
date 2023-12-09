@@ -232,12 +232,12 @@ public class TypeLayoutTests
         Assert.Equal(NcaHeader.Size, Unsafe.SizeOf<NcaHeader>());
         Assert.Equal(NcaHeader.SectorSize, 1 << NcaHeader.SectorShift);
 
-        Assert.Equal(NcaHeader.HeaderSignSize, s.Signature1.ItemsRo.Length);
-        Assert.Equal(NcaHeader.HeaderSignSize, s.Signature2.ItemsRo.Length);
-        Assert.Equal(NcaHeader.RightsIdSize, s.RightsId.ItemsRo.Length);
-        Assert.Equal(NcaHeader.FsCountMax, s.FsInfos.ItemsRo.Length);
-        Assert.Equal(NcaHeader.FsCountMax, s.FsHeaderHashes.ItemsRo.Length);
-        Assert.Equal(NcaHeader.EncryptedKeyAreaSize, s.EncryptedKeys.ItemsRo.Length);
+        Assert.Equal(NcaHeader.HeaderSignSize, s.Signature1.Length);
+        Assert.Equal(NcaHeader.HeaderSignSize, s.Signature2.Length);
+        Assert.Equal(NcaHeader.RightsIdSize, s.RightsId.Length);
+        Assert.Equal(NcaHeader.FsCountMax, s.FsInfos.Length);
+        Assert.Equal(NcaHeader.FsCountMax, s.FsHeaderHashes.Length);
+        Assert.Equal(NcaHeader.EncryptedKeyAreaSize, s.EncryptedKeys.Length);
     }
 
     [Fact]
@@ -258,14 +258,14 @@ public class TypeLayoutTests
     {
         NcaCryptoConfiguration s = default;
 
-        Assert.Equal(NcaCryptoConfiguration.Header1SignatureKeyGenerationMax + 1, s.Header1SignKeyModuli.ItemsRo.Length);
-        Assert.Equal(NcaCryptoConfiguration.Rsa2048KeyModulusSize, s.Header1SignKeyModuli.ItemsRo[0].ItemsRo.Length);
-        Assert.Equal(NcaCryptoConfiguration.Rsa2048KeyPublicExponentSize, s.Header1SignKeyPublicExponent.ItemsRo.Length);
-        Assert.Equal(NcaCryptoConfiguration.KeyAreaEncryptionKeyIndexCount, s.KeyAreaEncryptionKeySources.ItemsRo.Length);
-        Assert.Equal(NcaCryptoConfiguration.Aes128KeySize, s.KeyAreaEncryptionKeySources.ItemsRo[0].ItemsRo.Length);
-        Assert.Equal(NcaCryptoConfiguration.Aes128KeySize, s.HeaderEncryptionKeySource.ItemsRo.Length);
-        Assert.Equal(NcaCryptoConfiguration.HeaderEncryptionKeyCount, s.HeaderEncryptedEncryptionKeys.ItemsRo.Length);
-        Assert.Equal(NcaCryptoConfiguration.Aes128KeySize, s.HeaderEncryptedEncryptionKeys.ItemsRo[0].ItemsRo.Length);
+        Assert.Equal(NcaCryptoConfiguration.Header1SignatureKeyGenerationMax + 1, s.Header1SignKeyModuli.Length);
+        Assert.Equal(NcaCryptoConfiguration.Rsa2048KeyModulusSize, s.Header1SignKeyModuli[0].Length);
+        Assert.Equal(NcaCryptoConfiguration.Rsa2048KeyPublicExponentSize, s.Header1SignKeyPublicExponent.Length);
+        Assert.Equal(NcaCryptoConfiguration.KeyAreaEncryptionKeyIndexCount, s.KeyAreaEncryptionKeySources.Length);
+        Assert.Equal(NcaCryptoConfiguration.Aes128KeySize, s.KeyAreaEncryptionKeySources[0].Length);
+        Assert.Equal(NcaCryptoConfiguration.Aes128KeySize, s.HeaderEncryptionKeySource.Length);
+        Assert.Equal(NcaCryptoConfiguration.HeaderEncryptionKeyCount, s.HeaderEncryptedEncryptionKeys.Length);
+        Assert.Equal(NcaCryptoConfiguration.Aes128KeySize, s.HeaderEncryptedEncryptionKeys[0].Length);
     }
 
     [Fact]
@@ -306,7 +306,7 @@ public class TypeLayoutTests
         Assert.Equal(0x04, GetOffset(in s, in s.Layers));
         Assert.Equal(0x94, GetOffset(in s, in s.HashSalt));
 
-        Assert.Equal(Constants.IntegrityMaxLayerCount - 1, s.Layers.ItemsRo.Length);
+        Assert.Equal(Constants.IntegrityMaxLayerCount - 1, s.Layers.Length);
     }
 
     [Fact]
@@ -327,7 +327,7 @@ public class TypeLayoutTests
     {
         HierarchicalIntegrityVerificationSizeSet s = default;
 
-        Assert.Equal(Constants.IntegrityMaxLayerCount - 2, s.LayeredHashSizes.ItemsRo.Length);
+        Assert.Equal(Constants.IntegrityMaxLayerCount - 2, s.LayeredHashSizes.Length);
     }
 
     [Fact]
@@ -335,7 +335,7 @@ public class TypeLayoutTests
     {
         HierarchicalIntegrityVerificationStorageControlArea.InputParam s = default;
 
-        Assert.Equal(Constants.IntegrityMaxLayerCount - 1, s.LevelBlockSizes.ItemsRo.Length);
+        Assert.Equal(Constants.IntegrityMaxLayerCount - 1, s.LevelBlockSizes[..].Length);
     }
 
     [Fact]

@@ -92,9 +92,9 @@ public class NsoReader
         if (checkHash)
         {
             var hash = new Array32<byte>();
-            Crypto.Sha256.GenerateSha256Hash(buffer.Slice(0, (int)segment.Size), hash.Items);
+            Crypto.Sha256.GenerateSha256Hash(buffer.Slice(0, (int)segment.Size), hash);
 
-            if (hash.ItemsRo.SequenceCompareTo(fileHash) != 0)
+            if (hash[..].SequenceCompareTo(fileHash) != 0)
                 return ResultLoader.InvalidNso.Log();
         }
 

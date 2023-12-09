@@ -39,7 +39,7 @@ public struct Package1MetaData
     public byte Version;
 
     [UnscopedRef] public U8Span BuildDate => new U8Span(_buildDate);
-    [UnscopedRef] public ReadOnlySpan<byte> Iv => SpanHelpers.CreateSpan(ref MemoryMarshal.GetReference(_buildDate.Items), 0x10);
+    [UnscopedRef] public ReadOnlySpan<byte> Iv => SpanHelpers.CreateSpan(ref MemoryMarshal.GetReference(_buildDate[..]), 0x10);
 }
 
 public struct Package1Stage1Footer
@@ -283,7 +283,7 @@ public class Package1
 
     private Result ReadModernEristaMac()
     {
-        return _baseStorage.Get.Read(ModernStage1Size + Pk11Size, _pk11Mac.Items);
+        return _baseStorage.Get.Read(ModernStage1Size + Pk11Size, _pk11Mac);
     }
 
     private Result SetPk11Storage()
@@ -319,7 +319,7 @@ public class Package1
             else
             {
                 decPk11Storage = new Aes128CtrStorage(encPk11Storage,
-                    KeySet.Package1Keys[KeyRevision].DataRo.ToArray(), _stage1Footer.Iv.ItemsRo.ToArray(), true);
+                    KeySet.Package1Keys[KeyRevision].DataRo.ToArray(), _stage1Footer.Iv[..].ToArray(), true);
             }
 
             _pk11Storage = new SubStorage(new CachedStorage(decPk11Storage, 0x4000, 1, true), 0, Pk11Size);
@@ -383,7 +383,7 @@ public class Package1
     // MarikoOemHeader must be read first
     private bool IsMarikoImpl()
     {
-        return MarikoOemHeader.AesMac.ItemsRo.IsZeros() && MarikoOemHeader.Reserved.ItemsRo.IsZeros();
+        return MarikoOemHeader.AesMac[..].IsZeros() && MarikoOemHeader.Reserved[..].IsZeros();
     }
 
     /// <summary>
@@ -416,7 +416,7 @@ public class Package1
 
             if (IsModern)
             {
-                storages.Add(new MemoryStorage(_pk11Mac.ItemsRo.ToArray()));
+                storages.Add(new MemoryStorage(_pk11Mac[..].ToArray()));
             }
         }
 

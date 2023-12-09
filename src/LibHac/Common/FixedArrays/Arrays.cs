@@ -1,0 +1,50 @@
+﻿using System.Runtime.CompilerServices;
+
+namespace LibHac.Common.FixedArrays;
+
+[InlineArray(1)] public struct Array1<T> { public readonly int Length => 1; private T _0; }
+[InlineArray(2)] public struct Array2<T> { public readonly int Length => 2; private T _0; }
+[InlineArray(3)] public struct Array3<T> { public readonly int Length => 3; private T _0; }
+[InlineArray(4)] public struct Array4<T> { public readonly int Length => 4; private T _0; }
+[InlineArray(5)] public struct Array5<T> { public readonly int Length => 5; private T _0; }
+[InlineArray(6)] public struct Array6<T> { public readonly int Length => 6; private T _0; }
+[InlineArray(7)] public struct Array7<T> { public readonly int Length => 7; private T _0; }
+[InlineArray(8)] public struct Array8<T> { public readonly int Length => 8; private T _0; }
+[InlineArray(11)] public struct Array11<T> { public readonly int Length => 11; private T _0; }
+[InlineArray(12)] public struct Array12<T> { public readonly int Length => 12; private T _0; }
+[InlineArray(14)] public struct Array14<T> { public readonly int Length => 14; private T _0; }
+[InlineArray(15)] public struct Array15<T> { public readonly int Length => 15; private T _0; }
+[InlineArray(16)] public struct Array16<T> { public readonly int Length => 16; private T _0; }
+[InlineArray(18)] public struct Array18<T> { public readonly int Length => 18; private T _0; }
+[InlineArray(20)] public struct Array20<T> { public readonly int Length => 20; private T _0; }
+[InlineArray(24)] public struct Array24<T> { public readonly int Length => 24; private T _0; }
+[InlineArray(26)] public struct Array26<T> { public readonly int Length => 26; private T _0; }
+[InlineArray(27)] public struct Array27<T> { public readonly int Length => 27; private T _0; }
+[InlineArray(28)] public struct Array28<T> { public readonly int Length => 28; private T _0; }
+[InlineArray(32)] public struct Array32<T> { public readonly int Length => 32; private T _0; }
+[InlineArray(36)] public struct Array36<T> { public readonly int Length => 36; private T _0; }
+[InlineArray(37)] public struct Array37<T> { public readonly int Length => 37; private T _0; }
+[InlineArray(38)] public struct Array38<T> { public readonly int Length => 38; private T _0; }
+[InlineArray(48)] public struct Array48<T> { public readonly int Length => 48; private T _0; }
+[InlineArray(56)] public struct Array56<T> { public readonly int Length => 56; private T _0; }
+[InlineArray(60)] public struct Array60<T> { public readonly int Length => 60; private T _0; }
+[InlineArray(64)] public struct Array64<T> { public readonly int Length => 64; private T _0; }
+[InlineArray(65)] public struct Array65<T> { public readonly int Length => 65; private T _0; }
+[InlineArray(68)] public struct Array68<T> { public readonly int Length => 68; private T _0; }
+[InlineArray(100)] public struct Array100<T> { public readonly int Length => 100; private T _0; }
+[InlineArray(112)] public struct Array112<T> { public readonly int Length => 112; private T _0; }
+[InlineArray(128)] public struct Array128<T> { public readonly int Length => 128; private T _0; }
+[InlineArray(144)] public struct Array144<T> { public readonly int Length => 144; private T _0; }
+[InlineArray(192)] public struct Array192<T> { public readonly int Length => 192; private T _0; }
+[InlineArray(256)] public struct Array256<T> { public readonly int Length => 256; private T _0; }
+[InlineArray(356)] public struct Array356<T> { public readonly int Length => 356; private T _0; }
+[InlineArray(400)] public struct Array400<T> { public readonly int Length => 400; private T _0; }
+[InlineArray(436)] public struct Array436<T> { public readonly int Length => 436; private T _0; }
+[InlineArray(452)] public struct Array452<T> { public readonly int Length => 452; private T _0; }
+[InlineArray(464)] public struct Array464<T> { public readonly int Length => 464; private T _0; }
+[InlineArray(512)] public struct Array512<T> { public readonly int Length => 512; private T _0; }
+[InlineArray(768)] public struct Array768<T> { public readonly int Length => 768; private T _0; }
+[InlineArray(769)] public struct Array769<T> { public readonly int Length => 769; private T _0; }
+[InlineArray(3000)] public struct Array3000<T> { public readonly int Length => 3000; private T _0; }
+[InlineArray(8192)] public struct Array8192<T> { public readonly int Length => 8192; private T _0; }
+[InlineArray(16384)] public struct Array16384<T> { public readonly int Length => 16384; private T _0; }

@@ -20,19 +20,19 @@ public struct RightsId : IEquatable<RightsId>
 
         Unsafe.SkipInit(out Value);
 
-        Span<ulong> longsThis = MemoryMarshal.Cast<byte, ulong>(Value.Items);
+        Span<ulong> longsThis = MemoryMarshal.Cast<byte, ulong>(Value);
         ReadOnlySpan<ulong> longsValue = MemoryMarshal.Cast<byte, ulong>(value);
 
         longsThis[1] = longsValue[1];
         longsThis[0] = longsValue[0];
     }
 
-    public readonly override string ToString() => Value.ItemsRo.ToHexString();
+    public readonly override string ToString() => Value[..].ToHexString();
 
     public readonly string DebugDisplay()
     {
-        ReadOnlySpan<byte> highBytes = Value.ItemsRo.Slice(0, 8);
-        ReadOnlySpan<byte> lowBytes = Value.ItemsRo.Slice(8, 8);
+        ReadOnlySpan<byte> highBytes = Value[..].Slice(0, 8);
+        ReadOnlySpan<byte> lowBytes = Value[..].Slice(8, 8);
 
         return $"{highBytes.ToHexString()} {lowBytes.ToHexString()}";
     }
@@ -47,7 +47,7 @@ public struct RightsId : IEquatable<RightsId>
 
     public readonly override int GetHashCode()
     {
-        ReadOnlySpan<ulong> longSpan = MemoryMarshal.Cast<byte, ulong>(Value.ItemsRo);
+        ReadOnlySpan<ulong> longSpan = MemoryMarshal.Cast<byte, ulong>(Value[..]);
         return HashCode.Combine(longSpan[0], longSpan[1]);
     }
 

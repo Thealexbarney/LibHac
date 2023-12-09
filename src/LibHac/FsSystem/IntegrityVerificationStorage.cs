@@ -70,7 +70,7 @@ public class IntegrityVerificationStorage : IStorage
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void SetValidationBit(ref BlockHash hash)
     {
-        hash.Hash.Items[HashSize - 1] |= 0x80;
+        hash.Hash[HashSize - 1] |= 0x80;
     }
 
     /// <summary>
@@ -82,7 +82,7 @@ public class IntegrityVerificationStorage : IStorage
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsValidationBit(in BlockHash hash)
     {
-        return (hash.Hash.ItemsRo[HashSize - 1] & 0x80) != 0;
+        return (hash.Hash[HashSize - 1] & 0x80) != 0;
     }
 
     public int GetBlockSize()
@@ -611,9 +611,9 @@ public class IntegrityVerificationStorage : IStorage
         if (IsValidationBit(in hash))
             return Result.Success;
 
-        for (int i = 0; i < hash.Hash.ItemsRo.Length; i++)
+        for (int i = 0; i < hash.Hash.Length; i++)
         {
-            if (hash.Hash.ItemsRo[i] != 0)
+            if (hash.Hash[i] != 0)
                 return ResultFs.InvalidZeroHash.Log();
         }
 

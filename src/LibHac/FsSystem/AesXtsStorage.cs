@@ -52,9 +52,9 @@ public class AesXtsStorage : IStorage
         Assert.SdkRequiresEqual(IvSize, iv.Length);
         Assert.SdkRequiresAligned(blockSize, AesBlockSize);
 
-        key1.CopyTo(_key1.Items);
-        key2.CopyTo(_key2.Items);
-        iv.CopyTo(_iv.Items);
+        key1.CopyTo(_key1);
+        key2.CopyTo(_key2);
+        iv.CopyTo(_iv);
     }
 
     public AesXtsStorage(ref SharedRef<IStorage> baseStorage, ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2,
@@ -70,9 +70,9 @@ public class AesXtsStorage : IStorage
         Assert.SdkRequiresEqual(IvSize, iv.Length);
         Assert.SdkRequiresAligned(blockSize, AesBlockSize);
 
-        key1.CopyTo(_key1.Items);
-        key2.CopyTo(_key2.Items);
-        iv.CopyTo(_iv.Items);
+        key1.CopyTo(_key1);
+        key2.CopyTo(_key2);
+        iv.CopyTo(_iv);
     }
 
     public override void Dispose()

@@ -50,7 +50,7 @@ public class SaveDataDirectory : IDirectory
                     ref DirectoryEntry entry = ref entryBuffer[i];
                     Span<byte> nameUtf8 = Encoding.UTF8.GetBytes(name);
 
-                    StringUtils.Copy(entry.Name.Items, nameUtf8);
+                    StringUtils.Copy(entry.Name, nameUtf8);
                     entry.Name[64] = 0;
 
                     entry.Type = DirectoryEntryType.Directory;
@@ -70,7 +70,7 @@ public class SaveDataDirectory : IDirectory
                     ref DirectoryEntry entry = ref entryBuffer[i];
                     Span<byte> nameUtf8 = Encoding.UTF8.GetBytes(name);
 
-                    StringUtils.Copy(entry.Name.Items, nameUtf8);
+                    StringUtils.Copy(entry.Name, nameUtf8);
                     entry.Name[64] = 0;
 
                     entry.Type = DirectoryEntryType.File;

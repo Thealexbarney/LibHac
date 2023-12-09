@@ -58,7 +58,7 @@ internal class LocationResolverSet : IDisposable
 
     public void Dispose()
     {
-        for (int i = 0; i < Array5<SharedRef<LocationResolver>>.Length; i++)
+        for (int i = 0; i < _resolvers.Length; i++)
         {
             if (_resolvers[i].HasValue)
             {

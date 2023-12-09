@@ -65,9 +65,9 @@ internal static class ProcessPackage
         if (package1.IsMariko)
         {
             sb.AppendLine("Mariko OEM Header:");
-            PrintItem(sb, colLen, "    Signature:", package1.MarikoOemHeader.RsaSig.ItemsRo.ToArray());
-            PrintItem(sb, colLen, "    Random Salt:", package1.MarikoOemHeader.Salt.ItemsRo.ToArray());
-            PrintItem(sb, colLen, "    OEM Bootloader Hash:", package1.MarikoOemHeader.Hash.ItemsRo.ToArray());
+            PrintItem(sb, colLen, "    Signature:", package1.MarikoOemHeader.RsaSig[..].ToArray());
+            PrintItem(sb, colLen, "    Random Salt:", package1.MarikoOemHeader.Salt[..].ToArray());
+            PrintItem(sb, colLen, "    OEM Bootloader Hash:", package1.MarikoOemHeader.Hash[..].ToArray());
             PrintItem(sb, colLen, "    OEM Bootloader Version:", $"{package1.MarikoOemHeader.Version:x2}");
             PrintItem(sb, colLen, "    OEM Bootloader Size:", $"{package1.MarikoOemHeader.Size:x8}");
             PrintItem(sb, colLen, "    OEM Bootloader Load Address:", $"{package1.MarikoOemHeader.LoadAddress:x8}");
@@ -98,7 +98,7 @@ internal static class ProcessPackage
                 validity = mac.SequenceEqual(package1.Pk11Mac) ? " (Valid)" : " (Invalid)";
             }
 
-            PrintItem(sb, colLen, $"    PK11 MAC:{validity}", package1.Pk11Mac.ItemsRo.ToArray());
+            PrintItem(sb, colLen, $"    PK11 MAC:{validity}", package1.Pk11Mac[..].ToArray());
         }
 
         if (package1.IsDecrypted)
@@ -178,7 +178,7 @@ internal static class ProcessPackage
         sb.AppendLine();
 
         sb.AppendLine("PK21:");
-        PrintItem(sb, colLen, $"Signature{signatureValidity.GetValidityString()}:", package2.Header.Signature.ItemsRo.ToArray());
+        PrintItem(sb, colLen, $"Signature{signatureValidity.GetValidityString()}:", package2.Header.Signature[..].ToArray());
         PrintItem(sb, colLen, "Header Version:", $"{package2.Header.Meta.GetKeyGeneration():x2}");
 
         for (int i = 0; i < 3; i++)
@@ -186,8 +186,8 @@ internal static class ProcessPackage
             string name = package2.Header.Meta.PayloadSizes[i] != 0 ? Package2SectionNames[i] : "Empty";
             sb.AppendLine($"Section {i} ({name}):");
 
-            PrintItem(sb, colLen, "    Hash:", package2.Header.Meta.PayloadHashes[i].ItemsRo.ToArray());
-            PrintItem(sb, colLen, "    CTR:", package2.Header.Meta.PayloadIvs[i].ItemsRo.ToArray());
+            PrintItem(sb, colLen, "    Hash:", package2.Header.Meta.PayloadHashes[i][..].ToArray());
+            PrintItem(sb, colLen, "    CTR:", package2.Header.Meta.PayloadIvs[i][..].ToArray());
             PrintItem(sb, colLen, "    Load Address:", $"{package2.Header.Meta.PayloadOffsets[i] + 0x80000000:x8}");
             PrintItem(sb, colLen, "    Size:", $"{package2.Header.Meta.PayloadSizes[i]:x8}");
         }

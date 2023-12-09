@@ -370,7 +370,7 @@ public class PartitionFileSystemCore<TMetaData, TFormat, THeader, TEntry> : IFil
                 dirEntry.Type = DirectoryEntryType.File;
                 dirEntry.Size = entry.Size;
                 U8Span entryName = _parent._metaData.GetEntryName(_currentIndex);
-                StringUtils.Strlcpy(dirEntry.Name.Items, entryName, dirEntry.Name.ItemsRo.Length - 1);
+                StringUtils.Strlcpy(dirEntry.Name, entryName, dirEntry.Name[..].Length - 1);
 
                 _currentIndex++;
             }

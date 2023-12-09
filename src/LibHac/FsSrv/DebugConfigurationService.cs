@@ -98,7 +98,7 @@ public class DebugConfigurationServiceImpl : IDisposable
 
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        for (int i = 0; i < _entries.ItemsRo.Length; i++)
+        for (int i = 0; i < _entries.Length; i++)
         {
             // Update the existing value if the key is already registered
             if (_entries[i].Key == key)
@@ -108,7 +108,7 @@ public class DebugConfigurationServiceImpl : IDisposable
             }
         }
 
-        for (int i = 0; i < _entries.ItemsRo.Length; i++)
+        for (int i = 0; i < _entries.Length; i++)
         {
             if (_entries[i].Key == 0)
             {
@@ -130,7 +130,7 @@ public class DebugConfigurationServiceImpl : IDisposable
 
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        for (int i = 0; i < _entries.ItemsRo.Length; i++)
+        for (int i = 0; i < _entries.Length; i++)
         {
             if (_entries[i].Key == key)
             {
@@ -150,7 +150,7 @@ public class DebugConfigurationServiceImpl : IDisposable
 
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-        for (int i = 0; i < _entries.ItemsRo.Length; i++)
+        for (int i = 0; i < _entries.Length; i++)
         {
             if (_entries[i].Key == (uint)key)
             {

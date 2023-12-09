@@ -44,12 +44,12 @@ public class AesCtrCounterExtendedStorage : IStorage
 
         public void SetOffset(long value)
         {
-            BinaryPrimitives.WriteInt64LittleEndian(Offset.Items, value);
+            BinaryPrimitives.WriteInt64LittleEndian(Offset, value);
         }
 
         public readonly long GetOffset()
         {
-            return BinaryPrimitives.ReadInt64LittleEndian(Offset.ItemsRo);
+            return BinaryPrimitives.ReadInt64LittleEndian(Offset);
         }
     }
 
@@ -189,7 +189,7 @@ public class AesCtrCounterExtendedStorage : IStorage
             return ResultFs.InvalidAesCtrCounterExtendedDataStorageSize.Log();
 
         _dataStorage.Set(in dataStorage);
-        key.CopyTo(_key.Items);
+        key.CopyTo(_key);
         _secureValue = secureValue;
         _counterOffset = counterOffset;
         _decryptor.Set(ref decryptor);
@@ -306,7 +306,7 @@ public class AesCtrCounterExtendedStorage : IStorage
                 };
 
                 Unsafe.SkipInit(out Array16<byte> counter);
-                AesCtrStorage.MakeIv(counter.Items, upperIv.Value, counterOffset);
+                AesCtrStorage.MakeIv(counter, upperIv.Value, counterOffset);
 
                 // Decrypt the data from the current entry.
                 res = _decryptor.Get.Decrypt(currentData.Slice(0, (int)dataSize), _key, counter);
@@ -440,7 +440,7 @@ public class AesCtrCounterExtendedStorage : IStorage
             Assert.SdkRequiresEqual(iv.Length, IvSize);
 
             Unsafe.SkipInit(out Array16<byte> counter);
-            iv.CopyTo(counter.Items);
+            iv.CopyTo(counter);
 
             int remainingSize = destination.Length;
             int currentOffset = 0;
@@ -466,7 +466,7 @@ public class AesCtrCounterExtendedStorage : IStorage
 
                 if (remainingSize > 0)
                 {
-                    Utility.AddCounter(counter.Items, (uint)currentSize / (uint)BlockSize);
+                    Utility.AddCounter(counter, (uint)currentSize / (uint)BlockSize);
                 }
             }
 

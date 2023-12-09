@@ -45,12 +45,12 @@ public class AesXtsStorageExternal : IStorage
         Assert.SdkRequiresAligned(blockSize, AesBlockSize);
 
         if (key1.Length != 0)
-            key1.CopyTo(_key[0].Items);
+            key1.CopyTo(_key[0]);
 
         if (key2.Length != 0)
-            key2.CopyTo(_key[1].Items);
+            key2.CopyTo(_key[1]);
 
-        iv.CopyTo(_iv.Items);
+        iv.CopyTo(_iv);
     }
 
     public AesXtsStorageExternal(in SharedRef<IStorage> baseStorage, ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2,
@@ -93,7 +93,7 @@ public class AesXtsStorageExternal : IStorage
 
         // Setup the counter.
         Span<byte> counter = stackalloc byte[IvSize];
-        _iv.ItemsRo.CopyTo(counter);
+        _iv[..].CopyTo(counter);
         Utility.AddCounter(counter, (ulong)offset / _blockSize);
 
         // Handle any unaligned data before the start.
@@ -175,7 +175,7 @@ public class AesXtsStorageExternal : IStorage
 
         // Setup the counter.
         Span<byte> counter = stackalloc byte[IvSize];
-        _iv.ItemsRo.CopyTo(counter);
+        _iv[..].CopyTo(counter);
         Utility.AddCounter(counter, (ulong)offset / _blockSize);
 
         // Handle any unaligned data before the start.

@@ -73,7 +73,7 @@ public class Package2StorageReader : IDisposable
             return Result.Success;
         }
 
-        byte[] iv = _header.Meta.PayloadIvs[index].ItemsRo.ToArray();
+        byte[] iv = _header.Meta.PayloadIvs[index][..].ToArray();
         outPayloadStorage.Reset(new CachedStorage(new Aes128CtrStorage(payloadSubStorage, _key.DataRo.ToArray(), iv, true), 0x4000, 1, true));
         return Result.Success;
     }
@@ -231,7 +231,7 @@ public class Package2StorageReader : IDisposable
 
         // The counter starts counting at the beginning of the meta struct, but the first block in
         // the struct isn't encrypted. Increase the counter by one to skip that block.
-        byte[] iv = _header.Meta.HeaderIv.ItemsRo.ToArray();
+        byte[] iv = _header.Meta.HeaderIv[..].ToArray();
         Utilities.IncrementByteArray(iv);
 
         storages.Add(new CachedStorage(new Aes128CtrStorage(encMetaStorage, _key.DataRo.ToArray(), iv, true), 0x100, 1, true));

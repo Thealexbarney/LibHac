@@ -41,7 +41,7 @@ public class FileSystemProxyCoreImpl
             if (res.IsFailure()) return res.Miss();
 
             using scoped var path = new Path();
-            res = PathFunctions.SetUpFixedPathSingleEntry(ref path.Ref(), pathBuffer.Items,
+            res = PathFunctions.SetUpFixedPathSingleEntry(ref path.Ref(), pathBuffer,
                 CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.System));
             if (res.IsFailure()) return res.Miss();
 
@@ -55,7 +55,7 @@ public class FileSystemProxyCoreImpl
             if (res.IsFailure()) return res.Miss();
 
             using scoped var path = new Path();
-            res = PathFunctions.SetUpFixedPathDoubleEntry(ref path.Ref(), pathBuffer.Items,
+            res = PathFunctions.SetUpFixedPathDoubleEntry(ref path.Ref(), pathBuffer,
                 CommonDirNames.SdCardNintendoRootDirectoryName,
                 CustomStorage.GetCustomStorageDirectoryName(CustomStorageId.System));
             if (res.IsFailure()) return res.Miss();

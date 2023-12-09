@@ -337,7 +337,7 @@ public class SaveDataFileStorageHolder
         Unsafe.SkipInit(out Array18<byte> saveImageNameBuffer);
 
         using scoped var saveImageName = new Path();
-        Result res = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer.Items, saveDataId);
+        Result res = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
         if (res.IsFailure()) return res.Miss();
 
         // If an open type isn't specified, open the save without the shared file storage layer

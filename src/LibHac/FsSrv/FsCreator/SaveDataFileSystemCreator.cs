@@ -47,7 +47,7 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
         Unsafe.SkipInit(out Array18<byte> saveImageNameBuffer);
 
         using scoped var saveImageName = new Path();
-        Result res = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer.Items, saveDataId);
+        Result res = PathFunctions.SetUpFixedPathSaveId(ref saveImageName.Ref(), saveImageNameBuffer, saveDataId);
         if (res.IsFailure()) return res.Miss();
 
         res = baseFileSystem.Get.GetEntryType(out DirectoryEntryType type, in saveImageName);

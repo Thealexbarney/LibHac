@@ -7,5 +7,5 @@ public struct EncryptionSeed
 {
     public Array16<byte> Value;
 
-    public readonly override string ToString() => Value.ItemsRo.ToHexString();
+    public readonly override string ToString() => Value[..].ToHexString();
 }

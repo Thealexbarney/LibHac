@@ -46,8 +46,8 @@ public class AesCtrStorage : IStorage
 
         _baseStorage = baseStorage;
 
-        key.CopyTo(_key.Items);
-        iv.CopyTo(_iv.Items);
+        key.CopyTo(_key);
+        iv.CopyTo(_iv);
     }
 
     public AesCtrStorage(in SharedRef<IStorage> baseStorage, ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
@@ -59,8 +59,8 @@ public class AesCtrStorage : IStorage
         _baseStorage = baseStorage.Get;
         _baseStorageShared = SharedRef<IStorage>.CreateCopy(in baseStorage);
 
-        key.CopyTo(_key.Items);
-        iv.CopyTo(_iv.Items);
+        key.CopyTo(_key);
+        iv.CopyTo(_iv);
     }
 
     public override void Dispose()
@@ -88,7 +88,7 @@ public class AesCtrStorage : IStorage
         using var changePriority = new ScopedThreadPriorityChanger(1, ScopedThreadPriorityChanger.Mode.Relative);
 
         Array16<byte> counter = _iv;
-        Utility.AddCounter(counter.Items, (ulong)offset / (uint)BlockSize);
+        Utility.AddCounter(counter, (ulong)offset / (uint)BlockSize);
 
         int decSize = Aes.DecryptCtr128(destination, destination, _key, counter);
         if (decSize != destination.Length)
@@ -121,7 +121,7 @@ public class AesCtrStorage : IStorage
 
         // Setup the counter.
         var counter = new Array16<byte>();
-        Utility.AddCounter(counter.Items, (ulong)offset / (uint)BlockSize);
+        Utility.AddCounter(counter, (ulong)offset / (uint)BlockSize);
 
         // Loop until all data is written.
         int remaining = source.Length;
@@ -152,7 +152,7 @@ public class AesCtrStorage : IStorage
             remaining -= writeSize;
             if (remaining > 0)
             {
-                Utility.AddCounter(counter.Items, (uint)writeSize / (uint)BlockSize);
+                Utility.AddCounter(counter, (uint)writeSize / (uint)BlockSize);
             }
         }
 

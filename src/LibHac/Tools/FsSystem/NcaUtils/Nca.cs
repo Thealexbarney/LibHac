@@ -173,7 +173,7 @@ public class Nca
             ref NcaSparseInfo sparseInfo = ref fsHeader.GetSparseInfo();
 
             Unsafe.SkipInit(out BucketTree.Header header);
-            sparseInfo.MetaHeader.ItemsRo.CopyTo(SpanHelpers.AsByteSpan(ref header));
+            sparseInfo.MetaHeader[..].CopyTo(SpanHelpers.AsByteSpan(ref header));
             header.Verify().ThrowIfFailure();
 
             var sparseStorage = new SparseStorage();
@@ -429,7 +429,7 @@ public class Nca
         ref NcaCompressionInfo compressionInfo = ref header.GetCompressionInfo();
 
         Unsafe.SkipInit(out BucketTree.Header bucketTreeHeader);
-        compressionInfo.TableHeader.ItemsRo.CopyTo(SpanHelpers.AsByteSpan(ref bucketTreeHeader));
+        compressionInfo.TableHeader[..].CopyTo(SpanHelpers.AsByteSpan(ref bucketTreeHeader));
         bucketTreeHeader.Verify().ThrowIfFailure();
 
         long nodeStorageSize = CompressedStorage.QueryNodeStorageSize(bucketTreeHeader.EntryCount);

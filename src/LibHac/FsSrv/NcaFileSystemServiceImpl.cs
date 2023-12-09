@@ -2,7 +2,6 @@
 using System.Buffers.Text;
 using System.Runtime.CompilerServices;
 using LibHac.Common;
-using LibHac.Common.FixedArrays;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSrv.FsCreator;
@@ -241,22 +240,23 @@ public class NcaFileSystemServiceImpl
                 return ResultFs.InvalidArgument.Log();
         }
 
-        Unsafe.SkipInit(out Array64<byte> contentStoragePathBuffer);
+        Span<byte> contentStoragePathBuffer = stackalloc byte[64];
+        //Unsafe.SkipInit(out Array64<byte> contentStoragePathBuffer);
 
         // Build the appropriate path for the content storage ID
         if (contentStorageId == ContentStorageId.SdCard)
         {
-            var sb = new U8StringBuilder(contentStoragePathBuffer.Items);
+            var sb = new U8StringBuilder(contentStoragePathBuffer);
             sb.Append(StringTraits.DirectorySeparator).Append(CommonDirNames.SdCardNintendoRootDirectoryName);
             sb.Append(StringTraits.DirectorySeparator).Append(CommonDirNames.ContentStorageDirectoryName);
         }
         else
         {
-            var sb = new U8StringBuilder(contentStoragePathBuffer.Items);
+            var sb = new U8StringBuilder(contentStoragePathBuffer);
             sb.Append(StringTraits.DirectorySeparator).Append(CommonDirNames.ContentStorageDirectoryName);
         }
 
-        using var contentStoragePath = new Path();
+        using scoped var contentStoragePath = new Path();
         res = PathFunctions.SetUpFixedPath(ref contentStoragePath.Ref(), contentStoragePathBuffer);
         if (res.IsFailure()) return res.Miss();
 

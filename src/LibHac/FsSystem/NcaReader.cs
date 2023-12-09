@@ -64,7 +64,7 @@ public class NcaReader : IDisposable
             Unsafe.SkipInit(out Array2<Array16<byte>> commonDecryptionKeys);
             for (int i = 0; i < NcaCryptoConfiguration.HeaderEncryptionKeyCount; i++)
             {
-                cryptoConfig.GenerateKey(commonDecryptionKeys[i].Items, cryptoConfig.HeaderEncryptedEncryptionKeys[i],
+                cryptoConfig.GenerateKey(commonDecryptionKeys[i], cryptoConfig.HeaderEncryptedEncryptionKeys[i],
                     headerKeyTypes[i]);
             }
 
@@ -158,18 +158,18 @@ public class NcaReader : IDisposable
             if (cryptoConfig.IsAvailableSwKey)
             {
                 int keyTypeValue = NcaKeyFunctions.GetKeyTypeValue(_header.KeyAreaEncryptionKeyIndex, _header.GetProperKeyGeneration());
-                ReadOnlySpan<byte> encryptedKeyCtr = _header.EncryptedKeys.ItemsRo.Slice((int)NcaHeader.DecryptionKey.AesCtr * Aes.KeySize128, Aes.KeySize128);
+                ReadOnlySpan<byte> encryptedKeyCtr = _header.EncryptedKeys[..].Slice((int)NcaHeader.DecryptionKey.AesCtr * Aes.KeySize128, Aes.KeySize128);
 
-                cryptoConfig.GenerateKey(_decryptionKeys[(int)NcaHeader.DecryptionKey.AesCtr].Items, encryptedKeyCtr, keyTypeValue);
+                cryptoConfig.GenerateKey(_decryptionKeys[(int)NcaHeader.DecryptionKey.AesCtr], encryptedKeyCtr, keyTypeValue);
             }
 
             // Copy the plaintext hardware key.
-            ReadOnlySpan<byte> keyCtrHw = _header.EncryptedKeys.ItemsRo.Slice((int)NcaHeader.DecryptionKey.AesCtrHw * Aes.KeySize128, Aes.KeySize128);
-            keyCtrHw.CopyTo(_decryptionKeys[(int)NcaHeader.DecryptionKey.AesCtrHw].Items);
+            ReadOnlySpan<byte> keyCtrHw = _header.EncryptedKeys[..].Slice((int)NcaHeader.DecryptionKey.AesCtrHw * Aes.KeySize128, Aes.KeySize128);
+            keyCtrHw.CopyTo(_decryptionKeys[(int)NcaHeader.DecryptionKey.AesCtrHw]);
         }
 
         // Clear the external decryption key.
-        _externalDataDecryptionKey.Items.Clear();
+        _externalDataDecryptionKey[..].Clear();
 
         // Copy the configuration to the NcaReader.
         _isAvailableSwKey = cryptoConfig.IsAvailableSwKey;
@@ -212,7 +212,7 @@ public class NcaReader : IDisposable
     {
         Assert.SdkRequiresEqual(NcaHeader.HeaderSignSize, outBuffer.Length);
 
-        _header.Signature2.ItemsRo.CopyTo(outBuffer);
+        _header.Signature2[..].CopyTo(outBuffer);
     }
 
     public void GetHeaderSign2TargetHash(Span<byte> outBuffer)
@@ -294,7 +294,7 @@ public class NcaReader : IDisposable
     {
         Assert.SdkRequiresGreaterEqual(outBuffer.Length, NcaHeader.RightsIdSize);
 
-        _header.RightsId.ItemsRo.CopyTo(outBuffer);
+        _header.RightsId[..].CopyTo(outBuffer);
     }
 
     public bool HasFsInfo(int index)
@@ -377,7 +377,7 @@ public class NcaReader : IDisposable
         Assert.SdkRequiresNotNull(_bodyStorage);
         Assert.SdkRequiresGreaterEqual(outBuffer.Length, NcaHeader.EncryptedKeyAreaSize);
 
-        _header.EncryptedKeys.ItemsRo.CopyTo(outBuffer);
+        _header.EncryptedKeys[..].CopyTo(outBuffer);
     }
 
     public ReadOnlySpan<byte> GetDecryptionKey(int index)
@@ -395,7 +395,7 @@ public class NcaReader : IDisposable
         for (int i = 0; i < (int)NcaHeader.DecryptionKey.Count; i++)
         {
             if (!CryptoUtil.IsSameBytes(zeroKey,
-                _header.EncryptedKeys.ItemsRo.Slice(i * Aes.KeySize128, Aes.KeySize128), Aes.KeySize128))
+                _header.EncryptedKeys[..].Slice(i * Aes.KeySize128, Aes.KeySize128), Aes.KeySize128))
             {
                 return true;
             }
@@ -408,7 +408,7 @@ public class NcaReader : IDisposable
     {
         Array16<byte> zeroKey = default;
         return !CryptoUtil.IsSameBytes(zeroKey, GetDecryptionKey((int)NcaHeader.DecryptionKey.AesCtrHw),
-            Array16<byte>.Length);
+            zeroKey.Length);
     }
 
     public bool IsSwAesPrioritized()
@@ -428,20 +428,20 @@ public class NcaReader : IDisposable
 
     public void SetExternalDecryptionKey(ReadOnlySpan<byte> key)
     {
-        Assert.SdkRequiresEqual(_externalDataDecryptionKey.ItemsRo.Length, key.Length);
+        Assert.SdkRequiresEqual(_externalDataDecryptionKey[..].Length, key.Length);
 
-        key.CopyTo(_externalDataDecryptionKey.Items);
+        key.CopyTo(_externalDataDecryptionKey);
     }
 
     public ReadOnlySpan<byte> GetExternalDecryptionKey()
     {
-        return _externalDataDecryptionKey.ItemsRo;
+        return _externalDataDecryptionKey;
     }
 
     public bool HasExternalDecryptionKey()
     {
         Array16<byte> zeroKey = default;
-        return !CryptoUtil.IsSameBytes(zeroKey, GetExternalDecryptionKey(), Array16<byte>.Length);
+        return !CryptoUtil.IsSameBytes(zeroKey, GetExternalDecryptionKey(), zeroKey.Length);
     }
 
     public void GetRawData(Span<byte> outBuffer)
@@ -505,7 +505,7 @@ public class NcaFsHeaderReader
 
         Unsafe.SkipInit(out Hash hash);
         IHash256GeneratorFactory generator = reader.GetHashGeneratorFactorySelector().GetFactory(HashAlgorithmType.Sha2);
-        generator.GenerateHash(hash.Value.Items, SpanHelpers.AsReadOnlyByteSpan(in _header));
+        generator.GenerateHash(hash.Value, SpanHelpers.AsReadOnlyByteSpan(in _header));
 
         if (!CryptoUtil.IsSameBytes(reader.GetFsHeaderHash(index).Value, hash.Value, Unsafe.SizeOf<Hash>()))
         {

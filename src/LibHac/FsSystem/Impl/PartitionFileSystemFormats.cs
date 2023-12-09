@@ -37,7 +37,7 @@ public struct PartitionFileSystemFormat : IPartitionFileSystemFormat
         {
             get
             {
-                ReadOnlySpan<byte> span = _signature.ItemsRo;
+                ReadOnlySpan<byte> span = _signature;
                 return MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetReference(span), span.Length);
             }
         }

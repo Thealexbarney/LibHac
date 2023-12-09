@@ -69,7 +69,7 @@ public static class Host
 
         public HostCommonMountNameGenerator(U8Span path)
         {
-            StringUtils.Strlcpy(_path.Items, path, PathTool.EntryNameLengthMax + 1);
+            StringUtils.Strlcpy(_path, path, PathTool.EntryNameLengthMax + 1);
         }
 
         public void Dispose() { }

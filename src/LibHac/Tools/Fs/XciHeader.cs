@@ -220,14 +220,14 @@ public class XciHeader
 
         ref readonly CardInitialData data = ref SpanHelpers.AsReadOnlyStruct<CardInitialData>(initialData);
 
-        if (dest.Length != data.Payload.AuthData.ItemsRo.Length)
+        if (dest.Length != data.Payload.AuthData[..].Length)
             return ResultFs.GameCardPreconditionViolation.Log();
 
         // Verify padding is all-zero.
         bool anyNonZero = false;
-        for (int i = 0; i < data.Padding.ItemsRo.Length; i++)
+        for (int i = 0; i < data.Padding.Length; i++)
         {
-            anyNonZero |= data.Padding.ItemsRo[i] != 0;
+            anyNonZero |= data.Padding[i] != 0;
         }
 
         if (anyNonZero)

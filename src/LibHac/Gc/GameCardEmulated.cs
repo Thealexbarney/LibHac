@@ -81,7 +81,7 @@ public sealed class GameCardEmulated : IGcApi
             Abort.DoAbortUnlessSuccess(ReadBaseStorage(0x100, SpanHelpers.AsByteSpan(ref _cardHeader)));
             Abort.DoAbortUnlessSuccess(ReadBaseStorage(GcCertAreaPageAddress * GcPageSize, SpanHelpers.AsByteSpan(ref _certificate)));
 
-            Sha256.GenerateSha256Hash(SpanHelpers.AsReadOnlyByteSpan(in _cardHeader), _imageHash.Items);
+            Sha256.GenerateSha256Hash(SpanHelpers.AsReadOnlyByteSpan(in _cardHeader), _imageHash);
 
             DecryptCardHeader(ref _cardHeader);
 
@@ -361,7 +361,7 @@ public sealed class GameCardEmulated : IGcApi
         Result res = CheckCardReady();
         if (res.IsFailure()) return res.Miss();
 
-        _certificate.T1CardDeviceId.ItemsRo.CopyTo(destBuffer);
+        _certificate.T1CardDeviceId[..].CopyTo(destBuffer);
         return Result.Success;
     }
 
@@ -393,7 +393,7 @@ public sealed class GameCardEmulated : IGcApi
         Result res = CheckCardReady();
         if (res.IsFailure()) return res.Miss();
 
-        _imageHash.ItemsRo.CopyTo(destBuffer);
+        _imageHash[..].CopyTo(destBuffer);
         return Result.Success;
     }
 

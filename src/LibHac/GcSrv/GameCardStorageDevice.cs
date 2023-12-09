@@ -48,8 +48,8 @@ internal class GameCardStorageDevice : GameCardStorageInterfaceAdapter, IStorage
         _handle = handle;
         _isSecure = isSecure;
 
-        cardDeviceId.CopyTo(_cardDeviceId.Items);
-        cardImageHash.CopyTo(_cardImageHash.Items);
+        cardDeviceId.CopyTo(_cardDeviceId);
+        cardImageHash.CopyTo(_cardImageHash);
 
         _gc = gc;
     }

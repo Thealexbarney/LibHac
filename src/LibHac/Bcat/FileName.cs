@@ -12,7 +12,7 @@ public struct FileName
 
     public readonly bool IsValid()
     {
-        ReadOnlySpan<byte> name = Value.ItemsRo;
+        ReadOnlySpan<byte> name = Value;
 
         int i;
         for (i = 0; i < name.Length; i++)
@@ -35,6 +35,6 @@ public struct FileName
 
     public readonly override string ToString()
     {
-        return StringUtils.Utf8ZToString(Value.ItemsRo);
+        return StringUtils.Utf8ZToString(Value);
     }
 }
