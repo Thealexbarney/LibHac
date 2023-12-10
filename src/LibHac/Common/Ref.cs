@@ -72,7 +72,7 @@ public readonly ref struct ReadOnlyRef<T>
     /// </summary>
     /// <param name="value">The reference to the target <typeparamref name="T"/> value.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ReadOnlyRef(in T value)
+    public ReadOnlyRef(ref readonly T value)
     {
         _ref = ref value;
     }

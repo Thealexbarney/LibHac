@@ -49,43 +49,43 @@ public static class Registrar
             base.Dispose();
         }
 
-        protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option) =>
+        protected override Result DoCreateFile(ref readonly Path path, long size, CreateFileOptions option) =>
             _fileSystem.Get.CreateFile(in path, size, option);
 
-        protected override Result DoDeleteFile(in Path path) => _fileSystem.Get.DeleteFile(in path);
+        protected override Result DoDeleteFile(ref readonly Path path) => _fileSystem.Get.DeleteFile(in path);
 
-        protected override Result DoCreateDirectory(in Path path) => _fileSystem.Get.CreateDirectory(in path);
+        protected override Result DoCreateDirectory(ref readonly Path path) => _fileSystem.Get.CreateDirectory(in path);
 
-        protected override Result DoDeleteDirectory(in Path path) => _fileSystem.Get.DeleteDirectory(in path);
+        protected override Result DoDeleteDirectory(ref readonly Path path) => _fileSystem.Get.DeleteDirectory(in path);
 
-        protected override Result DoDeleteDirectoryRecursively(in Path path) =>
+        protected override Result DoDeleteDirectoryRecursively(ref readonly Path path) =>
             _fileSystem.Get.DeleteDirectoryRecursively(in path);
 
-        protected override Result DoCleanDirectoryRecursively(in Path path) =>
+        protected override Result DoCleanDirectoryRecursively(ref readonly Path path) =>
             _fileSystem.Get.CleanDirectoryRecursively(in path);
 
-        protected override Result DoRenameFile(in Path currentPath, in Path newPath) =>
+        protected override Result DoRenameFile(ref readonly Path currentPath, ref readonly Path newPath) =>
             _fileSystem.Get.RenameFile(in currentPath, in newPath);
 
-        protected override Result DoRenameDirectory(in Path currentPath, in Path newPath) =>
+        protected override Result DoRenameDirectory(ref readonly Path currentPath, ref readonly Path newPath) =>
             _fileSystem.Get.RenameDirectory(in currentPath, in newPath);
 
-        protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path) =>
+        protected override Result DoGetEntryType(out DirectoryEntryType entryType, ref readonly Path path) =>
             _fileSystem.Get.GetEntryType(out entryType, in path);
 
-        protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path) =>
+        protected override Result DoGetFreeSpaceSize(out long freeSpace, ref readonly Path path) =>
             _fileSystem.Get.GetFreeSpaceSize(out freeSpace, in path);
 
         protected override Result DoGetFileSystemAttribute(out FileSystemAttribute outAttribute) =>
             _fileSystem.Get.GetFileSystemAttribute(out outAttribute);
 
-        protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path) =>
+        protected override Result DoGetTotalSpaceSize(out long totalSpace, ref readonly Path path) =>
             _fileSystem.Get.GetTotalSpaceSize(out totalSpace, in path);
 
-        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode) =>
+        protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, ref readonly Path path, OpenMode mode) =>
             _fileSystem.Get.OpenFile(ref outFile, in path, mode);
 
-        protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+        protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, ref readonly Path path,
             OpenDirectoryMode mode) =>
             _fileSystem.Get.OpenDirectory(ref outDirectory, in path, mode);
 
@@ -98,11 +98,11 @@ public static class Registrar
 
         protected override Result DoFlush() => _fileSystem.Get.Flush();
 
-        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path) =>
+        protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, ref readonly Path path) =>
             _fileSystem.Get.GetFileTimeStampRaw(out timeStamp, in path);
 
         protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
-            in Path path) => _fileSystem.Get.QueryEntry(outBuffer, inBuffer, queryId, in path);
+            ref readonly Path path) => _fileSystem.Get.QueryEntry(outBuffer, inBuffer, queryId, in path);
     }
 
     public static Result Register(this FileSystemClient fs, U8Span name, ref UniqueRef<IFileSystem> fileSystem)

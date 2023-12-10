@@ -449,7 +449,7 @@ public class NcaReader : IDisposable
         Assert.SdkRequires(_bodyStorage.HasValue);
         Assert.SdkRequiresLessEqual(Unsafe.SizeOf<NcaHeader>(), outBuffer.Length);
 
-        SpanHelpers.AsReadOnlyByteSpan(_header).CopyTo(outBuffer);
+        SpanHelpers.AsReadOnlyByteSpan(in _header).CopyTo(outBuffer);
     }
 
     public DecryptAesCtrFunction GetExternalDecryptAesCtrFunction()

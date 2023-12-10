@@ -62,7 +62,7 @@ file struct StorageNode
         _index = (int)(pos - _start) - 1;
     }
 
-    public Result Find(in ValueSubStorage storage, long virtualAddress)
+    public Result Find(ref readonly ValueSubStorage storage, long virtualAddress)
     {
         int end = _count;
         Offset pos = _start;
@@ -489,8 +489,8 @@ public partial class BucketTree : IDisposable
         return Result.Success;
     }
 
-    public Result Initialize(MemoryResource allocator, in ValueSubStorage nodeStorage, in ValueSubStorage entryStorage,
-        int nodeSize, int entrySize, int entryCount)
+    public Result Initialize(MemoryResource allocator, ref readonly ValueSubStorage nodeStorage,
+        ref readonly ValueSubStorage entryStorage, int nodeSize, int entrySize, int entryCount)
     {
         Assert.SdkRequiresNotNull(allocator);
         Assert.SdkRequiresLessEqual(sizeof(long), entrySize);
@@ -683,7 +683,7 @@ public partial class BucketTree : IDisposable
     }
 
     private Result ScanContinuousReading<TEntry>(out ContinuousReadingInfo info,
-        in ContinuousReadingParam<TEntry> param) where TEntry : unmanaged, IContinuousReadingEntry
+        ref readonly ContinuousReadingParam<TEntry> param) where TEntry : unmanaged, IContinuousReadingEntry
     {
         Assert.SdkRequires(IsInitialized());
         Assert.Equal(Unsafe.SizeOf<TEntry>(), _entrySize);

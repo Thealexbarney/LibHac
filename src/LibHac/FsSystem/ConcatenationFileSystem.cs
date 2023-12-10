@@ -63,7 +63,7 @@ public class ConcatenationFileSystem : IFileSystem
             base.Dispose();
         }
 
-        public Result Initialize(in Path path)
+        public Result Initialize(ref readonly Path path)
         {
             return _path.Initialize(in path).Ret();
         }
@@ -401,7 +401,7 @@ public class ConcatenationFileSystem : IFileSystem
             base.Dispose();
         }
 
-        public Result Initialize(in Path path)
+        public Result Initialize(ref readonly Path path)
         {
             return _path.Initialize(in path).Ret();
         }
@@ -481,7 +481,7 @@ public class ConcatenationFileSystem : IFileSystem
             return Result.Success;
         }
 
-        private bool IsReadTarget(in DirectoryEntry entry)
+        private bool IsReadTarget(ref readonly DirectoryEntry entry)
         {
             bool hasConcatAttribute = IsConcatenationFileAttribute(entry.Attributes);
 
@@ -540,7 +540,7 @@ public class ConcatenationFileSystem : IFileSystem
         return path.AppendChild(buffer).Ret();
     }
 
-    private static Result GenerateInternalFilePath(ref Path outPath, int index, in Path basePath)
+    private static Result GenerateInternalFilePath(ref Path outPath, int index, ref readonly Path basePath)
     {
         Result res = outPath.Initialize(in basePath);
         if (res.IsFailure()) return res.Miss();
@@ -548,7 +548,7 @@ public class ConcatenationFileSystem : IFileSystem
         return AppendInternalFilePath(ref outPath, index).Ret();
     }
 
-    private static Result GenerateParentPath(ref Path outParentPath, in Path path)
+    private static Result GenerateParentPath(ref Path outParentPath, ref readonly Path path)
     {
         if (path == RootPath)
             return ResultFs.PathNotFound.Log();
@@ -564,7 +564,7 @@ public class ConcatenationFileSystem : IFileSystem
         return attribute.HasFlag(NxFileAttributes.Directory | NxFileAttributes.Archive);
     }
 
-    private bool IsConcatenationFile(in Path path)
+    private bool IsConcatenationFile(ref readonly Path path)
     {
         Result res = _baseFileSystem.Get.GetFileAttributes(out NxFileAttributes attribute, in path);
         if (res.IsFailure())
@@ -573,7 +573,7 @@ public class ConcatenationFileSystem : IFileSystem
         return IsConcatenationFileAttribute(attribute);
     }
 
-    private Result GetInternalFileCount(out int count, in Path path)
+    private Result GetInternalFileCount(out int count, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out count);
 
@@ -608,7 +608,7 @@ public class ConcatenationFileSystem : IFileSystem
         }
     }
 
-    protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
+    protected override Result DoGetEntryType(out DirectoryEntryType entryType, ref readonly Path path)
     {
         using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
 
@@ -618,28 +618,28 @@ public class ConcatenationFileSystem : IFileSystem
             return Result.Success;
         }
 
-        return _baseFileSystem.Get.GetEntryType(out entryType, path).Ret();
+        return _baseFileSystem.Get.GetEntryType(out entryType, in path).Ret();
     }
 
-    protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
+    protected override Result DoGetFreeSpaceSize(out long freeSpace, ref readonly Path path)
     {
         using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
 
-        return _baseFileSystem.Get.GetFreeSpaceSize(out freeSpace, path).Ret();
+        return _baseFileSystem.Get.GetFreeSpaceSize(out freeSpace, in path).Ret();
     }
 
-    protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
+    protected override Result DoGetTotalSpaceSize(out long totalSpace, ref readonly Path path)
     {
         using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
 
-        return _baseFileSystem.Get.GetTotalSpaceSize(out totalSpace, path).Ret();
+        return _baseFileSystem.Get.GetTotalSpaceSize(out totalSpace, in path).Ret();
     }
 
-    protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
+    protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, ref readonly Path path)
     {
         using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
 
-        return _baseFileSystem.Get.GetFileTimeStampRaw(out timeStamp, path).Ret();
+        return _baseFileSystem.Get.GetFileTimeStampRaw(out timeStamp, in path).Ret();
     }
 
     protected override Result DoFlush()
@@ -649,7 +649,7 @@ public class ConcatenationFileSystem : IFileSystem
         return _baseFileSystem.Get.Flush().Ret();
     }
 
-    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
+    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, ref readonly Path path, OpenMode mode)
     {
         using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
 
@@ -708,18 +708,18 @@ public class ConcatenationFileSystem : IFileSystem
         }
     }
 
-    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, ref readonly Path path,
         OpenDirectoryMode mode)
     {
         using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
 
-        if (IsConcatenationFile(path))
+        if (IsConcatenationFile(in path))
         {
             return ResultFs.PathNotFound.Log();
         }
 
         using var baseDirectory = new UniqueRef<IDirectory>();
-        Result res = _baseFileSystem.Get.OpenDirectory(ref baseDirectory.Ref, path, OpenDirectoryMode.All);
+        Result res = _baseFileSystem.Get.OpenDirectory(ref baseDirectory.Ref, in path, OpenDirectoryMode.All);
         if (res.IsFailure()) return res.Miss();
 
         using var concatDirectory = new UniqueRef<ConcatenationDirectory>(
@@ -731,7 +731,7 @@ public class ConcatenationFileSystem : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
+    protected override Result DoCreateFile(ref readonly Path path, long size, CreateFileOptions option)
     {
         using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
 
@@ -740,7 +740,7 @@ public class ConcatenationFileSystem : IFileSystem
         // Create a normal file if the concatenation file flag isn't set
         if (!option.HasFlag(CreateFileOptions.CreateConcatenationFile))
         {
-            return _baseFileSystem.Get.CreateFile(path, size, newOption).Ret();
+            return _baseFileSystem.Get.CreateFile(in path, size, newOption).Ret();
         }
 
         using var parentPath = new Path();
@@ -815,7 +815,7 @@ public class ConcatenationFileSystem : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoDeleteFile(in Path path)
+    protected override Result DoDeleteFile(ref readonly Path path)
     {
         using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
 
@@ -824,7 +824,7 @@ public class ConcatenationFileSystem : IFileSystem
             return _baseFileSystem.Get.DeleteFile(in path).Ret();
         }
 
-        Result res = GetInternalFileCount(out int count, path);
+        Result res = GetInternalFileCount(out int count, in path);
         if (res.IsFailure()) return res.Miss();
 
         using var filePath = new Path();
@@ -849,7 +849,7 @@ public class ConcatenationFileSystem : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoCreateDirectory(in Path path)
+    protected override Result DoCreateDirectory(ref readonly Path path)
     {
         using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
 
@@ -864,26 +864,26 @@ public class ConcatenationFileSystem : IFileSystem
         return _baseFileSystem.Get.CreateDirectory(in path).Ret();
     }
 
-    protected override Result DoDeleteDirectory(in Path path)
+    protected override Result DoDeleteDirectory(ref readonly Path path)
     {
         using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
 
         // Make sure the directory isn't a concatenation file.
-        if (IsConcatenationFile(path))
+        if (IsConcatenationFile(in path))
             return ResultFs.PathNotFound.Log();
 
-        return _baseFileSystem.Get.DeleteDirectory(path).Ret();
+        return _baseFileSystem.Get.DeleteDirectory(in path).Ret();
     }
 
-    private Result CleanDirectoryRecursivelyImpl(in Path path)
+    private Result CleanDirectoryRecursivelyImpl(ref readonly Path path)
     {
-        static Result OnEnterDir(in Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure) =>
+        static Result OnEnterDir(ref readonly Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure) =>
             Result.Success;
 
-        static Result OnExitDir(in Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure) =>
+        static Result OnExitDir(ref readonly Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure) =>
             closure.SourceFileSystem.DeleteDirectory(in path).Ret();
 
-        static Result OnFile(in Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure) =>
+        static Result OnFile(ref readonly Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure) =>
             closure.SourceFileSystem.DeleteFile(in path).Ret();
 
         var closure = new FsIterationTaskClosure();
@@ -894,7 +894,7 @@ public class ConcatenationFileSystem : IFileSystem
             ref closure).Ret();
     }
 
-    protected override Result DoDeleteDirectoryRecursively(in Path path)
+    protected override Result DoDeleteDirectoryRecursively(ref readonly Path path)
     {
         bool isConcatenationFile;
         using (new ScopedLock<SdkMutexType>(ref _mutex))
@@ -911,7 +911,7 @@ public class ConcatenationFileSystem : IFileSystem
         return _baseFileSystem.Get.DeleteDirectory(in path).Ret();
     }
 
-    protected override Result DoCleanDirectoryRecursively(in Path path)
+    protected override Result DoCleanDirectoryRecursively(ref readonly Path path)
     {
         bool isConcatenationFile;
         using (new ScopedLock<SdkMutexType>(ref _mutex))
@@ -925,7 +925,7 @@ public class ConcatenationFileSystem : IFileSystem
         return CleanDirectoryRecursivelyImpl(in path).Ret();
     }
 
-    protected override Result DoRenameFile(in Path currentPath, in Path newPath)
+    protected override Result DoRenameFile(ref readonly Path currentPath, ref readonly Path newPath)
     {
         using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
 
@@ -935,7 +935,7 @@ public class ConcatenationFileSystem : IFileSystem
         return _baseFileSystem.Get.RenameFile(in currentPath, in newPath).Ret();
     }
 
-    protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
+    protected override Result DoRenameDirectory(ref readonly Path currentPath, ref readonly Path newPath)
     {
         using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
 
@@ -945,7 +945,7 @@ public class ConcatenationFileSystem : IFileSystem
         return _baseFileSystem.Get.RenameDirectory(in currentPath, in newPath).Ret();
     }
 
-    public Result GetFileSize(out long size, in Path path)
+    public Result GetFileSize(out long size, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out size);
 
@@ -987,7 +987,7 @@ public class ConcatenationFileSystem : IFileSystem
     }
 
     protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
-        in Path path)
+        ref readonly Path path)
     {
         using var scopedLock = new ScopedLock<SdkMutexType>(ref _mutex);
 

@@ -27,7 +27,7 @@ internal class GameCardStorageDevice : GameCardStorageInterfaceAdapter, IStorage
     private readonly IGcApi _gc;
 
     private GameCardStorageDevice(IGcApi gc, ref SharedRef<IGameCardManager> manager,
-        in SharedRef<IStorage> baseStorage, GameCardHandle handle) : base(in baseStorage)
+        ref readonly SharedRef<IStorage> baseStorage, GameCardHandle handle) : base(in baseStorage)
     {
         _manager = SharedRef<IGameCardManager>.CreateMove(ref manager);
         _handle = handle;
@@ -37,8 +37,8 @@ internal class GameCardStorageDevice : GameCardStorageInterfaceAdapter, IStorage
     }
 
     private GameCardStorageDevice(IGcApi gc, ref SharedRef<IGameCardManager> manager,
-        in SharedRef<IStorage> baseStorage, GameCardHandle handle, bool isSecure, ReadOnlySpan<byte> cardDeviceId,
-        ReadOnlySpan<byte> cardImageHash)
+        ref readonly SharedRef<IStorage> baseStorage, GameCardHandle handle, bool isSecure,
+        ReadOnlySpan<byte> cardDeviceId, ReadOnlySpan<byte> cardImageHash)
         : base(in baseStorage)
     {
         Assert.SdkRequiresEqual(cardDeviceId.Length, Values.GcCardDeviceIdSize);
@@ -55,7 +55,7 @@ internal class GameCardStorageDevice : GameCardStorageInterfaceAdapter, IStorage
     }
 
     public static SharedRef<GameCardStorageDevice> CreateShared(IGcApi gc, ref SharedRef<IGameCardManager> manager,
-        in SharedRef<IStorage> baseStorage, GameCardHandle handle)
+        ref readonly SharedRef<IStorage> baseStorage, GameCardHandle handle)
     {
         var storageDevice = new GameCardStorageDevice(gc, ref manager, in baseStorage, handle);
 
@@ -66,8 +66,8 @@ internal class GameCardStorageDevice : GameCardStorageInterfaceAdapter, IStorage
     }
 
     public static SharedRef<GameCardStorageDevice> CreateShared(IGcApi gc, ref SharedRef<IGameCardManager> manager,
-        in SharedRef<IStorage> baseStorage, GameCardHandle handle, bool isSecure, ReadOnlySpan<byte> cardDeviceId,
-        ReadOnlySpan<byte> cardImageHash)
+        ref readonly SharedRef<IStorage> baseStorage, GameCardHandle handle, bool isSecure,
+        ReadOnlySpan<byte> cardDeviceId, ReadOnlySpan<byte> cardImageHash)
     {
         var storageDevice = new GameCardStorageDevice(gc, ref manager, in baseStorage, handle, isSecure, cardDeviceId,
             cardImageHash);

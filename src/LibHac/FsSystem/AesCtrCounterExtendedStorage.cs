@@ -126,7 +126,7 @@ public class AesCtrCounterExtendedStorage : IStorage
 
     // ReSharper disable once UnusedMember.Local
     private Result Initialize(MemoryResource allocator, ReadOnlySpan<byte> key, uint secureValue,
-        in ValueSubStorage dataStorage, in ValueSubStorage tableStorage)
+        ref readonly ValueSubStorage dataStorage, ref readonly ValueSubStorage tableStorage)
     {
         Unsafe.SkipInit(out BucketTree.Header header);
 
@@ -159,8 +159,8 @@ public class AesCtrCounterExtendedStorage : IStorage
     }
 
     public Result Initialize(MemoryResource allocator, ReadOnlySpan<byte> key, uint secureValue, long counterOffset,
-        in ValueSubStorage dataStorage, in ValueSubStorage nodeStorage, in ValueSubStorage entryStorage, int entryCount,
-        ref UniqueRef<IDecryptor> decryptor)
+        ref readonly ValueSubStorage dataStorage, ref readonly ValueSubStorage nodeStorage,
+        ref readonly ValueSubStorage entryStorage, int entryCount, ref UniqueRef<IDecryptor> decryptor)
     {
         Assert.SdkRequiresEqual(key.Length, KeySize);
         Assert.SdkRequiresGreaterEqual(counterOffset, 0);

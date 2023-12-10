@@ -78,7 +78,7 @@ public class FileSystemProxyCoreImpl
         return Result.Success;
     }
 
-    private Result OpenHostFileSystem(ref SharedRef<IFileSystem> outFileSystem, in Path path)
+    private Result OpenHostFileSystem(ref SharedRef<IFileSystem> outFileSystem, ref readonly Path path)
     {
         using var pathHost = new Path();
         Result res = pathHost.Initialize(in path);
@@ -88,13 +88,13 @@ public class FileSystemProxyCoreImpl
         if (res.IsFailure()) return res.Miss();
 
         res = _fsCreators.TargetManagerFileSystemCreator.Create(ref outFileSystem, in pathHost, isSupported,
-            ensureRootPathExists: false, Result.Success);
+            ensureRootPathExists: false, pathNotFoundResult: Result.Success);
         if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
 
-    public Result OpenHostFileSystem(ref SharedRef<IFileSystem> outFileSystem, in Path path,
+    public Result OpenHostFileSystem(ref SharedRef<IFileSystem> outFileSystem, ref readonly Path path,
         bool openCaseSensitive)
     {
         if (!path.IsEmpty() && openCaseSensitive)
@@ -105,7 +105,7 @@ public class FileSystemProxyCoreImpl
         else
         {
             Result res = _fsCreators.TargetManagerFileSystemCreator.Create(ref outFileSystem, in path,
-                openCaseSensitive, ensureRootPathExists: false, Result.Success);
+                openCaseSensitive, ensureRootPathExists: false, pathNotFoundResult: Result.Success);
             if (res.IsFailure()) return res.Miss();
         }
 

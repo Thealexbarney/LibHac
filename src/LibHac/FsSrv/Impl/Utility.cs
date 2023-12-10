@@ -16,7 +16,7 @@ internal static class Utility
     }
 
     public static Result CreateSubDirectoryFileSystem(ref SharedRef<IFileSystem> outSubDirFileSystem,
-        ref SharedRef<IFileSystem> baseFileSystem, in Path rootPath)
+        ref SharedRef<IFileSystem> baseFileSystem, ref readonly Path rootPath)
     {
         if (rootPath.IsEmpty())
         {
@@ -26,7 +26,7 @@ internal static class Utility
 
         // Check if the directory exists
         using var dir = new UniqueRef<IDirectory>();
-        Result res = baseFileSystem.Get.OpenDirectory(ref dir.Ref, rootPath, OpenDirectoryMode.Directory);
+        Result res = baseFileSystem.Get.OpenDirectory(ref dir.Ref, in rootPath, OpenDirectoryMode.Directory);
         if (res.IsFailure()) return res.Miss();
 
         dir.Reset();
@@ -44,7 +44,7 @@ internal static class Utility
     }
 
     public static Result WrapSubDirectory(ref SharedRef<IFileSystem> outFileSystem,
-        ref SharedRef<IFileSystem> baseFileSystem, in Path rootPath, bool createIfMissing)
+        ref SharedRef<IFileSystem> baseFileSystem, ref readonly Path rootPath, bool createIfMissing)
     {
         // The path must already exist if we're not automatically creating it
         if (!createIfMissing)
@@ -57,7 +57,7 @@ internal static class Utility
         Result res = FsSystem.Utility.EnsureDirectory(baseFileSystem.Get, in rootPath);
         if (res.IsFailure()) return res.Miss();
 
-        return CreateSubDirectoryFileSystem(ref outFileSystem, ref baseFileSystem, rootPath);
+        return CreateSubDirectoryFileSystem(ref outFileSystem, ref baseFileSystem, in rootPath);
     }
 
     public static long ConvertZeroCommitId(in SaveDataExtraData extraData)

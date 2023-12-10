@@ -45,9 +45,9 @@ public partial class BucketTree
         /// <param name="entrySize">The size of each entry that will be stored in the bucket tree.</param>
         /// <param name="entryCount">The exact number of entries that will be added to the bucket tree.</param>
         /// <returns>The <see cref="Result"/> of the operation.</returns>
-        public Result Initialize(MemoryResource allocator, in ValueSubStorage headerStorage,
-            in ValueSubStorage nodeStorage, in ValueSubStorage entryStorage, int nodeSize, int entrySize,
-            int entryCount)
+        public Result Initialize(MemoryResource allocator, ref readonly ValueSubStorage headerStorage,
+            ref readonly ValueSubStorage nodeStorage, ref readonly ValueSubStorage entryStorage, int nodeSize,
+            int entrySize, int entryCount)
         {
             Assert.NotNull(allocator);
             Assert.SdkRequiresLessEqual(sizeof(long), entrySize);

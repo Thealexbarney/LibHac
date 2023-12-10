@@ -105,7 +105,7 @@ public class Package1
     public ref readonly Package1Pk11Header Pk11Header => ref _pk11Header;
     public ref readonly Array16<byte> Pk11Mac => ref _pk11Mac;
 
-    public Result Initialize(KeySet keySet, in SharedRef<IStorage> storage)
+    public Result Initialize(KeySet keySet, ref readonly SharedRef<IStorage> storage)
     {
         KeySet = keySet;
         _baseStorage.SetByCopy(in storage);

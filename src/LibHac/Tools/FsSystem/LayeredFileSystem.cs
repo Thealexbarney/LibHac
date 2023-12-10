@@ -37,7 +37,7 @@ public class LayeredFileSystem : IFileSystem
         Sources.AddRange(sourceFileSystems);
     }
 
-    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, ref readonly Path path,
         OpenDirectoryMode mode)
     {
         // Open directories from all layers so they can be merged
@@ -108,17 +108,17 @@ public class LayeredFileSystem : IFileSystem
         return ResultFs.PathNotFound.Log();
     }
 
-    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
+    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, ref readonly Path path, OpenMode mode)
     {
         foreach (IFileSystem fs in Sources)
         {
-            Result res = fs.GetEntryType(out DirectoryEntryType type, path);
+            Result res = fs.GetEntryType(out DirectoryEntryType type, in path);
 
             if (res.IsSuccess())
             {
                 if (type == DirectoryEntryType.File)
                 {
-                    return fs.OpenFile(ref outFile, path, mode);
+                    return fs.OpenFile(ref outFile, in path, mode);
                 }
 
                 if (type == DirectoryEntryType.Directory)
@@ -135,13 +135,13 @@ public class LayeredFileSystem : IFileSystem
         return ResultFs.PathNotFound.Log();
     }
 
-    protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
+    protected override Result DoGetEntryType(out DirectoryEntryType entryType, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out entryType);
 
         foreach (IFileSystem fs in Sources)
         {
-            Result getEntryResult = fs.GetEntryType(out DirectoryEntryType type, path);
+            Result getEntryResult = fs.GetEntryType(out DirectoryEntryType type, in path);
 
             if (getEntryResult.IsSuccess())
             {
@@ -153,17 +153,17 @@ public class LayeredFileSystem : IFileSystem
         return ResultFs.PathNotFound.Log();
     }
 
-    protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
+    protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out timeStamp);
 
         foreach (IFileSystem fs in Sources)
         {
-            Result getEntryResult = fs.GetEntryType(out _, path);
+            Result getEntryResult = fs.GetEntryType(out _, in path);
 
             if (getEntryResult.IsSuccess())
             {
-                return fs.GetFileTimeStampRaw(out timeStamp, path);
+                return fs.GetFileTimeStampRaw(out timeStamp, in path);
             }
         }
 
@@ -171,15 +171,15 @@ public class LayeredFileSystem : IFileSystem
     }
 
     protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
-        in Path path)
+        ref readonly Path path)
     {
         foreach (IFileSystem fs in Sources)
         {
-            Result getEntryResult = fs.GetEntryType(out _, path);
+            Result getEntryResult = fs.GetEntryType(out _, in path);
 
             if (getEntryResult.IsSuccess())
             {
-                return fs.QueryEntry(outBuffer, inBuffer, queryId, path);
+                return fs.QueryEntry(outBuffer, inBuffer, queryId, in path);
             }
         }
 
@@ -191,14 +191,14 @@ public class LayeredFileSystem : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoCreateDirectory(in Path path) => ResultFs.UnsupportedOperation.Log();
-    protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option) => ResultFs.UnsupportedOperation.Log();
-    protected override Result DoDeleteDirectory(in Path path) => ResultFs.UnsupportedOperation.Log();
-    protected override Result DoDeleteDirectoryRecursively(in Path path) => ResultFs.UnsupportedOperation.Log();
-    protected override Result DoCleanDirectoryRecursively(in Path path) => ResultFs.UnsupportedOperation.Log();
-    protected override Result DoDeleteFile(in Path path) => ResultFs.UnsupportedOperation.Log();
-    protected override Result DoRenameDirectory(in Path currentPath, in Path newPath) => ResultFs.UnsupportedOperation.Log();
-    protected override Result DoRenameFile(in Path currentPath, in Path newPath) => ResultFs.UnsupportedOperation.Log();
+    protected override Result DoCreateDirectory(ref readonly Path path) => ResultFs.UnsupportedOperation.Log();
+    protected override Result DoCreateFile(ref readonly Path path, long size, CreateFileOptions option) => ResultFs.UnsupportedOperation.Log();
+    protected override Result DoDeleteDirectory(ref readonly Path path) => ResultFs.UnsupportedOperation.Log();
+    protected override Result DoDeleteDirectoryRecursively(ref readonly Path path) => ResultFs.UnsupportedOperation.Log();
+    protected override Result DoCleanDirectoryRecursively(ref readonly Path path) => ResultFs.UnsupportedOperation.Log();
+    protected override Result DoDeleteFile(ref readonly Path path) => ResultFs.UnsupportedOperation.Log();
+    protected override Result DoRenameDirectory(ref readonly Path currentPath, ref readonly Path newPath) => ResultFs.UnsupportedOperation.Log();
+    protected override Result DoRenameFile(ref readonly Path currentPath, ref readonly Path newPath) => ResultFs.UnsupportedOperation.Log();
 
     private class MergedDirectory : IDirectory
     {
@@ -218,7 +218,7 @@ public class LayeredFileSystem : IFileSystem
             Mode = mode;
         }
 
-        public Result Initialize(in Path path)
+        public Result Initialize(ref readonly Path path)
         {
             Result res = _path.Initialize(in path);
             if (res.IsFailure()) return res.Miss();

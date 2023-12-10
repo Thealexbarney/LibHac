@@ -7,12 +7,12 @@ namespace LibHac.Diag;
 public static class Log
 {
     // Todo: Should we split large logs into smaller chunks like Horizon does?
-    public static void LogImpl(this DiagClientImpl diag, in LogMetaData metaData, ReadOnlySpan<byte> message)
+    public static void LogImpl(this DiagClientImpl diag, ref readonly LogMetaData metaData, ReadOnlySpan<byte> message)
     {
         diag.PutImpl(in metaData, message);
     }
 
-    public static void PutImpl(this DiagClientImpl diag, in LogMetaData metaData, ReadOnlySpan<byte> message)
+    public static void PutImpl(this DiagClientImpl diag, ref readonly LogMetaData metaData, ReadOnlySpan<byte> message)
     {
         var logBody = new LogBody
         {

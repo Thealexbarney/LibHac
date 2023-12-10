@@ -37,7 +37,7 @@ public static class Host
     /// <param name="option">Options for opening the host file system.</param>
     /// <returns>The <see cref="Result"/> of the operation.</returns>
     private static Result OpenHostFileSystemImpl(FileSystemClient fs, ref UniqueRef<IFileSystem> outFileSystem,
-        in FspPath path, MountHostOption option)
+        ref readonly FspPath path, MountHostOption option)
     {
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var fileSystem = new SharedRef<IFileSystemSf>();

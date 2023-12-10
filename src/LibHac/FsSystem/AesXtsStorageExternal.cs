@@ -53,7 +53,7 @@ public class AesXtsStorageExternal : IStorage
         iv.CopyTo(_iv);
     }
 
-    public AesXtsStorageExternal(in SharedRef<IStorage> baseStorage, ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2,
+    public AesXtsStorageExternal(ref readonly SharedRef<IStorage> baseStorage, ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2,
         ReadOnlySpan<byte> iv, uint blockSize, CryptAesXtsFunction encryptFunction, CryptAesXtsFunction decryptFunction)
         : this(baseStorage.Get, key1, key2, iv, blockSize, encryptFunction, decryptFunction)
     {

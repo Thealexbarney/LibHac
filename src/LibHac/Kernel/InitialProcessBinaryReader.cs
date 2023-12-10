@@ -23,7 +23,7 @@ public class InitialProcessBinaryReader : IDisposable
         _storage.Destroy();
     }
 
-    public Result Initialize(in SharedRef<IStorage> binaryStorage)
+    public Result Initialize(ref readonly SharedRef<IStorage> binaryStorage)
     {
         if (!binaryStorage.HasValue)
             return ResultLibHac.NullArgument.Log();
@@ -47,7 +47,7 @@ public class InitialProcessBinaryReader : IDisposable
 
         // There's no metadata with the offsets of each KIP; they're all stored sequentially in the file.
         // Read the size of each KIP to get their offsets.
-        res = GetKipOffsets(out _offsets, binaryStorage, _header.ProcessCount);
+        res = GetKipOffsets(out _offsets, in binaryStorage, _header.ProcessCount);
         if (res.IsFailure()) return res.Miss();
 
         _storage.SetByCopy(in binaryStorage);
@@ -64,8 +64,8 @@ public class InitialProcessBinaryReader : IDisposable
         return Result.Success;
     }
 
-    private static Result GetKipOffsets(out (int offset, int size)[] kipOffsets, in SharedRef<IStorage> iniStorage,
-        int processCount)
+    private static Result GetKipOffsets(out (int offset, int size)[] kipOffsets,
+        ref readonly SharedRef<IStorage> iniStorage, int processCount)
     {
         Assert.SdkRequiresLessEqual(processCount, MaxProcessCount);
 

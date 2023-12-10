@@ -157,7 +157,7 @@ namespace LibHac.Fs.Shim
         }
 
         public static Result ReadSaveDataFileSystemExtraData(this FileSystemClientImpl fs,
-            out SaveDataExtraData extraData, SaveDataSpaceId spaceId, in SaveDataAttribute attribute)
+            out SaveDataExtraData extraData, SaveDataSpaceId spaceId, SaveDataAttribute attribute)
         {
             UnsafeHelpers.SkipParamInit(out extraData);
 
@@ -171,7 +171,7 @@ namespace LibHac.Fs.Shim
         }
 
         public static Result ReadSaveDataFileSystemExtraData(this FileSystemClientImpl fs,
-            out SaveDataExtraData extraData, SaveDataSpaceId spaceId, in SaveDataAttribute attribute,
+            out SaveDataExtraData extraData, SaveDataSpaceId spaceId, SaveDataAttribute attribute,
             in SaveDataExtraData extraDataMask)
         {
             UnsafeHelpers.SkipParamInit(out extraData);
@@ -262,7 +262,7 @@ namespace LibHac.Fs.Shim
         /// to write to, nothing will be written and <see cref="ResultFs.PermissionDenied"/> will be returned.
         /// </remarks>
         public static Result WriteSaveDataFileSystemExtraData(this FileSystemClientImpl fs, SaveDataSpaceId spaceId,
-            in SaveDataAttribute attribute, in SaveDataExtraData extraData, in SaveDataExtraData extraDataMask)
+            SaveDataAttribute attribute, in SaveDataExtraData extraData, in SaveDataExtraData extraDataMask)
         {
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.GetFileSystemProxyServiceObject();
 
@@ -1359,7 +1359,7 @@ namespace LibHac.Fs.Shim
                     SaveDataType.System, userId, saveDataId);
                 if (res.IsFailure()) return res.Miss();
 
-                res = fs.Impl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraData, spaceId, in attribute);
+                res = fs.Impl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraData, spaceId, attribute);
                 if (res.IsFailure()) return res.Miss();
 
                 flags = extraData.Flags;
@@ -1456,7 +1456,7 @@ namespace LibHac.Fs.Shim
                     SaveDataType.System, userId, saveDataId);
                 if (res.IsFailure()) return res.Miss();
 
-                return fs.Impl.WriteSaveDataFileSystemExtraData(spaceId, in attribute, in extraData, in extraDataMask);
+                return fs.Impl.WriteSaveDataFileSystemExtraData(spaceId, attribute, in extraData, in extraDataMask);
             }
         }
 
@@ -2253,7 +2253,7 @@ namespace LibHac.Fs.Shim
                 extraDataMask.Flags = SaveDataFlags.Restore;
 
                 res = fs.Impl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraData, SaveDataSpaceId.User,
-                    in attribute, in extraDataMask);
+                    attribute, in extraDataMask);
                 if (res.IsFailure()) return res.Miss();
 
                 isRestoreFlagSet = extraData.Flags.HasFlag(SaveDataFlags.Restore);
@@ -2303,7 +2303,7 @@ namespace LibHac.Fs.Shim
                 if (res.IsFailure()) return res.Miss();
 
                 res = fs.Impl.ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraData, SaveDataSpaceId.User,
-                    in attribute, in extraDataMask);
+                    attribute, in extraDataMask);
                 if (res.IsFailure()) return res.Miss();
 
                 saveSize = extraData.DataSize;

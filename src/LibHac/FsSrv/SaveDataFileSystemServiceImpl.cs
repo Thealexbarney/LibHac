@@ -82,12 +82,12 @@ public class SaveDataFileSystemServiceImpl : IDisposable
                spaceId == SaveDataSpaceId.SafeMode;
     }
 
-    private static Result WipeData(IFileSystem fileSystem, in Path filePath, RandomDataGenerator random)
+    private static Result WipeData(IFileSystem fileSystem, ref readonly Path filePath, RandomDataGenerator random)
     {
         throw new NotImplementedException();
     }
 
-    private static Result WipeMasterHeader(IFileSystem fileSystem, in Path filePath, RandomDataGenerator random)
+    private static Result WipeMasterHeader(IFileSystem fileSystem, ref readonly Path filePath, RandomDataGenerator random)
     {
         throw new NotImplementedException();
     }
@@ -156,7 +156,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
     }
 
     public Result OpenSaveDataFileSystem(ref SharedRef<IFileSystem> outFileSystem, SaveDataSpaceId spaceId,
-        ulong saveDataId, in Path saveDataRootPath, bool openReadOnly, SaveDataType type, bool cacheExtraData)
+        ulong saveDataId, ref readonly Path saveDataRootPath, bool openReadOnly, SaveDataType type, bool cacheExtraData)
     {
         using var fileSystem = new SharedRef<IFileSystem>();
 
@@ -241,33 +241,33 @@ public class SaveDataFileSystemServiceImpl : IDisposable
     }
 
     public Result OpenSaveDataInternalStorageFileSystem(ref SharedRef<IFileSystem> outFileSystem,
-        SaveDataSpaceId spaceId, ulong saveDataId, in Path saveDataRootPath, bool useSecondMacKey,
+        SaveDataSpaceId spaceId, ulong saveDataId, ref readonly Path saveDataRootPath, bool useSecondMacKey,
         bool isReconstructible)
     {
         throw new NotImplementedException();
     }
 
     private Result OpenSaveDataImageFile(ref UniqueRef<IFile> outFile, SaveDataSpaceId spaceId, ulong saveDataId,
-        in Path saveDataRootPath)
+        ref readonly Path saveDataRootPath)
     {
         throw new NotImplementedException();
     }
 
     public Result ExtendSaveDataFileSystemCore(out long extendedTotalSize, ulong saveDataId, SaveDataSpaceId spaceId,
-        SaveDataType type, long dataSize, long journalSize, in Path saveDataRootPath, bool isExtensionStart)
+        SaveDataType type, long dataSize, long journalSize, ref readonly Path saveDataRootPath, bool isExtensionStart)
     {
         throw new NotImplementedException();
     }
 
     public Result StartExtendSaveDataFileSystem(out long extendedTotalSize, ulong saveDataId, SaveDataSpaceId spaceId,
-        SaveDataType type, long dataSize, long journalSize, in Path saveDataRootPath)
+        SaveDataType type, long dataSize, long journalSize, ref readonly Path saveDataRootPath)
     {
         return ExtendSaveDataFileSystemCore(out extendedTotalSize, saveDataId, spaceId, type, dataSize, journalSize,
             in saveDataRootPath, isExtensionStart: true);
     }
 
     public Result ResumeExtendSaveDataFileSystem(out long extendedTotalSize, ulong saveDataId, SaveDataSpaceId spaceId,
-        SaveDataType type, in Path saveDataRootPath)
+        SaveDataType type, ref readonly Path saveDataRootPath)
     {
         return ExtendSaveDataFileSystemCore(out extendedTotalSize, saveDataId, spaceId, type, dataSize: 0,
             journalSize: 0, in saveDataRootPath, isExtensionStart: false);
@@ -283,7 +283,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
     }
 
     public void RevertExtendSaveDataFileSystem(ulong saveDataId, SaveDataSpaceId spaceId, long originalSize,
-        in Path saveDataRootPath)
+        ref readonly Path saveDataRootPath)
     {
         using var saveDataFile = new UniqueRef<IFile>();
         Result res = OpenSaveDataImageFile(ref saveDataFile.Ref, spaceId, saveDataId, in saveDataRootPath);
@@ -401,7 +401,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
     }
 
     public Result CreateSaveDataFileSystem(ulong saveDataId, in SaveDataCreationInfo2 creationInfo,
-        in Path saveDataRootPath, bool skipFormat)
+        ref readonly Path saveDataRootPath, bool skipFormat)
     {
         Unsafe.SkipInit(out Array18<byte> saveImageNameBuffer);
 
@@ -477,7 +477,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
     }
 
     public Result DeleteSaveDataFileSystem(SaveDataSpaceId spaceId, ulong saveDataId, bool wipeSaveFile,
-        in Path saveDataRootPath)
+        ref readonly Path saveDataRootPath)
     {
         Unsafe.SkipInit(out Array18<byte> saveImageNameBuffer);
 
@@ -538,7 +538,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
     }
 
     public Result ReadSaveDataFileSystemExtraData(out SaveDataExtraData extraData, SaveDataSpaceId spaceId,
-        ulong saveDataId, SaveDataType type, in Path saveDataRootPath)
+        ulong saveDataId, SaveDataType type, ref readonly Path saveDataRootPath)
     {
         UnsafeHelpers.SkipParamInit(out extraData);
 
@@ -564,7 +564,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
 
             // We won't actually use the returned save data FS.
             // Opening the FS should cache an extra data accessor for it.
-            res = OpenSaveDataFileSystem(ref unusedSaveDataFs.Ref, spaceId, saveDataId, saveDataRootPath,
+            res = OpenSaveDataFileSystem(ref unusedSaveDataFs.Ref, spaceId, saveDataId, in saveDataRootPath,
                 openReadOnly: true, type, cacheExtraData: true);
             if (res.IsFailure()) return res.Miss();
 
@@ -581,7 +581,8 @@ public class SaveDataFileSystemServiceImpl : IDisposable
     }
 
     public Result WriteSaveDataFileSystemExtraData(SaveDataSpaceId spaceId, ulong saveDataId,
-        in SaveDataExtraData extraData, in Path saveDataRootPath, SaveDataType type, bool updateTimeStamp)
+        in SaveDataExtraData extraData, ref readonly Path saveDataRootPath, SaveDataType type,
+        bool updateTimeStamp)
     {
         // Emulated save data on a host device doesn't have extra data.
         if (IsAllowedDirectorySaveData(spaceId, in saveDataRootPath))
@@ -604,7 +605,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
 
             // We won't actually use the returned save data FS.
             // Opening the FS should cache an extra data accessor for it.
-            res = OpenSaveDataFileSystem(ref unusedSaveDataFs.Ref, spaceId, saveDataId, saveDataRootPath,
+            res = OpenSaveDataFileSystem(ref unusedSaveDataFs.Ref, spaceId, saveDataId, in saveDataRootPath,
                 openReadOnly: false, type, cacheExtraData: true);
             if (res.IsFailure()) return res.Miss();
 
@@ -625,7 +626,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
     }
 
     public Result CorruptSaveDataFileSystem(SaveDataSpaceId spaceId, ulong saveDataId, long offset,
-        in Path saveDataRootPath)
+        ref readonly Path saveDataRootPath)
     {
         throw new NotImplementedException();
     }
@@ -635,7 +636,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         return _config.TimeService.GetCurrentPosixTime(out timeStamp);
     }
 
-    private bool IsSaveEmulated(in Path saveDataRootPath)
+    private bool IsSaveEmulated(ref readonly Path saveDataRootPath)
     {
         return !saveDataRootPath.IsEmpty();
     }
@@ -649,7 +650,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
     }
 
     public Result OpenSaveDataDirectoryFileSystem(ref SharedRef<IFileSystem> outFileSystem,
-        SaveDataSpaceId spaceId, in Path saveDataRootPath, bool allowEmulatedSave)
+        SaveDataSpaceId spaceId, ref readonly Path saveDataRootPath, bool allowEmulatedSave)
     {
         Result res;
 
@@ -662,7 +663,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
                     // Ensure the target save data directory exists
                     res = _config.TargetManagerFsCreator.Create(ref tmFileSystem.Ref, in saveDataRootPath,
                         openCaseSensitive: false, ensureRootPathExists: true,
-                        ResultFs.SaveDataRootPathUnavailable.Value);
+                        pathNotFoundResult: ResultFs.SaveDataRootPathUnavailable.Value);
                     if (res.IsFailure()) return res.Miss();
                 }
 
@@ -674,13 +675,13 @@ public class SaveDataFileSystemServiceImpl : IDisposable
                 if (res.IsFailure()) return res.Miss();
 
                 res = _config.TargetManagerFsCreator.Create(ref outFileSystem, in path, isTargetFsCaseSensitive,
-                    ensureRootPathExists: false, ResultFs.SaveDataRootPathUnavailable.Value);
+                    ensureRootPathExists: false, pathNotFoundResult: ResultFs.SaveDataRootPathUnavailable.Value);
                 if (res.IsFailure()) return res.Miss();
             }
             else
             {
                 res = _config.LocalFsCreator.Create(ref outFileSystem, in saveDataRootPath, openCaseSensitive: true,
-                    ensureRootPathExists: true, ResultFs.SaveDataRootPathUnavailable.Value);
+                    ensureRootPathExists: true, pathNotFoundResult: ResultFs.SaveDataRootPathUnavailable.Value);
                 if (res.IsFailure()) return res.Miss();
             }
 
@@ -709,13 +710,13 @@ public class SaveDataFileSystemServiceImpl : IDisposable
     }
 
     public Result OpenSaveDataDirectoryFileSystemImpl(ref SharedRef<IFileSystem> outFileSystem,
-        SaveDataSpaceId spaceId, in Path directoryPath)
+        SaveDataSpaceId spaceId, ref readonly Path directoryPath)
     {
         return OpenSaveDataDirectoryFileSystemImpl(ref outFileSystem, spaceId, in directoryPath, createIfMissing: true);
     }
 
     public Result OpenSaveDataDirectoryFileSystemImpl(ref SharedRef<IFileSystem> outFileSystem,
-        SaveDataSpaceId spaceId, in Path directoryPath, bool createIfMissing)
+        SaveDataSpaceId spaceId, ref readonly Path directoryPath, bool createIfMissing)
     {
         using var baseFileSystem = new SharedRef<IFileSystem>();
 
@@ -819,7 +820,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
     /// <summary>
     /// Checks if a save is to be stored on a host device.
     /// </summary>
-    public bool IsAllowedDirectorySaveData(SaveDataSpaceId spaceId, in Path saveDataRootPath)
+    public bool IsAllowedDirectorySaveData(SaveDataSpaceId spaceId, ref readonly Path saveDataRootPath)
     {
         return spaceId == SaveDataSpaceId.User && IsSaveEmulated(in saveDataRootPath);
     }

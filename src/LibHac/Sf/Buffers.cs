@@ -29,7 +29,7 @@ public readonly ref struct InBuffer
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static InBuffer FromStruct<T>(in T value) where T : unmanaged
+    public static InBuffer FromStruct<T>(ref readonly T value) where T : unmanaged
     {
         return new InBuffer(SpanHelpers.AsReadOnlyByteSpan(in value));
     }

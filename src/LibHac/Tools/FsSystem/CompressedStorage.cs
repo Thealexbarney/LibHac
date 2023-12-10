@@ -43,8 +43,8 @@ internal class CompressedStorage : IStorage
         _dataStorage = new ValueSubStorage();
     }
 
-    public Result Initialize(MemoryResource allocatorForBucketTree, in ValueSubStorage dataStorage,
-        in ValueSubStorage nodeStorage, in ValueSubStorage entryStorage, int bucketTreeEntryCount)
+    public Result Initialize(MemoryResource allocatorForBucketTree, ref readonly ValueSubStorage dataStorage,
+        ref readonly ValueSubStorage nodeStorage, ref readonly ValueSubStorage entryStorage, int bucketTreeEntryCount)
     {
         Result res = _bucketTree.Initialize(allocatorForBucketTree, in nodeStorage, in entryStorage, NodeSize,
             Unsafe.SizeOf<Entry>(), bucketTreeEntryCount);

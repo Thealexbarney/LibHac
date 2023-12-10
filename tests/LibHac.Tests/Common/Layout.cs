@@ -5,7 +5,7 @@ namespace LibHac.Tests.Common;
 
 public class Layout
 {
-    public static int GetOffset<TStruct, TField>(in TStruct structRef, in TField fieldRef)
+    public static int GetOffset<TStruct, TField>(ref readonly TStruct structRef, ref readonly TField fieldRef)
     {
         ref TField structOffset = ref Unsafe.As<TStruct, TField>(ref Unsafe.AsRef(in structRef));
         ref TField fieldOffset = ref Unsafe.AsRef(in fieldRef);

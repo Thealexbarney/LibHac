@@ -84,7 +84,7 @@ public static class Program
                     // ReSharper disable once AccessToDisposedClosure
                     // References to logWriter should be gone by the time it's disposed
                     ctx.Horizon.Diag.InitializeLogObserverHolder(ref logObserver,
-                        (in LogMetaData data, in LogBody body, object arguments) =>
+                        (ref readonly LogMetaData data, ref readonly LogBody body, object arguments) =>
                             logWriter.Write(body.Message.ToString()), null);
 
                     ctx.Horizon.Diag.RegisterLogObserver(logObserver);

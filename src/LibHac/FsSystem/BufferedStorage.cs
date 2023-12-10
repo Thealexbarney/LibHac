@@ -891,7 +891,7 @@ public class BufferedStorage : IStorage
         /// <param name="sharedCache">The <see cref="SharedCache"/> to gain exclusive access to.</param>
         /// <returns>The <see cref="Result"/> of the operation, and <see langword="true"/> if exclusive
         /// access to the <see cref="_cache"/> was gained; <see langword="false"/> if not.</returns>
-        public (Result Result, bool wasUpgradeSuccessful) Upgrade(in SharedCache sharedCache)
+        public (Result Result, bool wasUpgradeSuccessful) Upgrade(ref readonly SharedCache sharedCache)
         {
             Assert.SdkRequires(_bufferedStorage == sharedCache.BufferedStorage);
             Assert.SdkRequires(!sharedCache.Cache.IsNull);
@@ -989,7 +989,8 @@ public class BufferedStorage : IStorage
     /// <param name="blockSize">The size of each cached block. Must be a power of 2.</param>
     /// <param name="bufferCount">The maximum number of blocks that can be cached at one time.</param>
     /// <returns></returns>
-    public Result Initialize(in ValueSubStorage baseStorage, IBufferManager bufferManager, int blockSize, int bufferCount)
+    public Result Initialize(ref readonly ValueSubStorage baseStorage, IBufferManager bufferManager, int blockSize,
+        int bufferCount)
     {
         Assert.SdkRequiresNotNull(bufferManager);
         Assert.SdkRequiresLess(0, blockSize);

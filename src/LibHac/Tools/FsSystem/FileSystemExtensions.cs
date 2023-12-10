@@ -45,10 +45,10 @@ public static class FileSystemExtensions
     }
 
     public static Result CopyDirectoryRecursively(IFileSystem destinationFileSystem, IFileSystem sourceFileSystem,
-        in Path destinationPath, in Path sourcePath, ref DirectoryEntry dirEntry, Span<byte> workBuffer,
-        IProgressReport logger = null, CreateFileOptions option = CreateFileOptions.None)
+        ref readonly Path destinationPath, ref readonly Path sourcePath, ref DirectoryEntry dirEntry,
+        Span<byte> workBuffer, IProgressReport logger = null, CreateFileOptions option = CreateFileOptions.None)
     {
-        static Result OnEnterDir(in Path path, in DirectoryEntry entry,
+        static Result OnEnterDir(ref readonly Path path, in DirectoryEntry entry,
             ref Utility.FsIterationTaskClosure closure)
         {
             Result res = closure.DestinationPathBuffer.AppendChild(entry.Name);
@@ -60,12 +60,12 @@ public static class FileSystemExtensions
             return Result.Success;
         }
 
-        static Result OnExitDir(in Path path, in DirectoryEntry entry, ref Utility.FsIterationTaskClosure closure)
+        static Result OnExitDir(ref readonly Path path, in DirectoryEntry entry, ref Utility.FsIterationTaskClosure closure)
         {
             return closure.DestinationPathBuffer.RemoveChild();
         }
 
-        Result OnFile(in Path path, in DirectoryEntry entry, ref Utility.FsIterationTaskClosure closure)
+        Result OnFile(ref readonly Path path, in DirectoryEntry entry, ref Utility.FsIterationTaskClosure closure)
         {
             logger?.LogMessage(path.ToString());
 
@@ -84,7 +84,7 @@ public static class FileSystemExtensions
         taskClosure.SourceFileSystem = sourceFileSystem;
         taskClosure.DestFileSystem = destinationFileSystem;
 
-        Result res = taskClosure.DestinationPathBuffer.Initialize(destinationPath);
+        Result res = taskClosure.DestinationPathBuffer.Initialize(in destinationPath);
         if (res.IsFailure()) return res.Miss();
 
         res = Utility.IterateDirectoryRecursively(sourceFileSystem, in sourcePath, ref dirEntry, OnEnterDir,
@@ -94,13 +94,13 @@ public static class FileSystemExtensions
         return res;
     }
 
-    public static Result CopyFile(IFileSystem destFileSystem, IFileSystem sourceFileSystem, in Path destPath,
-        in Path sourcePath, Span<byte> workBuffer, IProgressReport logger = null,
+    public static Result CopyFile(IFileSystem destFileSystem, IFileSystem sourceFileSystem, ref readonly Path destPath,
+        ref readonly Path sourcePath, Span<byte> workBuffer, IProgressReport logger = null,
         CreateFileOptions option = CreateFileOptions.None)
     {
         // Open source file.
         using var sourceFile = new UniqueRef<IFile>();
-        Result res = sourceFileSystem.OpenFile(ref sourceFile.Ref, sourcePath, OpenMode.Read);
+        Result res = sourceFileSystem.OpenFile(ref sourceFile.Ref, in sourcePath, OpenMode.Read);
         if (res.IsFailure()) return res.Miss();
 
         res = sourceFile.Get.GetSize(out long fileSize);
@@ -352,7 +352,7 @@ public static class FileSystemExtensions
         return Utility.EnsureDirectory(fs, in pathNormalized);
     }
 
-    public static Result CreateOrOverwriteFile(IFileSystem fileSystem, in Path path, long size,
+    public static Result CreateOrOverwriteFile(IFileSystem fileSystem, ref readonly Path path, long size,
         CreateFileOptions option = CreateFileOptions.None)
     {
         Result res = fileSystem.CreateFile(in path, size, option);

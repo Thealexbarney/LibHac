@@ -90,8 +90,8 @@ public class IntegrityVerificationStorage : IStorage
         return _verificationBlockSize;
     }
 
-    public void Initialize(in ValueSubStorage hashStorage, in ValueSubStorage dataStorage, int sizeVerificationBlock,
-        int sizeUpperLayerVerificationBlock, IBufferManager bufferManager,
+    public void Initialize(ref readonly ValueSubStorage hashStorage, ref readonly ValueSubStorage dataStorage,
+        int sizeVerificationBlock, int sizeUpperLayerVerificationBlock, IBufferManager bufferManager,
         IHash256GeneratorFactory hashGeneratorFactory, in Optional<HashSalt> hashSalt, bool isRealData, bool isWritable,
         bool allowClearedBlocks)
     {
@@ -226,7 +226,7 @@ public class IntegrityVerificationStorage : IStorage
             {
                 int verifiedSize = (verifiedCount + i) << _verificationBlockOrder;
                 ref BlockHash blockHash = ref signatureBuffer.GetBuffer<BlockHash>()[i];
-                currentResult = VerifyHash(destination.Slice(verifiedCount), ref blockHash, in hashGenerator);
+                currentResult = VerifyHash(destination.Slice(verifiedCount), ref blockHash, ref hashGenerator.Ref);
 
                 if (ResultFs.IntegrityVerificationStorageCorrupted.Includes(currentResult))
                 {
@@ -319,7 +319,7 @@ public class IntegrityVerificationStorage : IStorage
                     {
                         int updatedSize = (updatedSignatureCount + i) << _verificationBlockOrder;
                         CalcBlockHash(out signatureBuffer.GetBuffer<BlockHash>()[i], source.Slice(updatedSize),
-                            in hashGenerator);
+                            ref hashGenerator.Ref);
                     }
                 }
 
@@ -523,18 +523,18 @@ public class IntegrityVerificationStorage : IStorage
         Result res = _hashGeneratorFactory.Create(ref hashGenerator.Ref);
         if (res.IsFailure()) return res.Miss();
 
-        CalcBlockHash(out outHash, buffer, verificationBlockSize, in hashGenerator);
+        CalcBlockHash(out outHash, buffer, verificationBlockSize, ref hashGenerator.Ref);
         return Result.Success;
     }
 
     private void CalcBlockHash(out BlockHash outHash, ReadOnlySpan<byte> buffer,
-        in UniqueRef<IHash256Generator> hashGenerator)
+        ref UniqueRef<IHash256Generator> hashGenerator)
     {
-        CalcBlockHash(out outHash, buffer, _verificationBlockSize, in hashGenerator);
+        CalcBlockHash(out outHash, buffer, _verificationBlockSize, ref hashGenerator);
     }
 
     private void CalcBlockHash(out BlockHash outHash, ReadOnlySpan<byte> buffer, int verificationBlockSize,
-        in UniqueRef<IHash256Generator> hashGenerator)
+        ref UniqueRef<IHash256Generator> hashGenerator)
     {
         UnsafeHelpers.SkipParamInit(out outHash);
 
@@ -568,7 +568,7 @@ public class IntegrityVerificationStorage : IStorage
     }
 
     private Result VerifyHash(ReadOnlySpan<byte> buffer, ref BlockHash hash,
-        in UniqueRef<IHash256Generator> hashGenerator)
+        ref UniqueRef<IHash256Generator> hashGenerator)
     {
         Assert.SdkRequiresGreaterEqual(buffer.Length, HashSize);
 
@@ -582,7 +582,7 @@ public class IntegrityVerificationStorage : IStorage
                 return ResultFs.ClearedRealDataVerificationFailed.Log();
         }
 
-        CalcBlockHash(out BlockHash actualHash, buffer, hashGenerator);
+        CalcBlockHash(out BlockHash actualHash, buffer, ref hashGenerator);
 
         if (!CryptoUtil.IsSameBytes(SpanHelpers.AsReadOnlyByteSpan(in hash),
                 SpanHelpers.AsReadOnlyByteSpan(in actualHash), Unsafe.SizeOf<BlockHash>()))

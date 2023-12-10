@@ -153,7 +153,7 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
         return new DebugConfigurationService(_fsServer, Globals.DebugConfigurationServiceImpl, _currentProcess);
     }
 
-    public Result OpenFileSystemWithId(ref SharedRef<IFileSystemSf> outFileSystem, in FspPath path,
+    public Result OpenFileSystemWithId(ref SharedRef<IFileSystemSf> outFileSystem, ref readonly FspPath path,
         ulong id, FileSystemProxyType fsType)
     {
         Result res = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
@@ -172,7 +172,7 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
     }
 
     public Result OpenCodeFileSystem(ref SharedRef<IFileSystemSf> fileSystem,
-        out CodeVerificationData verificationData, in FspPath path, ProgramId programId)
+        out CodeVerificationData verificationData, ref readonly FspPath path, ProgramId programId)
     {
         UnsafeHelpers.SkipParamInit(out verificationData);
 
@@ -251,7 +251,7 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
         return ncaFsService.OpenDataStorageByDataId(ref outStorage, dataId, storageId);
     }
 
-    public Result OpenDataStorageByPath(ref SharedRef<IFileSystemSf> outFileSystem, in FspPath path,
+    public Result OpenDataStorageByPath(ref SharedRef<IFileSystemSf> outFileSystem, ref readonly FspPath path,
         FileSystemProxyType fsType)
     {
         Result res = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
@@ -478,7 +478,7 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
         return GetBaseFileSystemService().FormatBaseFileSystem(fileSystemId);
     }
 
-    public Result OpenBisFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, in FspPath rootPath,
+    public Result OpenBisFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, ref readonly FspPath rootPath,
         BisPartitionId partitionId)
     {
         return GetBaseFileSystemService().OpenBisFileSystem(ref outFileSystem, in rootPath, partitionId);
@@ -494,13 +494,13 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
         return GetBaseStorageService().InvalidateBisCache();
     }
 
-    public Result OpenHostFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, in FspPath path)
+    public Result OpenHostFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, ref readonly FspPath path)
     {
         return OpenHostFileSystemWithOption(ref outFileSystem, in path, MountHostOption.None);
     }
 
     public Result OpenHostFileSystemWithOption(ref SharedRef<IFileSystemSf> outFileSystem,
-        in FspPath path, MountHostOption option)
+        ref readonly FspPath path, MountHostOption option)
     {
         Result res = GetProgramInfo(out ProgramInfo programInfo);
         if (res.IsFailure()) return res.Miss();
@@ -783,7 +783,7 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
         return Result.Success;
     }
 
-    public Result SetSaveDataRootPath(in FspPath path)
+    public Result SetSaveDataRootPath(ref readonly FspPath path)
     {
         Result res = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
         if (res.IsFailure()) return res.Miss();
@@ -919,12 +919,13 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
         return ncaFsService.GetRightsId(out rightsId, programId, storageId);
     }
 
-    public Result GetRightsIdByPath(out RightsId rightsId, in FspPath path)
+    public Result GetRightsIdByPath(out RightsId rightsId, ref readonly FspPath path)
     {
         return GetRightsIdAndKeyGenerationByPath(out rightsId, out _, in path);
     }
 
-    public Result GetRightsIdAndKeyGenerationByPath(out RightsId rightsId, out byte keyGeneration, in FspPath path)
+    public Result GetRightsIdAndKeyGenerationByPath(out RightsId rightsId, out byte keyGeneration,
+        ref readonly FspPath path)
     {
         UnsafeHelpers.SkipParamInit(out rightsId, out keyGeneration);
 
@@ -992,7 +993,7 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
             .RegisterProgramIndexMapInfo(programIndexMapInfoBuffer, programCount);
     }
 
-    public Result SetBisRootForHost(BisPartitionId partitionId, in FspPath path)
+    public Result SetBisRootForHost(BisPartitionId partitionId, ref readonly FspPath path)
     {
         return GetBaseFileSystemService().SetBisRootForHost(partitionId, in path);
     }

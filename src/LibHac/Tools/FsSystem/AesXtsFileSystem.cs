@@ -40,14 +40,14 @@ public class AesXtsFileSystem : IFileSystem
         base.Dispose();
     }
 
-    protected override Result DoCreateDirectory(in Path path)
+    protected override Result DoCreateDirectory(ref readonly Path path)
     {
-        return _baseFileSystem.CreateDirectory(path);
+        return _baseFileSystem.CreateDirectory(in path);
     }
 
-    protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
+    protected override Result DoCreateFile(ref readonly Path path, long size, CreateFileOptions option)
     {
-        return CreateFile(path, size, option, new byte[0x20]);
+        return CreateFile(in path, size, option, new byte[0x20]);
     }
 
     /// <summary>
@@ -58,7 +58,7 @@ public class AesXtsFileSystem : IFileSystem
     /// <param name="options">Flags to control how the file is created.
     /// Should usually be <see cref="CreateFileOptions.None"/></param>
     /// <param name="key">The 256-bit key containing a 128-bit data key followed by a 128-bit tweak key.</param>
-    public Result CreateFile(in Path path, long size, CreateFileOptions options, byte[] key)
+    public Result CreateFile(ref readonly Path path, long size, CreateFileOptions options, byte[] key)
     {
         long containerSize = AesXtsFile.HeaderLength + Alignment.AlignUp(size, 0x10);
 
@@ -77,41 +77,41 @@ public class AesXtsFileSystem : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoDeleteDirectory(in Path path)
+    protected override Result DoDeleteDirectory(ref readonly Path path)
     {
-        return _baseFileSystem.DeleteDirectory(path);
+        return _baseFileSystem.DeleteDirectory(in path);
     }
 
-    protected override Result DoDeleteDirectoryRecursively(in Path path)
+    protected override Result DoDeleteDirectoryRecursively(ref readonly Path path)
     {
-        return _baseFileSystem.DeleteDirectoryRecursively(path);
+        return _baseFileSystem.DeleteDirectoryRecursively(in path);
     }
 
-    protected override Result DoCleanDirectoryRecursively(in Path path)
+    protected override Result DoCleanDirectoryRecursively(ref readonly Path path)
     {
-        return _baseFileSystem.CleanDirectoryRecursively(path);
+        return _baseFileSystem.CleanDirectoryRecursively(in path);
     }
 
-    protected override Result DoDeleteFile(in Path path)
+    protected override Result DoDeleteFile(ref readonly Path path)
     {
-        return _baseFileSystem.DeleteFile(path);
+        return _baseFileSystem.DeleteFile(in path);
     }
 
-    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, ref readonly Path path,
         OpenDirectoryMode mode)
     {
         using var baseDir = new UniqueRef<IDirectory>();
-        Result res = _baseFileSystem.OpenDirectory(ref baseDir.Ref, path, mode);
+        Result res = _baseFileSystem.OpenDirectory(ref baseDir.Ref, in path, mode);
         if (res.IsFailure()) return res.Miss();
 
         outDirectory.Reset(new AesXtsDirectory(_baseFileSystem, ref baseDir.Ref, new U8String(path.GetString().ToArray()), mode));
         return Result.Success;
     }
 
-    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
+    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, ref readonly Path path, OpenMode mode)
     {
         using var baseFile = new UniqueRef<IFile>();
-        Result res = _baseFileSystem.OpenFile(ref baseFile.Ref, path, mode | OpenMode.Read);
+        Result res = _baseFileSystem.OpenFile(ref baseFile.Ref, in path, mode | OpenMode.Read);
         if (res.IsFailure()) return res.Miss();
 
         var xtsFile = new AesXtsFile(mode, ref baseFile.Ref, new U8String(path.GetString().ToArray()), _kekSource,
@@ -121,7 +121,7 @@ public class AesXtsFileSystem : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
+    protected override Result DoRenameDirectory(ref readonly Path currentPath, ref readonly Path newPath)
     {
         // todo: Return proper result codes
 
@@ -133,7 +133,7 @@ public class AesXtsFileSystem : IFileSystem
         // Reencrypt any modified file headers with the old path
         // Rename directory to the old path
 
-        Result res = _baseFileSystem.RenameDirectory(currentPath, newPath);
+        Result res = _baseFileSystem.RenameDirectory(in currentPath, in newPath);
         if (res.IsFailure()) return res.Miss();
 
         try
@@ -143,7 +143,7 @@ public class AesXtsFileSystem : IFileSystem
         catch (Exception)
         {
             RenameDirectoryImpl(currentPath.ToString(), newPath.ToString(), true);
-            _baseFileSystem.RenameDirectory(currentPath, newPath);
+            _baseFileSystem.RenameDirectory(in currentPath, in newPath);
 
             throw;
         }
@@ -181,13 +181,13 @@ public class AesXtsFileSystem : IFileSystem
         }
     }
 
-    protected override Result DoRenameFile(in Path currentPath, in Path newPath)
+    protected override Result DoRenameFile(ref readonly Path currentPath, ref readonly Path newPath)
     {
         // todo: Return proper result codes
 
         AesXtsFileHeader header = ReadXtsHeader(currentPath.ToString(), currentPath.ToString());
 
-        Result res = _baseFileSystem.RenameFile(currentPath, newPath);
+        Result res = _baseFileSystem.RenameFile(in currentPath, in newPath);
         if (res.IsFailure()) return res.Miss();
 
         try
@@ -196,7 +196,7 @@ public class AesXtsFileSystem : IFileSystem
         }
         catch (Exception)
         {
-            _baseFileSystem.RenameFile(newPath, currentPath);
+            _baseFileSystem.RenameFile(in newPath, in currentPath);
             WriteXtsHeader(header, currentPath.ToString(), currentPath.ToString());
 
             throw;
@@ -205,24 +205,24 @@ public class AesXtsFileSystem : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
+    protected override Result DoGetEntryType(out DirectoryEntryType entryType, ref readonly Path path)
     {
-        return _baseFileSystem.GetEntryType(out entryType, path);
+        return _baseFileSystem.GetEntryType(out entryType, in path);
     }
 
-    protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
+    protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, ref readonly Path path)
     {
-        return _baseFileSystem.GetFileTimeStampRaw(out timeStamp, path);
+        return _baseFileSystem.GetFileTimeStampRaw(out timeStamp, in path);
     }
 
-    protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
+    protected override Result DoGetFreeSpaceSize(out long freeSpace, ref readonly Path path)
     {
-        return _baseFileSystem.GetFreeSpaceSize(out freeSpace, path);
+        return _baseFileSystem.GetFreeSpaceSize(out freeSpace, in path);
     }
 
-    protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
+    protected override Result DoGetTotalSpaceSize(out long totalSpace, ref readonly Path path)
     {
-        return _baseFileSystem.GetTotalSpaceSize(out totalSpace, path);
+        return _baseFileSystem.GetTotalSpaceSize(out totalSpace, in path);
     }
 
     protected override Result DoCommit()
@@ -241,9 +241,9 @@ public class AesXtsFileSystem : IFileSystem
     }
 
     protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
-        in Path path)
+        ref readonly Path path)
     {
-        return _baseFileSystem.QueryEntry(outBuffer, inBuffer, queryId, path);
+        return _baseFileSystem.QueryEntry(outBuffer, inBuffer, queryId, in path);
     }
 
     private AesXtsFileHeader ReadXtsHeader(string filePath, string keyPath)

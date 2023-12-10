@@ -106,7 +106,7 @@ public class SubStorage : IStorage
     /// <param name="baseStorage">The base <see cref="IStorage"/>.</param>
     /// <param name="offset">The offset in the base storage at which to begin the created SubStorage.</param>
     /// <param name="size">The size of the created SubStorage.</param>
-    public SubStorage(in SharedRef<IStorage> baseStorage, long offset, long size)
+    public SubStorage(ref readonly SharedRef<IStorage> baseStorage, long offset, long size)
     {
         BaseStorage = baseStorage.Get;
         _offset = offset;

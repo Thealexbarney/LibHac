@@ -39,7 +39,7 @@ public class KipReader : IDisposable
         _kipStorage.Destroy();
     }
 
-    public Result Initialize(in SharedRef<IStorage> kipData)
+    public Result Initialize(ref readonly SharedRef<IStorage> kipData)
     {
         if (!kipData.HasValue)
             return ResultLibHac.NullArgument.Log();

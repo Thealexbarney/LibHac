@@ -13,7 +13,7 @@ internal class ObserverManager<TObserver, TItem> where TObserver : IObserverHold
     private LinkedList<TObserver> _observers;
     private ReaderWriterLock _rwLock;
 
-    public delegate void Function(ref TObserver observer, in TItem item);
+    public delegate void Function(ref TObserver observer, ref readonly TItem item);
 
     public ObserverManager(HorizonClient hos)
     {
@@ -61,7 +61,7 @@ internal class ObserverManager<TObserver, TItem> where TObserver : IObserverHold
         _observers.Clear();
     }
 
-    public void InvokeAllObserver(in TItem item, Function function)
+    public void InvokeAllObserver(ref readonly TItem item, Function function)
     {
         using ScopedLock<ReaderWriterLock> lk = ScopedLock.Lock(ref _rwLock);
 
@@ -81,7 +81,7 @@ internal class LogObserverManager
     private readonly LinkedList<LogObserverHolder> _observers;
     private ReaderWriterLock _rwLock;
 
-    public delegate void Function(ref LogObserverHolder observer, in LogObserverContext item);
+    public delegate void Function(ref LogObserverHolder observer, ref readonly LogObserverContext item);
 
     public LogObserverManager(HorizonClient hos)
     {
@@ -129,7 +129,7 @@ internal class LogObserverManager
         _observers.Clear();
     }
 
-    public void InvokeAllObserver(in LogObserverContext item, Function function)
+    public void InvokeAllObserver(ref readonly LogObserverContext item, Function function)
     {
         using ScopedLock<ReaderWriterLock> lk = ScopedLock.Lock(ref _rwLock);
 

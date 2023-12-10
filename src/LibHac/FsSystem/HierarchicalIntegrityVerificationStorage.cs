@@ -162,7 +162,7 @@ public class HierarchicalIntegrityVerificationStorageControlArea : IDisposable
         }
     }
 
-    public static Result Format(in ValueSubStorage metaStorage,
+    public static Result Format(ref readonly ValueSubStorage metaStorage,
         in HierarchicalIntegrityVerificationMetaInformation metaInfo)
     {
         // Ensure the storage is large enough to hold the meta info.
@@ -189,7 +189,7 @@ public class HierarchicalIntegrityVerificationStorageControlArea : IDisposable
         return Result.Success;
     }
 
-    public static Result Expand(in ValueSubStorage metaStorage,
+    public static Result Expand(ref readonly ValueSubStorage metaStorage,
         in HierarchicalIntegrityVerificationMetaInformation newMeta)
     {
         // Ensure the storage is large enough to hold the meta info.
@@ -230,7 +230,7 @@ public class HierarchicalIntegrityVerificationStorageControlArea : IDisposable
         outInfo = _meta.LevelHashInfo;
     }
 
-    public Result Initialize(in ValueSubStorage metaStorage)
+    public Result Initialize(ref readonly ValueSubStorage metaStorage)
     {
         // Ensure the storage is large enough to hold the meta info.
         Result res = metaStorage.GetSize(out long metaSize);
@@ -279,7 +279,7 @@ public class HierarchicalIntegrityVerificationStorage : IStorage
 
         private ValueSubStorage[] _storages;
 
-        public HierarchicalStorageInformation(in HierarchicalStorageInformation other)
+        public HierarchicalStorageInformation(ref readonly HierarchicalStorageInformation other)
         {
             _storages = new ValueSubStorage[(int)Storage.DataStorage + 1];
 
@@ -311,13 +311,13 @@ public class HierarchicalIntegrityVerificationStorage : IStorage
             }
         }
 
-        public void SetMasterHashStorage(in ValueSubStorage storage) => _storages[(int)Storage.MasterStorage].Set(in storage);
-        public void SetLayer1HashStorage(in ValueSubStorage storage) => _storages[(int)Storage.Layer1Storage].Set(in storage);
-        public void SetLayer2HashStorage(in ValueSubStorage storage) => _storages[(int)Storage.Layer2Storage].Set(in storage);
-        public void SetLayer3HashStorage(in ValueSubStorage storage) => _storages[(int)Storage.Layer3Storage].Set(in storage);
-        public void SetLayer4HashStorage(in ValueSubStorage storage) => _storages[(int)Storage.Layer4Storage].Set(in storage);
-        public void SetLayer5HashStorage(in ValueSubStorage storage) => _storages[(int)Storage.Layer5Storage].Set(in storage);
-        public void SetDataStorage(in ValueSubStorage storage) => _storages[(int)Storage.DataStorage].Set(in storage);
+        public void SetMasterHashStorage(ref readonly ValueSubStorage storage) => _storages[(int)Storage.MasterStorage].Set(in storage);
+        public void SetLayer1HashStorage(ref readonly ValueSubStorage storage) => _storages[(int)Storage.Layer1Storage].Set(in storage);
+        public void SetLayer2HashStorage(ref readonly ValueSubStorage storage) => _storages[(int)Storage.Layer2Storage].Set(in storage);
+        public void SetLayer3HashStorage(ref readonly ValueSubStorage storage) => _storages[(int)Storage.Layer3Storage].Set(in storage);
+        public void SetLayer4HashStorage(ref readonly ValueSubStorage storage) => _storages[(int)Storage.Layer4Storage].Set(in storage);
+        public void SetLayer5HashStorage(ref readonly ValueSubStorage storage) => _storages[(int)Storage.Layer5Storage].Set(in storage);
+        public void SetDataStorage(ref readonly ValueSubStorage storage) => _storages[(int)Storage.DataStorage].Set(in storage);
     }
 
     internal const uint IntegrityVerificationStorageMagic = 0x43465649; // IVFC

@@ -90,7 +90,7 @@ public class ReadOnlyFileSystem : IFileSystem
         base.Dispose();
     }
 
-    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
+    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, ref readonly Path path, OpenMode mode)
     {
         // The Read flag must be the only flag set
         if ((mode & OpenMode.All) != OpenMode.Read)
@@ -104,40 +104,40 @@ public class ReadOnlyFileSystem : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, ref readonly Path path,
         OpenDirectoryMode mode)
     {
         // An IDirectory is already read-only so we don't need a wrapper ReadOnlyDictionary class
         return _baseFileSystem.Get.OpenDirectory(ref outDirectory, in path, mode);
     }
 
-    protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
+    protected override Result DoGetEntryType(out DirectoryEntryType entryType, ref readonly Path path)
     {
         return _baseFileSystem.Get.GetEntryType(out entryType, in path);
     }
 
-    protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option) =>
+    protected override Result DoCreateFile(ref readonly Path path, long size, CreateFileOptions option) =>
         ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-    protected override Result DoDeleteFile(in Path path) =>
+    protected override Result DoDeleteFile(ref readonly Path path) =>
         ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-    protected override Result DoCreateDirectory(in Path path) =>
+    protected override Result DoCreateDirectory(ref readonly Path path) =>
         ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-    protected override Result DoDeleteDirectory(in Path path) =>
+    protected override Result DoDeleteDirectory(ref readonly Path path) =>
         ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-    protected override Result DoDeleteDirectoryRecursively(in Path path) =>
+    protected override Result DoDeleteDirectoryRecursively(ref readonly Path path) =>
         ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-    protected override Result DoCleanDirectoryRecursively(in Path path) =>
+    protected override Result DoCleanDirectoryRecursively(ref readonly Path path) =>
         ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-    protected override Result DoRenameFile(in Path currentPath, in Path newPath) =>
+    protected override Result DoRenameFile(ref readonly Path currentPath, ref readonly Path newPath) =>
         ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
-    protected override Result DoRenameDirectory(in Path currentPath, in Path newPath) =>
+    protected override Result DoRenameDirectory(ref readonly Path currentPath, ref readonly Path newPath) =>
         ResultFs.UnsupportedWriteForReadOnlyFileSystem.Log();
 
     protected override Result DoCommit() =>
@@ -146,12 +146,12 @@ public class ReadOnlyFileSystem : IFileSystem
     protected override Result DoCommitProvisionally(long counter) =>
         ResultFs.UnsupportedCommitProvisionallyForReadOnlyFileSystem.Log();
 
-    protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
+    protected override Result DoGetFreeSpaceSize(out long freeSpace, ref readonly Path path)
     {
         return _baseFileSystem.Get.GetFreeSpaceSize(out freeSpace, in path);
     }
 
-    protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
+    protected override Result DoGetTotalSpaceSize(out long totalSpace, ref readonly Path path)
     {
         Unsafe.SkipInit(out totalSpace);
         return ResultFs.UnsupportedGetTotalSpaceSizeForReadOnlyFileSystem.Log();

@@ -168,7 +168,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
     }
 
     public Result OpenCodeFileSystem(ref SharedRef<IFileSystemSf> outFileSystem,
-        out CodeVerificationData verificationData, in FspPath path, ProgramId programId)
+        out CodeVerificationData verificationData, ref readonly FspPath path, ProgramId programId)
     {
         throw new NotImplementedException();
     }
@@ -178,7 +178,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         throw new NotImplementedException();
     }
 
-    public Result OpenDataStorageByPath(ref SharedRef<IFileSystemSf> outFileSystem, in FspPath path,
+    public Result OpenDataStorageByPath(ref SharedRef<IFileSystemSf> outFileSystem, ref readonly FspPath path,
         FileSystemProxyType fsType)
     {
         throw new NotImplementedException();
@@ -225,7 +225,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         throw new NotImplementedException();
     }
 
-    public Result OpenFileSystemWithId(ref SharedRef<IFileSystemSf> outFileSystem, in FspPath path,
+    public Result OpenFileSystemWithId(ref SharedRef<IFileSystemSf> outFileSystem, ref readonly FspPath path,
         ulong id, FileSystemProxyType fsType)
     {
         const StorageLayoutType storageFlag = StorageLayoutType.All;
@@ -384,7 +384,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         return Result.Success;
     }
 
-    public Result GetRightsIdAndKeyGenerationByPath(out RightsId outRightsId, out byte outKeyGeneration, in FspPath path)
+    public Result GetRightsIdAndKeyGenerationByPath(out RightsId outRightsId, out byte outKeyGeneration, ref readonly FspPath path)
     {
         const ulong checkThroughProgramId = ulong.MaxValue;
         UnsafeHelpers.SkipParamInit(out outRightsId, out outKeyGeneration);

@@ -115,12 +115,12 @@ public class AesXtsFileHeader
         byte[] data = new byte[0x80];
 
         Array.Copy(Signature, data, 0x20);
-        MemoryMarshal.Write(data.AsSpan(0x20), ref magic);
+        MemoryMarshal.Write(data.AsSpan(0x20), in magic);
 
         Array.Copy(key1, 0, data, 0x28, 0x10);
         Array.Copy(key2, 0, data, 0x38, 0x10);
 
-        MemoryMarshal.Write(data.AsSpan(0x48), ref size);
+        MemoryMarshal.Write(data.AsSpan(0x48), in size);
 
         return data;
     }

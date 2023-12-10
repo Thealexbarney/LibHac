@@ -73,7 +73,7 @@ public class SparseStorage : IndirectStorage
         SetZeroStorage();
     }
 
-    public void SetDataStorage(in ValueSubStorage storage)
+    public void SetDataStorage(ref readonly ValueSubStorage storage)
     {
         Assert.SdkRequires(IsInitialized());
 

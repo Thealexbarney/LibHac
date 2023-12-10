@@ -23,11 +23,11 @@ internal class DeliveryCacheFileMetaAccessor
         Server = server;
     }
 
-    public Result ReadApplicationFileMeta(ulong applicationId, ref DirectoryName directoryName,
+    public Result ReadApplicationFileMeta(ulong applicationId, ref readonly DirectoryName directoryName,
         bool allowMissingMetaFile)
     {
         Span<byte> metaPath = stackalloc byte[0x50];
-        Server.GetStorageManager().GetFilesMetaPath(metaPath, applicationId, ref directoryName);
+        Server.GetStorageManager().GetFilesMetaPath(metaPath, applicationId, in directoryName);
 
         return Read(new U8Span(metaPath), allowMissingMetaFile);
     }
@@ -48,7 +48,7 @@ internal class DeliveryCacheFileMetaAccessor
         }
     }
 
-    public Result FindEntry(out DeliveryCacheFileMetaEntry entry, ref FileName fileName)
+    public Result FindEntry(out DeliveryCacheFileMetaEntry entry, ref readonly FileName fileName)
     {
         UnsafeHelpers.SkipParamInit(out entry);
 

@@ -74,7 +74,7 @@ internal class LocationResolverSet : IDisposable
         }
     }
 
-    private static Result SetUpFsPath(ref Fs.Path outPath, in Lr.Path lrPath)
+    private static Result SetUpFsPath(ref Fs.Path outPath, ref readonly Lr.Path lrPath)
     {
         var pathFlags = new PathFlags();
         pathFlags.AllowMountName();

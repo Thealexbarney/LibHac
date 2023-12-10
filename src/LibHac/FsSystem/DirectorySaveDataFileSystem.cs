@@ -331,7 +331,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         return Result.Success;
     }
 
-    private Result ResolvePath(ref Path outFullPath, in Path path)
+    private Result ResolvePath(ref Path outFullPath, ref readonly Path path)
     {
         using var pathDirectoryName = new Path();
 
@@ -349,7 +349,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         return Result.Success;
     }
 
-    protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
+    protected override Result DoCreateFile(ref readonly Path path, long size, CreateFileOptions option)
     {
         using var fullPath = new Path();
         Result res = ResolvePath(ref fullPath.Ref(), in path);
@@ -363,7 +363,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         return Result.Success;
     }
 
-    protected override Result DoDeleteFile(in Path path)
+    protected override Result DoDeleteFile(ref readonly Path path)
     {
         using var fullPath = new Path();
         Result res = ResolvePath(ref fullPath.Ref(), in path);
@@ -377,7 +377,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         return Result.Success;
     }
 
-    protected override Result DoCreateDirectory(in Path path)
+    protected override Result DoCreateDirectory(ref readonly Path path)
     {
         using var fullPath = new Path();
         Result res = ResolvePath(ref fullPath.Ref(), in path);
@@ -391,7 +391,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         return Result.Success;
     }
 
-    protected override Result DoDeleteDirectory(in Path path)
+    protected override Result DoDeleteDirectory(ref readonly Path path)
     {
         using var fullPath = new Path();
         Result res = ResolvePath(ref fullPath.Ref(), in path);
@@ -405,7 +405,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         return Result.Success;
     }
 
-    protected override Result DoDeleteDirectoryRecursively(in Path path)
+    protected override Result DoDeleteDirectoryRecursively(ref readonly Path path)
     {
         using var fullPath = new Path();
         Result res = ResolvePath(ref fullPath.Ref(), in path);
@@ -419,7 +419,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         return Result.Success;
     }
 
-    protected override Result DoCleanDirectoryRecursively(in Path path)
+    protected override Result DoCleanDirectoryRecursively(ref readonly Path path)
     {
         using var fullPath = new Path();
         Result res = ResolvePath(ref fullPath.Ref(), in path);
@@ -433,7 +433,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         return Result.Success;
     }
 
-    protected override Result DoRenameFile(in Path currentPath, in Path newPath)
+    protected override Result DoRenameFile(ref readonly Path currentPath, ref readonly Path newPath)
     {
         using var currentFullPath = new Path();
         using var newFullPath = new Path();
@@ -452,7 +452,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         return Result.Success;
     }
 
-    protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
+    protected override Result DoRenameDirectory(ref readonly Path currentPath, ref readonly Path newPath)
     {
         using var currentFullPath = new Path();
         using var newFullPath = new Path();
@@ -471,7 +471,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         return Result.Success;
     }
 
-    protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
+    protected override Result DoGetEntryType(out DirectoryEntryType entryType, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out entryType);
 
@@ -487,7 +487,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         return Result.Success;
     }
 
-    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
+    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, ref readonly Path path, OpenMode mode)
     {
         using var fullPath = new Path();
         Result res = ResolvePath(ref fullPath.Ref(), in path);
@@ -510,7 +510,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         return Result.Success;
     }
 
-    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, ref readonly Path path,
         OpenDirectoryMode mode)
     {
         using var fullPath = new Path();
@@ -531,10 +531,10 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
     /// <param name="destPath">The path of the destination directory.</param>
     /// <param name="sourcePath">The path of the source directory.</param>
     /// <returns>The <see cref="Result"/> of the operation.</returns>
-    private Result SynchronizeDirectory(in Path destPath, in Path sourcePath)
+    private Result SynchronizeDirectory(ref readonly Path destPath, ref readonly Path sourcePath)
     {
         // Delete destination dir and recreate it.
-        Result res = _baseFs.DeleteDirectoryRecursively(destPath);
+        Result res = _baseFs.DeleteDirectoryRecursively(in destPath);
 
         // Changed: Nintendo returns all errors unconditionally because SynchronizeDirectory is always called 
         // in situations where a PathNotFound error would mean the save directory was in an invalid state.
@@ -542,7 +542,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         // put the save directory in an invalid state.
         if (res.IsFailure() && !ResultFs.PathNotFound.Includes(res)) return res;
 
-        res = _baseFs.CreateDirectory(destPath);
+        res = _baseFs.CreateDirectory(in destPath);
         if (res.IsFailure()) return res.Miss();
 
         var directoryEntry = new DirectoryEntry();
@@ -650,7 +650,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         return Result.Success;
     }
 
-    protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
+    protected override Result DoGetFreeSpaceSize(out long freeSpace, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out freeSpace);
 
@@ -666,7 +666,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         return Result.Success;
     }
 
-    protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
+    protected override Result DoGetTotalSpaceSize(out long totalSpace, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out totalSpace);
 
@@ -895,7 +895,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         return PathFunctions.SetUpFixedPath(ref path, extraDataName);
     }
 
-    private Result EnsureExtraDataSize(in Path path)
+    private Result EnsureExtraDataSize(ref readonly Path path)
     {
         using var file = new UniqueRef<IFile>();
         Result res = _baseFs.OpenFile(ref file.Ref, in path, OpenMode.ReadWrite);
@@ -910,7 +910,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         return file.Get.SetSize(Unsafe.SizeOf<SaveDataExtraData>());
     }
 
-    private Result SynchronizeExtraData(in Path destPath, in Path sourcePath)
+    private Result SynchronizeExtraData(ref readonly Path destPath, ref readonly Path sourcePath)
     {
         Span<byte> workBuffer = stackalloc byte[Unsafe.SizeOf<SaveDataExtraData>()];
 
@@ -961,7 +961,7 @@ public class DirectorySaveDataFileSystem : ISaveDataFileSystem
         return WriteExtraDataImpl(in extraData);
     }
 
-    private Result WriteExtraDataImpl(in SaveDataExtraData extraData)
+    private Result WriteExtraDataImpl(ref readonly SaveDataExtraData extraData)
     {
         Assert.SdkRequires(_mutex.IsLockedByCurrentThread());
 

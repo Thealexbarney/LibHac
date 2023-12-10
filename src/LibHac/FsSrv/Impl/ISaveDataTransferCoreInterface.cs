@@ -13,7 +13,7 @@ public interface ISaveDataTransferCoreInterface : IDisposable
     Result QuerySaveDataTotalSize(out long outTotalSize, long dataSize, long journalSize);
     Result CheckSaveDataFile(long saveDataId, SaveDataSpaceId spaceId);
     Result CreateSaveDataFileSystemCore(in SaveDataAttribute attribute, in SaveDataCreationInfo creationInfo, in SaveDataMetaInfo metaInfo, in Optional<HashSalt> hashSalt, bool leaveUnfinalized);
-    Result GetSaveDataInfo(out SaveDataInfo saveInfo, SaveDataSpaceId spaceId, in SaveDataAttribute attribute);
+    Result GetSaveDataInfo(out SaveDataInfo saveInfo, SaveDataSpaceId spaceId, SaveDataAttribute attribute);
     Result ReadSaveDataFileSystemExtraDataCore(out SaveDataExtraData extraData, SaveDataSpaceId spaceId, ulong saveDataId, bool isTemporarySaveData);
     Result WriteSaveDataFileSystemExtraDataCore(SaveDataSpaceId spaceId, ulong saveDataId, in SaveDataExtraData extraData, SaveDataType type, bool updateTimeStamp);
     Result FinalizeSaveDataCreation(ulong saveDataId, SaveDataSpaceId spaceId);

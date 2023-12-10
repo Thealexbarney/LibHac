@@ -295,7 +295,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
 
     private static ReadOnlySpan<byte> RootDir => "/"u8;
 
-    private Result SetUpPath(ref Path fsPath, in PathSf sfPath)
+    private Result SetUpPath(ref Path fsPath, ref readonly PathSf sfPath)
     {
         Result res;
 
@@ -316,7 +316,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         return Result.Success;
     }
 
-    public Result CreateFile(in PathSf path, long size, int option)
+    public Result CreateFile(ref readonly PathSf path, long size, int option)
     {
         if (size < 0)
             return ResultFs.InvalidSize.Log();
@@ -331,7 +331,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         return Result.Success;
     }
 
-    public Result DeleteFile(in PathSf path)
+    public Result DeleteFile(ref readonly PathSf path)
     {
         using var pathNormalized = new Path();
         Result res = SetUpPath(ref pathNormalized.Ref(), in path);
@@ -343,7 +343,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         return Result.Success;
     }
 
-    public Result CreateDirectory(in PathSf path)
+    public Result CreateDirectory(ref readonly PathSf path)
     {
         using var pathNormalized = new Path();
         Result res = SetUpPath(ref pathNormalized.Ref(), in path);
@@ -358,7 +358,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         return Result.Success;
     }
 
-    public Result DeleteDirectory(in PathSf path)
+    public Result DeleteDirectory(ref readonly PathSf path)
     {
         using var pathNormalized = new Path();
         Result res = SetUpPath(ref pathNormalized.Ref(), in path);
@@ -373,7 +373,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         return Result.Success;
     }
 
-    public Result DeleteDirectoryRecursively(in PathSf path)
+    public Result DeleteDirectoryRecursively(ref readonly PathSf path)
     {
         using var pathNormalized = new Path();
         Result res = SetUpPath(ref pathNormalized.Ref(), in path);
@@ -388,7 +388,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         return Result.Success;
     }
 
-    public Result CleanDirectoryRecursively(in PathSf path)
+    public Result CleanDirectoryRecursively(ref readonly PathSf path)
     {
         using var pathNormalized = new Path();
         Result res = SetUpPath(ref pathNormalized.Ref(), in path);
@@ -400,7 +400,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         return Result.Success;
     }
 
-    public Result RenameFile(in PathSf currentPath, in PathSf newPath)
+    public Result RenameFile(ref readonly PathSf currentPath, ref readonly PathSf newPath)
     {
         using var currentPathNormalized = new Path();
         Result res = SetUpPath(ref currentPathNormalized.Ref(), in currentPath);
@@ -416,7 +416,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         return Result.Success;
     }
 
-    public Result RenameDirectory(in PathSf currentPath, in PathSf newPath)
+    public Result RenameDirectory(ref readonly PathSf currentPath, ref readonly PathSf newPath)
     {
         using var currentPathNormalized = new Path();
         Result res = SetUpPath(ref currentPathNormalized.Ref(), in currentPath);
@@ -435,7 +435,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         return Result.Success;
     }
 
-    public Result GetEntryType(out uint entryType, in PathSf path)
+    public Result GetEntryType(out uint entryType, ref readonly PathSf path)
     {
         UnsafeHelpers.SkipParamInit(out entryType);
 
@@ -450,7 +450,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         return Result.Success;
     }
 
-    public Result GetFreeSpaceSize(out long freeSpace, in PathSf path)
+    public Result GetFreeSpaceSize(out long freeSpace, ref readonly PathSf path)
     {
         UnsafeHelpers.SkipParamInit(out freeSpace);
 
@@ -465,7 +465,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         return Result.Success;
     }
 
-    public Result GetTotalSpaceSize(out long totalSpace, in PathSf path)
+    public Result GetTotalSpaceSize(out long totalSpace, ref readonly PathSf path)
     {
         UnsafeHelpers.SkipParamInit(out totalSpace);
 
@@ -480,7 +480,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         return Result.Success;
     }
 
-    public Result OpenFile(ref SharedRef<IFileSf> outFile, in PathSf path, uint mode)
+    public Result OpenFile(ref SharedRef<IFileSf> outFile, ref readonly PathSf path, uint mode)
     {
         const int maxTryCount = 2;
 
@@ -510,7 +510,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         return Result.Success;
     }
 
-    public Result OpenDirectory(ref SharedRef<IDirectorySf> outDirectory, in PathSf path, uint mode)
+    public Result OpenDirectory(ref SharedRef<IDirectorySf> outDirectory, ref readonly PathSf path, uint mode)
     {
         const int maxTryCount = 2;
 
@@ -546,7 +546,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         return _baseFileSystem.Get.Commit();
     }
 
-    public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in PathSf path)
+    public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, ref readonly PathSf path)
     {
         UnsafeHelpers.SkipParamInit(out timeStamp);
 
@@ -561,7 +561,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         return Result.Success;
     }
 
-    public Result QueryEntry(OutBuffer outBuffer, InBuffer inBuffer, int queryId, in PathSf path)
+    public Result QueryEntry(OutBuffer outBuffer, InBuffer inBuffer, int queryId, ref readonly PathSf path)
     {
         static Result PermissionCheck(QueryId queryId, FileSystemInterfaceAdapter fsAdapter)
         {

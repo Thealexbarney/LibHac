@@ -50,7 +50,7 @@ public class BufferStructTests
         ReadOnlySpan<byte> byteSpan = buffer;
 
         Assert.Equal(16, byteSpan.Length);
-        Assert.True(Unsafe.AreSame(ref Unsafe.As<Buffer16, byte>(ref buffer), ref Unsafe.AsRef(byteSpan[0])));
+        Assert.True(Unsafe.AreSame(ref Unsafe.As<Buffer16, byte>(ref buffer), ref Unsafe.AsRef(in byteSpan[0])));
     }
 
     [Fact]

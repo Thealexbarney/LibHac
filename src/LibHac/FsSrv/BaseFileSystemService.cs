@@ -85,7 +85,7 @@ public readonly struct BaseFileSystemService
         return _serviceImpl.FormatBaseFileSystem(fileSystemId);
     }
 
-    public Result OpenBisFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, in FspPath rootPath,
+    public Result OpenBisFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, ref readonly FspPath rootPath,
         BisPartitionId partitionId)
     {
         Result res = GetProgramInfo(out ProgramInfo programInfo);
@@ -150,7 +150,7 @@ public readonly struct BaseFileSystemService
         return Result.Success;
     }
 
-    public Result SetBisRootForHost(BisPartitionId partitionId, in FspPath path)
+    public Result SetBisRootForHost(BisPartitionId partitionId, ref readonly FspPath path)
     {
         throw new NotImplementedException();
     }

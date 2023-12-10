@@ -179,7 +179,7 @@ public class FileStorageBasedFileSystem : FileStorage
     /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist or is a directory.<br/>
     /// <see cref="ResultFs.TargetLocked"/>: When opening as <see cref="OpenMode.Write"/>,
     /// the file is already opened as <see cref="OpenMode.Write"/>.</returns>
-    public Result Initialize(ref SharedRef<IFileSystem> baseFileSystem, in Path path, OpenMode mode)
+    public Result Initialize(ref SharedRef<IFileSystem> baseFileSystem, ref readonly Path path, OpenMode mode)
     {
         using var baseFile = new UniqueRef<IFile>();
 

@@ -60,19 +60,19 @@ public static class SpanHelpers
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlySpan<T> CreateReadOnlySpan<T>(in T reference, int length)
+    public static ReadOnlySpan<T> CreateReadOnlySpan<T>(ref readonly T reference, int length)
     {
         return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in reference), length);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlySpan<T> AsReadOnlySpan<T>(in T reference) where T : unmanaged
+    public static ReadOnlySpan<T> AsReadOnlySpan<T>(ref readonly T reference) where T : unmanaged
     {
         return new ReadOnlySpan<T>(in reference);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlySpan<TSpan> AsReadOnlySpan<TStruct, TSpan>(in TStruct reference)
+    public static ReadOnlySpan<TSpan> AsReadOnlySpan<TStruct, TSpan>(ref readonly TStruct reference)
         where TStruct : unmanaged where TSpan : unmanaged
     {
         return CreateReadOnlySpan(in Unsafe.As<TStruct, TSpan>(ref Unsafe.AsRef(in reference)),
@@ -80,7 +80,7 @@ public static class SpanHelpers
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlySpan<byte> AsReadOnlyByteSpan<T>(in T reference) where T : unmanaged
+    public static ReadOnlySpan<byte> AsReadOnlyByteSpan<T>(ref readonly T reference) where T : unmanaged
     {
         return CreateReadOnlySpan(in Unsafe.As<T, byte>(ref Unsafe.AsRef(in reference)), Unsafe.SizeOf<T>());
     }

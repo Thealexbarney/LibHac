@@ -33,13 +33,13 @@ public static class AlignmentMatchingStorageImpl
         return (uint)(Alignment.AlignUp(value, alignment) - value);
     }
 
-    public static Result Read(in SharedRef<IStorage> storage, Span<byte> workBuffer, uint dataAlignment,
+    public static Result Read(ref readonly SharedRef<IStorage> storage, Span<byte> workBuffer, uint dataAlignment,
         uint bufferAlignment, long offset, Span<byte> destination)
     {
         return Read(storage.Get, workBuffer, dataAlignment, bufferAlignment, offset, destination);
     }
 
-    public static Result Write(in SharedRef<IStorage> storage, Span<byte> subBuffer, uint dataAlignment,
+    public static Result Write(ref readonly SharedRef<IStorage> storage, Span<byte> subBuffer, uint dataAlignment,
         uint bufferAlignment, long offset, ReadOnlySpan<byte> source)
     {
         return Write(storage.Get, subBuffer, dataAlignment, bufferAlignment, offset, source);

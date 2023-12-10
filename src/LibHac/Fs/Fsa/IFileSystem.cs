@@ -26,7 +26,7 @@ public abstract class IFileSystem : IDisposable
     /// <see cref="ResultFs.PathNotFound"/>: The parent directory of the specified path does not exist.<br/>
     /// <see cref="ResultFs.PathAlreadyExists"/>: Specified path already exists as either a file or directory.<br/>
     /// <see cref="ResultFs.UsableSpaceNotEnough"/>: Insufficient free space to create the file.</returns>
-    public Result CreateFile(in Path path, long size, CreateFileOptions option)
+    public Result CreateFile(ref readonly Path path, long size, CreateFileOptions option)
     {
         if (size < 0)
             return ResultFs.OutOfRange.Log();
@@ -44,7 +44,7 @@ public abstract class IFileSystem : IDisposable
     /// <see cref="ResultFs.PathNotFound"/>: The parent directory of the specified path does not exist.<br/>
     /// <see cref="ResultFs.PathAlreadyExists"/>: Specified path already exists as either a file or directory.<br/>
     /// <see cref="ResultFs.UsableSpaceNotEnough"/>: Insufficient free space to create the file.</returns>
-    public Result CreateFile(in Path path, long size)
+    public Result CreateFile(ref readonly Path path, long size)
     {
         return CreateFile(in path, size, CreateFileOptions.None);
     }
@@ -55,7 +55,7 @@ public abstract class IFileSystem : IDisposable
     /// <param name="path">The full path of the file to delete.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist or is a directory.</returns>
-    public Result DeleteFile(in Path path)
+    public Result DeleteFile(ref readonly Path path)
     {
         return DoDeleteFile(in path);
     }
@@ -68,7 +68,7 @@ public abstract class IFileSystem : IDisposable
     /// <see cref="ResultFs.PathNotFound"/>: The parent directory of the specified path does not exist.<br/>
     /// <see cref="ResultFs.PathAlreadyExists"/>: Specified path already exists as either a file or directory.<br/>
     /// <see cref="ResultFs.UsableSpaceNotEnough"/>: Insufficient free space to create the directory.</returns>
-    public Result CreateDirectory(in Path path)
+    public Result CreateDirectory(ref readonly Path path)
     {
         return DoCreateDirectory(in path);
     }
@@ -80,7 +80,7 @@ public abstract class IFileSystem : IDisposable
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist or is a file.<br/>
     /// <see cref="ResultFs.DirectoryNotEmpty"/>: The specified directory is not empty.</returns>
-    public Result DeleteDirectory(in Path path)
+    public Result DeleteDirectory(ref readonly Path path)
     {
         return DoDeleteDirectory(in path);
     }
@@ -91,7 +91,7 @@ public abstract class IFileSystem : IDisposable
     /// <param name="path">The full path of the directory to delete.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist or is a file.</returns>
-    public Result DeleteDirectoryRecursively(in Path path)
+    public Result DeleteDirectoryRecursively(ref readonly Path path)
     {
         return DoDeleteDirectoryRecursively(in path);
     }
@@ -102,7 +102,7 @@ public abstract class IFileSystem : IDisposable
     /// <param name="path">The full path of the directory to clean.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist or is a file.</returns>
-    public Result CleanDirectoryRecursively(in Path path)
+    public Result CleanDirectoryRecursively(ref readonly Path path)
     {
         return DoCleanDirectoryRecursively(in path);
     }
@@ -119,7 +119,7 @@ public abstract class IFileSystem : IDisposable
     /// <remarks>
     /// If <paramref name="currentPath"/> and <paramref name="newPath"/> are the same, this function does nothing and returns successfully.
     /// </remarks>
-    public Result RenameFile(in Path currentPath, in Path newPath)
+    public Result RenameFile(ref readonly Path currentPath, ref readonly Path newPath)
     {
         return DoRenameFile(in currentPath, in newPath);
     }
@@ -137,7 +137,7 @@ public abstract class IFileSystem : IDisposable
     /// <remarks>
     /// If <paramref name="currentPath"/> and <paramref name="newPath"/> are the same, this function does nothing and returns <see cref="Result.Success"/>.
     /// </remarks>
-    public Result RenameDirectory(in Path currentPath, in Path newPath)
+    public Result RenameDirectory(ref readonly Path currentPath, ref readonly Path newPath)
     {
         return DoRenameDirectory(in currentPath, in newPath);
     }
@@ -149,7 +149,7 @@ public abstract class IFileSystem : IDisposable
     /// <param name="path">The full path to check.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist.</returns>
-    public Result GetEntryType(out DirectoryEntryType entryType, in Path path)
+    public Result GetEntryType(out DirectoryEntryType entryType, ref readonly Path path)
     {
         return DoGetEntryType(out entryType, in path);
     }
@@ -186,7 +186,7 @@ public abstract class IFileSystem : IDisposable
     /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist or is a directory.<br/>
     /// <see cref="ResultFs.TargetLocked"/>: When opening as <see cref="OpenMode.Write"/>,
     /// the file is already opened as <see cref="OpenMode.Write"/>.</returns>
-    public Result OpenFile(ref UniqueRef<IFile> file, in Path path, OpenMode mode)
+    public Result OpenFile(ref UniqueRef<IFile> file, ref readonly Path path, OpenMode mode)
     {
         if ((mode & OpenMode.ReadWrite) == 0 || (mode & ~OpenMode.All) != 0)
             return ResultFs.InvalidModeForFileOpen.Log();
@@ -225,7 +225,7 @@ public abstract class IFileSystem : IDisposable
     /// <param name="mode">Specifies which sub-entries should be enumerated.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist or is a file.</returns>
-    public Result OpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path, OpenDirectoryMode mode)
+    public Result OpenDirectory(ref UniqueRef<IDirectory> outDirectory, ref readonly Path path, OpenDirectoryMode mode)
     {
         if ((mode & OpenDirectoryMode.All) == 0 ||
             (mode & ~(OpenDirectoryMode.All | OpenDirectoryMode.NoFileSize)) != 0)
@@ -253,7 +253,7 @@ public abstract class IFileSystem : IDisposable
     /// <param name="freeSpace">If the operation returns successfully, the amount of free space available on the drive, in bytes.</param>
     /// <param name="path">The path of the drive to query. Unused in almost all cases.</param>
     /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-    public Result GetFreeSpaceSize(out long freeSpace, in Path path)
+    public Result GetFreeSpaceSize(out long freeSpace, ref readonly Path path)
     {
         return DoGetFreeSpaceSize(out freeSpace, in path);
     }
@@ -264,7 +264,7 @@ public abstract class IFileSystem : IDisposable
     /// <param name="totalSpace">If the operation returns successfully, the total size of the drive, in bytes.</param>
     /// <param name="path">The path of the drive to query. Unused in almost all cases.</param>
     /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-    public Result GetTotalSpaceSize(out long totalSpace, in Path path)
+    public Result GetTotalSpaceSize(out long totalSpace, ref readonly Path path)
     {
         return DoGetTotalSpaceSize(out totalSpace, in path);
     }
@@ -277,7 +277,7 @@ public abstract class IFileSystem : IDisposable
     /// <param name="path">The path of the file or directory.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.PathNotFound"/>: The specified path does not exist.</returns>
-    public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
+    public Result GetFileTimeStampRaw(out FileTimeStampRaw timeStamp, ref readonly Path path)
     {
         return DoGetFileTimeStampRaw(out timeStamp, in path);
     }
@@ -294,9 +294,9 @@ public abstract class IFileSystem : IDisposable
     /// <param name="queryId">The type of query to perform.</param>
     /// <param name="path">The full path of the file to query.</param>
     /// <returns>The <see cref="Result"/> of the requested operation.</returns>
-    public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, in Path path)
+    public Result QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId, ref readonly Path path)
     {
-        return DoQueryEntry(outBuffer, inBuffer, queryId, path);
+        return DoQueryEntry(outBuffer, inBuffer, queryId, in path);
     }
 
     /// <summary>
@@ -309,44 +309,44 @@ public abstract class IFileSystem : IDisposable
         return DoGetFileSystemAttribute(out outAttribute);
     }
 
-    protected abstract Result DoCreateFile(in Path path, long size, CreateFileOptions option);
-    protected abstract Result DoDeleteFile(in Path path);
-    protected abstract Result DoCreateDirectory(in Path path);
-    protected abstract Result DoDeleteDirectory(in Path path);
-    protected abstract Result DoDeleteDirectoryRecursively(in Path path);
-    protected abstract Result DoCleanDirectoryRecursively(in Path path);
-    protected abstract Result DoRenameFile(in Path currentPath, in Path newPath);
-    protected abstract Result DoRenameDirectory(in Path currentPath, in Path newPath);
-    protected abstract Result DoGetEntryType(out DirectoryEntryType entryType, in Path path);
+    protected abstract Result DoCreateFile(ref readonly Path path, long size, CreateFileOptions option);
+    protected abstract Result DoDeleteFile(ref readonly Path path);
+    protected abstract Result DoCreateDirectory(ref readonly Path path);
+    protected abstract Result DoDeleteDirectory(ref readonly Path path);
+    protected abstract Result DoDeleteDirectoryRecursively(ref readonly Path path);
+    protected abstract Result DoCleanDirectoryRecursively(ref readonly Path path);
+    protected abstract Result DoRenameFile(ref readonly Path currentPath, ref readonly Path newPath);
+    protected abstract Result DoRenameDirectory(ref readonly Path currentPath, ref readonly Path newPath);
+    protected abstract Result DoGetEntryType(out DirectoryEntryType entryType, ref readonly Path path);
 
-    protected virtual Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
+    protected virtual Result DoGetFreeSpaceSize(out long freeSpace, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out freeSpace);
         return ResultFs.NotImplemented.Log();
     }
 
-    protected virtual Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
+    protected virtual Result DoGetTotalSpaceSize(out long totalSpace, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out totalSpace);
         return ResultFs.NotImplemented.Log();
     }
 
-    protected abstract Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode);
-    protected abstract Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path, OpenDirectoryMode mode);
+    protected abstract Result DoOpenFile(ref UniqueRef<IFile> outFile, ref readonly Path path, OpenMode mode);
+    protected abstract Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, ref readonly Path path, OpenDirectoryMode mode);
     protected abstract Result DoCommit();
 
     protected virtual Result DoCommitProvisionally(long counter) => ResultFs.NotImplemented.Log();
     protected virtual Result DoRollback() => ResultFs.NotImplemented.Log();
     protected virtual Result DoFlush() => ResultFs.NotImplemented.Log();
 
-    protected virtual Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
+    protected virtual Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out timeStamp);
         return ResultFs.NotImplemented.Log();
     }
 
     protected virtual Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
-        in Path path) => ResultFs.NotImplemented.Log();
+        ref readonly Path path) => ResultFs.NotImplemented.Log();
 
     protected virtual Result DoGetFileSystemAttribute(out FileSystemAttribute outAttribute)
     {

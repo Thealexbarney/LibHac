@@ -32,7 +32,7 @@ public class SaveDataFileSystemCore : IFileSystem
         FileTable = new HierarchicalSaveFileTable(dirTableStorage, fileTableStorage);
     }
 
-    private Result CheckIfNormalized(in Path path)
+    private Result CheckIfNormalized(ref readonly Path path)
     {
         Result res = PathNormalizer.IsNormalized(out bool isNormalized, out _, path.GetString());
         if (res.IsFailure()) return res.Miss();
@@ -43,7 +43,7 @@ public class SaveDataFileSystemCore : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoCreateDirectory(in Path path)
+    protected override Result DoCreateDirectory(ref readonly Path path)
     {
         Result res = CheckIfNormalized(in path);
         if (res.IsFailure()) return res.Miss();
@@ -53,7 +53,7 @@ public class SaveDataFileSystemCore : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
+    protected override Result DoCreateFile(ref readonly Path path, long size, CreateFileOptions option)
     {
         Result res = CheckIfNormalized(in path);
         if (res.IsFailure()) return res.Miss();
@@ -81,7 +81,7 @@ public class SaveDataFileSystemCore : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoDeleteDirectory(in Path path)
+    protected override Result DoDeleteDirectory(ref readonly Path path)
     {
         Result res = CheckIfNormalized(in path);
         if (res.IsFailure()) return res.Miss();
@@ -91,7 +91,7 @@ public class SaveDataFileSystemCore : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoDeleteDirectoryRecursively(in Path path)
+    protected override Result DoDeleteDirectoryRecursively(ref readonly Path path)
     {
         Result res = CheckIfNormalized(in path);
         if (res.IsFailure()) return res.Miss();
@@ -105,7 +105,7 @@ public class SaveDataFileSystemCore : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoCleanDirectoryRecursively(in Path path)
+    protected override Result DoCleanDirectoryRecursively(ref readonly Path path)
     {
         Result res = CheckIfNormalized(in path);
         if (res.IsFailure()) return res.Miss();
@@ -115,7 +115,7 @@ public class SaveDataFileSystemCore : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoDeleteFile(in Path path)
+    protected override Result DoDeleteFile(ref readonly Path path)
     {
         Result res = CheckIfNormalized(in path);
         if (res.IsFailure()) return res.Miss();
@@ -135,7 +135,7 @@ public class SaveDataFileSystemCore : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, ref readonly Path path,
         OpenDirectoryMode mode)
     {
         Result res = CheckIfNormalized(in path);
@@ -151,7 +151,7 @@ public class SaveDataFileSystemCore : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
+    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, ref readonly Path path, OpenMode mode)
     {
         Result res = CheckIfNormalized(in path);
         if (res.IsFailure()) return res.Miss();
@@ -168,7 +168,7 @@ public class SaveDataFileSystemCore : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
+    protected override Result DoRenameDirectory(ref readonly Path currentPath, ref readonly Path newPath)
     {
         Result res = CheckIfNormalized(in currentPath);
         if (res.IsFailure()) return res.Miss();
@@ -179,7 +179,7 @@ public class SaveDataFileSystemCore : IFileSystem
         return FileTable.RenameDirectory(new U8Span(currentPath.GetString()), new U8Span(newPath.GetString()));
     }
 
-    protected override Result DoRenameFile(in Path currentPath, in Path newPath)
+    protected override Result DoRenameFile(ref readonly Path currentPath, ref readonly Path newPath)
     {
         Result res = CheckIfNormalized(in currentPath);
         if (res.IsFailure()) return res.Miss();
@@ -192,7 +192,7 @@ public class SaveDataFileSystemCore : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
+    protected override Result DoGetEntryType(out DirectoryEntryType entryType, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out entryType);
 
@@ -214,7 +214,7 @@ public class SaveDataFileSystemCore : IFileSystem
         return ResultFs.PathNotFound.Log();
     }
 
-    protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
+    protected override Result DoGetFreeSpaceSize(out long freeSpace, ref readonly Path path)
     {
         int freeBlockCount = AllocationTable.GetFreeListLength();
         freeSpace = Header.BlockSize * freeBlockCount;
@@ -222,7 +222,7 @@ public class SaveDataFileSystemCore : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
+    protected override Result DoGetTotalSpaceSize(out long totalSpace, ref readonly Path path)
     {
         totalSpace = Header.BlockSize * Header.BlockCount;
 

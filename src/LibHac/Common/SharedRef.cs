@@ -141,7 +141,7 @@ public struct SharedRef<T> : IDisposable where T : class, IDisposable
         return sharedRef;
     }
 
-    public static SharedRef<T> CreateCopy<TFrom>(in SharedRef<TFrom> other) where TFrom : class, T
+    public static SharedRef<T> CreateCopy<TFrom>(ref readonly SharedRef<TFrom> other) where TFrom : class, T
     {
         var sharedRef = new SharedRef<T>();
 
@@ -153,7 +153,7 @@ public struct SharedRef<T> : IDisposable where T : class, IDisposable
         return sharedRef;
     }
 
-    public static SharedRef<T> Create<TFrom>(in WeakRef<TFrom> other) where TFrom : class, T
+    public static SharedRef<T> Create<TFrom>(ref readonly WeakRef<TFrom> other) where TFrom : class, T
     {
         ref SharedRef<TFrom> otherShared = ref Unsafe.As<WeakRef<TFrom>, SharedRef<TFrom>>(ref Unsafe.AsRef(in other));
 
@@ -228,7 +228,7 @@ public struct SharedRef<T> : IDisposable where T : class, IDisposable
         oldRefCount?.Decrement();
     }
 
-    public void SetByCopy<TFrom>(in SharedRef<TFrom> other) where TFrom : class, T
+    public void SetByCopy<TFrom>(ref readonly SharedRef<TFrom> other) where TFrom : class, T
     {
         RefCount oldRefCount = _refCount;
         RefCount otherRef = other._refCount;
@@ -293,7 +293,7 @@ public struct WeakRef<T> : IDisposable where T : class, IDisposable
     private T _value;
     private RefCount _refCount;
 
-    public WeakRef(in SharedRef<T> other)
+    public WeakRef(ref readonly SharedRef<T> other)
     {
         this = Create(in other);
     }
@@ -337,7 +337,7 @@ public struct WeakRef<T> : IDisposable where T : class, IDisposable
         return weakRef;
     }
 
-    public static WeakRef<T> CreateCopy<TFrom>(in WeakRef<TFrom> other) where TFrom : class, T
+    public static WeakRef<T> CreateCopy<TFrom>(ref readonly WeakRef<TFrom> other) where TFrom : class, T
     {
         var weakRef = new WeakRef<T>();
 
@@ -356,7 +356,7 @@ public struct WeakRef<T> : IDisposable where T : class, IDisposable
         return weakRef;
     }
 
-    public static WeakRef<T> Create<TFrom>(in SharedRef<TFrom> other) where TFrom : class, T
+    public static WeakRef<T> Create<TFrom>(ref readonly SharedRef<TFrom> other) where TFrom : class, T
     {
         ref readonly WeakRef<TFrom> otherWeak = ref Unsafe.As<SharedRef<TFrom>, WeakRef<TFrom>>(ref Unsafe.AsRef(in other));
 
@@ -398,14 +398,14 @@ public struct WeakRef<T> : IDisposable where T : class, IDisposable
         temp.DisposeInternal();
     }
 
-    public void SetCopy<TFrom>(in WeakRef<TFrom> other) where TFrom : class, T
+    public void SetCopy<TFrom>(ref readonly WeakRef<TFrom> other) where TFrom : class, T
     {
         WeakRef<T> temp = CreateCopy(in other);
         Swap(ref temp);
         temp.DisposeInternal();
     }
 
-    public void Set<TFrom>(in SharedRef<TFrom> other) where TFrom : class, T
+    public void Set<TFrom>(ref readonly SharedRef<TFrom> other) where TFrom : class, T
     {
         WeakRef<T> temp = Create(in other);
         Swap(ref temp);

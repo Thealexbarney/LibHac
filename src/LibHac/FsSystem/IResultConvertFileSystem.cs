@@ -122,47 +122,47 @@ public abstract class IResultConvertFileSystem<T> : ISaveDataFileSystem where T 
 
     protected abstract Result ConvertResult(Result result);
 
-    protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
+    protected override Result DoCreateFile(ref readonly Path path, long size, CreateFileOptions option)
     {
         return ConvertResult(_baseFileSystem.Get.CreateFile(in path, size)).Ret();
     }
 
-    protected override Result DoDeleteFile(in Path path)
+    protected override Result DoDeleteFile(ref readonly Path path)
     {
         return ConvertResult(_baseFileSystem.Get.DeleteFile(in path)).Ret();
     }
 
-    protected override Result DoCreateDirectory(in Path path)
+    protected override Result DoCreateDirectory(ref readonly Path path)
     {
         return ConvertResult(_baseFileSystem.Get.CreateDirectory(in path)).Ret();
     }
 
-    protected override Result DoDeleteDirectory(in Path path)
+    protected override Result DoDeleteDirectory(ref readonly Path path)
     {
         return ConvertResult(_baseFileSystem.Get.DeleteDirectory(in path)).Ret();
     }
 
-    protected override Result DoDeleteDirectoryRecursively(in Path path)
+    protected override Result DoDeleteDirectoryRecursively(ref readonly Path path)
     {
         return ConvertResult(_baseFileSystem.Get.DeleteDirectoryRecursively(in path)).Ret();
     }
 
-    protected override Result DoCleanDirectoryRecursively(in Path path)
+    protected override Result DoCleanDirectoryRecursively(ref readonly Path path)
     {
         return ConvertResult(_baseFileSystem.Get.CleanDirectoryRecursively(in path)).Ret();
     }
 
-    protected override Result DoRenameFile(in Path currentPath, in Path newPath)
+    protected override Result DoRenameFile(ref readonly Path currentPath, ref readonly Path newPath)
     {
         return ConvertResult(_baseFileSystem.Get.RenameFile(in currentPath, in newPath)).Ret();
     }
 
-    protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
+    protected override Result DoRenameDirectory(ref readonly Path currentPath, ref readonly Path newPath)
     {
         return ConvertResult(_baseFileSystem.Get.RenameDirectory(in currentPath, in newPath)).Ret();
     }
 
-    protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
+    protected override Result DoGetEntryType(out DirectoryEntryType entryType, ref readonly Path path)
     {
         return ConvertResult(_baseFileSystem.Get.GetEntryType(out entryType, in path)).Ret();
     }
@@ -187,23 +187,23 @@ public abstract class IResultConvertFileSystem<T> : ISaveDataFileSystem where T 
         return ConvertResult(_baseFileSystem.Get.Flush()).Ret();
     }
 
-    protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
+    protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, ref readonly Path path)
     {
         return ConvertResult(_baseFileSystem.Get.GetFileTimeStampRaw(out timeStamp, in path)).Ret();
     }
 
     protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
-        in Path path)
+        ref readonly Path path)
     {
         return ConvertResult(_baseFileSystem.Get.QueryEntry(outBuffer, inBuffer, queryId, in path)).Ret();
     }
 
-    protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
+    protected override Result DoGetFreeSpaceSize(out long freeSpace, ref readonly Path path)
     {
         return ConvertResult(_baseFileSystem.Get.GetFreeSpaceSize(out freeSpace, in path)).Ret();
     }
 
-    protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
+    protected override Result DoGetTotalSpaceSize(out long totalSpace, ref readonly Path path)
     {
         return ConvertResult(_baseFileSystem.Get.GetTotalSpaceSize(out totalSpace, in path)).Ret();
     }

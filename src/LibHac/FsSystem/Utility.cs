@@ -30,7 +30,7 @@ public class DummyEventNotifier : IEventNotifier
 /// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
 internal static class Utility
 {
-    public delegate Result FsIterationTask(in Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure);
+    public delegate Result FsIterationTask(ref readonly Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure);
 
     /// <summary>
     /// Used to pass various ref structs to an <see cref="FsIterationTask"/>.
@@ -145,8 +145,8 @@ internal static class Utility
         return Result.Success;
     }
 
-    public static Result IterateDirectoryRecursively(IFileSystem fs, in Path rootPath, ref DirectoryEntry dirEntry,
-        FsIterationTask onEnterDir, FsIterationTask onExitDir, FsIterationTask onFile,
+    public static Result IterateDirectoryRecursively(IFileSystem fs, ref readonly Path rootPath,
+        ref DirectoryEntry dirEntry, FsIterationTask onEnterDir, FsIterationTask onExitDir, FsIterationTask onFile,
         ref FsIterationTaskClosure closure)
     {
         using var pathBuffer = new Path();
@@ -160,8 +160,8 @@ internal static class Utility
         return Result.Success;
     }
 
-    public static Result CleanupDirectoryRecursively(IFileSystem fs, in Path rootPath, ref DirectoryEntry dirEntry,
-        FsIterationTask onEnterDir, FsIterationTask onExitDir, FsIterationTask onFile,
+    public static Result CleanupDirectoryRecursively(IFileSystem fs, ref readonly Path rootPath,
+        ref DirectoryEntry dirEntry, FsIterationTask onEnterDir, FsIterationTask onExitDir, FsIterationTask onFile,
         ref FsIterationTaskClosure closure)
     {
         using var pathBuffer = new Path();
@@ -172,12 +172,12 @@ internal static class Utility
             ref closure);
     }
 
-    public static Result CopyFile(IFileSystem destFileSystem, IFileSystem sourceFileSystem, in Path destPath,
-        in Path sourcePath, Span<byte> workBuffer)
+    public static Result CopyFile(IFileSystem destFileSystem, IFileSystem sourceFileSystem, ref readonly Path destPath,
+        ref readonly Path sourcePath, Span<byte> workBuffer)
     {
         // Open source file.
         using var sourceFile = new UniqueRef<IFile>();
-        Result res = sourceFileSystem.OpenFile(ref sourceFile.Ref, sourcePath, OpenMode.Read);
+        Result res = sourceFileSystem.OpenFile(ref sourceFile.Ref, in sourcePath, OpenMode.Read);
         if (res.IsFailure()) return res.Miss();
 
         res = sourceFile.Get.GetSize(out long fileSize);
@@ -210,9 +210,10 @@ internal static class Utility
     }
 
     public static Result CopyDirectoryRecursively(IFileSystem destinationFileSystem, IFileSystem sourceFileSystem,
-        in Path destinationPath, in Path sourcePath, ref DirectoryEntry dirEntry, Span<byte> workBuffer)
+        ref readonly Path destinationPath, ref readonly Path sourcePath, ref DirectoryEntry dirEntry,
+        Span<byte> workBuffer)
     {
-        static Result OnEnterDir(in Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure)
+        static Result OnEnterDir(ref readonly Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure)
         {
             Result res = closure.DestinationPathBuffer.AppendChild(entry.Name);
             if (res.IsFailure()) return res.Miss();
@@ -220,12 +221,12 @@ internal static class Utility
             return closure.SourceFileSystem.CreateDirectory(in closure.DestinationPathBuffer);
         }
 
-        static Result OnExitDir(in Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure)
+        static Result OnExitDir(ref readonly Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure)
         {
             return closure.DestinationPathBuffer.RemoveChild();
         }
 
-        static Result OnFile(in Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure)
+        static Result OnFile(ref readonly Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure)
         {
             Result res = closure.DestinationPathBuffer.AppendChild(entry.Name);
             if (res.IsFailure()) return res.Miss();
@@ -242,7 +243,7 @@ internal static class Utility
         closure.SourceFileSystem = sourceFileSystem;
         closure.DestFileSystem = destinationFileSystem;
 
-        Result res = closure.DestinationPathBuffer.Initialize(destinationPath);
+        Result res = closure.DestinationPathBuffer.Initialize(in destinationPath);
         if (res.IsFailure()) return res.Miss();
 
         res = IterateDirectoryRecursively(sourceFileSystem, in sourcePath, ref dirEntry, OnEnterDir, OnExitDir,
@@ -252,17 +253,17 @@ internal static class Utility
         return res;
     }
 
-    public static Result CopyDirectoryRecursively(IFileSystem fileSystem, in Path destinationPath,
-        in Path sourcePath, ref DirectoryEntry dirEntry, Span<byte> workBuffer)
+    public static Result CopyDirectoryRecursively(IFileSystem fileSystem, ref readonly Path destinationPath,
+        ref readonly Path sourcePath, ref DirectoryEntry dirEntry, Span<byte> workBuffer)
     {
         var closure = new FsIterationTaskClosure();
         closure.Buffer = workBuffer;
         closure.SourceFileSystem = fileSystem;
 
-        Result res = closure.DestinationPathBuffer.Initialize(destinationPath);
+        Result res = closure.DestinationPathBuffer.Initialize(in destinationPath);
         if (res.IsFailure()) return res.Miss();
 
-        static Result OnEnterDir(in Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure)
+        static Result OnEnterDir(ref readonly Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure)
         {
             Result res = closure.DestinationPathBuffer.AppendChild(entry.Name);
             if (res.IsFailure()) return res.Miss();
@@ -270,12 +271,12 @@ internal static class Utility
             return closure.SourceFileSystem.CreateDirectory(in closure.DestinationPathBuffer);
         }
 
-        static Result OnExitDir(in Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure)
+        static Result OnExitDir(ref readonly Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure)
         {
             return closure.DestinationPathBuffer.RemoveChild();
         }
 
-        static Result OnFile(in Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure)
+        static Result OnFile(ref readonly Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure)
         {
             Result res = closure.DestinationPathBuffer.AppendChild(entry.Name);
             if (res.IsFailure()) return res.Miss();
@@ -296,10 +297,10 @@ internal static class Utility
 
     public static Result VerifyDirectoryRecursively(IFileSystem fileSystem, Span<byte> workBuffer)
     {
-        static Result OnEnterAndExitDir(in Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure) =>
+        static Result OnEnterAndExitDir(ref readonly Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure) =>
             Result.Success;
 
-        static Result OnFile(in Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure)
+        static Result OnFile(ref readonly Path path, in DirectoryEntry entry, ref FsIterationTaskClosure closure)
         {
             using var file = new UniqueRef<IFile>();
 
@@ -336,7 +337,7 @@ internal static class Utility
             OnEnterAndExitDir, OnFile, ref closure);
     }
 
-    private static Result EnsureDirectoryImpl(IFileSystem fileSystem, in Path path)
+    private static Result EnsureDirectoryImpl(IFileSystem fileSystem, ref readonly Path path)
     {
         using var pathCopy = new Path();
         bool isFinished;
@@ -378,7 +379,7 @@ internal static class Utility
         return Result.Success;
     }
 
-    public static Result EnsureDirectory(IFileSystem fileSystem, in Path path)
+    public static Result EnsureDirectory(IFileSystem fileSystem, ref readonly Path path)
     {
         Result res = fileSystem.GetEntryType(out _, in path);
 

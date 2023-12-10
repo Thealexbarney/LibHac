@@ -38,10 +38,10 @@ internal static class ProcessKip
         }
     }
 
-    public static void ExtractIni1(in SharedRef<IStorage> iniStorage, string outDir)
+    public static void ExtractIni1(ref readonly SharedRef<IStorage> iniStorage, string outDir)
     {
         using var ini1 = new InitialProcessBinaryReader();
-        ini1.Initialize(iniStorage).ThrowIfFailure();
+        ini1.Initialize(in iniStorage).ThrowIfFailure();
 
         Directory.CreateDirectory(outDir);
         using var kipReader = new KipReader();

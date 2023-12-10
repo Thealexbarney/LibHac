@@ -46,7 +46,7 @@ public static class PathExtensions
     /// <returns>A reference to the given <see cref="Path"/>.</returns>
 #pragma warning disable LH0001 // DoNotCopyValue
 #pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
-    public static unsafe ref Path Ref(this scoped in Path path)
+    public static unsafe ref Path Ref(this scoped ref readonly Path path)
     {
         fixed (Path* p = &path)
         {
@@ -61,7 +61,7 @@ public static class PathExtensions
         return ref *p;
     }
 
-    public static unsafe bool IsNullRef(in Path path)
+    public static unsafe bool IsNullRef(ref readonly Path path)
     {
         fixed (Path* p = &path)
         {
@@ -69,7 +69,7 @@ public static class PathExtensions
         }
     }
 
-    public static unsafe bool IsNullRef(in int path)
+    public static unsafe bool IsNullRef(ref readonly int path)
     {
         fixed (int* p = &path)
         {
@@ -131,7 +131,7 @@ public ref struct Path
         /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
         /// <see cref="ResultFs.NotNormalized"/>: The <c>IsNormalized</c> flag of
         /// <paramref name="path"/> is not <see langword="true"/>.</returns>
-        public Result Initialize(scoped in Path path)
+        public Result Initialize(scoped ref readonly Path path)
         {
             if (!path._isNormalized)
                 return ResultFs.NotNormalized.Log();
@@ -406,7 +406,7 @@ public ref struct Path
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.NotNormalized"/>: The <c>IsNormalized</c> flag of
     /// <paramref name="other"/> is not <see langword="true"/>.</returns>
-    public Result Initialize(scoped in Path other)
+    public Result Initialize(scoped ref readonly Path other)
     {
         if (!other._isNormalized)
             return ResultFs.NotNormalized.Log();
@@ -433,7 +433,7 @@ public ref struct Path
     /// because <see cref="Stored"/> paths are always normalized upon initialization.</remarks>
     /// <param name="other">The <see cref="Stored"/> path used to initialize this <see cref="Path"/>.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
-    public Result Initialize(scoped in Stored other)
+    public Result Initialize(scoped ref readonly Stored other)
     {
         int otherLength = other.GetLength();
 
@@ -840,7 +840,7 @@ public ref struct Path
     /// <param name="parent">The <see cref="Path"/> to insert.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.NotImplemented"/>: The path provided in <paramref name="parent"/> is a Windows path.</returns>
-    public Result InsertParent(scoped in Path parent)
+    public Result InsertParent(scoped ref readonly Path parent)
     {
         return InsertParent(parent.GetString());
     }
@@ -933,7 +933,7 @@ public ref struct Path
     /// path is not normalized yet the <c>IsNormalized</c> flag is still <see langword="true"/>.</remarks>
     /// <param name="child">The child <see cref="Path"/> to append to the current path.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
-    public Result AppendChild(scoped in Path child)
+    public Result AppendChild(scoped ref readonly Path child)
     {
         return AppendChild(child.GetString());
     }
@@ -949,7 +949,7 @@ public ref struct Path
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.NotNormalized"/>: The <c>IsNormalized</c> flag of either
     /// <paramref name="path1"/> or <paramref name="path2"/> is not <see langword="true"/>.</returns>
-    public Result Combine(scoped in Path path1, scoped in Path path2)
+    public Result Combine(scoped ref readonly Path path1, scoped ref readonly Path path2)
     {
         int path1Length = path1.GetLength();
         int path2Length = path2.GetLength();
@@ -985,7 +985,7 @@ public ref struct Path
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.NotNormalized"/>: The <c>IsNormalized</c> flag of
     /// <paramref name="path1"/> is not <see langword="true"/>.</returns>
-    public Result Combine(scoped in Path path1, scoped ReadOnlySpan<byte> path2)
+    public Result Combine(scoped ref readonly Path path1, scoped ReadOnlySpan<byte> path2)
     {
         int path1Length = path1.GetLength();
         int path2Length = StringUtils.GetLength(path2);
@@ -1010,7 +1010,7 @@ public ref struct Path
     /// <param name="path1">The first path to combine.</param>
     /// <param name="path2">The second path to combine.</param>
     /// <returns><see cref="Result.Success"/>: The operation was successful.</returns>
-    public Result Combine(scoped ReadOnlySpan<byte> path1, scoped in Path path2)
+    public Result Combine(scoped ReadOnlySpan<byte> path1, scoped ref readonly Path path2)
     {
         int path1Length = StringUtils.GetLength(path1);
         int path2Length = path2.GetLength();

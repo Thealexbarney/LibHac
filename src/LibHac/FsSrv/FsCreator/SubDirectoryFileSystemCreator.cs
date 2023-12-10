@@ -8,7 +8,7 @@ namespace LibHac.FsSrv.FsCreator;
 public class SubDirectoryFileSystemCreator : ISubDirectoryFileSystemCreator
 {
     public Result Create(ref SharedRef<IFileSystem> outSubDirFileSystem, ref SharedRef<IFileSystem> baseFileSystem,
-        in Path path)
+        ref readonly Path path)
     {
         using var directory = new UniqueRef<IDirectory>();
 

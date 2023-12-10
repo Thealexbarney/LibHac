@@ -68,7 +68,7 @@ public class UnionStorage : IStorage
         return GetLogSize(blockSize) * blockCount + LogHeaderSize;
     }
 
-    public static Result Format(in ValueSubStorage storage, long blockSize)
+    public static Result Format(ref readonly ValueSubStorage storage, long blockSize)
     {
         Assert.SdkRequiresGreater(blockSize, 1);
         Assert.SdkRequires(BitUtil.IsPowerOfTwo(blockSize));
@@ -80,7 +80,8 @@ public class UnionStorage : IStorage
         return storage.Write(0, SpanHelpers.AsReadOnlyByteSpan(in header));
     }
 
-    public Result Initialize(in ValueSubStorage baseStorage, in ValueSubStorage logStorage, long blockSize)
+    public Result Initialize(ref readonly ValueSubStorage baseStorage, ref readonly ValueSubStorage logStorage,
+        long blockSize)
     {
         Assert.SdkRequiresNull(_buffer);
 

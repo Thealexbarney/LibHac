@@ -21,25 +21,25 @@ public class RegisteredLocationResolver : IDisposable
     public Result ResolveProgramPath(out Path path, ProgramId id) =>
         _interface.Get.ResolveProgramPath(out path, id);
 
-    public Result RegisterProgramPath(in Path path, ProgramId id, ProgramId ownerId) =>
+    public Result RegisterProgramPath(ref readonly Path path, ProgramId id, ProgramId ownerId) =>
         _interface.Get.RegisterProgramPath(in path, id, ownerId);
 
     public Result UnregisterProgramPath(ProgramId id) =>
         _interface.Get.UnregisterProgramPath(id);
 
-    public Result RedirectProgramPath(in Path path, ProgramId id, ProgramId ownerId) =>
+    public Result RedirectProgramPath(ref readonly Path path, ProgramId id, ProgramId ownerId) =>
         _interface.Get.RedirectProgramPath(in path, id, ownerId);
 
     public Result ResolveHtmlDocumentPath(out Path path, ProgramId id) =>
         _interface.Get.ResolveHtmlDocumentPath(out path, id);
 
-    public Result RegisterHtmlDocumentPath(in Path path, ProgramId id, ProgramId ownerId) =>
+    public Result RegisterHtmlDocumentPath(ref readonly Path path, ProgramId id, ProgramId ownerId) =>
         _interface.Get.RegisterHtmlDocumentPath(in path, id, ownerId);
 
     public Result UnregisterHtmlDocumentPath(ProgramId id) =>
         _interface.Get.UnregisterHtmlDocumentPath(id);
 
-    public Result RedirectHtmlDocumentPath(in Path path, ProgramId id) =>
+    public Result RedirectHtmlDocumentPath(ref readonly Path path, ProgramId id) =>
         _interface.Get.RedirectHtmlDocumentPath(in path, id);
 
     public Result Refresh() =>

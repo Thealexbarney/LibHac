@@ -22,7 +22,7 @@ public class LocationResolver : IDisposable
     public Result ResolveProgramPath(out Path path, ProgramId id) =>
         _interface.Get.ResolveProgramPath(out path, id);
 
-    public Result RedirectProgramPath(in Path path, ProgramId id) =>
+    public Result RedirectProgramPath(ref readonly Path path, ProgramId id) =>
         _interface.Get.RedirectProgramPath(in path, id);
 
     public Result ResolveApplicationControlPath(out Path path, ProgramId id) =>
@@ -34,22 +34,22 @@ public class LocationResolver : IDisposable
     public Result ResolveDataPath(out Path path, DataId id) =>
         _interface.Get.ResolveDataPath(out path, id);
 
-    public Result RedirectApplicationControlPath(in Path path, ProgramId id, ProgramId ownerId) =>
+    public Result RedirectApplicationControlPath(ref readonly Path path, ProgramId id, ProgramId ownerId) =>
         _interface.Get.RedirectApplicationControlPath(in path, id, ownerId);
 
-    public Result RedirectApplicationHtmlDocumentPath(in Path path, ProgramId id, ProgramId ownerId) =>
+    public Result RedirectApplicationHtmlDocumentPath(ref readonly Path path, ProgramId id, ProgramId ownerId) =>
         _interface.Get.RedirectApplicationHtmlDocumentPath(in path, id, ownerId);
 
     public Result ResolveApplicationLegalInformationPath(out Path path, ProgramId id) =>
         _interface.Get.ResolveApplicationLegalInformationPath(out path, id);
 
-    public Result RedirectApplicationLegalInformationPath(in Path path, ProgramId id, ProgramId ownerId) =>
+    public Result RedirectApplicationLegalInformationPath(ref readonly Path path, ProgramId id, ProgramId ownerId) =>
         _interface.Get.RedirectApplicationLegalInformationPath(in path, id, ownerId);
 
     public Result Refresh() =>
         _interface.Get.Refresh();
 
-    public Result RedirectApplicationProgramPath(in Path path, ProgramId id, ProgramId ownerId) =>
+    public Result RedirectApplicationProgramPath(ref readonly Path path, ProgramId id, ProgramId ownerId) =>
         _interface.Get.RedirectApplicationProgramPath(in path, id, ownerId);
 
     public Result ClearApplicationRedirection(InArray<ProgramId> excludingIds) =>
@@ -70,10 +70,10 @@ public class LocationResolver : IDisposable
     public Result ResolveProgramPathForDebug(out Path path, ProgramId id) =>
         _interface.Get.ResolveProgramPathForDebug(out path, id);
 
-    public Result RedirectProgramPathForDebug(in Path path, ProgramId id) =>
+    public Result RedirectProgramPathForDebug(ref readonly Path path, ProgramId id) =>
         _interface.Get.RedirectProgramPathForDebug(in path, id);
 
-    public Result RedirectApplicationProgramPathForDebug(in Path path, ProgramId id, ProgramId ownerId) =>
+    public Result RedirectApplicationProgramPathForDebug(ref readonly Path path, ProgramId id, ProgramId ownerId) =>
         _interface.Get.RedirectApplicationProgramPathForDebug(in path, id, ownerId);
 
     public Result EraseProgramRedirectionForDebug(ProgramId id) =>

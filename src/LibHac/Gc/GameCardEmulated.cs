@@ -68,7 +68,7 @@ public sealed class GameCardEmulated : IGcApi
         };
     }
 
-    public void InsertGameCard(in SharedRef<IStorage> storage)
+    public void InsertGameCard(ref readonly SharedRef<IStorage> storage)
     {
         _attached = false;
         _activated = false;

@@ -3,7 +3,7 @@ using LibHac.Diag.Impl;
 
 namespace LibHac.Diag
 {
-    public delegate void LogObserver(in LogMetaData metaData, in LogBody body, object arguments);
+    public delegate void LogObserver(ref readonly LogMetaData metaData, ref readonly LogBody body, object arguments);
 
     internal struct LogObserverGlobals
     {
@@ -40,7 +40,8 @@ namespace LibHac.Diag
             diag.Impl.GetLogObserverManager().UnregisterObserver(observerHolder);
         }
 
-        private static void TentativeDefaultLogObserver(in LogMetaData metaData, in LogBody body, object arguments)
+        private static void TentativeDefaultLogObserver(ref readonly LogMetaData metaData, ref readonly LogBody body,
+            object arguments)
         {
 
         }
@@ -61,7 +62,8 @@ namespace LibHac.Diag
             return g.Manager;
         }
 
-        internal static void CallAllLogObserver(this DiagClientImpl diag, in LogMetaData metaData, in LogBody body)
+        internal static void CallAllLogObserver(this DiagClientImpl diag, ref readonly LogMetaData metaData,
+            ref readonly LogBody body)
         {
             var context = new LogObserverContext
             {
@@ -73,7 +75,7 @@ namespace LibHac.Diag
 
             manager.InvokeAllObserver(in context, InvokeFunction);
 
-            static void InvokeFunction(ref LogObserverHolder holder, in LogObserverContext item)
+            static void InvokeFunction(ref LogObserverHolder holder, ref readonly LogObserverContext item)
             {
                 holder.Observer(in item.MetaData, in item.Body, holder.Arguments);
             }

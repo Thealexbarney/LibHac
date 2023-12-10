@@ -34,58 +34,58 @@ public class SaveDataFileSystemCacheRegister : IFileSystem
         base.Dispose();
     }
 
-    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
+    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, ref readonly Path path, OpenMode mode)
     {
         return _baseFileSystem.Get.OpenFile(ref outFile, in path, mode);
     }
 
-    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, ref readonly Path path,
         OpenDirectoryMode mode)
     {
         return _baseFileSystem.Get.OpenDirectory(ref outDirectory, in path, mode);
     }
 
-    protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
+    protected override Result DoGetEntryType(out DirectoryEntryType entryType, ref readonly Path path)
     {
         return _baseFileSystem.Get.GetEntryType(out entryType, in path);
     }
 
-    protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
+    protected override Result DoCreateFile(ref readonly Path path, long size, CreateFileOptions option)
     {
         return _baseFileSystem.Get.CreateFile(in path, size, option);
     }
 
-    protected override Result DoDeleteFile(in Path path)
+    protected override Result DoDeleteFile(ref readonly Path path)
     {
         return _baseFileSystem.Get.DeleteFile(in path);
     }
 
-    protected override Result DoCreateDirectory(in Path path)
+    protected override Result DoCreateDirectory(ref readonly Path path)
     {
         return _baseFileSystem.Get.CreateDirectory(in path);
     }
 
-    protected override Result DoDeleteDirectory(in Path path)
+    protected override Result DoDeleteDirectory(ref readonly Path path)
     {
         return _baseFileSystem.Get.DeleteDirectory(in path);
     }
 
-    protected override Result DoDeleteDirectoryRecursively(in Path path)
+    protected override Result DoDeleteDirectoryRecursively(ref readonly Path path)
     {
         return _baseFileSystem.Get.DeleteDirectoryRecursively(in path);
     }
 
-    protected override Result DoCleanDirectoryRecursively(in Path path)
+    protected override Result DoCleanDirectoryRecursively(ref readonly Path path)
     {
         return _baseFileSystem.Get.CleanDirectoryRecursively(in path);
     }
 
-    protected override Result DoRenameFile(in Path currentPath, in Path newPath)
+    protected override Result DoRenameFile(ref readonly Path currentPath, ref readonly Path newPath)
     {
         return _baseFileSystem.Get.RenameFile(in currentPath, in newPath);
     }
 
-    protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
+    protected override Result DoRenameDirectory(ref readonly Path currentPath, ref readonly Path newPath)
     {
         return _baseFileSystem.Get.RenameDirectory(in currentPath, in newPath);
     }
@@ -105,12 +105,12 @@ public class SaveDataFileSystemCacheRegister : IFileSystem
         return _baseFileSystem.Get.Rollback();
     }
 
-    protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
+    protected override Result DoGetFreeSpaceSize(out long freeSpace, ref readonly Path path)
     {
         return _baseFileSystem.Get.GetFreeSpaceSize(out freeSpace, in path);
     }
 
-    protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
+    protected override Result DoGetTotalSpaceSize(out long totalSpace, ref readonly Path path)
     {
         return _baseFileSystem.Get.GetTotalSpaceSize(out totalSpace, in path);
     }

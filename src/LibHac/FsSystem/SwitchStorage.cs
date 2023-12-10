@@ -17,7 +17,7 @@ public class SwitchStorage : IStorage
     private SharedRef<IStorage> _falseStorage;
     private Func<bool> _storageSelectionFunction;
 
-    public SwitchStorage(in SharedRef<IStorage> trueStorage, in SharedRef<IStorage> falseStorage,
+    public SwitchStorage(ref readonly SharedRef<IStorage> trueStorage, ref readonly SharedRef<IStorage> falseStorage,
         Func<bool> storageSelectionFunction)
     {
         _trueStorage = SharedRef<IStorage>.CreateCopy(in trueStorage);
@@ -125,8 +125,8 @@ public class RegionSwitchStorage : IStorage
     private SharedRef<IStorage> _outsideRegionStorage;
     private Region _region;
 
-    public RegionSwitchStorage(in SharedRef<IStorage> insideRegionStorage,
-        in SharedRef<IStorage> outsideRegionStorage, Region region)
+    public RegionSwitchStorage(ref readonly SharedRef<IStorage> insideRegionStorage,
+        ref readonly SharedRef<IStorage> outsideRegionStorage, Region region)
     {
         _insideRegionStorage = SharedRef<IStorage>.CreateCopy(in insideRegionStorage);
         _outsideRegionStorage = SharedRef<IStorage>.CreateCopy(in outsideRegionStorage);

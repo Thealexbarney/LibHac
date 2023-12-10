@@ -212,8 +212,8 @@ internal class DeliveryCacheStorageManager
         }
     }
 
-    public void GetFilePath(Span<byte> pathBuffer, ulong applicationId, ref DirectoryName directoryName,
-        ref FileName fileName)
+    public void GetFilePath(Span<byte> pathBuffer, ulong applicationId, ref readonly DirectoryName directoryName,
+        ref readonly FileName fileName)
     {
         // returns "mount:/directories/%s/files/%s", directoryName, fileName
         lock (_locker)
@@ -228,7 +228,7 @@ internal class DeliveryCacheStorageManager
         }
     }
 
-    public void GetFilesMetaPath(Span<byte> pathBuffer, ulong applicationId, ref DirectoryName directoryName)
+    public void GetFilesMetaPath(Span<byte> pathBuffer, ulong applicationId, ref readonly DirectoryName directoryName)
     {
         // returns "mount:/directories/%s/files.meta", directoryName
         lock (_locker)
@@ -253,7 +253,7 @@ internal class DeliveryCacheStorageManager
         }
     }
 
-    public void GetDirectoryPath(Span<byte> pathBuffer, ulong applicationId, ref DirectoryName directoryName)
+    public void GetDirectoryPath(Span<byte> pathBuffer, ulong applicationId, ref readonly DirectoryName directoryName)
     {
         // returns "mount:/directories/%s", directoryName
         lock (_locker)

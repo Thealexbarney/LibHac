@@ -24,7 +24,7 @@ public class SaveDataExtraDataAccessorCacheManager : ISaveDataExtraDataAccessorO
         private readonly SaveDataSpaceId _spaceId;
         private readonly ulong _saveDataId;
 
-        public Cache(in SharedRef<ISaveDataExtraDataAccessor> accessor, SaveDataSpaceId spaceId, ulong saveDataId)
+        public Cache(ref readonly SharedRef<ISaveDataExtraDataAccessor> accessor, SaveDataSpaceId spaceId, ulong saveDataId)
         {
             _accessor = new WeakRef<ISaveDataExtraDataAccessor>(in accessor);
             _spaceId = spaceId;
@@ -74,7 +74,7 @@ public class SaveDataExtraDataAccessorCacheManager : ISaveDataExtraDataAccessorO
         _accessorList.Clear();
     }
 
-    public Result Register(in SharedRef<ISaveDataExtraDataAccessor> accessor, SaveDataSpaceId spaceId,
+    public Result Register(ref readonly SharedRef<ISaveDataExtraDataAccessor> accessor, SaveDataSpaceId spaceId,
         ulong saveDataId)
     {
         accessor.Get.RegisterExtraDataAccessorObserver(this, spaceId, saveDataId);

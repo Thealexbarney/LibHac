@@ -32,18 +32,18 @@ public class SubdirectoryFileSystem : IFileSystem
         base.Dispose();
     }
 
-    public Result Initialize(in Path rootPath)
+    public Result Initialize(ref readonly Path rootPath)
     {
         return _rootPath.Initialize(in rootPath);
     }
 
-    private Result ResolveFullPath(ref Path outPath, in Path relativePath)
+    private Result ResolveFullPath(ref Path outPath, ref readonly Path relativePath)
     {
         using Path rootPath = _rootPath.DangerousGetPath();
         return outPath.Combine(in rootPath, in relativePath);
     }
 
-    protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
+    protected override Result DoGetEntryType(out DirectoryEntryType entryType, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out entryType);
 
@@ -57,7 +57,7 @@ public class SubdirectoryFileSystem : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
+    protected override Result DoGetFreeSpaceSize(out long freeSpace, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out freeSpace);
 
@@ -71,7 +71,7 @@ public class SubdirectoryFileSystem : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
+    protected override Result DoGetTotalSpaceSize(out long totalSpace, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out totalSpace);
 
@@ -85,7 +85,7 @@ public class SubdirectoryFileSystem : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
+    protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out timeStamp);
 
@@ -99,7 +99,7 @@ public class SubdirectoryFileSystem : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
+    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, ref readonly Path path, OpenMode mode)
     {
         using var fullPath = new Path();
         Result res = ResolveFullPath(ref fullPath.Ref(), in path);
@@ -111,7 +111,7 @@ public class SubdirectoryFileSystem : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, ref readonly Path path,
         OpenDirectoryMode mode)
     {
         using var fullPath = new Path();
@@ -124,7 +124,7 @@ public class SubdirectoryFileSystem : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
+    protected override Result DoCreateFile(ref readonly Path path, long size, CreateFileOptions option)
     {
         using var fullPath = new Path();
         Result res = ResolveFullPath(ref fullPath.Ref(), in path);
@@ -136,7 +136,7 @@ public class SubdirectoryFileSystem : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoDeleteFile(in Path path)
+    protected override Result DoDeleteFile(ref readonly Path path)
     {
         using var fullPath = new Path();
         Result res = ResolveFullPath(ref fullPath.Ref(), in path);
@@ -148,7 +148,7 @@ public class SubdirectoryFileSystem : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoCreateDirectory(in Path path)
+    protected override Result DoCreateDirectory(ref readonly Path path)
     {
         using var fullPath = new Path();
         Result res = ResolveFullPath(ref fullPath.Ref(), in path);
@@ -160,7 +160,7 @@ public class SubdirectoryFileSystem : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoDeleteDirectory(in Path path)
+    protected override Result DoDeleteDirectory(ref readonly Path path)
     {
         using var fullPath = new Path();
         Result res = ResolveFullPath(ref fullPath.Ref(), in path);
@@ -172,7 +172,7 @@ public class SubdirectoryFileSystem : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoDeleteDirectoryRecursively(in Path path)
+    protected override Result DoDeleteDirectoryRecursively(ref readonly Path path)
     {
         using var fullPath = new Path();
         Result res = ResolveFullPath(ref fullPath.Ref(), in path);
@@ -184,7 +184,7 @@ public class SubdirectoryFileSystem : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoCleanDirectoryRecursively(in Path path)
+    protected override Result DoCleanDirectoryRecursively(ref readonly Path path)
     {
         using var fullPath = new Path();
         Result res = ResolveFullPath(ref fullPath.Ref(), in path);
@@ -196,7 +196,7 @@ public class SubdirectoryFileSystem : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoRenameFile(in Path currentPath, in Path newPath)
+    protected override Result DoRenameFile(ref readonly Path currentPath, ref readonly Path newPath)
     {
         using var currentFullPath = new Path();
         Result res = ResolveFullPath(ref currentFullPath.Ref(), in currentPath);
@@ -212,7 +212,7 @@ public class SubdirectoryFileSystem : IFileSystem
         return Result.Success;
     }
 
-    protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
+    protected override Result DoRenameDirectory(ref readonly Path currentPath, ref readonly Path newPath)
     {
         using var currentFullPath = new Path();
         Result res = ResolveFullPath(ref currentFullPath.Ref(), in currentPath);
@@ -229,7 +229,7 @@ public class SubdirectoryFileSystem : IFileSystem
     }
 
     protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
-        in Path path)
+        ref readonly Path path)
     {
         using var fullPath = new Path();
         Result res = ResolveFullPath(ref fullPath.Ref(), in path);

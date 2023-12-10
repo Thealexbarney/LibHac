@@ -401,7 +401,7 @@ namespace LibHac.Fs.Impl
 
     public static class AccessLogImpl
     {
-        internal static T DereferenceOutValue<T>(in T value, Result result) where T : unmanaged
+        internal static T DereferenceOutValue<T>(ref readonly T value, Result result) where T : unmanaged
         {
             return result.IsSuccess() ? value : default;
         }

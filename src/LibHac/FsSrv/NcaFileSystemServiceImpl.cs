@@ -67,23 +67,22 @@ public class NcaFileSystemServiceImpl
         public bool CanMountNca;
     }
 
-    public Result OpenFileSystem(ref SharedRef<IFileSystem> outFileSystem, in Path path, FileSystemProxyType type,
-        ulong id, bool isDirectory)
+    public Result OpenFileSystem(ref SharedRef<IFileSystem> outFileSystem, ref readonly Path path,
+        FileSystemProxyType type, ulong id, bool isDirectory)
     {
-        return OpenFileSystem(ref outFileSystem, out Unsafe.NullRef<CodeVerificationData>(), in path, type, false,
-            id, isDirectory);
+        return OpenFileSystem(ref outFileSystem, out Unsafe.NullRef<CodeVerificationData>(), in path, type, false, id,
+            isDirectory);
     }
 
-    public Result OpenFileSystem(ref SharedRef<IFileSystem> outFileSystem, in Path path, FileSystemProxyType type,
-        bool canMountSystemDataPrivate, ulong id, bool isDirectory)
+    public Result OpenFileSystem(ref SharedRef<IFileSystem> outFileSystem, ref readonly Path path,
+        FileSystemProxyType type, bool canMountSystemDataPrivate, ulong id, bool isDirectory)
     {
         return OpenFileSystem(ref outFileSystem, out Unsafe.NullRef<CodeVerificationData>(), in path, type,
             canMountSystemDataPrivate, id, isDirectory);
     }
 
-    public Result OpenFileSystem(ref SharedRef<IFileSystem> outFileSystem,
-        out CodeVerificationData verificationData, in Path path, FileSystemProxyType type,
-        bool canMountSystemDataPrivate, ulong id, bool isDirectory)
+    public Result OpenFileSystem(ref SharedRef<IFileSystem> outFileSystem, out CodeVerificationData verificationData,
+        ref readonly Path path, FileSystemProxyType type, bool canMountSystemDataPrivate, ulong id, bool isDirectory)
     {
         UnsafeHelpers.SkipParamInit(out verificationData);
 
@@ -192,20 +191,20 @@ public class NcaFileSystemServiceImpl
         }
     }
 
-    public Result OpenDataFileSystem(ref SharedRef<IFileSystem> outFileSystem, in Path path,
+    public Result OpenDataFileSystem(ref SharedRef<IFileSystem> outFileSystem, ref readonly Path path,
         FileSystemProxyType fsType, ulong programId, bool isDirectory)
     {
         throw new NotImplementedException();
     }
 
     public Result OpenStorageWithPatch(ref SharedRef<IStorage> outStorage, out Hash ncaHeaderDigest,
-        in Path originalNcaPath, in Path currentNcaPath, FileSystemProxyType fsType, ulong id)
+        ref readonly Path originalNcaPath, ref readonly Path currentNcaPath, FileSystemProxyType fsType, ulong id)
     {
         throw new NotImplementedException();
     }
 
-    public Result OpenFileSystemWithPatch(ref SharedRef<IFileSystem> outFileSystem,
-        in Path originalNcaPath, in Path currentNcaPath, FileSystemProxyType fsType, ulong id)
+    public Result OpenFileSystemWithPatch(ref SharedRef<IFileSystem> outFileSystem, ref readonly Path originalNcaPath,
+        ref readonly Path currentNcaPath, FileSystemProxyType fsType, ulong id)
     {
         using var romFsStorage = new SharedRef<IStorage>();
         Result res = OpenStorageWithPatch(ref romFsStorage.Ref, out Unsafe.NullRef<Hash>(), in originalNcaPath,
@@ -281,7 +280,7 @@ public class NcaFileSystemServiceImpl
         return Result.Success;
     }
 
-    public Result GetRightsId(out RightsId rightsId, out byte keyGeneration, in Path path, ProgramId programId)
+    public Result GetRightsId(out RightsId rightsId, out byte keyGeneration, ref readonly Path path, ProgramId programId)
     {
         throw new NotImplementedException();
     }
@@ -305,7 +304,7 @@ public class NcaFileSystemServiceImpl
         return Result.Success;
     }
 
-    public Result RegisterUpdatePartition(ulong programId, in Path path)
+    public Result RegisterUpdatePartition(ulong programId, ref readonly Path path)
     {
         throw new NotImplementedException();
     }
@@ -511,7 +510,7 @@ public class NcaFileSystemServiceImpl
         return ResultFs.PathNotFound.Log();
     }
 
-    private Result ParseDir(in Path path, ref SharedRef<IFileSystem> outContentFileSystem,
+    private Result ParseDir(ref readonly Path path, ref SharedRef<IFileSystem> outContentFileSystem,
         ref SharedRef<IFileSystem> baseFileSystem, FileSystemProxyType fsType, bool preserveUnc)
     {
         using var fileSystem = new SharedRef<IFileSystem>();
@@ -522,7 +521,7 @@ public class NcaFileSystemServiceImpl
     }
 
     private Result ParseDirWithPathCaseNormalizationOnCaseSensitiveHostFs(ref SharedRef<IFileSystem> outFileSystem,
-        in Path path)
+        ref readonly Path path)
     {
         using var pathRoot = new Path();
         using var pathData = new Path();
@@ -858,7 +857,7 @@ public class NcaFileSystemServiceImpl
         _romFsRecoveredByInvalidateCacheCount = 0;
     }
 
-    public Result OpenHostFileSystem(ref SharedRef<IFileSystem> outFileSystem, in Path rootPath, bool openCaseSensitive)
+    public Result OpenHostFileSystem(ref SharedRef<IFileSystem> outFileSystem, ref readonly Path rootPath, bool openCaseSensitive)
     {
         return _config.TargetManagerFsCreator.Create(ref outFileSystem, in rootPath, openCaseSensitive, false,
             Result.Success);

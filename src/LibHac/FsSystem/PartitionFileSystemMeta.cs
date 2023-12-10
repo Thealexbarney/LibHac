@@ -208,7 +208,7 @@ namespace LibHac.FsSystem
         {
             UnsafeHelpers.SkipParamInit(out outSize);
 
-            if (!CryptoUtil.IsSameBytes(SpanHelpers.AsReadOnlyByteSpan(header), TFormat.VersionSignature,
+            if (!CryptoUtil.IsSameBytes(SpanHelpers.AsReadOnlyByteSpan(in header), TFormat.VersionSignature,
                 TFormat.VersionSignature.Length))
             {
                 return TFormat.ResultSignatureVerificationFailed.Log();

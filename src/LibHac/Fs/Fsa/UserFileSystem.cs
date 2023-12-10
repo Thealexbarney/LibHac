@@ -738,7 +738,7 @@ public static class UserFileSystem
                 ? SaveDataFlags.Restore
                 : SaveDataFlags.None;
 
-            return fs.Impl.WriteSaveDataFileSystemExtraData(SaveDataSpaceId.User, in attribute, in extraData,
+            return fs.Impl.WriteSaveDataFileSystemExtraData(SaveDataSpaceId.User, attribute, in extraData,
                 in extraDataMask);
         }
     }

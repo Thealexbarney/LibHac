@@ -158,7 +158,7 @@ public class LocalFileSystem : IAttributeFileSystem
         return Result.Success;
     }
 
-    private Result ResolveFullPath(out string outFullPath, in Path path, bool checkCaseSensitivity)
+    private Result ResolveFullPath(out string outFullPath, ref readonly Path path, bool checkCaseSensitivity)
     {
         UnsafeHelpers.SkipParamInit(out outFullPath);
 
@@ -194,7 +194,7 @@ public class LocalFileSystem : IAttributeFileSystem
         return Result.Success;
     }
 
-    protected override Result DoGetFileAttributes(out NxFileAttributes attributes, in Path path)
+    protected override Result DoGetFileAttributes(out NxFileAttributes attributes, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out attributes);
 
@@ -213,7 +213,7 @@ public class LocalFileSystem : IAttributeFileSystem
         return Result.Success;
     }
 
-    protected override Result DoSetFileAttributes(in Path path, NxFileAttributes attributes)
+    protected override Result DoSetFileAttributes(ref readonly Path path, NxFileAttributes attributes)
     {
         Result res = ResolveFullPath(out string fullPath, in path, true);
         if (res.IsFailure()) return res.Miss();
@@ -241,7 +241,7 @@ public class LocalFileSystem : IAttributeFileSystem
         return Result.Success;
     }
 
-    protected override Result DoGetFileSize(out long fileSize, in Path path)
+    protected override Result DoGetFileSize(out long fileSize, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out fileSize);
 
@@ -254,12 +254,12 @@ public class LocalFileSystem : IAttributeFileSystem
         return GetSizeInternal(out fileSize, info);
     }
 
-    protected override Result DoCreateDirectory(in Path path)
+    protected override Result DoCreateDirectory(ref readonly Path path)
     {
-        return DoCreateDirectory(path, NxFileAttributes.None);
+        return DoCreateDirectory(in path, NxFileAttributes.None);
     }
 
-    protected override Result DoCreateDirectory(in Path path, NxFileAttributes archiveAttribute)
+    protected override Result DoCreateDirectory(ref readonly Path path, NxFileAttributes archiveAttribute)
     {
         Result res = ResolveFullPath(out string fullPath, in path, false);
         if (res.IsFailure()) return res.Miss();
@@ -280,7 +280,7 @@ public class LocalFileSystem : IAttributeFileSystem
         return CreateDirInternal(dir, archiveAttribute);
     }
 
-    protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
+    protected override Result DoCreateFile(ref readonly Path path, long size, CreateFileOptions option)
     {
         Result res = ResolveFullPath(out string fullPath, in path, false);
         if (res.IsFailure()) return res.Miss();
@@ -308,7 +308,7 @@ public class LocalFileSystem : IAttributeFileSystem
         }
     }
 
-    protected override Result DoDeleteDirectory(in Path path)
+    protected override Result DoDeleteDirectory(ref readonly Path path)
     {
         Result res = ResolveFullPath(out string fullPath, in path, true);
         if (res.IsFailure()) return res.Miss();
@@ -320,7 +320,7 @@ public class LocalFileSystem : IAttributeFileSystem
             () => DeleteDirectoryInternal(dir, false), _fsClient);
     }
 
-    protected override Result DoDeleteDirectoryRecursively(in Path path)
+    protected override Result DoDeleteDirectoryRecursively(ref readonly Path path)
     {
         Result res = ResolveFullPath(out string fullPath, in path, true);
         if (res.IsFailure()) return res.Miss();
@@ -332,7 +332,7 @@ public class LocalFileSystem : IAttributeFileSystem
             () => DeleteDirectoryInternal(dir, true), _fsClient);
     }
 
-    protected override Result DoCleanDirectoryRecursively(in Path path)
+    protected override Result DoCleanDirectoryRecursively(ref readonly Path path)
     {
         Result res = ResolveFullPath(out string fullPath, in path, true);
         if (res.IsFailure()) return res.Miss();
@@ -343,7 +343,7 @@ public class LocalFileSystem : IAttributeFileSystem
         return CleanDirectoryInternal(dir, _fsClient);
     }
 
-    protected override Result DoDeleteFile(in Path path)
+    protected override Result DoDeleteFile(ref readonly Path path)
     {
         Result res = ResolveFullPath(out string fullPath, in path, true);
         if (res.IsFailure()) return res.Miss();
@@ -355,7 +355,7 @@ public class LocalFileSystem : IAttributeFileSystem
             () => DeleteFileInternal(file), _fsClient);
     }
 
-    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, ref readonly Path path,
         OpenDirectoryMode mode)
     {
         Result res = ResolveFullPath(out string fullPath, in path, true);
@@ -378,12 +378,12 @@ public class LocalFileSystem : IAttributeFileSystem
         return Result.Success;
     }
 
-    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
+    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, ref readonly Path path, OpenMode mode)
     {
         Result res = ResolveFullPath(out string fullPath, in path, true);
         if (res.IsFailure()) return res.Miss();
 
-        res = GetEntryType(out DirectoryEntryType entryType, path);
+        res = GetEntryType(out DirectoryEntryType entryType, in path);
         if (res.IsFailure()) return res.Miss();
 
         if (entryType == DirectoryEntryType.Directory)
@@ -401,7 +401,7 @@ public class LocalFileSystem : IAttributeFileSystem
         return Result.Success;
     }
 
-    protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
+    protected override Result DoRenameDirectory(ref readonly Path currentPath, ref readonly Path newPath)
     {
         Result res = ResolveFullPath(out string fullCurrentPath, in currentPath, true);
         if (res.IsFailure()) return res.Miss();
@@ -422,7 +422,7 @@ public class LocalFileSystem : IAttributeFileSystem
             () => RenameDirInternal(currentDirInfo, newDirInfo), _fsClient);
     }
 
-    protected override Result DoRenameFile(in Path currentPath, in Path newPath)
+    protected override Result DoRenameFile(ref readonly Path currentPath, ref readonly Path newPath)
     {
         Result res = ResolveFullPath(out string fullCurrentPath, in currentPath, true);
         if (res.IsFailure()) return res.Miss();
@@ -443,7 +443,7 @@ public class LocalFileSystem : IAttributeFileSystem
             () => RenameFileInternal(currentFileInfo, newFileInfo), _fsClient);
     }
 
-    protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
+    protected override Result DoGetEntryType(out DirectoryEntryType entryType, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out entryType);
 
@@ -471,7 +471,7 @@ public class LocalFileSystem : IAttributeFileSystem
         return ResultFs.PathNotFound.Log();
     }
 
-    protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, in Path path)
+    protected override Result DoGetFileTimeStampRaw(out FileTimeStampRaw timeStamp, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out timeStamp);
 
@@ -501,7 +501,7 @@ public class LocalFileSystem : IAttributeFileSystem
         return Result.Success;
     }
 
-    protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
+    protected override Result DoGetFreeSpaceSize(out long freeSpace, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out freeSpace);
 
@@ -512,7 +512,7 @@ public class LocalFileSystem : IAttributeFileSystem
         return Result.Success;
     }
 
-    protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
+    protected override Result DoGetTotalSpaceSize(out long totalSpace, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out totalSpace);
 
@@ -567,7 +567,7 @@ public class LocalFileSystem : IAttributeFileSystem
     }
 
     protected override Result DoQueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, QueryId queryId,
-        in Path path)
+        ref readonly Path path)
     {
         return ResultFs.UnsupportedOperation.Log();
     }

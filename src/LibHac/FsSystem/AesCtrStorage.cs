@@ -50,7 +50,7 @@ public class AesCtrStorage : IStorage
         iv.CopyTo(_iv);
     }
 
-    public AesCtrStorage(in SharedRef<IStorage> baseStorage, ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
+    public AesCtrStorage(ref readonly SharedRef<IStorage> baseStorage, ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv)
     {
         Assert.SdkRequiresNotNull(in baseStorage);
         Assert.SdkRequiresEqual(key.Length, KeySize);

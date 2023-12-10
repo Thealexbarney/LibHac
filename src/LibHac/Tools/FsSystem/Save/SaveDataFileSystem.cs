@@ -155,49 +155,49 @@ public class SaveDataFileSystem : IFileSystem
             IntegrityStorageType.Save, integrityCheckLevel, LeaveOpen);
     }
 
-    protected override Result DoCreateDirectory(in Path path)
+    protected override Result DoCreateDirectory(ref readonly Path path)
     {
         Result result = SaveDataFileSystemCore.CreateDirectory(in path);
 
         return SaveResults.ConvertToExternalResult(result).LogConverted(result);
     }
 
-    protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
+    protected override Result DoCreateFile(ref readonly Path path, long size, CreateFileOptions option)
     {
         Result result = SaveDataFileSystemCore.CreateFile(in path, size, option);
 
         return SaveResults.ConvertToExternalResult(result).LogConverted(result);
     }
 
-    protected override Result DoDeleteDirectory(in Path path)
+    protected override Result DoDeleteDirectory(ref readonly Path path)
     {
         Result result = SaveDataFileSystemCore.DeleteDirectory(in path);
 
         return SaveResults.ConvertToExternalResult(result).LogConverted(result);
     }
 
-    protected override Result DoDeleteDirectoryRecursively(in Path path)
+    protected override Result DoDeleteDirectoryRecursively(ref readonly Path path)
     {
         Result result = SaveDataFileSystemCore.DeleteDirectoryRecursively(in path);
 
         return SaveResults.ConvertToExternalResult(result).LogConverted(result);
     }
 
-    protected override Result DoCleanDirectoryRecursively(in Path path)
+    protected override Result DoCleanDirectoryRecursively(ref readonly Path path)
     {
         Result result = SaveDataFileSystemCore.CleanDirectoryRecursively(in path);
 
         return SaveResults.ConvertToExternalResult(result).LogConverted(result);
     }
 
-    protected override Result DoDeleteFile(in Path path)
+    protected override Result DoDeleteFile(ref readonly Path path)
     {
         Result result = SaveDataFileSystemCore.DeleteFile(in path);
 
         return SaveResults.ConvertToExternalResult(result).LogConverted(result);
     }
 
-    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, ref readonly Path path,
         OpenDirectoryMode mode)
     {
         Result result = SaveDataFileSystemCore.OpenDirectory(ref outDirectory, in path, mode);
@@ -205,42 +205,42 @@ public class SaveDataFileSystem : IFileSystem
         return SaveResults.ConvertToExternalResult(result).LogConverted(result);
     }
 
-    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
+    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, ref readonly Path path, OpenMode mode)
     {
         Result result = SaveDataFileSystemCore.OpenFile(ref outFile, in path, mode);
 
         return SaveResults.ConvertToExternalResult(result).LogConverted(result);
     }
 
-    protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
+    protected override Result DoRenameDirectory(ref readonly Path currentPath, ref readonly Path newPath)
     {
         Result result = SaveDataFileSystemCore.RenameDirectory(in currentPath, in newPath);
 
         return SaveResults.ConvertToExternalResult(result).LogConverted(result);
     }
 
-    protected override Result DoRenameFile(in Path currentPath, in Path newPath)
+    protected override Result DoRenameFile(ref readonly Path currentPath, ref readonly Path newPath)
     {
         Result result = SaveDataFileSystemCore.RenameFile(in currentPath, in newPath);
 
         return SaveResults.ConvertToExternalResult(result).LogConverted(result);
     }
 
-    protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
+    protected override Result DoGetEntryType(out DirectoryEntryType entryType, ref readonly Path path)
     {
         Result result = SaveDataFileSystemCore.GetEntryType(out entryType, in path);
 
         return SaveResults.ConvertToExternalResult(result).LogConverted(result);
     }
 
-    protected override Result DoGetFreeSpaceSize(out long freeSpace, in Path path)
+    protected override Result DoGetFreeSpaceSize(out long freeSpace, ref readonly Path path)
     {
         Result result = SaveDataFileSystemCore.GetFreeSpaceSize(out freeSpace, in path);
 
         return SaveResults.ConvertToExternalResult(result).LogConverted(result);
     }
 
-    protected override Result DoGetTotalSpaceSize(out long totalSpace, in Path path)
+    protected override Result DoGetTotalSpaceSize(out long totalSpace, ref readonly Path path)
     {
         Result result = SaveDataFileSystemCore.GetTotalSpaceSize(out totalSpace, in path);
 

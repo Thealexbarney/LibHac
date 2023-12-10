@@ -32,7 +32,7 @@ public enum AssertionFailureOperation
     Continue
 }
 
-public delegate AssertionFailureOperation AssertionFailureHandler(in AssertionInfo assertionInfo);
+public delegate AssertionFailureOperation AssertionFailureHandler(ref readonly AssertionInfo assertionInfo);
 
 public static class Assert
 {
@@ -52,13 +52,13 @@ public static class Assert
         }
     }
 
-    private static AssertionFailureOperation DefaultAssertionFailureHandler(in AssertionInfo assertionInfo)
+    private static AssertionFailureOperation DefaultAssertionFailureHandler(ref readonly AssertionInfo assertionInfo)
     {
         return AssertionFailureOperation.Abort;
     }
 
     private static void ExecuteAssertionFailureOperation(AssertionFailureOperation operation,
-        in AssertionInfo assertionInfo)
+        ref readonly AssertionInfo assertionInfo)
     {
         switch (operation)
         {
@@ -84,7 +84,7 @@ public static class Assert
         }
     }
 
-    private static void InvokeAssertionFailureHandler(in AssertionInfo assertionInfo)
+    private static void InvokeAssertionFailureHandler(ref readonly AssertionInfo assertionInfo)
     {
         AssertionFailureOperation operation = _assertionFailureHandler(in assertionInfo);
         ExecuteAssertionFailureOperation(operation, in assertionInfo);
@@ -440,7 +440,7 @@ public static class Assert
     // Not null SharedRef<T>
     // ---------------------------------------------------------------------
 
-    private static void NotNullImpl<T>(AssertionType assertionType, in SharedRef<T> value,
+    private static void NotNullImpl<T>(AssertionType assertionType, ref readonly SharedRef<T> value,
         string valueText, string functionName, string fileName, int lineNumber) where T : class, IDisposable
     {
         if (AssertImpl.NotNull(in value))
@@ -575,7 +575,7 @@ public static class Assert
     // Null UniqueRef<T>
     // ---------------------------------------------------------------------
 
-    private static void NullImpl<T>(AssertionType assertionType, in UniqueRef<T> value,
+    private static void NullImpl<T>(AssertionType assertionType, ref readonly UniqueRef<T> value,
         string valueText, string functionName, string fileName, int lineNumber) where T : class, IDisposable
     {
         if (AssertImpl.Null(in value))
@@ -621,7 +621,7 @@ public static class Assert
     // Null SharedRef<T>
     // ---------------------------------------------------------------------
 
-    private static void NullImpl<T>(AssertionType assertionType, in SharedRef<T> value,
+    private static void NullImpl<T>(AssertionType assertionType, ref readonly SharedRef<T> value,
         string valueText, string functionName, string fileName, int lineNumber) where T : class, IDisposable
     {
         if (AssertImpl.Null(in value))

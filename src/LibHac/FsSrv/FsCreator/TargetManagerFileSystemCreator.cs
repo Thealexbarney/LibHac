@@ -7,7 +7,7 @@ namespace LibHac.FsSrv.FsCreator;
 
 public class TargetManagerFileSystemCreator : ITargetManagerFileSystemCreator
 {
-    public Result Create(ref SharedRef<IFileSystem> outFileSystem, in Path rootPath, bool openCaseSensitive,
+    public Result Create(ref SharedRef<IFileSystem> outFileSystem, ref readonly Path rootPath, bool openCaseSensitive,
         bool ensureRootPathExists, Result pathNotFoundResult)
     {
         throw new NotImplementedException();

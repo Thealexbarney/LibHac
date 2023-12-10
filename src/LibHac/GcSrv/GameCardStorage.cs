@@ -173,7 +173,7 @@ internal abstract class GameCardStorageInterfaceAdapter : IStorageSf
 {
     private SharedRef<IStorage> _baseStorage;
 
-    protected GameCardStorageInterfaceAdapter(in SharedRef<IStorage> baseStorage)
+    protected GameCardStorageInterfaceAdapter(ref readonly SharedRef<IStorage> baseStorage)
     {
         _baseStorage = SharedRef<IStorage>.CreateCopy(in baseStorage);
     }

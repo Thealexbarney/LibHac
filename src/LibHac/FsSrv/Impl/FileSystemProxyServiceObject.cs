@@ -48,7 +48,7 @@ public static class FileSystemProxyServiceObject
         }
 
         public Result OpenCodeFileSystem(ref SharedRef<IFileSystem> fileSystem,
-            out CodeVerificationData verificationData, in FspPath path, ProgramId programId)
+            out CodeVerificationData verificationData, ref readonly FspPath path, ProgramId programId)
         {
             UnsafeHelpers.SkipParamInit(out verificationData);
 

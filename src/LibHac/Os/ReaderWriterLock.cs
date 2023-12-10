@@ -76,21 +76,21 @@ public static class ReaderWriterLockApi
         os.Impl.ReleaseWriteLockImpl(ref rwLock);
     }
 
-    public static bool IsReadLockHeld(this OsState os, in ReaderWriterLockType rwLock)
+    public static bool IsReadLockHeld(this OsState os, ref readonly ReaderWriterLockType rwLock)
     {
         Assert.SdkRequires(rwLock.LockState == ReaderWriterLockType.State.Initialized);
         return ReaderWriterLockImpl.GetReadLockCount(in ReaderWriterLockImpl.GetLockCountRo(in rwLock)) != 0;
     }
 
     // Todo: Use Horizon thread APIs
-    public static bool IsWriteLockHeldByCurrentThread(this OsState os, in ReaderWriterLockType rwLock)
+    public static bool IsWriteLockHeldByCurrentThread(this OsState os, ref readonly ReaderWriterLockType rwLock)
     {
         Assert.SdkRequires(rwLock.LockState == ReaderWriterLockType.State.Initialized);
         return rwLock.OwnerThread == Environment.CurrentManagedThreadId &&
                ReaderWriterLockImpl.GetWriteLockCount(in rwLock) != 0;
     }
 
-    public static bool IsReaderWriterLockOwnerThread(this OsState os, in ReaderWriterLockType rwLock)
+    public static bool IsReaderWriterLockOwnerThread(this OsState os, ref readonly ReaderWriterLockType rwLock)
     {
         Assert.SdkRequires(rwLock.LockState == ReaderWriterLockType.State.Initialized);
         return rwLock.OwnerThread == Environment.CurrentManagedThreadId;

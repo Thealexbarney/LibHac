@@ -6,7 +6,7 @@ public struct DeliveryCacheDirectoryEntry
     public long Size;
     public Digest Digest;
 
-    public DeliveryCacheDirectoryEntry(in FileName name, long size, in Digest digest)
+    public DeliveryCacheDirectoryEntry(ref readonly FileName name, long size, ref readonly Digest digest)
     {
         Name = name;
         Size = size;

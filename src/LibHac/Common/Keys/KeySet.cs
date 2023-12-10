@@ -257,7 +257,7 @@ public class KeySet
 
     public void DeriveSdCardKeys() => KeyDerivation.DeriveSdCardKeys(this);
 
-    private static RSAParameters CreateRsaParameters(in RsaKey key)
+    private static RSAParameters CreateRsaParameters(ref readonly RsaKey key)
     {
         return new RSAParameters
         {
@@ -266,7 +266,7 @@ public class KeySet
         };
     }
 
-    private static RSAParameters CreateRsaParameters(in RsaFullKey key)
+    private static RSAParameters CreateRsaParameters(ref readonly RsaFullKey key)
     {
         return new RSAParameters
         {

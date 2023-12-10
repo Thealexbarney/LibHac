@@ -88,7 +88,7 @@ public static class PathUtility
         return path[length - 1] == DirectorySeparator || path[length - 1] == AltDirectorySeparator;
     }
 
-    public static bool IsDirectoryPath(in FspPath path)
+    public static bool IsDirectoryPath(ref readonly FspPath path)
     {
         return IsDirectoryPath(SpanHelpers.AsReadOnlyByteSpan(in path));
     }

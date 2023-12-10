@@ -19,7 +19,7 @@ public static class PathBasedFileDataCacheShim
     }
 
     internal static void InvalidatePathBasedFileDataCacheEntry(this FileSystemClientImpl fs,
-        FileSystemAccessor fsAccessor, in Path path)
+        FileSystemAccessor fsAccessor, ref readonly Path path)
     {
         throw new NotImplementedException();
     }
@@ -31,7 +31,7 @@ public static class PathBasedFileDataCacheShim
     }
 
     internal static bool FindPathBasedFileDataCacheEntry(this FileSystemClientImpl fs, out FilePathHash outHash,
-        out int outHashIndex, FileSystemAccessor fsAccessor, in Path path)
+        out int outHashIndex, FileSystemAccessor fsAccessor, ref readonly Path path)
     {
         throw new NotImplementedException();
     }

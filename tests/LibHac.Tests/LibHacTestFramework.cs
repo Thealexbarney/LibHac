@@ -23,7 +23,7 @@ public class LibHacTestFramework : XunitTestFramework
 
     private static void SetDebugHandler()
     {
-        AssertionFailureHandler handler = (in AssertionInfo info) =>
+        AssertionFailureHandler handler = (ref readonly AssertionInfo info) =>
         {
             if (SkipAbortFunctions.Contains(info.FunctionName))
             {

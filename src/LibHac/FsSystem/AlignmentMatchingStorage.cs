@@ -205,7 +205,7 @@ public class AlignmentMatchingStoragePooledBuffer<TBufferAlignment> : IStorage
         Assert.SdkRequires(BitUtil.IsPowerOfTwo(dataAlign), "DataAlign must be a power of 2.");
     }
 
-    public AlignmentMatchingStoragePooledBuffer(in SharedRef<IStorage> baseStorage, int dataAlign)
+    public AlignmentMatchingStoragePooledBuffer(ref readonly SharedRef<IStorage> baseStorage, int dataAlign)
     {
         Abort.DoAbortUnless(BitUtil.IsPowerOfTwo(BufferAlign));
 
@@ -345,7 +345,7 @@ public class AlignmentMatchingStorageInBulkRead<TBufferAlignment> : IStorage
         Assert.SdkRequires(BitUtil.IsPowerOfTwo(dataAlignment));
     }
 
-    public AlignmentMatchingStorageInBulkRead(in SharedRef<IStorage> baseStorage, int dataAlignment)
+    public AlignmentMatchingStorageInBulkRead(ref readonly SharedRef<IStorage> baseStorage, int dataAlignment)
     {
         Abort.DoAbortUnless(BitUtil.IsPowerOfTwo(BufferAlign));
 

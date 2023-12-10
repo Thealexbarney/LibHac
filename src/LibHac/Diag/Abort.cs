@@ -25,7 +25,7 @@ public enum AbortReason
 
 public static class Abort
 {
-    internal static void InvokeAbortObserver(in AbortInfo abortInfo)
+    internal static void InvokeAbortObserver(ref readonly AbortInfo abortInfo)
     {
         // Todo
     }

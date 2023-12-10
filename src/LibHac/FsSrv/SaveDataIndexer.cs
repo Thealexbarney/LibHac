@@ -184,7 +184,7 @@ public class SaveDataIndexer : ISaveDataIndexer
     {
         private WeakRef<Reader> _reader;
 
-        public ReaderAccessor(in SharedRef<Reader> reader)
+        public ReaderAccessor(ref readonly SharedRef<Reader> reader)
         {
             _reader = new WeakRef<Reader>(in reader);
         }
@@ -748,7 +748,7 @@ public class SaveDataIndexer : ISaveDataIndexer
     /// </summary>
     /// <param name="reader">The reader to add.</param>
     /// <returns>The <see cref="Result"/> of the operation.</returns>
-    private Result RegisterReader(in SharedRef<Reader> reader)
+    private Result RegisterReader(ref readonly SharedRef<Reader> reader)
     {
         Assert.SdkRequires(_mutex.IsLockedByCurrentThread());
 

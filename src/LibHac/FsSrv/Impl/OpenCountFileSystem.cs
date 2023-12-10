@@ -46,18 +46,18 @@ internal class OpenCountFileSystem : ForwardingFileSystem
     }
 
     // ReSharper disable once RedundantOverriddenMember
-    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
+    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, ref readonly Path path, OpenMode mode)
     {
         // Todo: Implement
-        return base.DoOpenFile(ref outFile, path, mode);
+        return base.DoOpenFile(ref outFile, in path, mode);
     }
 
     // ReSharper disable once RedundantOverriddenMember
-    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, ref readonly Path path,
         OpenDirectoryMode mode)
     {
         // Todo: Implement
-        return base.DoOpenDirectory(ref outDirectory, path, mode);
+        return base.DoOpenDirectory(ref outDirectory, in path, mode);
     }
 
     public override void Dispose()

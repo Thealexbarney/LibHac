@@ -74,7 +74,7 @@ public class SaveDataOpenTypeSetFileStorage : FileStorageBasedFileSystem
         _mutex = new SdkMutexType();
     }
 
-    public Result Initialize(ref SharedRef<IFileSystem> baseFileSystem, in Path path, OpenMode mode, OpenType type)
+    public Result Initialize(ref SharedRef<IFileSystem> baseFileSystem, ref readonly Path path, OpenMode mode, OpenType type)
     {
         Result res = Initialize(ref baseFileSystem, in path, mode);
         if (res.IsFailure()) return res.Miss();

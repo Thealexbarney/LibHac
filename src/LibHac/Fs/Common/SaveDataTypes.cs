@@ -265,8 +265,8 @@ public struct SaveDataCreationInfo2
     public int MetaSize;
     public Array356<byte> Reserved4;
 
-    public static Result Make(out SaveDataCreationInfo2 creationInfo, in SaveDataAttribute attribute, long size,
-        long journalSize, long blockSize, ulong ownerId, SaveDataFlags flags, SaveDataSpaceId spaceId,
+    public static Result Make(out SaveDataCreationInfo2 creationInfo, in SaveDataAttribute attribute,
+        long size, long journalSize, long blockSize, ulong ownerId, SaveDataFlags flags, SaveDataSpaceId spaceId,
         SaveDataFormatType formatType)
     {
         UnsafeHelpers.SkipParamInit(out creationInfo);

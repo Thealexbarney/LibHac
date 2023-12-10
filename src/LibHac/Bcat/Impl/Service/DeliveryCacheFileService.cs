@@ -29,7 +29,7 @@ internal class DeliveryCacheFileService : IDeliveryCacheFileService
         Access = accessControl;
     }
 
-    public Result Open(ref DirectoryName directoryName, ref FileName fileName)
+    public Result Open(ref readonly DirectoryName directoryName, ref readonly FileName fileName)
     {
         if (!directoryName.IsValid())
             return ResultBcat.InvalidArgument.Log();
@@ -43,14 +43,14 @@ internal class DeliveryCacheFileService : IDeliveryCacheFileService
                 return ResultBcat.AlreadyOpen.Log();
 
             var metaReader = new DeliveryCacheFileMetaAccessor(Server);
-            Result res = metaReader.ReadApplicationFileMeta(ApplicationId, ref directoryName, true);
+            Result res = metaReader.ReadApplicationFileMeta(ApplicationId, in directoryName, true);
             if (res.IsFailure()) return res.Miss();
 
-            res = metaReader.FindEntry(out DeliveryCacheFileMetaEntry entry, ref fileName);
+            res = metaReader.FindEntry(out DeliveryCacheFileMetaEntry entry, in fileName);
             if (res.IsFailure()) return res.Miss();
 
             Span<byte> filePath = stackalloc byte[0x80];
-            Server.GetStorageManager().GetFilePath(filePath, ApplicationId, ref directoryName, ref fileName);
+            Server.GetStorageManager().GetFilePath(filePath, ApplicationId, in directoryName, in fileName);
 
             res = Server.GetFsClient().OpenFile(out _handle, new U8Span(filePath), OpenMode.Read);
             if (res.IsFailure()) return res.Miss();

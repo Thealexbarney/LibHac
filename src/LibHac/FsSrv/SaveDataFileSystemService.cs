@@ -739,7 +739,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     {
         using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.NonGameCard);
 
-        Result res = GetSaveDataInfo(out SaveDataInfo info, spaceId, in attribute);
+        Result res = GetSaveDataInfo(out SaveDataInfo info, spaceId, attribute);
         if (res.IsFailure()) return res;
 
         return DeleteSaveDataFileSystemBySaveDataSpaceIdCore(spaceId, info.SaveDataId).Ret();
@@ -776,9 +776,12 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             res = accessor.Get.GetInterface().GetKey(out SaveDataAttribute key, saveDataId);
             if (res.IsFailure()) return res.Miss();
 
-            Result GetExtraData(out SaveDataExtraData data) =>
-                _serviceImpl.ReadSaveDataFileSystemExtraData(out data, targetSpaceId, saveDataId, key.Type,
-                    _saveDataRootPath.DangerousGetPath());
+
+            Result GetExtraData(out SaveDataExtraData data)
+            {
+                var path = _saveDataRootPath.DangerousGetPath();
+                return _serviceImpl.ReadSaveDataFileSystemExtraData(out data, targetSpaceId, saveDataId, key.Type, in path);
+            }
 
             res = SaveDataAccessibilityChecker.CheckDelete(in key, programInfo, GetExtraData);
             if (res.IsFailure()) return res.Miss();
@@ -842,7 +845,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         throw new NotImplementedException();
     }
 
-    public Result SetSaveDataRootPath(in FspPath path)
+    public Result SetSaveDataRootPath(ref readonly FspPath path)
     {
         Result res = GetProgramInfo(out ProgramInfo programInfo);
         if (res.IsFailure()) return res.Miss();
@@ -1165,7 +1168,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         return Result.Success;
     }
 
-    public Result GetSaveDataInfo(out SaveDataInfo info, SaveDataSpaceId spaceId, in SaveDataAttribute attribute)
+    public Result GetSaveDataInfo(out SaveDataInfo info, SaveDataSpaceId spaceId, SaveDataAttribute attribute)
     {
         UnsafeHelpers.SkipParamInit(out info);
 
@@ -1849,7 +1852,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             tempAttribute.ProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId);
         }
 
-        res = GetSaveDataInfo(out SaveDataInfo info, spaceId, in tempAttribute);
+        res = GetSaveDataInfo(out SaveDataInfo info, spaceId, tempAttribute);
         if (res.IsFailure()) return res.Miss();
 
         // Make a mask for reading the entire extra data
@@ -1898,7 +1901,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             tempAttribute.ProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId);
         }
 
-        res = GetSaveDataInfo(out SaveDataInfo info, spaceId, in tempAttribute);
+        res = GetSaveDataInfo(out SaveDataInfo info, spaceId, tempAttribute);
         if (res.IsFailure()) return res.Miss();
 
         return ReadSaveDataFileSystemExtraDataCore(out extraDataRef, spaceId, info.SaveDataId, in maskRef).Ret();
@@ -1978,7 +1981,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             tempAttribute.ProgramId = ResolveDefaultSaveDataReferenceProgramId(programInfo.ProgramId);
         }
 
-        res = GetSaveDataInfo(out SaveDataInfo info, spaceId, in tempAttribute);
+        res = GetSaveDataInfo(out SaveDataInfo info, spaceId, tempAttribute);
         if (res.IsFailure()) return res.Miss();
 
         return WriteSaveDataFileSystemExtraDataWithMask(info.SaveDataId, spaceId, extraData, extraDataMask).Ret();

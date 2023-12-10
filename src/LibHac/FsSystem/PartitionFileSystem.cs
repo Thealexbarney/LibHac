@@ -406,14 +406,14 @@ public class PartitionFileSystemCore<TMetaData, TFormat, THeader, TEntry> : IFil
         base.Dispose();
     }
 
-    public Result Initialize(in SharedRef<IStorage> baseStorage)
+    public Result Initialize(ref readonly SharedRef<IStorage> baseStorage)
     {
         _sharedStorage.SetByCopy(in baseStorage);
 
         return Initialize(_sharedStorage.Get).Ret();
     }
 
-    public Result Initialize(in SharedRef<IStorage> baseStorage, MemoryResource allocator)
+    public Result Initialize(ref readonly SharedRef<IStorage> baseStorage, MemoryResource allocator)
     {
         _sharedStorage.SetByCopy(in baseStorage);
 
@@ -445,14 +445,14 @@ public class PartitionFileSystemCore<TMetaData, TFormat, THeader, TEntry> : IFil
         return Result.Success;
     }
 
-    public Result Initialize(ref UniqueRef<TMetaData> metaData, in SharedRef<IStorage> baseStorage)
+    public Result Initialize(ref UniqueRef<TMetaData> metaData, ref readonly SharedRef<IStorage> baseStorage)
     {
         _uniqueMetaData.Set(ref metaData);
 
         return Initialize(_uniqueMetaData.Get, in baseStorage).Ret();
     }
 
-    public Result Initialize(TMetaData metaData, in SharedRef<IStorage> baseStorage)
+    public Result Initialize(TMetaData metaData, ref readonly SharedRef<IStorage> baseStorage)
     {
         if (_isInitialized)
             return ResultFs.PreconditionViolation.Log();
@@ -484,7 +484,7 @@ public class PartitionFileSystemCore<TMetaData, TFormat, THeader, TEntry> : IFil
         return Result.Success;
     }
 
-    protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
+    protected override Result DoGetEntryType(out DirectoryEntryType entryType, ref readonly Path path)
     {
         Unsafe.SkipInit(out entryType);
 
@@ -510,7 +510,7 @@ public class PartitionFileSystemCore<TMetaData, TFormat, THeader, TEntry> : IFil
         return ResultFs.PathNotFound.Log();
     }
 
-    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
+    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, ref readonly Path path, OpenMode mode)
     {
         if (!_isInitialized)
             return ResultFs.PreconditionViolation.Log();
@@ -531,7 +531,7 @@ public class PartitionFileSystemCore<TMetaData, TFormat, THeader, TEntry> : IFil
         return Result.Success;
     }
 
-    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path, OpenDirectoryMode mode)
+    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, ref readonly Path path, OpenDirectoryMode mode)
     {
         if (!_isInitialized)
             return ResultFs.PreconditionViolation.Log();
@@ -547,14 +547,14 @@ public class PartitionFileSystemCore<TMetaData, TFormat, THeader, TEntry> : IFil
         return Result.Success;
     }
 
-    protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
-    protected override Result DoDeleteFile(in Path path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
-    protected override Result DoCreateDirectory(in Path path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
-    protected override Result DoDeleteDirectory(in Path path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
-    protected override Result DoDeleteDirectoryRecursively(in Path path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
-    protected override Result DoCleanDirectoryRecursively(in Path path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
-    protected override Result DoRenameFile(in Path currentPath, in Path newPath) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
-    protected override Result DoRenameDirectory(in Path currentPath, in Path newPath) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+    protected override Result DoCreateFile(ref readonly Path path, long size, CreateFileOptions option) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+    protected override Result DoDeleteFile(ref readonly Path path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+    protected override Result DoCreateDirectory(ref readonly Path path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+    protected override Result DoDeleteDirectory(ref readonly Path path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+    protected override Result DoDeleteDirectoryRecursively(ref readonly Path path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+    protected override Result DoCleanDirectoryRecursively(ref readonly Path path) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+    protected override Result DoRenameFile(ref readonly Path currentPath, ref readonly Path newPath) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
+    protected override Result DoRenameDirectory(ref readonly Path currentPath, ref readonly Path newPath) => ResultFs.UnsupportedWriteForPartitionFileSystem.Log();
 
     protected override Result DoCommit()
     {

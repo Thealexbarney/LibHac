@@ -27,7 +27,7 @@ internal class DeliveryCacheDirectoryService : IDeliveryCacheDirectoryService
         Access = accessControl;
     }
 
-    public Result Open(ref DirectoryName name)
+    public Result Open(ref readonly DirectoryName name)
     {
         if (!name.IsValid())
             return ResultBcat.InvalidArgument.Log();
@@ -38,7 +38,7 @@ internal class DeliveryCacheDirectoryService : IDeliveryCacheDirectoryService
                 return ResultBcat.AlreadyOpen.Log();
 
             var metaReader = new DeliveryCacheFileMetaAccessor(Server);
-            Result res = metaReader.ReadApplicationFileMeta(ApplicationId, ref name, false);
+            Result res = metaReader.ReadApplicationFileMeta(ApplicationId, in name, false);
             if (res.IsFailure()) return res.Miss();
 
             Count = metaReader.Count;
@@ -59,7 +59,7 @@ internal class DeliveryCacheDirectoryService : IDeliveryCacheDirectoryService
                 return ResultBcat.NotOpen.Log();
 
             var metaReader = new DeliveryCacheFileMetaAccessor(Server);
-            Result res = metaReader.ReadApplicationFileMeta(ApplicationId, ref _name, true);
+            Result res = metaReader.ReadApplicationFileMeta(ApplicationId, in _name, true);
             if (res.IsFailure()) return res.Miss();
 
             int i;

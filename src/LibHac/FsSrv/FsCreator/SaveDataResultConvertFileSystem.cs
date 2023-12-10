@@ -82,7 +82,7 @@ public class SaveDataResultConvertFileSystem : IResultConvertFileSystem<ISaveDat
         return ConvertSaveDataFsResult(GetFileSystem().RollbackOnlyModified(), _isReconstructible).Ret();
     }
 
-    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
+    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, ref readonly Path path, OpenMode mode)
     {
         using var file = new UniqueRef<IFile>();
         Result res = ConvertResult(GetFileSystem().OpenFile(ref file.Ref, in path, mode));
@@ -95,7 +95,7 @@ public class SaveDataResultConvertFileSystem : IResultConvertFileSystem<ISaveDat
         return Result.Success;
     }
 
-    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, ref readonly Path path,
         OpenDirectoryMode mode)
     {
         using var directory = new UniqueRef<IDirectory>();

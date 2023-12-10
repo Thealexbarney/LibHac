@@ -22,12 +22,12 @@ public class InMemoryFileSystem : IAttributeFileSystem
         FsTable = new FileTable();
     }
 
-    protected override Result DoCreateDirectory(in Path path)
+    protected override Result DoCreateDirectory(ref readonly Path path)
     {
         return FsTable.AddDirectory(new U8Span(path.GetString()));
     }
 
-    protected override Result DoCreateDirectory(in Path path, NxFileAttributes archiveAttribute)
+    protected override Result DoCreateDirectory(ref readonly Path path, NxFileAttributes archiveAttribute)
     {
         Result res = FsTable.AddDirectory(new U8Span(path.GetString()));
         if (res.IsFailure()) return res.Miss();
@@ -39,7 +39,7 @@ public class InMemoryFileSystem : IAttributeFileSystem
         return Result.Success;
     }
 
-    protected override Result DoCreateFile(in Path path, long size, CreateFileOptions option)
+    protected override Result DoCreateFile(ref readonly Path path, long size, CreateFileOptions option)
     {
         Result res = FsTable.AddFile(new U8Span(path.GetString()));
         if (res.IsFailure()) return res.Miss();
@@ -50,27 +50,27 @@ public class InMemoryFileSystem : IAttributeFileSystem
         return file.File.SetSize(size);
     }
 
-    protected override Result DoDeleteDirectory(in Path path)
+    protected override Result DoDeleteDirectory(ref readonly Path path)
     {
         return FsTable.DeleteDirectory(new U8Span(path.GetString()), false);
     }
 
-    protected override Result DoDeleteDirectoryRecursively(in Path path)
+    protected override Result DoDeleteDirectoryRecursively(ref readonly Path path)
     {
         return FsTable.DeleteDirectory(new U8Span(path.GetString()), true);
     }
 
-    protected override Result DoCleanDirectoryRecursively(in Path path)
+    protected override Result DoCleanDirectoryRecursively(ref readonly Path path)
     {
         return FsTable.CleanDirectory(new U8Span(path.GetString()));
     }
 
-    protected override Result DoDeleteFile(in Path path)
+    protected override Result DoDeleteFile(ref readonly Path path)
     {
         return FsTable.DeleteFile(new U8Span(path.GetString()));
     }
 
-    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path,
+    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, ref readonly Path path,
         OpenDirectoryMode mode)
     {
         Result res = FsTable.GetDirectory(new U8Span(path.GetString()), out DirectoryNode dirNode);
@@ -80,7 +80,7 @@ public class InMemoryFileSystem : IAttributeFileSystem
         return Result.Success;
     }
 
-    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, in Path path, OpenMode mode)
+    protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, ref readonly Path path, OpenMode mode)
     {
         Result res = FsTable.GetFile(new U8Span(path.GetString()), out FileNode fileNode);
         if (res.IsFailure()) return res.Miss();
@@ -90,17 +90,17 @@ public class InMemoryFileSystem : IAttributeFileSystem
         return Result.Success;
     }
 
-    protected override Result DoRenameDirectory(in Path currentPath, in Path newPath)
+    protected override Result DoRenameDirectory(ref readonly Path currentPath, ref readonly Path newPath)
     {
         return FsTable.RenameDirectory(new U8Span(currentPath.GetString()), new U8Span(newPath.GetString()));
     }
 
-    protected override Result DoRenameFile(in Path currentPath, in Path newPath)
+    protected override Result DoRenameFile(ref readonly Path currentPath, ref readonly Path newPath)
     {
         return FsTable.RenameFile(new U8Span(currentPath.GetString()), new U8Span(newPath.GetString()));
     }
 
-    protected override Result DoGetEntryType(out DirectoryEntryType entryType, in Path path)
+    protected override Result DoGetEntryType(out DirectoryEntryType entryType, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out entryType);
 
@@ -124,7 +124,7 @@ public class InMemoryFileSystem : IAttributeFileSystem
         return Result.Success;
     }
 
-    protected override Result DoGetFileAttributes(out NxFileAttributes attributes, in Path path)
+    protected override Result DoGetFileAttributes(out NxFileAttributes attributes, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out attributes);
 
@@ -143,7 +143,7 @@ public class InMemoryFileSystem : IAttributeFileSystem
         return ResultFs.PathNotFound.Log();
     }
 
-    protected override Result DoSetFileAttributes(in Path path, NxFileAttributes attributes)
+    protected override Result DoSetFileAttributes(ref readonly Path path, NxFileAttributes attributes)
     {
         if (FsTable.GetFile(new U8Span(path.GetString()), out FileNode file).IsSuccess())
         {
@@ -160,7 +160,7 @@ public class InMemoryFileSystem : IAttributeFileSystem
         return ResultFs.PathNotFound.Log();
     }
 
-    protected override Result DoGetFileSize(out long fileSize, in Path path)
+    protected override Result DoGetFileSize(out long fileSize, ref readonly Path path)
     {
         UnsafeHelpers.SkipParamInit(out fileSize);
 
