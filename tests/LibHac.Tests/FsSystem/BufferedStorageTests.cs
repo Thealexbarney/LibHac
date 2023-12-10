@@ -51,13 +51,13 @@ public class BufferedStorageTests
     }
 
     public static AccessTestConfig[] AccessTestConfigs =
-    {
+    [
         new()
         {
-            SizeClassProbs = new[] { 50, 50, 5 },
-            SizeClassMaxSizes = new[] { 0x4000, 0x80000, 0x800000 }, // 16 KB, 512 KB, 8 MB
-            TaskProbs = new[] { 50, 50, 1 }, // Read, Write, Flush
-            AccessTypeProbs = new[] { 10, 10, 5 }, // Random, Sequential, Frequent block
+            SizeClassProbs = [50, 50, 5],
+            SizeClassMaxSizes = [0x4000, 0x80000, 0x800000], // 16 KB, 512 KB, 8 MB
+            TaskProbs = [50, 50, 1], // Read, Write, Flush
+            AccessTypeProbs = [10, 10, 5], // Random, Sequential, Frequent block
             RngSeed = 35467,
             FrequentAccessBlockCount = 6,
             BlockSize = 0x4000,
@@ -70,10 +70,10 @@ public class BufferedStorageTests
         },
         new()
         {
-            SizeClassProbs = new[] { 50, 50, 5 },
-            SizeClassMaxSizes = new[] { 0x4000, 0x80000, 0x800000 }, // 16 KB, 512 KB, 8 MB
-            TaskProbs = new[] { 50, 50, 1 }, // Read, Write, Flush
-            AccessTypeProbs = new[] { 10, 10, 5 }, // Random, Sequential, Frequent block
+            SizeClassProbs = [50, 50, 5],
+            SizeClassMaxSizes = [0x4000, 0x80000, 0x800000], // 16 KB, 512 KB, 8 MB
+            TaskProbs = [50, 50, 1], // Read, Write, Flush
+            AccessTypeProbs = [10, 10, 5], // Random, Sequential, Frequent block
             RngSeed = 6548433,
             FrequentAccessBlockCount = 6,
             BlockSize = 0x4000,
@@ -86,10 +86,10 @@ public class BufferedStorageTests
         },
         new()
         {
-            SizeClassProbs = new[] { 50, 50, 0 },
-            SizeClassMaxSizes = new[] { 0x4000, 0x80000, 0x800000 }, // 16 KB, 512 KB, 8 MB
-            TaskProbs = new[] { 50, 0, 0 },
-            AccessTypeProbs = new[] { 10, 10, 5 }, // Random, Sequential, Frequent block
+            SizeClassProbs = [50, 50, 0],
+            SizeClassMaxSizes = [0x4000, 0x80000, 0x800000], // 16 KB, 512 KB, 8 MB
+            TaskProbs = [50, 0, 0],
+            AccessTypeProbs = [10, 10, 5], // Random, Sequential, Frequent block
             RngSeed = 756478,
             FrequentAccessBlockCount = 16,
             BlockSize = 0x4000,
@@ -102,10 +102,10 @@ public class BufferedStorageTests
         },
         new()
         {
-            SizeClassProbs = new[] { 50, 50, 0 },
-            SizeClassMaxSizes = new[] { 0x4000, 0x80000, 0x800000 }, // 16 KB, 512 KB, 8 MB
-            TaskProbs = new[] { 50, 0, 0 },
-            AccessTypeProbs = new[] { 0, 0, 5 }, // Random, Sequential, Frequent block
+            SizeClassProbs = [50, 50, 0],
+            SizeClassMaxSizes = [0x4000, 0x80000, 0x800000], // 16 KB, 512 KB, 8 MB
+            TaskProbs = [50, 0, 0],
+            AccessTypeProbs = [0, 0, 5], // Random, Sequential, Frequent block
             RngSeed = 38197549,
             FrequentAccessBlockCount = 16,
             BlockSize = 0x4000,
@@ -118,10 +118,10 @@ public class BufferedStorageTests
         },
         new()
         {
-            SizeClassProbs = new[] { 50, 50, 0 },
-            SizeClassMaxSizes = new[] { 0x4000, 0x80000, 0x800000 }, // 16 KB, 512 KB, 8 MB
-            TaskProbs = new[] { 50, 50, 1 }, // Read, Write, Flush
-            AccessTypeProbs = new[] { 10, 10, 5 }, // Random, Sequential, Frequent block
+            SizeClassProbs = [50, 50, 0],
+            SizeClassMaxSizes = [0x4000, 0x80000, 0x800000], // 16 KB, 512 KB, 8 MB
+            TaskProbs = [50, 50, 1], // Read, Write, Flush
+            AccessTypeProbs = [10, 10, 5], // Random, Sequential, Frequent block
             RngSeed = 567365,
             FrequentAccessBlockCount = 6,
             BlockSize = 0x4000,
@@ -134,10 +134,10 @@ public class BufferedStorageTests
         },
         new()
         {
-            SizeClassProbs = new[] { 50, 50, 0 },
-            SizeClassMaxSizes = new[] { 0x4000, 0x80000, 0x800000 }, // 16 KB, 512 KB, 8 MB
-            TaskProbs = new[] { 50, 50, 1 }, // Read, Write, Flush
-            AccessTypeProbs = new[] { 10, 10, 5 }, // Random, Sequential, Frequent block
+            SizeClassProbs = [50, 50, 0],
+            SizeClassMaxSizes = [0x4000, 0x80000, 0x800000], // 16 KB, 512 KB, 8 MB
+            TaskProbs = [50, 50, 1], // Read, Write, Flush
+            AccessTypeProbs = [10, 10, 5], // Random, Sequential, Frequent block
             RngSeed = 949365,
             FrequentAccessBlockCount = 6,
             BlockSize = 0x4000,
@@ -150,10 +150,10 @@ public class BufferedStorageTests
         },
         new()
         {
-            SizeClassProbs = new[] { 50, 50, 10 },
-            SizeClassMaxSizes = new[] { 0x4000, 0x80000, 0x800000 }, // 16 KB, 512 KB, 8 MB
-            TaskProbs = new[] { 50, 50, 1 }, // Read, Write, Flush
-            AccessTypeProbs = new[] { 10, 10, 5 }, // Random, Sequential, Frequent block
+            SizeClassProbs = [50, 50, 10],
+            SizeClassMaxSizes = [0x4000, 0x80000, 0x800000], // 16 KB, 512 KB, 8 MB
+            TaskProbs = [50, 50, 1], // Read, Write, Flush
+            AccessTypeProbs = [10, 10, 5], // Random, Sequential, Frequent block
             RngSeed = 670670,
             FrequentAccessBlockCount = 16,
             BlockSize = 0x4000,
@@ -164,7 +164,7 @@ public class BufferedStorageTests
             HeapBlockSize = 0x4000,
             BufferManagerCacheCount = 0x400
         }
-    };
+    ];
 
     private static TheoryData<T> CreateTheoryData<T>(IEnumerable<T> items)
     {
@@ -211,7 +211,7 @@ public class BufferedStorageTests
 
         var testerConfig = new StorageTester.Configuration()
         {
-            Entries = new[] { memoryStorageEntry, bufferedStorageEntry },
+            Entries = [memoryStorageEntry, bufferedStorageEntry],
             SizeClassProbs = config.SizeClassProbs,
             SizeClassMaxSizes = config.SizeClassMaxSizes,
             TaskProbs = config.TaskProbs,

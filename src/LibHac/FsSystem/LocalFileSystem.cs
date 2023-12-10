@@ -1018,7 +1018,7 @@ public class LocalFileSystem : IAttributeFileSystem
         return path1 + path2.Substring(1);
     }
 
-    private static readonly char[] SplitChars = { (char)DirectorySeparator, (char)AltDirectorySeparator };
+    private static readonly char[] SplitChars = [(char)DirectorySeparator, (char)AltDirectorySeparator];
 
     // Copyright (c) Microsoft Corporation.
     // Licensed under the MIT License.

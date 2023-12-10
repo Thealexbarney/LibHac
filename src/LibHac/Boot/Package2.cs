@@ -14,7 +14,7 @@ public struct Package2Header
     internal const int PayloadCount = 3;
 
     internal const int SignatureSize = 0x100;
-    private static ReadOnlySpan<byte> RsaPublicKeyExponent => new byte[] { 0x00, 0x01, 0x00, 0x01 };
+    private static ReadOnlySpan<byte> RsaPublicKeyExponent => [0x00, 0x01, 0x00, 0x01];
 
     public Array256<byte> Signature;
     public Package2Meta Meta;

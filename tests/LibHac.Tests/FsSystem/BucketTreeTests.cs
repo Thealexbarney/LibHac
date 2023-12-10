@@ -41,13 +41,13 @@ public class BucketTreeTests : IClassFixture<BucketTreeBuffers>
     }
 
     public static readonly (int nodeSize, int entryCount)[] BucketTreeTestParams =
-    {
+    [
         (0x4000, 5),
         (0x4000, 10000),
         (0x4000, 2_000_000),
         (0x400, 50_000),
         (0x400, 793_800)
-    };
+    ];
 
     public static TheoryData<int> BucketTreeTestTheoryData =
         TheoryDataCreator.CreateSequence(0, BucketTreeTestParams.Length);

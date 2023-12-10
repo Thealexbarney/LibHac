@@ -12,8 +12,8 @@ namespace LibHac.Util;
 /// <remarks>Based on nnSdk 13.4.0</remarks>
 public static class Utf8StringUtil
 {
-    private static ReadOnlySpan<byte> CodePointByteLengthTable => new byte[]
-    {
+    private static ReadOnlySpan<byte> CodePointByteLengthTable =>
+    [
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -30,7 +30,7 @@ public static class Utf8StringUtil
         2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
         3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
         4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-    };
+    ];
 
     public static bool VerifyUtf8String(U8Span str)
     {

@@ -517,7 +517,7 @@ public class DirectorySaveDataFileSystemTests : CommittableIFileSystemTests
 
     private class RandomGenerator
     {
-        private static readonly int[] Values = { 2, 0, 3, 3, 6, 0 };
+        private static readonly int[] Values = [2, 0, 3, 3, 6, 0];
 
         private int _index;
 

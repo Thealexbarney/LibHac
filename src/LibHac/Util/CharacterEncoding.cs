@@ -14,8 +14,8 @@ public enum CharacterEncodingResult
 
 public static class CharacterEncoding
 {
-    private static ReadOnlySpan<sbyte> Utf8NBytesInnerTable => new sbyte[]
-    {
+    private static ReadOnlySpan<sbyte> Utf8NBytesInnerTable =>
+    [
         -1,
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -33,7 +33,7 @@ public static class CharacterEncoding
         2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
         3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
         4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8
-    };
+    ];
 
     private static ReadOnlySpan<sbyte> Utf8NBytesTable => Utf8NBytesInnerTable.Slice(1);
 

@@ -11,8 +11,8 @@ public abstract partial class CommittableIFileSystemTests
     public void Commit_AfterSuccessfulCommit_CanReadCommittedData()
     {
         // "Random" test data
-        byte[] data1 = { 7, 4, 1, 0, 8, 5, 2, 9, 6, 3 };
-        byte[] data2 = { 6, 1, 6, 8, 0, 3, 9, 7, 5, 1 };
+        byte[] data1 = [7, 4, 1, 0, 8, 5, 2, 9, 6, 3];
+        byte[] data2 = [6, 1, 6, 8, 0, 3, 9, 7, 5, 1];
 
         IReopenableFileSystemCreator fsCreator = GetFileSystemCreator();
         IFileSystem fs = fsCreator.Create();
@@ -99,8 +99,8 @@ public abstract partial class CommittableIFileSystemTests
     public void Rollback_AfterChangingExistingFiles_GoesBackToOriginalData()
     {
         // "Random" test data
-        byte[] data1 = { 7, 4, 1, 0, 8, 5, 2, 9, 6, 3 };
-        byte[] data2 = { 6, 1, 6, 8, 0, 3, 9, 7, 5, 1 };
+        byte[] data1 = [7, 4, 1, 0, 8, 5, 2, 9, 6, 3];
+        byte[] data2 = [6, 1, 6, 8, 0, 3, 9, 7, 5, 1];
 
         IReopenableFileSystemCreator fsCreator = GetFileSystemCreator();
         IFileSystem fs = fsCreator.Create();

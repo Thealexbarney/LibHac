@@ -19,7 +19,7 @@ public class LibHacTestFramework : XunitTestFramework
     }
 
     // Todo: Catch assertions in PathToolTestGenerator.cpp
-    private static readonly string[] SkipAbortFunctions = { "Normalize" };
+    private static readonly string[] SkipAbortFunctions = ["Normalize"];
 
     private static void SetDebugHandler()
     {

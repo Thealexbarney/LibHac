@@ -63,7 +63,7 @@ public class Nca
         return decryptedKey;
     }
 
-    private static readonly string[] KakNames = { "application", "ocean", "system" };
+    private static readonly string[] KakNames = ["application", "ocean", "system"];
 
     public byte[] GetEncryptedTitleKey()
     {

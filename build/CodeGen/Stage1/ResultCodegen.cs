@@ -387,8 +387,8 @@ public static class ResultCodeGen
         sb.AppendLine("internal partial class ResultNameResolver");
         sb.AppendLineAndIncrease("{");
 
-        sb.AppendLine("private static ReadOnlySpan<byte> ArchiveData => new byte[]");
-        sb.AppendLineAndIncrease("{");
+        sb.AppendLine("private static ReadOnlySpan<byte> ArchiveData =>");
+        sb.AppendLineAndIncrease("[");
 
         for (int i = 0; i < data.Length; i++)
         {
@@ -403,7 +403,7 @@ public static class ResultCodeGen
         }
 
         sb.AppendLine();
-        sb.DecreaseAndAppendLine("};");
+        sb.DecreaseAndAppendLine("];");
         sb.DecreaseAndAppend("}");
 
         return sb.ToString();
@@ -457,8 +457,8 @@ public static class ResultCodeGen
     public static string PrintEnum(ResultSet resultSet)
     {
         var sb = new StringBuilder();
-        int[] printUnknownResultsForModules = { 2 };
-        int[] skipModules = { 428 };
+        int[] printUnknownResultsForModules = [2];
+        int[] skipModules = [428];
 
         foreach (ModuleInfo module in resultSet.Modules.Where(x => !skipModules.Contains(x.Id)))
         {

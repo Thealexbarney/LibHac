@@ -63,7 +63,7 @@ public class IndirectStorageTests : IClassFixture<IndirectStorageBuffers>
     }
 
     public static readonly IndirectStorageTestConfig[] IndirectStorageTestData =
-    {
+    [
         // Small patched regions to force continuous reading
         new()
         {
@@ -93,28 +93,28 @@ public class IndirectStorageTests : IClassFixture<IndirectStorageBuffers>
             OriginalEntrySizeRange = new SizeRange(0x10000, 10, 50),
             StorageSize = 1024 * 1024 * 10
         }
-    };
+    ];
 
     private static readonly RandomAccessTestConfig[] AccessTestConfigs =
-    {
+    [
         new()
         {
-            SizeClassProbs = new[] { 50, 50, 5 },
-            SizeClassMaxSizes = new[] { 0x4000, 0x80000, 0x800000 }, // 16 KB, 512 KB, 8 MB
-            TaskProbs = new[] { 1, 0, 0 }, // Read, Write, Flush
-            AccessTypeProbs = new[] { 10, 10, 5 }, // Random, Sequential, Frequent block
+            SizeClassProbs = [50, 50, 5],
+            SizeClassMaxSizes = [0x4000, 0x80000, 0x800000], // 16 KB, 512 KB, 8 MB
+            TaskProbs = [1, 0, 0], // Read, Write, Flush
+            AccessTypeProbs = [10, 10, 5], // Random, Sequential, Frequent block
             RngSeed = 35467,
             FrequentAccessBlockCount = 6,
         },
         new()
         {
-            SizeClassProbs = new[] { 50, 50, 5 },
-            SizeClassMaxSizes = new[] { 0x800, 0x1000, 0x8000 }, // 2 KB, 4 KB, 32 KB
-            TaskProbs = new[] { 1, 0, 0 }, // Read, Write, Flush
-            AccessTypeProbs = new[] { 1, 10, 0 }, // Random, Sequential, Frequent block
+            SizeClassProbs = [50, 50, 5],
+            SizeClassMaxSizes = [0x800, 0x1000, 0x8000], // 2 KB, 4 KB, 32 KB
+            TaskProbs = [1, 0, 0], // Read, Write, Flush
+            AccessTypeProbs = [1, 10, 0], // Random, Sequential, Frequent block
             RngSeed = 13579
         },
-    };
+    ];
 
     public static TheoryData<int> IndirectStorageTestTheoryData =
         TheoryDataCreator.CreateSequence(0, IndirectStorageTestData.Length);
@@ -342,7 +342,7 @@ public class IndirectStorageTests : IClassFixture<IndirectStorageBuffers>
 
         var testerConfig = new StorageTester.Configuration()
         {
-            Entries = new[] { memoryStorageEntry, indirectStorageEntry },
+            Entries = [memoryStorageEntry, indirectStorageEntry],
             SizeClassProbs = accessConfig.SizeClassProbs,
             SizeClassMaxSizes = accessConfig.SizeClassMaxSizes,
             TaskProbs = accessConfig.TaskProbs,

@@ -87,7 +87,7 @@ public class SaveDataManagement
         Assert.Equal(applicationId, info[0].ProgramId);
         Assert.Equal(applicationId, info[1].ProgramId);
 
-        ushort[] expectedIndexes = { 0, 1 };
+        ushort[] expectedIndexes = [0, 1];
         ushort[] actualIndexes = info.Take(2).Select(x => x.Index).OrderBy(x => x).ToArray();
 
         Assert.Equal(expectedIndexes, actualIndexes);

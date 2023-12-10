@@ -23,7 +23,7 @@ public class BucketTreeBuilderTests
 
     // Bucket tree builder parameters and output digests that have been verified manually
     private static readonly BucketTreeBuilderTestConfig[] BucketTreeBuilderTestData =
-    {
+    [
         // Tiny tree
         new()
         {
@@ -79,7 +79,7 @@ public class BucketTreeBuilderTests
             NodeSize = 0x400,
             EntryCount = 793_800
         }
-    };
+    ];
 
     public static TheoryData<int> BucketTreeBuilderTestTheoryData =
         TheoryDataCreator.CreateSequence(0, BucketTreeBuilderTestData.Length);

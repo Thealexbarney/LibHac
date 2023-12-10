@@ -165,7 +165,7 @@ internal static class ProcessPackage
         }
     }
 
-    private static readonly string[] Package2SectionNames = { "Kernel", "INI1", "Empty" };
+    private static readonly string[] Package2SectionNames = ["Kernel", "INI1", "Empty"];
 
     private static string Print(this Package2StorageReader package2)
     {

@@ -103,7 +103,7 @@ public ref struct Path
     [DebuggerDisplay("{" + nameof(ToString) + "(),nq}")]
     public struct Stored : IDisposable
     {
-        private static readonly byte[] EmptyBuffer = { 0 };
+        private static readonly byte[] EmptyBuffer = [0];
 
         private byte[] _buffer;
         private int _length;
@@ -190,7 +190,7 @@ public ref struct Path
     private const int SeparatorLength = 1;
     private const int NullTerminatorLength = 1;
     private const int WriteBufferAlignmentLength = 8;
-    private static ReadOnlySpan<byte> EmptyPath => new byte[] { 0 };
+    private static ReadOnlySpan<byte> EmptyPath => [0];
 
     private ReadOnlySpan<byte> _string;
     private byte[] _writeBuffer;

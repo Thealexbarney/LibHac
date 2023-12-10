@@ -344,7 +344,7 @@ public class HierarchicalIntegrityVerificationStorage : IStorage
     private FileSystemServer _fsServer;
 
     private static readonly byte[][] KeyArray =
-        { MasterKey.ToArray(), L1Key.ToArray(), L2Key.ToArray(), L3Key.ToArray(), L4Key.ToArray(), L5Key.ToArray() };
+        [MasterKey.ToArray(), L1Key.ToArray(), L2Key.ToArray(), L3Key.ToArray(), L4Key.ToArray(), L5Key.ToArray()];
 
     public HierarchicalIntegrityVerificationStorage(FileSystemServer fsServer)
     {

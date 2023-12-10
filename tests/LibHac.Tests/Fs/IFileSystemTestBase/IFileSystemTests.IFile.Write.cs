@@ -11,7 +11,7 @@ public abstract partial class IFileSystemTests
     [Fact]
     public void IFileWrite_CanReadBackWrittenData()
     {
-        byte[] data = { 7, 4, 1, 0, 8, 5, 2, 9, 6, 3 };
+        byte[] data = [7, 4, 1, 0, 8, 5, 2, 9, 6, 3];
 
         IFileSystem fs = CreateFileSystem();
 

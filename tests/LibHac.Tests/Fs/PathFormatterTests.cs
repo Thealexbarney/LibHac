@@ -424,7 +424,7 @@ public class PathFormatterTests
     [Fact]
     public static void IsNormalized_InvalidUtf8()
     {
-        ReadOnlySpan<byte> invalidUtf8 = new byte[] { 0x44, 0xE3, 0xAA, 0x55, 0x50 };
+        ReadOnlySpan<byte> invalidUtf8 = [0x44, 0xE3, 0xAA, 0x55, 0x50];
 
         Result result = PathFormatter.IsNormalized(out _, out _, invalidUtf8, new PathFlags());
 
