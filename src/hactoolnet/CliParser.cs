@@ -126,11 +126,11 @@ internal static class CliParser
 
             if (args[i].Length == 2 && (args[i][0] == '-' || args[i][0] == '/'))
             {
-                arg = args[i][1].ToString().ToLower();
+                arg = args[i][1].ToString().ToLowerInvariant();
             }
             else if (args[i].Length > 2 && (args[i][0] == '-' && args[i][1] == '-'))
             {
-                arg = args[i].Substring(2).ToLower();
+                arg = args[i].Substring(2).ToLowerInvariant();
             }
             else
             {
@@ -176,7 +176,7 @@ internal static class CliParser
 
     private static FileType ParseFileType(Options options, string input)
     {
-        switch (input.ToLower())
+        switch (input.ToLowerInvariant())
         {
             case "nca": return FileType.Nca;
             case "pfs0": return FileType.Pfs0;

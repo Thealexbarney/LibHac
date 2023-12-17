@@ -388,7 +388,7 @@ internal static class ProcessBench
     {
         CpuFrequency = ctx.Options.CpuFrequencyGhz * 1_000_000_000;
 
-        switch (ctx.Options.BenchType?.ToLower())
+        switch (ctx.Options.BenchType?.ToLowerInvariant())
         {
             case "aesctr":
             {

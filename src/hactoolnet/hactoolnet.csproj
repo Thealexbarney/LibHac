@@ -30,15 +30,22 @@
 
   <PropertyGroup Condition=" $(BuildType.StartsWith('native')) and '$(BuildType)' != 'native-untrimmed' ">
     <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
-    <IlcGenerateCompleteTypeMetadata>false</IlcGenerateCompleteTypeMetadata>
-    <IlcOptimizationPreference>Speed</IlcOptimizationPreference>
-    <RootAllApplicationAssemblies>false</RootAllApplicationAssemblies>
   </PropertyGroup>
 
   <!-- No-reflection mode might not work on Linux if the HOME environment variable is not set -->
-  <PropertyGroup Condition=" '$(BuildType)' == 'native-noreflection' ">
+  <PropertyGroup Condition=" '$(BuildType)' == 'native-noreflection' or '$(BuildType)' == 'native-minimal' ">
     <IlcDisableReflection>true</IlcDisableReflection>
     <DefineConstants>NATIVEAOT_NO_REFLECTION;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(BuildType)' == 'native-minimal' ">
+    <OptimizationPreference>Size</OptimizationPreference>
+	<InvariantGlobalization>true</InvariantGlobalization>
+	<StackTraceSupport>false</StackTraceSupport>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(BuildType)' == 'native-untrimmed' ">
+    <TrimmerRootAssembly Include="LibHac" />
+  </ItemGroup>
 
 </Project>
