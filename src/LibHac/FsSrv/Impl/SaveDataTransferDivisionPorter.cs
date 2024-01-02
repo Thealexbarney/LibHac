@@ -144,7 +144,13 @@ public class ChunkSizeCalculator : IDisposable
 
     public ChunkSizeCalculator(long totalSize, ulong divisionAlignment, int divisionCount)
     {
-        throw new NotImplementedException();
+        _divisionAlignment = divisionAlignment;
+        _divisionCount = divisionCount;
+        _chunkSize = Alignment.AlignDown(totalSize / _divisionCount, _divisionAlignment);
+
+        long extraSize = totalSize - _divisionCount * _chunkSize;
+        ulong extraSizeAligned = (ulong)Alignment.AlignUp(extraSize, _divisionAlignment);
+        _longChunkCount = (int)(extraSizeAligned / _divisionAlignment);
     }
 
     public void Dispose()
@@ -152,11 +158,22 @@ public class ChunkSizeCalculator : IDisposable
         throw new NotImplementedException();
     }
 
-    public int GetDivisionCount() => throw new NotImplementedException();
+    public int GetDivisionCount() => _divisionCount;
 
     public void GetOffsetAndSize(out long outOffset, out long outSize, int chunkId)
     {
-        throw new NotImplementedException();
+        int normalChunkCount = _divisionCount - _longChunkCount;
+
+        if (chunkId < normalChunkCount)
+        {
+            outSize = _chunkSize;
+            outOffset = _chunkSize * chunkId;
+        }
+        else
+        {
+            outSize = (long)_divisionAlignment + _chunkSize;
+            outOffset = (chunkId - normalChunkCount) * outSize + normalChunkCount * _chunkSize;
+        }
     }
 }
 
