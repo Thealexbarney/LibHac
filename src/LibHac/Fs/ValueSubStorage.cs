@@ -100,6 +100,23 @@ public struct ValueSubStorage : IDisposable
         }
     }
 
+    public void Set(in ValueSubStorage other, long offset, long size)
+    {
+        if (!Unsafe.AreSame(ref Unsafe.AsRef(in this), ref Unsafe.AsRef(in other)))
+        {
+            _baseStorage = other._baseStorage;
+            _offset = other._offset + offset;
+            _size = size;
+            _isResizable = false;
+            _sharedBaseStorage.SetByCopy(in other._sharedBaseStorage);
+
+            Assert.SdkRequiresLessEqual(0, offset);
+            Assert.SdkRequiresLessEqual(0, size);
+            Assert.SdkRequires(other.IsValid());
+            Assert.SdkRequiresGreaterEqual(other._size, offset + size);
+        }
+    }
+
     private readonly bool IsValid() => _baseStorage is not null;
 
     public void SetResizable(bool isResizable)

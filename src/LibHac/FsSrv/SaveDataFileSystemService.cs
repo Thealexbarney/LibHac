@@ -2437,7 +2437,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         throw new NotImplementedException();
     }
 
-    public Result OpenSaveDataMover(ref SharedRef<ISaveDataMover> saveMover, SaveDataSpaceId sourceSpaceId,
+    public Result OpenSaveDataMover(ref SharedRef<Sf.ISaveDataMover> saveMover, SaveDataSpaceId sourceSpaceId,
         SaveDataSpaceId destinationSpaceId, NativeHandle workBufferHandle, ulong workBufferSize)
     {
         throw new NotImplementedException();

@@ -376,7 +376,7 @@ public class TypeLayoutTests
 
         Assert.Equal(0x10, Unsafe.SizeOf<AesKey>());
 
-        Assert.Equal(0x00, GetOffset(in s, in s.Value));
+        Assert.Equal(0x00, GetOffset(in s, in s.Value[0]));
     }
 
     [Fact]
@@ -406,7 +406,7 @@ public class TypeLayoutTests
 
         Assert.Equal(0x10, Unsafe.SizeOf<InitialDataMac>());
 
-        Assert.Equal(0x00, GetOffset(in s, in s.Value));
+        Assert.Equal(0x00, GetOffset(in s, in s.Value[0]));
     }
 
     [Fact]

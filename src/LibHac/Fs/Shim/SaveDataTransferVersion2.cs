@@ -18,7 +18,7 @@ namespace LibHac.Fs
     /// IPC service object.
     /// </summary>
     /// <remarks>Based on nnSdk 14.3.0</remarks>
-    public class SaveDataTransferManagerVersion2 : IDisposable
+    public partial class SaveDataTransferManagerVersion2 : IDisposable
     {
         private SharedRef<ISaveDataTransferManagerWithDivision> _baseInterface;
 

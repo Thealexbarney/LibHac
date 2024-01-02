@@ -378,4 +378,17 @@ public class TypeLayoutTests
         Assert.Equal(0x18, GetOffset(in s, in s.HashTargetOffset));
         Assert.Equal(0x20, GetOffset(in s, in s.Hash));
     }
+
+    [Fact]
+    public static void MappingTable_Header_Layout()
+    {
+        MappingTableControlArea s = default;
+
+        Assert.Equal(0x10, Unsafe.SizeOf<MappingTableControlArea>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.Version));
+        Assert.Equal(0x04, GetOffset(in s, in s.AvailableBlockCount));
+        Assert.Equal(0x08, GetOffset(in s, in s.ReservedBlockCount));
+        Assert.Equal(0x0C, GetOffset(in s, in s.Reserved));
+    }
 }

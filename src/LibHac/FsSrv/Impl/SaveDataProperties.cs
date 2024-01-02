@@ -1,4 +1,5 @@
-﻿using LibHac.Diag;
+﻿using System;
+using LibHac.Diag;
 using LibHac.Fs;
 
 namespace LibHac.FsSrv.Impl;
@@ -110,6 +111,16 @@ public static class SaveDataProperties
                 Abort.UnexpectedDefault();
                 return default;
         }
+    }
+
+    public static bool IsWipingNeededAtCleanUp(in SaveDataInfo info)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static bool IsValidSpaceIdForSaveDataMover(SaveDataType type, SaveDataSpaceId spaceId)
+    {
+        throw new NotImplementedException();
     }
 
     public static bool IsReconstructible(SaveDataType type, SaveDataSpaceId spaceId)

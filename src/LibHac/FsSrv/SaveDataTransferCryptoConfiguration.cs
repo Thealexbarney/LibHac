@@ -1,5 +1,6 @@
 ﻿using System;
 using LibHac.Common.FixedArrays;
+using LibHac.Fs;
 using LibHac.FsSystem;
 
 namespace LibHac.FsSrv;
@@ -31,5 +32,19 @@ public class SaveDataTransferCryptoConfiguration
         SaveDataRepairKeyPackage,
         SaveDataRepairInitialDataMacBeforeRepair,
         SaveDataRepairInitialDataMacAfterRepair
+    }
+
+    public enum Attributes { }
+
+    public interface IEncryptor : IDisposable
+    {
+        Result Update(Span<byte> destination, ReadOnlySpan<byte> source);
+        Result GetMac(out AesMac outMac);
+    }
+
+    public interface IDecryptor : IDisposable
+    {
+        Result Update(Span<byte> destination, ReadOnlySpan<byte> source);
+        Result Verify(out bool outIsValid);
     }
 }

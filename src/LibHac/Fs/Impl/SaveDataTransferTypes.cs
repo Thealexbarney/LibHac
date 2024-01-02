@@ -1,4 +1,7 @@
-﻿using LibHac.Common.FixedArrays;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
+using LibHac.Common.FixedArrays;
 
 namespace LibHac.Fs.Impl;
 
@@ -14,7 +17,10 @@ public struct KeySeed
 
 public struct InitialDataMac
 {
-    public Array16<byte> Value;
+    private Array2<ulong> _value;
+
+    [UnscopedRef]
+    public Span<byte> Value => MemoryMarshal.Cast<ulong, byte>(_value);
 }
 
 public struct ExportReportInfo

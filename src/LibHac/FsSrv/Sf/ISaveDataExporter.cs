@@ -6,8 +6,8 @@ namespace LibHac.FsSrv.Sf;
 
 public interface ISaveDataExporter : IDisposable
 {
-    public Result GetSaveDataInfo(out SaveDataInfo info);
-    public Result GetRestSize(out ulong remainingSize);
-    public Result Pull(out ulong bytesRead, OutBuffer buffer);
-    public Result PullInitialData(OutBuffer initialData);
+    public Result GetSaveDataInfo(out SaveDataInfo outInfo);
+    public Result GetRestSize(out ulong outRemainingSize);
+    public Result Pull(out ulong outBytesRead, OutBuffer buffer);
+    public Result PullInitialData(OutBuffer initialDataBuffer);
 }

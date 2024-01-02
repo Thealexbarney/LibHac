@@ -14,6 +14,7 @@ using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.Save;
 using static hactoolnet.Print;
 using Path = System.IO.Path;
+using SaveDataFileSystem = LibHac.Tools.FsSystem.Save.SaveDataFileSystem;
 
 namespace hactoolnet;
 

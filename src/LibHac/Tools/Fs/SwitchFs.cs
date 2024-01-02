@@ -12,10 +12,10 @@ using LibHac.Ncm;
 using LibHac.Ns;
 using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
-using LibHac.Tools.FsSystem.Save;
 using LibHac.Tools.Ncm;
 using LibHac.Util;
 using KeyType = LibHac.Common.Keys.KeyType;
+using SaveDataFileSystem = LibHac.Tools.FsSystem.Save.SaveDataFileSystem;
 
 namespace LibHac.Tools.Fs;
 

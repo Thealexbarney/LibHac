@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
+using System;
 using System.Diagnostics.CodeAnalysis;
 using LibHac.Common;
 using LibHac.Common.FixedArrays;

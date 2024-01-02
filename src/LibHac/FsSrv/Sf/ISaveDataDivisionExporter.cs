@@ -8,16 +8,16 @@ namespace LibHac.FsSrv.Sf;
 public interface ISaveDataDivisionExporter : IDisposable
 {
     public Result SetDivisionCount(int divisionCount);
-    public Result ReadSaveDataExtraData(OutBuffer extraData);
+    public Result ReadSaveDataExtraData(OutBuffer outExtraData);
     public Result OpenSaveDataDiffChunkIterator(ref SharedRef<ISaveDataChunkIterator> outIterator);
     public Result OpenSaveDataChunkExporter(ref SharedRef<ISaveDataChunkExporter> outExporter, uint chunkId);
     public Result CancelExport();
-    public Result SuspendExport(OutBuffer exportContext);
-    public Result GetKeySeed(out KeySeed keySeed);
-    public Result GetInitialDataMac(out InitialDataMac initialDataMac);
+    public Result SuspendExport(OutBuffer outExportContext);
+    public Result GetKeySeed(out KeySeed outKeySeed);
+    public Result GetInitialDataMac(out InitialDataMac outInitialDataMac);
     public Result FinalizeExport();
-    public Result GetInitialDataMacKeyGeneration(out int keyGeneration);
-    public Result GetImportInitialDataAad(out InitialDataAad initialDataAad);
+    public Result GetInitialDataMacKeyGeneration(out int outKeyGeneration);
+    public Result GetImportInitialDataAad(out InitialDataAad outInitialDataAad);
     public Result SetExportInitialDataAad(in InitialDataAad initialDataAad);
-    public Result GetReportInfo(out ExportReportInfo reportInfo);
+    public Result GetReportInfo(out ExportReportInfo outReportInfo);
 }

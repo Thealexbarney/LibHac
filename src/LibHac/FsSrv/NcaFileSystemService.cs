@@ -1,4 +1,6 @@
-﻿using System;
+﻿// ReSharper disable UnusedMember.Local UnusedType.Local
+#pragma warning disable CS0169 // Field is never used
+using System;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSrv.Impl;
