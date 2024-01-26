@@ -59,8 +59,7 @@ internal readonly struct ProgramIndexRegistryService
             return Result.Success;
 
         // Verify that the provided buffer is large enough to hold "programCount" entries
-        ReadOnlySpan<ProgramIndexMapInfo>
-            mapInfo = MemoryMarshal.Cast<byte, ProgramIndexMapInfo>(programIndexMapInfo.Buffer);
+        ReadOnlySpan<ProgramIndexMapInfo> mapInfo = programIndexMapInfo.AsSpan<ProgramIndexMapInfo>();
 
         if (mapInfo.Length < programCount)
             return ResultFs.InvalidSize.Log();

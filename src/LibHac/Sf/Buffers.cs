@@ -22,6 +22,11 @@ public readonly ref struct InBuffer
         return ref SpanHelpers.AsReadOnlyStruct<T>(_buffer);
     }
 
+    public ReadOnlySpan<T> AsSpan<T>() where T : unmanaged
+    {
+        return MemoryMarshal.Cast<byte, T>(_buffer);
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static InBuffer FromSpan<T>(ReadOnlySpan<T> buffer) where T : unmanaged
     {
@@ -50,6 +55,11 @@ public readonly ref struct OutBuffer
     public ref T As<T>() where T : unmanaged
     {
         return ref SpanHelpers.AsStruct<T>(_buffer);
+    }
+
+    public Span<T> AsSpan<T>() where T : unmanaged
+    {
+        return MemoryMarshal.Cast<byte, T>(_buffer);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

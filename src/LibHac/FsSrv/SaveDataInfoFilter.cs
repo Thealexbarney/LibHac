@@ -132,7 +132,7 @@ internal class SaveDataInfoFilterReader : SaveDataInfoReaderImpl
     {
         UnsafeHelpers.SkipParamInit(out readCount);
 
-        Span<SaveDataInfo> outInfo = MemoryMarshal.Cast<byte, SaveDataInfo>(saveDataInfoBuffer.Buffer);
+        Span<SaveDataInfo> outInfo = saveDataInfoBuffer.AsSpan<SaveDataInfo>();
         int count = 0;
 
         while (count < outInfo.Length)

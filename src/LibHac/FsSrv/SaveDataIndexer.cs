@@ -156,7 +156,7 @@ public class SaveDataIndexer : ISaveDataIndexer
             if (_handle != _indexer.GetHandle())
                 return ResultFs.InvalidHandle.Log();
 
-            Span<SaveDataInfo> outInfos = MemoryMarshal.Cast<byte, SaveDataInfo>(saveDataInfoBuffer.Buffer);
+            Span<SaveDataInfo> outInfos = saveDataInfoBuffer.AsSpan<SaveDataInfo>();
 
             int count;
             for (count = 0; !_iterator.IsEnd() && count < outInfos.Length; count++)

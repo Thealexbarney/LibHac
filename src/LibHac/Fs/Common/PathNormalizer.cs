@@ -207,7 +207,7 @@ public static class PathNormalizer
     /// contains <see langword="true"/> if the path is normalized or <see langword="false"/> if it is not.
     /// Contents are undefined if the function does not return <see cref="Result.Success"/>.
     /// </param>
-    /// <param name="length">When this function returns <see cref="Result.Success"/> and
+    /// <param name="outNormalizedLength">When this function returns <see cref="Result.Success"/> and
     /// <paramref name="isNormalized"/> is <see langword="true"/>, contains the length of the normalized path.
     /// Contents are undefined if the function does not return <see cref="Result.Success"/>
     /// or <paramref name="isNormalized"/> is <see langword="false"/>.
@@ -216,15 +216,15 @@ public static class PathNormalizer
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.InvalidCharacter"/>: The path contains an invalid character.<br/>
     /// <see cref="ResultFs.InvalidPathFormat"/>: The path is not in a valid format.</returns>
-    public static Result IsNormalized(out bool isNormalized, out int length, ReadOnlySpan<byte> path)
+    public static Result IsNormalized(out bool isNormalized, out int outNormalizedLength, ReadOnlySpan<byte> path)
     {
-        return IsNormalized(out isNormalized, out length, path, false);
+        return IsNormalized(out isNormalized, out outNormalizedLength, path, false);
     }
 
-    public static Result IsNormalized(out bool isNormalized, out int length, ReadOnlySpan<byte> path,
+    public static Result IsNormalized(out bool isNormalized, out int outNormalizedLength, ReadOnlySpan<byte> path,
         bool allowAllCharacters)
     {
-        UnsafeHelpers.SkipParamInit(out isNormalized, out length);
+        UnsafeHelpers.SkipParamInit(out isNormalized, out outNormalizedLength);
 
         var state = PathState.Initial;
         int pathLength = 0;
@@ -311,7 +311,7 @@ public static class PathNormalizer
                 break;
         }
 
-        length = pathLength;
+        outNormalizedLength = pathLength;
         return Result.Success;
     }
 

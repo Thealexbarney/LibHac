@@ -204,7 +204,7 @@ public class DirectoryInterfaceAdapter : IDirectorySf
         const int maxTryCount = 2;
         UnsafeHelpers.SkipParamInit(out entriesRead);
 
-        Span<DirectoryEntry> entries = MemoryMarshal.Cast<byte, DirectoryEntry>(entryBuffer.Buffer);
+        Span<DirectoryEntry> entries = entryBuffer.AsSpan<DirectoryEntry>();
 
         Result res = Result.Success;
         long numRead = 0;

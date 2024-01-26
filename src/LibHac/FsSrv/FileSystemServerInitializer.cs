@@ -47,13 +47,13 @@ public static class FileSystemServerInitializer
 
         InitializeFileSystemProxyServer(client, server);
 
-        var saveService = new SaveDataFileSystemService(fspConfig.SaveDataFileSystemService, processId);
+        using SharedRef<SaveDataFileSystemService> saveService = SaveDataFileSystemService.CreateShared(fspConfig.SaveDataFileSystemService, processId);
 
-        saveService.CleanUpTemporaryStorage().IgnoreResult();
-        saveService.CleanUpSaveData().IgnoreResult();
-        saveService.CompleteSaveDataExtension().IgnoreResult();
-        saveService.FixSaveData().IgnoreResult();
-        saveService.RecoverMultiCommit().IgnoreResult();
+        saveService.Get.CleanUpTemporaryStorage().IgnoreResult();
+        saveService.Get.CleanUpSaveData().IgnoreResult();
+        saveService.Get.CompleteSaveDataExtension().IgnoreResult();
+        saveService.Get.FixSaveData().IgnoreResult();
+        saveService.Get.RecoverMultiCommit().IgnoreResult();
 
         config.StorageDeviceManagerFactory.SetReady(StorageDevicePortId.SdCard, null);
         config.StorageDeviceManagerFactory.SetReady(StorageDevicePortId.GameCard, null);

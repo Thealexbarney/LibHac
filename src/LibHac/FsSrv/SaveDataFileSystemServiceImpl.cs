@@ -121,7 +121,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
 
         using var fileSystem = new SharedRef<IFileSystem>();
 
-        Result res = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref, spaceId);
+        Result res = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref, spaceId, saveDataId);
         if (res.IsFailure()) return res.Miss();
 
         // Get the path of the save data
@@ -160,7 +160,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
     {
         using var fileSystem = new SharedRef<IFileSystem>();
 
-        Result res = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref, spaceId, in saveDataRootPath, true);
+        Result res = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref, spaceId, saveDataId, in saveDataRootPath, true);
         if (res.IsFailure()) return res.Miss();
 
         bool isEmulatedOnHost = IsAllowedDirectorySaveData(spaceId, in saveDataRootPath);
@@ -413,8 +413,8 @@ public class SaveDataFileSystemServiceImpl : IDisposable
 
         using var fileSystem = new SharedRef<IFileSystem>();
 
-        Result res = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref, creationInfo.SpaceId, in saveDataRootPath,
-            allowEmulatedSave: false);
+        Result res = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref, creationInfo.SpaceId, saveDataId,
+            in saveDataRootPath, allowEmulatedSave: false);
         if (res.IsFailure()) return res.Miss();
 
         using scoped var saveImageName = new Path();
@@ -486,7 +486,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         _saveFileSystemCacheManager.Unregister(spaceId, saveDataId);
 
         // Open the directory containing the save data
-        Result res = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref, spaceId, in saveDataRootPath, false);
+        Result res = OpenSaveDataDirectoryFileSystem(ref fileSystem.Ref, spaceId, saveDataId, in saveDataRootPath, false);
         if (res.IsFailure()) return res.Miss();
 
         using scoped var saveImageName = new Path();
@@ -642,15 +642,15 @@ public class SaveDataFileSystemServiceImpl : IDisposable
     }
 
     public Result OpenSaveDataDirectoryFileSystem(ref SharedRef<IFileSystem> outFileSystem,
-        SaveDataSpaceId spaceId)
+        SaveDataSpaceId spaceId, ulong saveDataId)
     {
         using scoped var rootPath = new Path();
 
-        return OpenSaveDataDirectoryFileSystem(ref outFileSystem, spaceId, in rootPath, allowEmulatedSave: true);
+        return OpenSaveDataDirectoryFileSystem(ref outFileSystem, spaceId, saveDataId, in rootPath, allowEmulatedSave: true);
     }
 
     public Result OpenSaveDataDirectoryFileSystem(ref SharedRef<IFileSystem> outFileSystem,
-        SaveDataSpaceId spaceId, ref readonly Path saveDataRootPath, bool allowEmulatedSave)
+        SaveDataSpaceId spaceId, ulong saveDataId, ref readonly Path saveDataRootPath, bool allowEmulatedSave)
     {
         Result res;
 

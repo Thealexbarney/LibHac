@@ -20,7 +20,7 @@ public interface ISaveDataTransferCoreInterface : IDisposable
     Result CancelSaveDataCreation(ulong saveDataId, SaveDataSpaceId spaceId);
     Result OpenSaveDataFile(ref SharedRef<IFile> oufFile, SaveDataSpaceId spaceId, ulong saveDataId, OpenMode mode);
     Result OpenSaveDataMetaFileRaw(ref SharedRef<IFile> outFile, SaveDataSpaceId spaceId, ulong saveDataId, SaveDataMetaType metaType, OpenMode mode);
-    Result OpenSaveDataInternalStorageFileSystemCore(ref SharedRef<IFileSystem> fileSystem, SaveDataSpaceId spaceId, ulong saveDataId, bool useSecondMacKey);
+    Result OpenSaveDataInternalStorageFileSystemCore(ref SharedRef<IFileSystem> outFileSystem, SaveDataSpaceId spaceId, ulong saveDataId, bool isTemporaryTransferSave);
     Result OpenSaveDataFileSystemCore(ref SharedRef<IFileSystem> outFileSystem, out ulong outSaveDataId, SaveDataSpaceId spaceId, in SaveDataAttribute attribute, bool openReadOnly, bool cacheExtraData);
     Result ExtendSaveDataFileSystem(SaveDataSpaceId spaceId, ulong saveDataId, long dataSize, long journalSize);
     Result DeleteSaveDataFileSystemBySaveDataSpaceId(SaveDataSpaceId spaceId, ulong saveDataId);

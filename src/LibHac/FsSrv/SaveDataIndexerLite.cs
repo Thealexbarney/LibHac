@@ -53,7 +53,7 @@ internal class SaveDataIndexerLiteInfoReader : SaveDataInfoReaderImpl
         if (saveDataInfoBuffer.Size < Unsafe.SizeOf<SaveDataInfo>())
             return ResultFs.InvalidSize.Log();
 
-        Unsafe.As<byte, SaveDataInfo>(ref MemoryMarshal.GetReference(saveDataInfoBuffer.Buffer)) = _info;
+        saveDataInfoBuffer.As<SaveDataInfo>() = _info;
         readCount = 1;
         _finishedIterating = true;
 
