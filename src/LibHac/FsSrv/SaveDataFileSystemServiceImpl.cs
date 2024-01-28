@@ -12,9 +12,32 @@ using LibHac.FsSystem;
 using LibHac.Ncm;
 using LibHac.Os;
 using LibHac.Util;
+using static LibHac.FsSrv.Anonymous;
 using Utility = LibHac.FsSrv.Impl.Utility;
 
 namespace LibHac.FsSrv;
+
+file static class Anonymous
+{
+    public static bool IsDeviceUniqueMac(SaveDataSpaceId spaceId)
+    {
+        return spaceId == SaveDataSpaceId.System ||
+               spaceId == SaveDataSpaceId.User ||
+               spaceId == SaveDataSpaceId.Temporary ||
+               spaceId == SaveDataSpaceId.ProperSystem ||
+               spaceId == SaveDataSpaceId.SafeMode;
+    }
+
+    public static Result WipeData(IFileSystem fileSystem, ref readonly Path filePath, RandomDataGenerator random)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static Result WipeMasterHeader(IFileSystem fileSystem, ref readonly Path filePath, RandomDataGenerator random)
+    {
+        throw new NotImplementedException();
+    }
+}
 
 /// <summary>
 /// Handles the lower-level operations on save data.
@@ -30,8 +53,10 @@ public class SaveDataFileSystemServiceImpl : IDisposable
 
     private SaveDataFileSystemCacheManager _saveFileSystemCacheManager;
     private SaveDataExtraDataAccessorCacheManager _saveExtraDataCacheManager;
-    // Save data porter manager
+    private SaveDataPorterManager _saveDataPorterManager;
     private bool _isSdCardAccessible;
+    private Optional<uint> _integritySaveDataVersion;
+    private Optional<uint> _journalIntegritySaveDataVersion;
     private TimeStampGetter _timeStampGetter;
 
     internal HorizonClient Hos => _config.FsServer.Hos;
@@ -69,27 +94,15 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         public ISaveDataIndexerManager SaveIndexerManager;
         public DebugConfigurationServiceImpl DebugConfigService;
 
+        public uint JournalIntegritySaveDataVersion;
+        public uint JournalIntegritySupportedVersionMin;
+        public uint JournalIntegritySupportedVersionMax;
+        public uint IntegritySaveDataVersion;
+        public uint IntegritySupportedVersionMin;
+        public uint IntegritySupportedVersionMax;
+
         // LibHac additions
         public FileSystemServer FsServer;
-    }
-
-    private static bool IsDeviceUniqueMac(SaveDataSpaceId spaceId)
-    {
-        return spaceId == SaveDataSpaceId.System ||
-               spaceId == SaveDataSpaceId.User ||
-               spaceId == SaveDataSpaceId.Temporary ||
-               spaceId == SaveDataSpaceId.ProperSystem ||
-               spaceId == SaveDataSpaceId.SafeMode;
-    }
-
-    private static Result WipeData(IFileSystem fileSystem, ref readonly Path filePath, RandomDataGenerator random)
-    {
-        throw new NotImplementedException();
-    }
-
-    private static Result WipeMasterHeader(IFileSystem fileSystem, ref readonly Path filePath, RandomDataGenerator random)
-    {
-        throw new NotImplementedException();
     }
 
     public SaveDataFileSystemServiceImpl(in Configuration configuration)
@@ -113,6 +126,32 @@ public class SaveDataFileSystemServiceImpl : IDisposable
     public DebugConfigurationServiceImpl GetDebugConfigurationService()
     {
         return _config.DebugConfigService;
+    }
+
+    public void SetIntegritySaveDataVersion(uint version)
+    {
+        _integritySaveDataVersion.Set(version);
+    }
+
+    public void SetJournalIntegritySaveDataVersion(uint version)
+    {
+        _journalIntegritySaveDataVersion.Set(version);
+    }
+
+    public uint GetIntegritySaveDataVersion()
+    {
+        if (_integritySaveDataVersion.HasValue)
+            return _integritySaveDataVersion.Value;
+
+        return _config.IntegritySaveDataVersion;
+    }
+
+    public uint GetJournalIntegritySaveDataVersion()
+    {
+        if (_journalIntegritySaveDataVersion.HasValue)
+            return _journalIntegritySaveDataVersion.Value;
+
+        return _config.JournalIntegritySaveDataVersion;
     }
 
     public Result DoesSaveDataEntityExist(out bool exists, SaveDataSpaceId spaceId, ulong saveDataId)
@@ -147,6 +186,11 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         {
             return res.Miss();
         }
+    }
+
+    private Result GetSaveDataCommitTimeStamp(out long timeStamp)
+    {
+        return _config.TimeService.GetCurrentPosixTime(out timeStamp);
     }
 
     public Result OpenSaveDataFile(ref SharedRef<IFile> outFile, SaveDataSpaceId spaceId, ulong saveDataId,
@@ -237,7 +281,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
             saveDataMetaIdDirectoryNameBuffer, saveDataId);
         if (res.IsFailure()) return res.Miss();
 
-        return OpenSaveDataDirectoryFileSystemImpl(ref outFileSystem, spaceId, in saveDataMetaIdDirectoryName).Ret();
+        return OpenSaveDataDirectoryFileSystemImpl(ref outFileSystem, spaceId, saveDataId, in saveDataMetaIdDirectoryName).Ret();
     }
 
     public Result OpenSaveDataInternalStorageFileSystem(ref SharedRef<IFileSystem> outFileSystem,
@@ -253,8 +297,8 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         throw new NotImplementedException();
     }
 
-    public Result ExtendSaveDataFileSystemCore(out long extendedTotalSize, ulong saveDataId, SaveDataSpaceId spaceId,
-        SaveDataType type, long dataSize, long journalSize, ref readonly Path saveDataRootPath, bool isExtensionStart)
+    private Result OpenSaveDataExtensionContextFile(ref UniqueRef<IFile> outFile, IFile saveDataFile, ulong saveDataId,
+        SaveDataSpaceId spaceId, long dataSize, long journalSize, bool createIfMissing, bool isReconstructible)
     {
         throw new NotImplementedException();
     }
@@ -271,6 +315,12 @@ public class SaveDataFileSystemServiceImpl : IDisposable
     {
         return ExtendSaveDataFileSystemCore(out extendedTotalSize, saveDataId, spaceId, type, dataSize: 0,
             journalSize: 0, in saveDataRootPath, isExtensionStart: false);
+    }
+
+    private Result ExtendSaveDataFileSystemCore(out long extendedTotalSize, ulong saveDataId, SaveDataSpaceId spaceId,
+        SaveDataType type, long dataSize, long journalSize, ref readonly Path saveDataRootPath, bool isExtensionStart)
+    {
+        throw new NotImplementedException();
     }
 
     public Result FinishExtendSaveDataFileSystem(ulong saveDataId, SaveDataSpaceId spaceId)
@@ -294,13 +344,6 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         }
 
         FinishExtendSaveDataFileSystem(saveDataId, spaceId).IgnoreResult();
-    }
-
-    public Result QuerySaveDataTotalSize(out long totalSize, int blockSize, long dataSize, long journalSize)
-    {
-        // Todo: Implement
-        totalSize = 0;
-        return Result.Success;
     }
 
     public Result CreateSaveDataMeta(ulong saveDataId, SaveDataSpaceId spaceId, SaveDataMetaType metaType,
@@ -356,8 +399,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         Result res = PathFunctions.SetUpFixedPath(ref saveDataMetaDirectoryName.Ref(), metaDirName);
         if (res.IsFailure()) return res.Miss();
 
-        res = OpenSaveDataDirectoryFileSystemImpl(ref fileSystem.Ref, spaceId, in saveDataMetaDirectoryName,
-            createIfMissing: false);
+        res = OpenSaveDataDirectoryFileSystemImpl(ref fileSystem.Ref, spaceId, saveDataId, in saveDataMetaDirectoryName, createIfMissing: false);
         if (res.IsFailure()) return res.Miss();
 
         using scoped var saveDataIdDirectoryName = new Path();
@@ -397,6 +439,13 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         res = fileSystem.Get.OpenFile(ref outMetaFile, in saveDataMetaName, OpenMode.ReadWrite);
         if (res.IsFailure()) return res.Miss();
 
+        return Result.Success;
+    }
+
+    public Result QuerySaveDataTotalSize(out long totalSize, long blockSize, long dataSize, long journalSize)
+    {
+        // Todo: Implement
+        totalSize = 0;
         return Result.Success;
     }
 
@@ -631,9 +680,14 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         throw new NotImplementedException();
     }
 
-    private Result GetSaveDataCommitTimeStamp(out long timeStamp)
+    public Result RecoverSaveDataFileSystemMasterHeader(SaveDataSpaceId spaceId, ulong saveDataId)
     {
-        return _config.TimeService.GetCurrentPosixTime(out timeStamp);
+        throw new NotImplementedException();
+    }
+
+    public Result UpdateSaveDataFileSystemMac(SaveDataSpaceId spaceId, ulong saveDataId)
+    {
+        throw new NotImplementedException();
     }
 
     private bool IsSaveEmulated(ref readonly Path saveDataRootPath)
@@ -641,10 +695,10 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         return !saveDataRootPath.IsEmpty();
     }
 
-    public Result OpenSaveDataDirectoryFileSystem(ref SharedRef<IFileSystem> outFileSystem,
-        SaveDataSpaceId spaceId, ulong saveDataId)
+    public Result OpenSaveDataDirectoryFileSystem(ref SharedRef<IFileSystem> outFileSystem, SaveDataSpaceId spaceId,
+        ulong saveDataId)
     {
-        using scoped var rootPath = new Path();
+        using var rootPath = new Path();
 
         return OpenSaveDataDirectoryFileSystem(ref outFileSystem, spaceId, saveDataId, in rootPath, allowEmulatedSave: true);
     }
@@ -703,20 +757,14 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         res = PathFunctions.SetUpFixedPath(ref saveDataAreaDirectoryName.Ref(), saveDirName);
         if (res.IsFailure()) return res.Miss();
 
-        res = OpenSaveDataDirectoryFileSystemImpl(ref outFileSystem, spaceId, in saveDataAreaDirectoryName);
+        res = OpenSaveDataDirectoryFileSystemImpl(ref outFileSystem, spaceId, saveDataId, in saveDataAreaDirectoryName);
         if (res.IsFailure()) return res.Miss();
 
         return Result.Success;
     }
 
-    public Result OpenSaveDataDirectoryFileSystemImpl(ref SharedRef<IFileSystem> outFileSystem,
-        SaveDataSpaceId spaceId, ref readonly Path directoryPath)
-    {
-        return OpenSaveDataDirectoryFileSystemImpl(ref outFileSystem, spaceId, in directoryPath, createIfMissing: true);
-    }
-
-    public Result OpenSaveDataDirectoryFileSystemImpl(ref SharedRef<IFileSystem> outFileSystem,
-        SaveDataSpaceId spaceId, ref readonly Path directoryPath, bool createIfMissing)
+    private Result OpenSaveDataDirectoryFileSystemImpl(ref SharedRef<IFileSystem> outFileSystem, SaveDataSpaceId spaceId,
+        ulong saveDataId, ref readonly Path directoryPath, bool createIfMissing)
     {
         using var baseFileSystem = new SharedRef<IFileSystem>();
 
@@ -812,6 +860,12 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         return Result.Success;
     }
 
+    private Result OpenSaveDataDirectoryFileSystemImpl(ref SharedRef<IFileSystem> outFileSystem, SaveDataSpaceId spaceId,
+        ulong saveDataId, ref readonly Path directoryPath)
+    {
+        return OpenSaveDataDirectoryFileSystemImpl(ref outFileSystem, spaceId, saveDataId, in directoryPath, createIfMissing: true);
+    }
+
     public Result IsProvisionallyCommittedSaveData(out bool isProvisionallyCommitted, in SaveDataInfo saveInfo)
     {
         throw new NotImplementedException();
@@ -879,6 +933,11 @@ public class SaveDataFileSystemServiceImpl : IDisposable
     public SaveDataTransferCryptoConfiguration GetSaveDataTransferCryptoConfiguration()
     {
         throw new NotImplementedException();
+    }
+
+    public SaveDataPorterManager GetSaveDataPorterManager()
+    {
+        return _saveDataPorterManager;
     }
 
     public Result GetSaveDataIndexCount(out int count)

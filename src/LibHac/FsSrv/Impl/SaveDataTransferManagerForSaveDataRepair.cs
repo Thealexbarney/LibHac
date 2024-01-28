@@ -182,13 +182,19 @@ public class SaveDataTransferManagerForSaveDataRepair<TPolicy> : ISaveDataTransf
     private Optional<AesKey> _kek;
     private SaveDataTransferManagerForSaveDataRepair.KeyPackageV0.Content _keyPackage;
     private SaveDataPorterManager _porterManager;
-    private bool _canOpenTool;
+    private bool _canOpenPorterWithKey;
 
     public SaveDataTransferManagerForSaveDataRepair(SaveDataTransferCryptoConfiguration cryptoConfig,
         ref readonly SharedRef<ISaveDataTransferCoreInterface> coreInterface, SaveDataPorterManager porterManager,
-        bool canOpenTool)
+        bool canOpenPorterWithKey)
     {
-        throw new NotImplementedException();
+        _transferInterface = SharedRef<ISaveDataTransferCoreInterface>.CreateCopy(in coreInterface);
+        _cryptoConfig = cryptoConfig;
+        _isKeyPackageSet = false;
+        _kek = new Optional<AesKey>();
+        _porterManager = porterManager;
+        _canOpenPorterWithKey = canOpenPorterWithKey;
+        _cryptoConfig.GenerateRandomData(_challengeData.Value);
     }
 
     public void Dispose()

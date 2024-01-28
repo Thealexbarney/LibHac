@@ -113,8 +113,15 @@ public static class SaveDataProperties
         }
     }
 
+    public static bool IsObsoleteSystemSaveData(in SaveDataInfo info)
+    {
+        return false;
+        throw new NotImplementedException();
+    }
+
     public static bool IsWipingNeededAtCleanUp(in SaveDataInfo info)
     {
+        return false;
         throw new NotImplementedException();
     }
 

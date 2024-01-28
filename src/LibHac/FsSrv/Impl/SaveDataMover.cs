@@ -38,7 +38,7 @@ public class SaveDataMover : ISaveDataMover
     private State _state;
     private SdkMutex _mutex;
 
-    public SaveDataMover(SharedRef<ISaveDataTransferCoreInterface> transferInterface, SaveDataSpaceId sourceSpaceId,
+    public SaveDataMover(in SharedRef<ISaveDataTransferCoreInterface> transferInterface, SaveDataSpaceId sourceSpaceId,
         SaveDataSpaceId destinationSpaceId, NativeHandle transferMemoryHandle, ulong transferMemorySize)
     {
         throw new NotImplementedException();

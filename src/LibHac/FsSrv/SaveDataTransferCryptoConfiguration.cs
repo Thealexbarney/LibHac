@@ -17,9 +17,13 @@ public class SaveDataTransferCryptoConfiguration
     public Span<byte> KekEncryptionKeyModulus => _kekEncryptionKeyModulus;
     public Span<byte> KeyPackageSigningModulus => _keyPackageSigningModulus;
 
-    public SaveTransferAesKeyGenerator GenerateAesKey { get; set; }
     public RandomDataGenerator GenerateRandomData { get; set; }
     public SaveTransferCmacGenerator GenerateCmac { get; set; }
+    public SaveTransferOpenDecryptor OpenDecryptor { get; set; }
+    public SaveTransferOpenEncryptor OpenEncryptor { get; set; }
+    public VerifyRsaSignature VerifySignature { get; set; }
+    public Action ResetConfiguration { get; set; }
+    public SaveTransferAesKeyGenerator GenerateAesKey { get; set; }
 
     public enum KeyIndex
     {
@@ -34,7 +38,10 @@ public class SaveDataTransferCryptoConfiguration
         SaveDataRepairInitialDataMacAfterRepair
     }
 
-    public enum Attributes { }
+    public enum Attributes
+    {
+        Default = 0
+    }
 
     public interface IEncryptor : IDisposable
     {

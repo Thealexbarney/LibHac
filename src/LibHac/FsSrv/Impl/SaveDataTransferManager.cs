@@ -10,7 +10,7 @@ using IFile = LibHac.Fs.Fsa.IFile;
 
 namespace LibHac.FsSrv.Impl;
 
-public class SaveDataTransferManager : IDisposable
+public class SaveDataTransferManager : ISaveDataTransferManager
 {
     private SharedRef<ISaveDataTransferCoreInterface> _transferCoreInterface;
     private SaveDataTransferCryptoConfiguration _cryptoConfig;

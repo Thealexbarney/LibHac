@@ -2,6 +2,7 @@
 #pragma warning disable CS0169 // Field is never used
 using System;
 using System.Collections.Generic;
+using LibHac.FsSrv.Sf;
 using LibHac.Os;
 
 namespace LibHac.FsSrv.Impl;
@@ -36,7 +37,7 @@ public abstract class Prohibitee : IDisposable
     public abstract ApplicationId GetApplicationId();
 }
 
-public class SaveDataPorterProhibiter : IDisposable
+public class SaveDataPorterProhibiter : ISaveDataTransferProhibiter
 {
     // IntrusiveList
     private SaveDataPorterManager _porterManager;
