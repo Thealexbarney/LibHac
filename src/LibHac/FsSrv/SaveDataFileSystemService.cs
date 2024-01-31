@@ -1642,10 +1642,9 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
         ulong saveDataId;
         SaveDataAttribute key = attribute;
-        bool isStaticSaveDataId = attribute.StaticSaveDataId != InvalidSystemSaveDataId && attribute.UserId == InvalidUserId;
 
         // Get the ID of the save data
-        if (isStaticSaveDataId)
+        if (attribute.StaticSaveDataId == SaveIndexerId)
         {
             saveDataId = attribute.StaticSaveDataId;
         }
@@ -1700,20 +1699,6 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         {
             if (saveDataId != SaveIndexerId)
             {
-                if (isStaticSaveDataId)
-                {
-                    // The accessor won't be open yet if the save has a static ID
-                    Result res = OpenSaveDataIndexerAccessor(ref accessor.Ref, spaceId);
-                    if (res.IsFailure()) return res.Miss();
-
-                    // Check the space ID of the save data
-                    res = accessor.Get.GetInterface().Get(out SaveDataIndexerValue value, in key);
-                    if (res.IsFailure()) return res.Miss();
-
-                    if (value.SpaceId != ConvertToRealSpaceId(spaceId))
-                        return ResultFs.TargetNotFound.Log();
-                }
-
                 // Remove the indexer entry. Nintendo ignores these results
                 accessor.Get.GetInterface().Delete(saveDataId).IgnoreResult();
                 accessor.Get.GetInterface().Commit().IgnoreResult();
