@@ -11,6 +11,7 @@ public readonly ref struct InBuffer
 
     public int Size => _buffer.Length;
     public ReadOnlySpan<byte> Buffer => _buffer;
+    public bool IsNull => Unsafe.IsNullRef(ref MemoryMarshal.GetReference(_buffer));
 
     public InBuffer(ReadOnlySpan<byte> buffer)
     {
@@ -46,6 +47,7 @@ public readonly ref struct OutBuffer
 
     public int Size => _buffer.Length;
     public Span<byte> Buffer => _buffer;
+    public bool IsNull => Unsafe.IsNullRef(ref MemoryMarshal.GetReference(_buffer));
 
     public OutBuffer(Span<byte> buffer)
     {
@@ -81,6 +83,7 @@ public readonly ref struct InArray<T> where T : unmanaged
 
     public int Size => _array.Length;
     public ReadOnlySpan<T> Array => _array;
+    public bool IsNull => Unsafe.IsNullRef(ref MemoryMarshal.GetReference(_array));
 
     public InArray(ReadOnlySpan<T> array)
     {
@@ -96,6 +99,7 @@ public readonly ref struct OutArray<T> where T : unmanaged
 
     public int Size => _array.Length;
     public Span<T> Array => _array;
+    public bool IsNull => Unsafe.IsNullRef(ref MemoryMarshal.GetReference(_array));
 
     public OutArray(Span<T> array)
     {

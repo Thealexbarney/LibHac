@@ -455,7 +455,7 @@ public class PathFormatterTests
                     flags.AllowWindowsPath();
                     break;
                 case 'C':
-                    flags.AllowAllCharacters();
+                    flags.AllowInvalidCharacter();
                     break;
                 default:
                     throw new NotSupportedException();

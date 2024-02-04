@@ -11,21 +11,37 @@ namespace LibHac.Fs;
 
 public struct PathFlags
 {
-    private uint _value;
+    private PathFormatFlags _formatFlags;
 
-    public void AllowWindowsPath() => _value |= 1 << 0;
-    public void AllowRelativePath() => _value |= 1 << 1;
-    public void AllowEmptyPath() => _value |= 1 << 2;
-    public void AllowMountName() => _value |= 1 << 3;
-    public void AllowBackslash() => _value |= 1 << 4;
-    public void AllowAllCharacters() => _value |= 1 << 5;
+    [Flags]
+    public enum PathFormatFlags
+    {
+        AllowWindowsPath = 1 << 0,
+        AllowRelativePath = 1 << 1,
+        AllowEmptyPath = 1 << 2,
+        AllowMountName = 1 << 3,
+        AllowBackslash = 1 << 4,
+        AllowInvalidCharacter = 1 << 5
+    }
 
-    public readonly bool IsWindowsPathAllowed() => (_value & (1 << 0)) != 0;
-    public readonly bool IsRelativePathAllowed() => (_value & (1 << 1)) != 0;
-    public readonly bool IsEmptyPathAllowed() => (_value & (1 << 2)) != 0;
-    public readonly bool IsMountNameAllowed() => (_value & (1 << 3)) != 0;
-    public readonly bool IsBackslashAllowed() => (_value & (1 << 4)) != 0;
-    public readonly bool AreAllCharactersAllowed() => (_value & (1 << 5)) != 0;
+    public PathFlags(PathFormatFlags formatFlags)
+    {
+        _formatFlags = formatFlags;
+    }
+
+    public void AllowWindowsPath() => _formatFlags |= PathFormatFlags.AllowWindowsPath;
+    public void AllowRelativePath() => _formatFlags |= PathFormatFlags.AllowRelativePath;
+    public void AllowEmptyPath() => _formatFlags |= PathFormatFlags.AllowEmptyPath;
+    public void AllowMountName() => _formatFlags |= PathFormatFlags.AllowMountName;
+    public void AllowBackslash() => _formatFlags |= PathFormatFlags.AllowBackslash;
+    public void AllowInvalidCharacter() => _formatFlags |= PathFormatFlags.AllowInvalidCharacter;
+
+    public readonly bool IsWindowsPathAllowed() => (_formatFlags & PathFormatFlags.AllowWindowsPath) != 0;
+    public readonly bool IsRelativePathAllowed() => (_formatFlags & PathFormatFlags.AllowRelativePath) != 0;
+    public readonly bool IsEmptyPathAllowed() => (_formatFlags & PathFormatFlags.AllowEmptyPath) != 0;
+    public readonly bool IsMountNameAllowed() => (_formatFlags & PathFormatFlags.AllowMountName) != 0;
+    public readonly bool IsBackslashAllowed() => (_formatFlags & PathFormatFlags.AllowBackslash) != 0;
+    public readonly bool IsInvalidCharacterAllowed() => (_formatFlags & PathFormatFlags.AllowInvalidCharacter) != 0;
 }
 
 /// <summary>

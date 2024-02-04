@@ -517,7 +517,7 @@ public static class PathFormatter
             return Result.Success;
         }
 
-        res = PathNormalizer.IsNormalized(out isNormalized, out int length, buffer, flags.AreAllCharactersAllowed());
+        res = PathNormalizer.IsNormalized(out isNormalized, out int length, buffer, flags.IsInvalidCharacterAllowed());
         if (res.IsFailure()) return res.Miss();
 
         totalLength += length;
@@ -639,7 +639,7 @@ public static class PathFormatter
             }
 
             res = PathNormalizer.Normalize(outputBuffer.Slice(currentPos), out _, src, isWindowsPath, isDriveRelative,
-                flags.AreAllCharactersAllowed());
+                flags.IsInvalidCharacterAllowed());
             if (res.IsFailure()) return res.Miss();
 
             return Result.Success;

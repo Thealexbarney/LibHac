@@ -293,6 +293,8 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         _selfReference.Destroy();
     }
 
+    public static PathFlags GetDefaultPathFlags() => new PathFlags();
+
     private static ReadOnlySpan<byte> RootDir => "/"u8;
 
     private Result SetUpPath(ref Path fsPath, ref readonly PathSf sfPath)
