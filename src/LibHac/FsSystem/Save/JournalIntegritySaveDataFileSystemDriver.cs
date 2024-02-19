@@ -34,7 +34,9 @@ public class JournalIntegritySaveDataFileSystemDriver : ProxyFileSystemWithRetry
     public static Result QueryTotalSize(out long outSizeTotal, long blockSize, uint countAvailableBlock,
         uint countJournalBlock, int countExpandMax, uint version)
     {
-        throw new NotImplementedException();
+        // Todo: Implement
+        outSizeTotal = 0;
+        return Result.Success;
     }
 
     public static Result Format(
@@ -137,7 +139,14 @@ public class JournalIntegritySaveDataFileSystemDriver : ProxyFileSystemWithRetry
 
     public static JournalIntegritySaveDataParameters SetUpSaveDataParameters(long blockSize, long dataSize, long journalSize)
     {
-        throw new NotImplementedException();
+        return new JournalIntegritySaveDataParameters()
+        {
+            // Align the data sizes up to a multiple of the block size
+            CountDataBlock = (uint)((dataSize + blockSize - 1) / blockSize),
+            CountJournalBlock = (uint)((journalSize + blockSize - 1) / blockSize),
+            BlockSize = blockSize,
+            CountExpandMax = 1
+        };
     }
 
     public Result AcceptVisitor(IInternalStorageFileSystemVisitor visitor)

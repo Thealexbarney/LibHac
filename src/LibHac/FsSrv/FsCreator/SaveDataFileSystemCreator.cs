@@ -5,7 +5,9 @@ using LibHac.Common.FixedArrays;
 using LibHac.Common.Keys;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.FsSrv.Impl;
 using LibHac.FsSystem;
+using LibHac.FsSystem.Save;
 using LibHac.Util;
 using OpenType = LibHac.FsSrv.SaveDataOpenTypeSetFileStorage.OpenType;
 
@@ -34,7 +36,38 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
         _keySet = keySet;
     }
 
-    public Result CreateFile(out IFile file, IFileSystem sourceFileSystem, ulong saveDataId, OpenMode openMode)
+    public Result Format(in ValueSubStorage saveImageStorage, long blockSize, int countExpandMax, uint blockCount,
+        uint journalBlockCount, IBufferManager bufferManager, bool isDeviceUniqueMac, in HashSalt hashSalt,
+        RandomDataGenerator encryptionKeyGenerator, bool isReconstructible, uint version)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result FormatAsIntegritySaveData(in ValueSubStorage saveImageStorage, long blockSize, uint blockCount,
+        IBufferManager bufferManager, bool isDeviceUniqueMac, RandomDataGenerator encryptionKeyGenerator,
+        bool isReconstructible, uint version)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result ExtractSaveDataParameters(out JournalIntegritySaveDataParameters outParams, IStorage saveFileStorage,
+        bool isDeviceUniqueMac, bool isReconstructible)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result ExtendSaveData(SaveDataExtender extender, in ValueSubStorage baseStorage,
+        in ValueSubStorage logStorage, bool isDeviceUniqueMac, bool isReconstructible)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void SetMacGenerationSeed(ReadOnlySpan<byte> seed)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result CreateRaw(ref SharedRef<IFile> outFile, in SharedRef<IFileSystem> fileSystem, ulong saveDataId, OpenMode openMode)
     {
         throw new NotImplementedException();
     }
@@ -114,18 +147,38 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
     }
 
     public Result CreateExtraDataAccessor(ref SharedRef<ISaveDataExtraDataAccessor> outExtraDataAccessor,
-        ref SharedRef<IFileSystem> baseFileSystem)
+        in SharedRef<IStorage> baseStorage, bool isDeviceUniqueMac, bool isIntegritySaveData, bool isReconstructible)
     {
         throw new NotImplementedException();
     }
 
-    public Result IsDataEncrypted(out bool isEncrypted, ref SharedRef<IFileSystem> baseFileSystem, ulong saveDataId,
+    public Result CreateInternalStorage(ref SharedRef<IFileSystem> outFileSystem,
+        in SharedRef<IFileSystem> baseFileSystem, SaveDataSpaceId spaceId, ulong saveDataId, bool isDeviceUniqueMac,
+        bool useUniqueKey1, ISaveDataCommitTimeStampGetter timeStampGetter, bool isReconstructible)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result RecoverMasterHeader(in SharedRef<IFileSystem> baseFileSystem, ulong saveDataId,
         IBufferManager bufferManager, bool isDeviceUniqueMac, bool isReconstructible)
     {
         throw new NotImplementedException();
     }
 
-    public void SetMacGenerationSeed(ReadOnlySpan<byte> seed)
+    public Result UpdateMac(in SharedRef<IFileSystem> baseFileSystem, ulong saveDataId, bool isDeviceUniqueMac,
+        bool isReconstructible)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result IsProvisionallyCommittedSaveData(out bool outIsProvisionallyCommitted,
+        in SharedRef<IFileSystem> baseFileSystem, in SaveDataInfo info, bool isDeviceUniqueMac,
+        ISaveDataCommitTimeStampGetter timeStampGetter, bool isReconstructible)
+    {
+        throw new NotImplementedException();
+    }
+
+    public IMacGenerator GetMacGenerator(bool isDeviceUniqueMac, bool isTemporaryTransferSave)
     {
         throw new NotImplementedException();
     }

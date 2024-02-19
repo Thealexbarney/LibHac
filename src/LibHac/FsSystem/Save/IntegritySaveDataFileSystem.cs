@@ -5,6 +5,7 @@ using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Save;
+using LibHac.FsSrv;
 using LibHac.Os;
 
 namespace LibHac.FsSystem.Save;
@@ -166,13 +167,14 @@ public class IntegritySaveDataFileSystem : IFileSystem
         throw new NotImplementedException();
     }
 
-    public static void SetGenerateRandomFunction(FileSystemClient fs, RandomDataGenerator randomFunction)
+    public static void SetGenerateRandomFunction(FileSystemServer fsServer, RandomDataGenerator randomFunction)
     {
         throw new NotImplementedException();
     }
     
-    public static void SetVersionSupported(FileSystemClient fs, uint versionMin, uint versionMax)
+    public static void SetVersionSupported(FileSystemServer fsServer, uint versionMin, uint versionMax)
     {
+        return;
         throw new NotImplementedException();
     }
 

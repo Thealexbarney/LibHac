@@ -5,6 +5,7 @@ using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Fs.Save;
+using LibHac.FsSrv;
 using LibHac.Os;
 using LibHac.Util;
 
@@ -559,8 +560,9 @@ public class JournalIntegritySaveDataFileSystem : IFileSystem
         throw new NotImplementedException();
     }
 
-    public static void SetVersionSupported(FileSystemClient fs, uint versionMin, uint versionMax)
+    public static void SetVersionSupported(FileSystemServer fsServer, uint versionMin, uint versionMax)
     {
+        return;
         throw new NotImplementedException();
     }
 

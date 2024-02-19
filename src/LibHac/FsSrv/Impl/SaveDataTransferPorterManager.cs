@@ -67,7 +67,9 @@ public class SaveDataPorterManager
 
     public SaveDataPorterManager()
     {
-        throw new NotImplementedException();
+        _prohibiteeList = new LinkedList<Prohibitee>();
+        _porterProhibiterList = new LinkedList<SaveDataPorterProhibiter>();
+        _mutex = new SdkMutex();
     }
 
     public bool IsProhibited(ref UniqueLock<SdkMutex> refLock, ApplicationId applicationId)
