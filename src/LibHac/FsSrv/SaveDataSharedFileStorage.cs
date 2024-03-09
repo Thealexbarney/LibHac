@@ -18,12 +18,12 @@ namespace LibHac.FsSrv;
 public static class SaveDataSharedFileStorageGlobalMethods
 {
     public static Result OpenSaveDataStorage(this FileSystemServer fsSrv,
-        ref SharedRef<IStorage> outSaveDataStorage, ref SharedRef<IFileSystem> baseFileSystem,
+        ref SharedRef<IStorage> outSaveDataStorage, ref readonly SharedRef<IFileSystem> baseFileSystem,
         SaveDataSpaceId spaceId, ulong saveDataId, OpenMode mode,
         Optional<SaveDataOpenTypeSetFileStorage.OpenType> type)
     {
         return fsSrv.Globals.SaveDataSharedFileStorage.SaveDataFileStorageHolder.OpenSaveDataStorage(
-            ref outSaveDataStorage, ref baseFileSystem, spaceId, saveDataId, mode, type);
+            ref outSaveDataStorage, in baseFileSystem, spaceId, saveDataId, mode, type);
     }
 }
 
@@ -74,9 +74,9 @@ public class SaveDataOpenTypeSetFileStorage : FileStorageBasedFileSystem
         _mutex = new SdkMutexType();
     }
 
-    public Result Initialize(ref SharedRef<IFileSystem> baseFileSystem, ref readonly Path path, OpenMode mode, OpenType type)
+    public Result Initialize(ref readonly SharedRef<IFileSystem> baseFileSystem, ref readonly Path path, OpenMode mode, OpenType type)
     {
-        Result res = Initialize(ref baseFileSystem, in path, mode);
+        Result res = Initialize(in baseFileSystem, in path, mode);
         if (res.IsFailure()) return res.Miss();
 
         return SetOpenType(type);
@@ -331,7 +331,7 @@ public class SaveDataFileStorageHolder
     }
 
     public Result OpenSaveDataStorage(ref SharedRef<IStorage> outSaveDataStorage,
-        ref SharedRef<IFileSystem> baseFileSystem, SaveDataSpaceId spaceId, ulong saveDataId, OpenMode mode,
+        ref readonly SharedRef<IFileSystem> baseFileSystem, SaveDataSpaceId spaceId, ulong saveDataId, OpenMode mode,
         Optional<SaveDataOpenTypeSetFileStorage.OpenType> type)
     {
         Unsafe.SkipInit(out Array18<byte> saveImageNameBuffer);
@@ -344,7 +344,7 @@ public class SaveDataFileStorageHolder
         if (!type.HasValue)
         {
             using var fileStorage = new SharedRef<FileStorageBasedFileSystem>(new FileStorageBasedFileSystem());
-            res = fileStorage.Get.Initialize(ref baseFileSystem, in saveImageName, mode);
+            res = fileStorage.Get.Initialize(in baseFileSystem, in saveImageName, mode);
             if (res.IsFailure()) return res.Miss();
 
             outSaveDataStorage.SetByMove(ref fileStorage.Ref);
@@ -363,7 +363,7 @@ public class SaveDataFileStorageHolder
         else
         {
             baseFileStorage.Reset(new SaveDataOpenTypeSetFileStorage(_fsServer, spaceId, saveDataId));
-            res = baseFileStorage.Get.Initialize(ref baseFileSystem, in saveImageName, mode, type.ValueRo);
+            res = baseFileStorage.Get.Initialize(in baseFileSystem, in saveImageName, mode, type.ValueRo);
             if (res.IsFailure()) return res.Miss();
 
             using SharedRef<SaveDataOpenTypeSetFileStorage> baseFileStorageCopy =

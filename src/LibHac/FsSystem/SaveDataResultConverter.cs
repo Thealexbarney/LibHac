@@ -1,7 +1,7 @@
 ﻿using LibHac.Diag;
 using LibHac.Fs;
 
-namespace LibHac.FsSrv.FsCreator;
+namespace LibHac.FsSystem;
 
 /// <summary>
 /// Contains functions for converting internal save data <see cref="Result"/>s to external <see cref="Result"/>s.

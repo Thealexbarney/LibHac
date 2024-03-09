@@ -322,7 +322,7 @@ public class JournalIntegritySaveDataFileSystem : IFileSystem
         throw new NotImplementedException();
     }
 
-    public static void SetGenerateRandomFunction(RandomDataGenerator func)
+    public static void SetGenerateRandomFunction(FileSystemServer fsServer, RandomDataGenerator func)
     {
         throw new NotImplementedException();
     }
@@ -479,7 +479,7 @@ public class JournalIntegritySaveDataFileSystem : IFileSystem
         throw new NotImplementedException();
     }
 
-    private Result MountSaveData(in FileSystemLayoutHeader layoutHeader, in SubStorage saveImageStorage, long blockSize,
+    private Result MountSaveData(in FileSystemLayoutHeader layoutHeader, in ValueSubStorage saveImageStorage, long blockSize,
         FileSystemBufferManagerSet integrityCacheBufferSet, IBufferManager bufferManager, SdkRecursiveMutex mutex)
     {
         throw new NotImplementedException();
@@ -497,7 +497,7 @@ public class JournalIntegritySaveDataFileSystem : IFileSystem
     }
 
     public Result Initialize(
-        in SubStorage saveImageStorage,
+        in ValueSubStorage saveImageStorage,
         FileSystemBufferManagerSet integrityCacheBufferSet,
         IBufferManager duplicateCacheBuffer,
         SdkRecursiveMutex mutex,
@@ -518,13 +518,13 @@ public class JournalIntegritySaveDataFileSystem : IFileSystem
         throw new NotImplementedException();
     }
 
-    public static Result UpdateMac(in SubStorage saveImageStorage, IMacGenerator macGenerator,
+    public static Result UpdateMac(in ValueSubStorage saveImageStorage, IMacGenerator macGenerator,
         IHash256GeneratorFactorySelector hashGeneratorFactorySelector, uint minimumVersion)
     {
         throw new NotImplementedException();
     }
 
-    public static Result RecoverMasterHeader(in SubStorage saveImageStorage, IBufferManager bufferManager,
+    public static Result RecoverMasterHeader(in ValueSubStorage saveImageStorage, IBufferManager bufferManager,
         IMacGenerator macGenerator, IHash256GeneratorFactorySelector hashGeneratorFactorySelector, uint minimumVersion)
     {
         throw new NotImplementedException();

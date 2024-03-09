@@ -37,7 +37,7 @@ public class DefaultFsServerObjects
         creators.StorageOnNcaCreator = new StorageOnNcaCreator(keySet);
         creators.TargetManagerFileSystemCreator = new TargetManagerFileSystemCreator();
         creators.SubDirectoryFileSystemCreator = new SubDirectoryFileSystemCreator();
-        creators.SaveDataFileSystemCreator = new SaveDataFileSystemCreator(fsServer, keySet, null, randomGenerator);
+        creators.SaveDataFileSystemCreator = new SaveDataFileSystemCreator(fsServer, null, randomGenerator);
         creators.GameCardStorageCreator = gcStorageCreator;
         creators.GameCardFileSystemCreator = new GameCardFileSystemCreator(new ArrayPoolMemoryResource(), gcStorageCreator, fsServer);
         creators.EncryptedFileSystemCreator = new EncryptedFileSystemCreator(keySet);

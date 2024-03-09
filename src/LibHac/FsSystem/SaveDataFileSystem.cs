@@ -177,6 +177,11 @@ public class SaveDataFileSystem : ISaveDataFileSystem, InternalStorageFileSystem
         throw new NotImplementedException();
     }
 
+    public long GetCounterForBundledCommit()
+    {
+        throw new NotImplementedException();
+    }
+
     protected override Result DoCommitProvisionally(long counter)
     {
         throw new NotImplementedException();

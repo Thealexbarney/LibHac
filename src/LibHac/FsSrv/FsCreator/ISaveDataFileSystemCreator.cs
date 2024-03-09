@@ -8,7 +8,7 @@ using LibHac.FsSystem.Save;
 
 namespace LibHac.FsSrv.FsCreator;
 
-public interface ISaveDataFileSystemCreator
+public interface ISaveDataFileSystemCreator : IDisposable
 {
     Result CreateRaw(ref SharedRef<IFile> outFile, in SharedRef<IFileSystem> fileSystem, ulong saveDataId, OpenMode openMode);
 

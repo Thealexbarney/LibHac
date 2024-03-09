@@ -54,7 +54,7 @@ file class ApplicationTemporaryFile : IFile
     }
 }
 
-public class ApplicationTemporaryFileSystem : IFileSystem, ICacheableSaveDataFileSystem, ISaveDataExtraDataAccessor
+public class ApplicationTemporaryFileSystem : ISaveDataFileSystem, ISaveDataExtraDataAccessor
 {
     private SharedRef<IStorage> _baseStorage;
     private IntegritySaveDataFileSystemDriver _saveFsDriver;
@@ -166,12 +166,12 @@ public class ApplicationTemporaryFileSystem : IFileSystem, ICacheableSaveDataFil
         throw new NotImplementedException();
     }
 
-    public bool IsSaveDataFileSystemCacheEnabled()
+    public override bool IsSaveDataFileSystemCacheEnabled()
     {
         throw new NotImplementedException();
     }
 
-    public Result RollbackOnlyModified()
+    public override Result RollbackOnlyModified()
     {
         throw new NotImplementedException();
     }
@@ -181,22 +181,22 @@ public class ApplicationTemporaryFileSystem : IFileSystem, ICacheableSaveDataFil
         throw new NotImplementedException();
     }
 
-    public Result WriteExtraData(in SaveDataExtraData extraData)
+    public override Result WriteExtraData(in SaveDataExtraData extraData)
     {
         throw new NotImplementedException();
     }
 
-    public Result CommitExtraData(bool updateTimeStamp)
+    public override Result CommitExtraData(bool updateTimeStamp)
     {
         throw new NotImplementedException();
     }
 
-    public Result ReadExtraData(out SaveDataExtraData extraData)
+    public override Result ReadExtraData(out SaveDataExtraData extraData)
     {
         throw new NotImplementedException();
     }
 
-    public void RegisterExtraDataAccessorObserver(ISaveDataExtraDataAccessorObserver observer, SaveDataSpaceId spaceId,
+    public override void RegisterExtraDataAccessorObserver(ISaveDataExtraDataAccessorObserver observer, SaveDataSpaceId spaceId,
         ulong saveDataId)
     {
         throw new NotImplementedException();

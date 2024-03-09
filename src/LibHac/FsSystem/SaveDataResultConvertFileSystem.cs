@@ -1,10 +1,9 @@
 ﻿using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
-using LibHac.FsSystem;
-using static LibHac.FsSrv.FsCreator.SaveDataResultConverter;
+using static LibHac.FsSystem.SaveDataResultConverter;
 
-namespace LibHac.FsSrv.FsCreator;
+namespace LibHac.FsSystem;
 
 /// <summary>
 /// Wraps an <see cref="IFile"/>, converting its returned <see cref="Result"/>s
