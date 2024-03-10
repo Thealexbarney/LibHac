@@ -66,7 +66,7 @@ public class IntegritySaveDataFileSystemDriver : ProxyFileSystemWithRetryingBuff
         throw new NotImplementedException();
     }
 
-    public void WriteExtraData(in IntegritySaveDataFileSystem.ExtraData extraData)
+    public Result WriteExtraData(in IntegritySaveDataFileSystem.ExtraData extraData)
     {
         throw new NotImplementedException();
     }

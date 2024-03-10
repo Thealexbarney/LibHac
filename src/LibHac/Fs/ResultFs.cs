@@ -1962,6 +1962,8 @@ public static class ResultFs
                 public static Result.Base UnsupportedOperateRangeForRegionSwitchStorage => new Result.Base(ModuleFs, 6397);
                 /// <summary>Error code: 2002-6398; Inner value: 0x31fc02</summary>
                 public static Result.Base UnsupportedOperateRangeForSaveDataFile => new Result.Base(ModuleFs, 6398);
+                /// <summary>Error code: 2002-6399; Inner value: 0x31fe02</summary>
+                public static Result.Base UnsupportedOperateRangeForApplicationTemporaryFile => new Result.Base(ModuleFs, 6399);
 
             /// <summary>Error code: 2002-6400; Range: 6400-6449; Inner value: 0x320002</summary>
             public static Result.Base PermissionDenied { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6400, 6449); }
