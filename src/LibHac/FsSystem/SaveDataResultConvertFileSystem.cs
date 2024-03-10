@@ -9,7 +9,7 @@ namespace LibHac.FsSystem;
 /// Wraps an <see cref="IFile"/>, converting its returned <see cref="Result"/>s
 /// to save-data-specific <see cref="Result"/>s.
 /// </summary>
-/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
+/// <remarks>Based on nnSdk 17.5.0 (FS 17.0.0)</remarks>
 public class SaveDataResultConvertFile : IResultConvertFile
 {
     private bool _isReconstructible;
@@ -29,13 +29,13 @@ public class SaveDataResultConvertFile : IResultConvertFile
 /// Wraps an <see cref="IDirectory"/>, converting its returned <see cref="Result"/>s
 /// to save-data-specific <see cref="Result"/>s.
 /// </summary>
-/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
+/// <remarks>Based on nnSdk 17.5.0 (FS 17.0.0)</remarks>
 public class SaveDataResultConvertDirectory : IResultConvertDirectory
 {
     private bool _isReconstructible;
 
-    public SaveDataResultConvertDirectory(ref UniqueRef<IDirectory> baseDirectory, bool isReconstructible) : base(
-        ref baseDirectory)
+    public SaveDataResultConvertDirectory(ref UniqueRef<IDirectory> baseDirectory, bool isReconstructible)
+        : base(ref baseDirectory)
     {
         _isReconstructible = isReconstructible;
     }
@@ -50,7 +50,7 @@ public class SaveDataResultConvertDirectory : IResultConvertDirectory
 /// Wraps an <see cref="ISaveDataFileSystem"/>, converting its returned <see cref="Result"/>s
 /// to save-data-specific <see cref="Result"/>s.
 /// </summary>
-/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
+/// <remarks>Based on nnSdk 17.5.0 (FS 17.0.0)</remarks>
 public class SaveDataResultConvertFileSystem : IResultConvertFileSystem<ISaveDataFileSystem>
 {
     private bool _isReconstructible;

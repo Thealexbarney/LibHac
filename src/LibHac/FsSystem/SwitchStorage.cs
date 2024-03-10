@@ -112,7 +112,7 @@ public class SwitchStorage : IStorage
 /// the provided <see cref="Region"/> will be forwarded to one <see cref="IStorage"/>, and requests outside
 /// will be forwarded to the other.
 /// </summary>
-/// <remarks>Based on nnSdk 14.3.0 (FS 14.1.0)</remarks>
+/// <remarks>Based on nnSdk 17.5.0 (FS 17.0.0)</remarks>
 public class RegionSwitchStorage : IStorage
 {
     public struct Region

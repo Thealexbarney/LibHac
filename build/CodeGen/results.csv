@@ -1068,6 +1068,7 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,6395,,,,UnsupportedRollbackOnlyModifiedForApplicationTemporaryFileSystem,
 2,6396,,,,UnsupportedRollbackOnlyModifiedForDirectorySaveDataFileSystem,
 2,6397,,,,UnsupportedOperateRangeForRegionSwitchStorage,
+2,6398,,,,UnsupportedOperateRangeForSaveDataFile,
 
 2,6400,6449,,,PermissionDenied,
 2,6403,,,,HostFileSystemOperationDisabled,Returned when opening a host FS on a retail device.
