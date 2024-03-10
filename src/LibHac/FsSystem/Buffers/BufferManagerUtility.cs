@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using JetBrains.Annotations;
 using LibHac.Diag;
 using LibHac.Fs;
 using Buffer = LibHac.Mem.Buffer;
@@ -19,8 +20,7 @@ public struct ScopedBufferManagerContextRegistration : IDisposable
 {
     private BufferManagerContext _oldContext;
 
-    // ReSharper disable once UnusedParameter.Local
-    public ScopedBufferManagerContextRegistration(int unused = default)
+    public ScopedBufferManagerContextRegistration()
     {
         _oldContext = BufferManagerUtility.GetBufferManagerContext();
     }
@@ -41,15 +41,15 @@ internal static class BufferManagerUtility
 
     public delegate bool IsValidBufferFunction(in Buffer buffer);
 
-    public static Result DoContinuouslyUntilBufferIsAllocated(Func<Result> function, Func<Result> onFailure,
-        [CallerMemberName] string callerName = "")
+    public static Result DoContinuouslyUntilBufferIsAllocated([InstantHandle] Func<Result> function,
+        [InstantHandle] Func<Result> onFailure, [CallerMemberName] string callerName = "")
     {
         const int bufferAllocationRetryLogCountMax = 10;
         const int bufferAllocationRetryLogInterval = 100;
 
         Result result;
 
-        for (int count = 1; ; count++)
+        for (int count = 1;; count++)
         {
             result = function();
             if (!ResultFs.BufferAllocationFailed.Includes(result))
@@ -71,7 +71,7 @@ internal static class BufferManagerUtility
         return result;
     }
 
-    public static Result DoContinuouslyUntilBufferIsAllocated(Func<Result> function,
+    public static Result DoContinuouslyUntilBufferIsAllocated([InstantHandle] Func<Result> function,
         [CallerMemberName] string callerName = "")
     {
         return DoContinuouslyUntilBufferIsAllocated(function, static () => Result.Success, callerName);

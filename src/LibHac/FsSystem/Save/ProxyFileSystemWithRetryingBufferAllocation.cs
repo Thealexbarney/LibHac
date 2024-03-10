@@ -107,7 +107,7 @@ public class ProxyFileSystemWithRetryingBufferAllocation : IFileSystem
         throw new NotImplementedException();
     }
 
-    public void Finalize(IFileSystem fileSystem)
+    public void FinalizeObject()
     {
         throw new NotImplementedException();
     }

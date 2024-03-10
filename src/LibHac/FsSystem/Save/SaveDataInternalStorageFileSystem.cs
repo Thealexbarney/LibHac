@@ -24,7 +24,7 @@ public interface IInternalStorageFileSystem
 {
     Result AcceptVisitor(IInternalStorageFileSystemVisitor visitor);
     Result WriteExtraData(in JournalIntegritySaveDataFileSystem.ExtraData extraData);
-    Result ReadExtraData(out JournalIntegritySaveDataFileSystem.ExtraData outExtraData);
+    void ReadExtraData(out JournalIntegritySaveDataFileSystem.ExtraData outExtraData);
     Result CommitFileSystem();
     Result UpdateMac(IMacGenerator macGenerator);
 }

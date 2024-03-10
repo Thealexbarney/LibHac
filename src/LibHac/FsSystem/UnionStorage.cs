@@ -77,7 +77,7 @@ public class UnionStorage : IStorage
         header[0] = blockSize;
         header[1] = Sentinel;
 
-        return storage.Write(0, SpanHelpers.AsReadOnlyByteSpan(in header));
+        return storage.Write(0, SpanHelpers.AsReadOnlyByteSpan(in header)).Ret();
     }
 
     public Result Initialize(ref readonly ValueSubStorage baseStorage, ref readonly ValueSubStorage logStorage,
@@ -157,7 +157,7 @@ public class UnionStorage : IStorage
             if (res.IsFailure()) return res.Miss();
         }
 
-        return _baseStorage.Flush();
+        return _baseStorage.Flush().Ret();
     }
 
     public override Result Read(long offset, Span<byte> destination)
@@ -292,7 +292,7 @@ public class UnionStorage : IStorage
     {
         Assert.SdkRequiresNotNull(_buffer);
 
-        return _baseStorage.GetSize(out size);
+        return _baseStorage.GetSize(out size).Ret();
     }
 
     public override Result SetSize(long size)
@@ -317,7 +317,7 @@ public class UnionStorage : IStorage
             }
         }
 
-        return _baseStorage.OperateRange(outBuffer, operationId, offset, size, inBuffer);
+        return _baseStorage.OperateRange(outBuffer, operationId, offset, size, inBuffer).Ret();
     }
 
     private Result FindLog(out bool logFound, out long outLogOffset, long offsetOriginal)

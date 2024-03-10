@@ -125,9 +125,15 @@ file static class Anonymous
 
 public class JournalIntegritySaveDataFileSystem : IFileSystem
 {
-    public struct ExtraData { }
+    public struct ExtraData
+    {
+        public int Dummy;
+    }
 
-    public struct FileSystemLayoutHeader { }
+    public struct FileSystemLayoutHeader
+    {
+        public int Dummy;
+    }
 
     public struct MasterHeader
     {
@@ -136,7 +142,9 @@ public class JournalIntegritySaveDataFileSystem : IFileSystem
             public long Counter;
         }
 
-        public struct CommitData2 { }
+        public struct CommitData2
+        {
+        }
     }
 
     public class ControlAreaHolder : IDisposable
@@ -435,10 +443,12 @@ public class JournalIntegritySaveDataFileSystem : IFileSystem
         throw new NotImplementedException();
     }
 
-    public static Result QuerySize(out long outSizeTotal, long sizeBlock, int countAvailableBlock,
-        int countJournalBlock, int countExpandMax, uint minimumVersion)
+    public static Result QuerySize(out long outSizeTotal, long sizeBlock, uint countAvailableBlock,
+        uint countJournalBlock, int countExpandMax, uint minimumVersion)
     {
-        throw new NotImplementedException();
+        // Todo: Implement
+        outSizeTotal = 0;
+        return Result.Success;
     }
 
     private static Result Sign(Span<byte> outBuffer, IMacGenerator macGenerator,

@@ -43,4 +43,9 @@
     </AssemblyAttribute>
   </ItemGroup>
 
+  <!-- Packages that are only used when building -->
+  <ItemGroup>
+    <PackageReference Include="JetBrains.Annotations" Version="2023.3.0" ExcludeAssets="runtime" PrivateAssets="all" />
+  </ItemGroup>
+
 </Project>
