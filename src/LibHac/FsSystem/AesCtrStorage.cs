@@ -215,7 +215,7 @@ public class AesCtrStorage : IStorage
 
                 Unsafe.SkipInit(out QueryRangeInfo info);
                 info.Clear();
-                info.AesCtrKeyType = (int)QueryRangeInfo.AesCtrKeyTypeFlag.InternalKeyForSoftwareAes;
+                info.AesCtrKeyType = (int)AesCtrKeyTypeFlag.InternalKeyForSoftwareAes;
 
                 outInfo.Merge(in info);
 

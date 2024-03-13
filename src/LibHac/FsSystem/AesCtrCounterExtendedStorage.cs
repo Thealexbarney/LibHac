@@ -404,8 +404,8 @@ public class AesCtrCounterExtendedStorage : IStorage
                 Unsafe.SkipInit(out QueryRangeInfo info);
                 info.Clear();
                 info.AesCtrKeyType = (int)(_decryptor.Get.HasExternalDecryptionKey()
-                    ? QueryRangeInfo.AesCtrKeyTypeFlag.ExternalKeyForHardwareAes
-                    : QueryRangeInfo.AesCtrKeyTypeFlag.InternalKeyForHardwareAes);
+                    ? AesCtrKeyTypeFlag.ExternalKeyForHardwareAes
+                    : AesCtrKeyTypeFlag.InternalKeyForHardwareAes);
 
                 outInfo.Merge(in info);
 

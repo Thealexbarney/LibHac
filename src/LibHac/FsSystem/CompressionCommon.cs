@@ -10,7 +10,14 @@ public enum CompressionType : byte
     Unknown = 4
 }
 
-public delegate Result DecompressorFunction(Span<byte> destination, ReadOnlySpan<byte> source);
+public ref struct DecompressionTask
+{
+    public Span<byte> Destination;
+    public ReadOnlySpan<byte> Source;
+}
+
+public delegate Result DecompressorFunction(DecompressionTask task);
+
 public delegate DecompressorFunction GetDecompressorFunction(CompressionType compressionType);
 
 public static class CompressionTypeUtility

@@ -19,12 +19,12 @@ public struct QueryRangeInfo
         AesCtrKeyType |= other.AesCtrKeyType;
         SpeedEmulationType |= other.SpeedEmulationType;
     }
+}
 
-    [Flags]
-    public enum AesCtrKeyTypeFlag
-    {
-        InternalKeyForSoftwareAes = 1 << 0,
-        InternalKeyForHardwareAes = 1 << 1,
-        ExternalKeyForHardwareAes = 1 << 2
-    }
+[Flags]
+public enum AesCtrKeyTypeFlag
+{
+    InternalKeyForSoftwareAes = 1 << 0,
+    InternalKeyForHardwareAes = 1 << 1,
+    ExternalKeyForHardwareAes = 1 << 2
 }
