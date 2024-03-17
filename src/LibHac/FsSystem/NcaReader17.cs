@@ -8,6 +8,10 @@ using LibHac.Spl;
 
 namespace LibHac.FsSystem;
 
+public delegate Result NcaReaderInitializer(ref SharedRef<NcaReader17> outReader, in SharedRef<IStorage> baseStorage,
+    in NcaCompressionConfiguration compressionConfig, IHash256GeneratorFactorySelector hashGeneratorFactorySelector,
+    ContentAttributes contentAttributes);
+
 /// <summary>
 /// Handles reading information from an NCA's header.
 /// </summary>
