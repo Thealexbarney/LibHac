@@ -8,8 +8,14 @@ public struct FatReport
     public ushort DirectoryPeakOpenCount;
 }
 
-public struct FatReportInfo
+public struct FatReportInfo1
 {
     public ushort FilePeakOpenCount;
     public ushort DirectoryPeakOpenCount;
+}
+
+public struct FatReportInfo2
+{
+    public ushort OpenUniqueFileEntryPeakCount;
+    public ushort OpenUniqueDirectoryEntryPeakCount;
 }

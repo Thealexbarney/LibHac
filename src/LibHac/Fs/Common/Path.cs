@@ -165,6 +165,14 @@ public ref struct Path
             return Result.Success;
         }
 
+        public Result InitializeAsEmpty()
+        {
+            _buffer = EmptyBuffer;
+            _length = 0;
+
+            return Result.Success;
+        }
+
         public readonly int GetLength() => _length;
         public readonly ReadOnlySpan<byte> GetString() => _buffer;
 

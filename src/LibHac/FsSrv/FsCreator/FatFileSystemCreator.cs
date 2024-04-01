@@ -51,17 +51,17 @@ public class FatFileSystemCreator : IFatFileSystemCreator
         _fatFsError = default;
     }
 
-    public void GetAndClearFatReportInfo(out FatReportInfo outBisSystemFatReportInfo,
-        out FatReportInfo outBisUserFatReportInfo, out FatReportInfo outSdCardFatReportInfo)
+    public void GetAndClearFatReportInfo(out FatReportInfo1 outBisSystemFatReportInfo1,
+        out FatReportInfo1 outBisUserFatReportInfo1, out FatReportInfo1 outSdCardFatReportInfo1)
     {
         using var scopedLock = new ScopedLock<SdkMutexType>(ref _fatReportMutex);
 
-        outBisSystemFatReportInfo.FilePeakOpenCount = _bisSystemReport.FilePeakOpenCount;
-        outBisSystemFatReportInfo.DirectoryPeakOpenCount = _bisSystemReport.DirectoryPeakOpenCount;
-        outBisUserFatReportInfo.FilePeakOpenCount = _bisUserReport.FilePeakOpenCount;
-        outBisUserFatReportInfo.DirectoryPeakOpenCount = _bisUserReport.DirectoryPeakOpenCount;
-        outSdCardFatReportInfo.FilePeakOpenCount = _sdCardReport.FilePeakOpenCount;
-        outSdCardFatReportInfo.DirectoryPeakOpenCount = _sdCardReport.DirectoryPeakOpenCount;
+        outBisSystemFatReportInfo1.FilePeakOpenCount = _bisSystemReport.FilePeakOpenCount;
+        outBisSystemFatReportInfo1.DirectoryPeakOpenCount = _bisSystemReport.DirectoryPeakOpenCount;
+        outBisUserFatReportInfo1.FilePeakOpenCount = _bisUserReport.FilePeakOpenCount;
+        outBisUserFatReportInfo1.DirectoryPeakOpenCount = _bisUserReport.DirectoryPeakOpenCount;
+        outSdCardFatReportInfo1.FilePeakOpenCount = _sdCardReport.FilePeakOpenCount;
+        outSdCardFatReportInfo1.DirectoryPeakOpenCount = _sdCardReport.DirectoryPeakOpenCount;
 
         _bisSystemReport.FilePeakOpenCount = _bisSystemReport.FileCurrentOpenCount;
         _bisSystemReport.DirectoryPeakOpenCount = _bisSystemReport.DirectoryCurrentOpenCount;

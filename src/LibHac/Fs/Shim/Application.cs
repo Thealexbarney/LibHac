@@ -60,7 +60,7 @@ public static class Application
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
             using var fileSystem = new SharedRef<IFileSystemSf>();
 
-            res = fileSystemProxy.Get.OpenFileSystemWithId(ref fileSystem.Ref, in sfPath,
+            res = fileSystemProxy.Get.OpenFileSystemWithId(ref fileSystem.Ref, in sfPath, ContentAttributes.None,
                 Ncm.ProgramId.InvalidId.Value, FileSystemProxyType.Package);
             if (res.IsFailure()) return res.Miss();
 

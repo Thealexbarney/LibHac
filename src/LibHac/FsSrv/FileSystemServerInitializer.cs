@@ -125,7 +125,7 @@ public static class FileSystemServerInitializer
         ncaFsServiceConfig.SpeedEmulationRange = speedEmulationRange;
         ncaFsServiceConfig.FsServer = server;
 
-        var ncaFsService = new NcaFileSystemServiceImpl(in ncaFsServiceConfig, config.ExternalKeySet);
+        var ncaFsService = new NcaFileSystemServiceImpl(in ncaFsServiceConfig);
 
         var saveFsServiceConfig = new SaveDataFileSystemServiceImpl.Configuration();
         saveFsServiceConfig.BaseFsService = baseFsService;

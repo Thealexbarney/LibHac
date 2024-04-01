@@ -240,10 +240,17 @@ public class TypeLayoutTests
         Assert.Equal(0x08, GetOffset(in s, in s.FatFsError));
         Assert.Equal(0x28, GetOffset(in s, in s.RecoveredByInvalidateCacheCount));
         Assert.Equal(0x2C, GetOffset(in s, in s.SaveDataIndexCount));
-        Assert.Equal(0x30, GetOffset(in s, in s.BisSystemFatReportInfo));
-        Assert.Equal(0x34, GetOffset(in s, in s.BisUserFatReport));
-        Assert.Equal(0x38, GetOffset(in s, in s.SdCardFatReport));
-        Assert.Equal(0x3C, GetOffset(in s, in s.Reserved));
+        Assert.Equal(0x30, GetOffset(in s, in s.BisSystemFatReportInfo1));
+        Assert.Equal(0x34, GetOffset(in s, in s.BisUserFatReport1));
+        Assert.Equal(0x38, GetOffset(in s, in s.SdCardFatReport1));
+        Assert.Equal(0x3C, GetOffset(in s, in s.BisSystemFatReportInfo2));
+        Assert.Equal(0x40, GetOffset(in s, in s.BisUserFatReport2));
+        Assert.Equal(0x44, GetOffset(in s, in s.SdCardFatReport2));
+        Assert.Equal(0x48, GetOffset(in s, in s.DeepRetryStartCount));
+        Assert.Equal(0x4C, GetOffset(in s, in s.UnrecoverableByGameCardAccessFailedCount));
+        Assert.Equal(0x50, GetOffset(in s, in s.BisSystemFatSafeInfo));
+        Assert.Equal(0x5C, GetOffset(in s, in s.BisUserFatSafeInfo));
+        Assert.Equal(0x68, GetOffset(in s, in s.Reserved));
     }
 
     [Fact]

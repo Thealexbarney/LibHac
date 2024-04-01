@@ -150,11 +150,6 @@ public readonly struct BaseFileSystemService
         return Result.Success;
     }
 
-    public Result SetBisRootForHost(BisPartitionId partitionId, ref readonly FspPath path)
-    {
-        throw new NotImplementedException();
-    }
-
     public Result CreatePaddingFile(long size)
     {
         // File size must be non-negative

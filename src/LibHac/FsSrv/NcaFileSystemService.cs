@@ -8,6 +8,7 @@ using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
 using LibHac.Lr;
 using LibHac.Ncm;
+using LibHac.Sf;
 using LibHac.Spl;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IStorage = LibHac.Fs.IStorage;
@@ -22,12 +23,14 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
 {
     private const int AocSemaphoreCount = 128;
     private const int RomSemaphoreCount = 10;
+    private const int RomDivisionSizeUnitCountSemaphoreCount = 128;
 
     private WeakRef<NcaFileSystemService> _selfReference;
     private NcaFileSystemServiceImpl _serviceImpl;
     private ulong _processId;
     private SemaphoreAdapter _aocMountCountSemaphore;
     private SemaphoreAdapter _romMountCountSemaphore;
+    private SemaphoreAdapter _romDivisionSizeUnitCountSemaphore;
 
     private NcaFileSystemService(NcaFileSystemServiceImpl serviceImpl, ulong processId)
     {
@@ -35,6 +38,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         _processId = processId;
         _aocMountCountSemaphore = new SemaphoreAdapter(AocSemaphoreCount, AocSemaphoreCount);
         _romMountCountSemaphore = new SemaphoreAdapter(RomSemaphoreCount, RomSemaphoreCount);
+        _romDivisionSizeUnitCountSemaphore = new SemaphoreAdapter(RomDivisionSizeUnitCountSemaphoreCount, RomDivisionSizeUnitCountSemaphoreCount);
     }
 
     public static SharedRef<NcaFileSystemService> CreateShared(NcaFileSystemServiceImpl serviceImpl,
@@ -54,22 +58,26 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
     {
         _aocMountCountSemaphore?.Dispose();
         _romMountCountSemaphore?.Dispose();
+        _romDivisionSizeUnitCountSemaphore?.Dispose();
         _selfReference.Destroy();
     }
 
     private Result GetProgramInfo(out ProgramInfo programInfo)
     {
-        return _serviceImpl.GetProgramInfoByProcessId(out programInfo, _processId);
+        var programRegistry = new ProgramRegistryImpl(_serviceImpl.FsServer);
+        return programRegistry.GetProgramInfo(out programInfo, _processId).Ret();
     }
 
     private Result GetProgramInfoByProcessId(out ProgramInfo programInfo, ulong processId)
     {
-        return _serviceImpl.GetProgramInfoByProcessId(out programInfo, processId);
+        var programRegistry = new ProgramRegistryImpl(_serviceImpl.FsServer);
+        return programRegistry.GetProgramInfo(out programInfo, processId).Ret();
     }
 
     private Result GetProgramInfoByProgramId(out ProgramInfo programInfo, ulong programId)
     {
-        return _serviceImpl.GetProgramInfoByProgramId(out programInfo, programId);
+        var programRegistry = new ProgramRegistryImpl(_serviceImpl.FsServer);
+        return programRegistry.GetProgramInfoByProgramId(out programInfo, programId).Ret();
     }
 
     public Result OpenFileSystemWithPatch(ref SharedRef<IFileSystemSf> outFileSystem, ProgramId programId,
@@ -110,7 +118,8 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         // Try to find the path to the original version of the file system
         using var originalPath = new Path();
         Result originalResult = _serviceImpl.ResolveApplicationHtmlDocumentPath(out bool isDirectory,
-            ref originalPath.Ref(), new Ncm.ApplicationId(programId.Value), ownerProgramInfo.StorageId);
+            ref originalPath.Ref(), out ContentAttributes contentAttributes, out ulong originalProgramId,
+            programId.Value, ownerProgramInfo.StorageId);
 
         // The file system might have a patch version with no original version, so continue if not found
         if (originalResult.IsFailure() && !ResultLr.HtmlDocumentNotFound.Includes(originalResult))
@@ -118,7 +127,8 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
 
         // Try to find the path to the patch file system
         using var patchPath = new Path();
-        Result patchResult = _serviceImpl.ResolveRegisteredHtmlDocumentPath(ref patchPath.Ref(), programId.Value);
+        Result patchResult = _serviceImpl.ResolveRegisteredHtmlDocumentPath(ref patchPath.Ref(),
+            out ContentAttributes patchContentAttributes, programId.Value);
 
         using var fileSystem = new SharedRef<IFileSystem>();
 
@@ -129,7 +139,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
                 return originalResult;
 
             // There is an original version and no patch version. Open the original directly
-            res = _serviceImpl.OpenFileSystem(ref fileSystem.Ref, in originalPath, fsType, programId.Value,
+            res = _serviceImpl.OpenFileSystem(ref fileSystem.Ref, in originalPath, default, fsType, programId.Value,
                 isDirectory);
             if (res.IsFailure()) return res.Miss();
         }
@@ -143,8 +153,8 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
                 : ref PathExtensions.GetNullRef();
 
             // Open the file system using both the original and patch versions
-            res = _serviceImpl.OpenFileSystemWithPatch(ref fileSystem.Ref, in originalNcaPath, in patchPath,
-                fsType, programId.Value);
+            res = _serviceImpl.OpenFileSystemWithPatch(ref fileSystem.Ref, in originalNcaPath, contentAttributes,
+                in patchPath, patchContentAttributes, fsType, originalProgramId, programId.Value);
             if (res.IsFailure()) return res.Miss();
         }
 
@@ -169,8 +179,8 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         return Result.Success;
     }
 
-    public Result OpenCodeFileSystem(ref SharedRef<IFileSystemSf> outFileSystem,
-        out CodeVerificationData verificationData, ref readonly FspPath path, ProgramId programId)
+    public Result OpenCodeFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, OutBuffer outVerificationData,
+        ref readonly FspPath path, ContentAttributes attributes, ProgramId programId)
     {
         throw new NotImplementedException();
     }
@@ -181,19 +191,30 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
     }
 
     public Result OpenDataStorageByPath(ref SharedRef<IFileSystemSf> outFileSystem, ref readonly FspPath path,
-        FileSystemProxyType fsType)
+        ContentAttributes attributes, FileSystemProxyType fsType)
     {
         throw new NotImplementedException();
     }
 
-    private Result TryAcquireAddOnContentOpenCountSemaphore(ref UniqueRef<IUniqueLock> outSemaphoreLock)
+    private Result TryAcquireAddOnContentDivisionSizeUnitCountSemaphore(ref UniqueRef<IUniqueLock> outSemaphore, IStorage storage)
     {
         throw new NotImplementedException();
     }
 
-    private Result TryAcquireRomMountCountSemaphore(ref UniqueRef<IUniqueLock> outSemaphoreLock)
+    private Result TryAcquireRomMountCountSemaphore(ref UniqueRef<IUniqueLock> outSemaphore)
     {
         throw new NotImplementedException();
+    }
+
+    private Result TryAcquireRomDivisionSizeUnitCountSemaphore(ref UniqueRef<IUniqueLock> outSemaphore,
+        ref UniqueRef<IUniqueLock> mountCountSemaphore, IStorage storage)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void IncrementRomFsDeepRetryStartCount()
+    {
+        _serviceImpl.IncrementRomFsRemountForDataCorruptionCount();
     }
 
     public void IncrementRomFsRemountForDataCorruptionCount()
@@ -211,8 +232,14 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         _serviceImpl.IncrementRomFsRecoveredByInvalidateCacheCount();
     }
 
-    private Result OpenDataStorageCore(ref SharedRef<IStorage> outStorage, out Hash ncaHeaderDigest,
-        ulong id, StorageId storageId)
+    public void IncrementRomFsUnrecoverableByGameCardAccessFailedCount()
+    {
+        _serviceImpl.IncrementRomFsRecoveredByInvalidateCacheCount();
+    }
+
+    private Result OpenDataStorageCore(ref SharedRef<IStorage> outStorage,
+        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, out Hash ncaHeaderDigest, ulong id,
+        StorageId storageId)
     {
         throw new NotImplementedException();
     }
@@ -227,8 +254,14 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         throw new NotImplementedException();
     }
 
-    public Result OpenFileSystemWithId(ref SharedRef<IFileSystemSf> outFileSystem, ref readonly FspPath path,
-        ulong id, FileSystemProxyType fsType)
+    public Result OpenDataStorageByPath(ref SharedRef<IStorageSf> outStorage, in FspPath path,
+        ContentAttributes attributes, FileSystemProxyType fspType)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result OpenFileSystemWithId(ref SharedRef<IFileSystemSf> outFileSystem, in FspPath path,
+        ContentAttributes attributes, ulong id, FileSystemProxyType fsType)
     {
         const StorageLayoutType storageFlag = StorageLayoutType.All;
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
@@ -292,7 +325,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         bool isDirectory = PathUtility.IsDirectoryPath(in path);
 
         using var fileSystem = new SharedRef<IFileSystem>();
-        res = _serviceImpl.OpenFileSystem(ref fileSystem.Ref, in pathNormalized, fsType, canMountSystemDataPrivate,
+        res = _serviceImpl.OpenFileSystem(ref fileSystem.Ref, in pathNormalized, default, fsType, canMountSystemDataPrivate,
             id, isDirectory);
         if (res.IsFailure()) return res.Miss();
 
@@ -317,6 +350,16 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
     }
 
     public Result OpenDataStorageByDataId(ref SharedRef<IStorageSf> outStorage, DataId dataId, StorageId storageId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result OpenDataFileSystemByDataId(ref SharedRef<IFileSystemSf> outFileSystem, DataId dataId, StorageId storageId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result OpenPatchDataStorageByCurrentProcess(ref SharedRef<IStorageSf> outStorage)
     {
         throw new NotImplementedException();
     }
@@ -372,13 +415,14 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
             return ResultFs.PermissionDenied.Log();
 
         using var programPath = new Path();
-        res = _serviceImpl.ResolveProgramPath(out bool isDirectory, ref programPath.Ref(), programId, storageId);
+        res = _serviceImpl.ResolveProgramPath(out bool isDirectory, ref programPath.Ref(),
+            out ContentAttributes contentAttributes, programId, storageId);
         if (res.IsFailure()) return res.Miss();
 
         if (isDirectory)
             return ResultFs.TargetNotFound.Log();
 
-        res = _serviceImpl.GetRightsId(out RightsId rightsId, out _, in programPath, programId);
+        res = _serviceImpl.GetRightsId(out RightsId rightsId, out _, in programPath, contentAttributes, programId);
         if (res.IsFailure()) return res.Miss();
 
         outRightsId = rightsId;
@@ -386,7 +430,8 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         return Result.Success;
     }
 
-    public Result GetRightsIdAndKeyGenerationByPath(out RightsId outRightsId, out byte outKeyGeneration, ref readonly FspPath path)
+    public Result GetRightsIdAndKeyGenerationByPath(out RightsId outRightsId, out byte outKeyGeneration,
+        ref readonly FspPath path, ContentAttributes attributes)
     {
         const ulong checkThroughProgramId = ulong.MaxValue;
         UnsafeHelpers.SkipParamInit(out outRightsId, out outKeyGeneration);
@@ -412,7 +457,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         if (PathUtility.IsDirectoryPath(in path))
             return ResultFs.TargetNotFound.Log();
 
-        res = _serviceImpl.GetRightsId(out RightsId rightsId, out byte keyGeneration, in pathNormalized,
+        res = _serviceImpl.GetRightsId(out RightsId rightsId, out byte keyGeneration, in pathNormalized, default,
             new ProgramId(checkThroughProgramId));
         if (res.IsFailure()) return res.Miss();
 
@@ -422,9 +467,14 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         return Result.Success;
     }
 
+    public Result GetProgramId(out ProgramId outProgramId, ref readonly FspPath path, ContentAttributes attributes)
+    {
+        throw new NotImplementedException();
+    }
+
     // ReSharper disable once OutParameterValueIsAlwaysDiscarded.Local
-    private Result OpenDataFileSystemCore(ref SharedRef<IFileSystem> outFileSystem, out bool isHostFs,
-        ulong programId, StorageId storageId)
+    private Result OpenDataFileSystemCore(ref SharedRef<IFileSystem> outFileSystem, out bool isHostFs, ulong programId,
+        StorageId storageId)
     {
         UnsafeHelpers.SkipParamInit(out isHostFs);
 
@@ -432,13 +482,14 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         using var programPath = new Path();
-        Result res = _serviceImpl.ResolveRomPath(out bool isDirectory, ref programPath.Ref(), programId, storageId);
+        Result res = _serviceImpl.ResolveRomPath(out bool isDirectory, ref programPath.Ref(),
+            out ContentAttributes contentAttributes, out _, programId, storageId);
         if (res.IsFailure()) return res.Miss();
 
         isHostFs = Utility.IsHostFsMountName(programPath.GetString());
 
         using var fileSystem = new SharedRef<IFileSystem>();
-        res = _serviceImpl.OpenDataFileSystem(ref fileSystem.Ref, in programPath, FileSystemProxyType.Rom,
+        res = _serviceImpl.OpenDataFileSystem(ref fileSystem.Ref, in programPath, contentAttributes, FileSystemProxyType.Rom,
             programId, isDirectory);
         if (res.IsFailure()) return res.Miss();
 
@@ -529,10 +580,11 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         ulong targetProgramId = programInfo.ProgramIdValue;
 
         using var programPath = new Path();
-        res = _serviceImpl.ResolveRomPath(out _, ref programPath.Ref(), targetProgramId, programInfo.StorageId);
+        res = _serviceImpl.ResolveRomPath(out _, ref programPath.Ref(), out ContentAttributes contentAttributes, out _,
+            targetProgramId, programInfo.StorageId);
         if (res.IsFailure()) return res.Miss();
 
-        return _serviceImpl.RegisterUpdatePartition(targetProgramId, in programPath);
+        return _serviceImpl.RegisterUpdatePartition(targetProgramId, in programPath, contentAttributes);
     }
 
     public Result OpenRegisteredUpdatePartition(ref SharedRef<IFileSystemSf> outFileSystem)
@@ -583,6 +635,11 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         return _serviceImpl.SetSdCardEncryptionSeed(in encryptionSeed);
     }
 
+    public Result OpenHostFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, ref readonly FspPath path)
+    {
+        throw new NotImplementedException();
+    }
+
     public Result OpenSystemDataUpdateEventNotifier(ref SharedRef<IEventNotifier> outEventNotifier)
     {
         throw new NotImplementedException();
@@ -593,14 +650,15 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         throw new NotImplementedException();
     }
 
-    public Result HandleResolubleAccessFailure(out bool wasDeferred, Result resultForNoFailureDetected)
+    public Result HandleResolubleAccessFailure(out bool wasDeferred, Result nonDeferredResult)
     {
-        return _serviceImpl.HandleResolubleAccessFailure(out wasDeferred, resultForNoFailureDetected, _processId);
+        return _serviceImpl.HandleResolubleAccessFailure(out wasDeferred, nonDeferredResult, _processId);
     }
 
     Result IRomFileSystemAccessFailureManager.OpenDataStorageCore(ref SharedRef<IStorage> outStorage,
-        out Hash ncaHeaderDigest, ulong id, StorageId storageId)
+        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, out Hash ncaHeaderDigest, ulong id,
+        StorageId storageId)
     {
-        return OpenDataStorageCore(ref outStorage, out ncaHeaderDigest, id, storageId);
+        return OpenDataStorageCore(ref outStorage, ref outStorageAccessSplitter, out ncaHeaderDigest, id, storageId).Ret();
     }
 }

@@ -70,4 +70,10 @@ internal static class Utility
         Crypto.Sha256.GenerateSha256Hash(SpanHelpers.AsReadOnlyByteSpan(in extraData), hash);
         return BitConverter.ToInt64(hash);
     }
+
+    public static ulong ClearPlatformIdInProgramId(ulong programId)
+    {
+        const ulong clearPlatformIdMask = 0x_00FF_FFFF_FFFF_FFFF;
+        return programId & clearPlatformIdMask;
+    }
 }

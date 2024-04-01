@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Buffers.Text;
-using System.Runtime.CompilerServices;
 using LibHac.Common;
+using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSrv.FsCreator;
@@ -10,34 +9,72 @@ using LibHac.FsSystem;
 using LibHac.Ncm;
 using LibHac.Os;
 using LibHac.Spl;
-using LibHac.Tools.FsSystem.NcaUtils;
-using LibHac.Util;
-using static LibHac.Fs.Impl.CommonMountNames;
+using NcaFsHeader = LibHac.FsSystem.NcaFsHeader;
 using RightsId = LibHac.Fs.RightsId;
-using Utility = LibHac.FsSystem.Utility;
+using Utility = LibHac.FsSrv.Impl.Utility;
 
 namespace LibHac.FsSrv;
 
-public class NcaFileSystemServiceImpl
+file static class Anonymous
+{
+    public static Result GetDeviceHandleByMountName(out GameCardHandle outHandle, U8Span name)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static Result GetGameCardPartitionByMountName(out GameCardPartition outPartition, U8Span name)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static Result GetPartitionIndex(out int outIndex, FileSystemProxyType type)
+    {
+        switch (type)
+        {
+            case FileSystemProxyType.Code:
+            case FileSystemProxyType.Control:
+            case FileSystemProxyType.Manual:
+            case FileSystemProxyType.Meta:
+            case FileSystemProxyType.Data:
+                outIndex = 0;
+                return Result.Success;
+            case FileSystemProxyType.Rom:
+            case FileSystemProxyType.RegisteredUpdate:
+                outIndex = 1;
+                return Result.Success;
+            case FileSystemProxyType.Logo:
+                outIndex = 2;
+                return Result.Success;
+            default:
+                UnsafeHelpers.SkipParamInit(out outIndex);
+                return ResultFs.InvalidArgument.Log();
+        }
+    }
+
+    public static void GenerateNcaDigest(out Hash outDigest, NcaReader reader1, NcaReader reader2)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static Result LoadNspdVerificationData(out CodeVerificationData outCodeVerificationData, IFileSystem fileSystem)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public class NcaFileSystemServiceImpl : IDisposable
 {
     private Configuration _config;
-    // UpdatePartitionPath
-    private ExternalKeySet _externalKeyManager;
-    private LocationResolverSet _locationResolverSet;
-    // SystemDataUpdateEventManager
+    private UpdatePartitionPath _updatePartitionPath;
+    private ExternalKeyManager _externalKeyManager;
+    private SystemDataUpdateEventManager _systemDataUpdateEventManager;
     private EncryptionSeed _encryptionSeed;
-    private int _romFsRemountForDataCorruptionCount;
-    private int _romfsUnrecoverableDataCorruptionByRemountCount;
-    private int _romFsRecoveredByInvalidateCacheCount;
+    private uint _romFsDeepRetryStartCount;
+    private uint _romFsRemountForDataCorruptionCount;
+    private uint _romfsUnrecoverableDataCorruptionByRemountCount;
+    private uint _romFsRecoveredByInvalidateCacheCount;
+    private uint _romFsUnrecoverableByGameCardAccessFailedCount;
     private SdkMutexType _romfsCountMutex;
-
-    public NcaFileSystemServiceImpl(in Configuration configuration, ExternalKeySet externalKeySet)
-    {
-        _config = configuration;
-        _externalKeyManager = externalKeySet;
-        _locationResolverSet = new LocationResolverSet(_config.FsServer);
-        _romfsCountMutex.Initialize();
-    }
 
     public struct Configuration
     {
@@ -49,9 +86,13 @@ public class NcaFileSystemServiceImpl
         public IStorageOnNcaCreator StorageOnNcaCreator;
         public ISubDirectoryFileSystemCreator SubDirectoryFsCreator;
         public IEncryptedFileSystemCreator EncryptedFsCreator;
+        public INspRootFileSystemCreator NspRootFileSystemCreator;
+        private LocationResolverSet LocationResolverSet;
         public ProgramRegistryServiceImpl ProgramRegistryService;
         public AccessFailureManagementServiceImpl AccessFailureManagementService;
         public InternalProgramIdRangeForSpeedEmulation SpeedEmulationRange;
+        public long AddOnContentDivisionSize;
+        public long RomDivisionSize;
 
         // LibHac additions
         public FileSystemServer FsServer;
@@ -59,251 +100,165 @@ public class NcaFileSystemServiceImpl
 
     private struct MountInfo
     {
-        public bool IsGameCard;
-        public int GcHandle;
-        public bool IsHostFs;
+        public enum FileSystemType
+        {
+            None,
+            GameCard,
+            HostFs,
+            LocalFs
+        }
+
+        public FileSystemType FsType;
+        public GameCardHandle GcHandle;
         public bool CanMountNca;
+
+        public MountInfo()
+        {
+            FsType = FileSystemType.None;
+            GcHandle = 0;
+            CanMountNca = false;
+        }
+
+        public readonly bool IsGameCard() => FsType == FileSystemType.GameCard;
+        public readonly bool IsHostOrLocalFs() => FsType == FileSystemType.HostFs || FsType == FileSystemType.LocalFs;
     }
 
-    public Result OpenFileSystem(ref SharedRef<IFileSystem> outFileSystem, ref readonly Path path,
-        FileSystemProxyType type, ulong id, bool isDirectory)
+    public FileSystemServer FsServer => _config.FsServer;
+
+    public NcaFileSystemServiceImpl(in Configuration configuration)
     {
-        return OpenFileSystem(ref outFileSystem, out Unsafe.NullRef<CodeVerificationData>(), in path, type, false, id,
-            isDirectory);
+        _config = configuration;
+        _updatePartitionPath = new UpdatePartitionPath();
+        _externalKeyManager = new ExternalKeyManager();
+        _systemDataUpdateEventManager = new SystemDataUpdateEventManager();
+
+        _romFsDeepRetryStartCount = 0;
+        _romFsRemountForDataCorruptionCount = 0;
+        _romfsUnrecoverableDataCorruptionByRemountCount = 0;
+        _romFsRecoveredByInvalidateCacheCount = 0;
+        _romFsUnrecoverableByGameCardAccessFailedCount = 0;
+
+        _romfsCountMutex = new SdkMutexType();
     }
 
-    public Result OpenFileSystem(ref SharedRef<IFileSystem> outFileSystem, ref readonly Path path,
-        FileSystemProxyType type, bool canMountSystemDataPrivate, ulong id, bool isDirectory)
+    public void Dispose()
     {
-        return OpenFileSystem(ref outFileSystem, out Unsafe.NullRef<CodeVerificationData>(), in path, type,
-            canMountSystemDataPrivate, id, isDirectory);
+        _updatePartitionPath.Dispose();
     }
 
-    public Result OpenFileSystem(ref SharedRef<IFileSystem> outFileSystem, out CodeVerificationData verificationData,
-        ref readonly Path path, FileSystemProxyType type, bool canMountSystemDataPrivate, ulong id, bool isDirectory)
-    {
-        UnsafeHelpers.SkipParamInit(out verificationData);
-
-        if (!Unsafe.IsNullRef(ref verificationData))
-            verificationData.HasData = false;
-
-        // Get a reference to the path that will be advanced as each part of the path is parsed
-        var currentPath = new U8Span(path.GetString());
-
-        // Open the root filesystem based on the path's mount name
-        using var baseFileSystem = new SharedRef<IFileSystem>();
-        Result res = ParseMountName(ref currentPath, ref baseFileSystem.Ref, out bool shouldContinue,
-            out MountInfo mountNameInfo);
-        if (res.IsFailure()) return res.Miss();
-
-        // Don't continue if the rest of the path is empty
-        if (!shouldContinue)
-            return ResultFs.InvalidArgument.Log();
-
-        if (type == FileSystemProxyType.Logo && mountNameInfo.IsGameCard)
-        {
-            res = _config.BaseFsService.OpenGameCardFileSystem(ref outFileSystem, (uint)mountNameInfo.GcHandle,
-                GameCardPartition.Logo);
-
-            if (res.IsSuccess())
-                return Result.Success;
-
-            if (!ResultFs.PartitionNotFound.Includes(res))
-                return res;
-        }
-
-        res = CheckDirOrNcaOrNsp(ref currentPath, out isDirectory);
-        if (res.IsFailure()) return res.Miss();
-
-        if (isDirectory)
-        {
-            if (!mountNameInfo.IsHostFs)
-                return ResultFs.PermissionDenied.Log();
-
-            using var directoryPath = new Path();
-            res = directoryPath.InitializeWithNormalization(currentPath.Value);
-            if (res.IsFailure()) return res.Miss();
-
-            if (type == FileSystemProxyType.Manual)
-            {
-                using var hostFileSystem = new SharedRef<IFileSystem>();
-                using var readOnlyFileSystem = new SharedRef<IFileSystem>();
-
-                res = ParseDirWithPathCaseNormalizationOnCaseSensitiveHostFs(ref hostFileSystem.Ref,
-                    in directoryPath);
-                if (res.IsFailure()) return res.Miss();
-
-                readOnlyFileSystem.Reset(new ReadOnlyFileSystem(ref hostFileSystem.Ref));
-                outFileSystem.SetByMove(ref readOnlyFileSystem.Ref);
-
-                return Result.Success;
-            }
-
-            return ParseDir(in directoryPath, ref outFileSystem, ref baseFileSystem.Ref, type, true);
-        }
-
-        using var nspFileSystem = new SharedRef<IFileSystem>();
-        using SharedRef<IFileSystem> tempFileSystem = SharedRef<IFileSystem>.CreateCopy(in baseFileSystem);
-        res = ParseNsp(ref currentPath, ref nspFileSystem.Ref, ref baseFileSystem.Ref);
-
-        if (res.IsSuccess())
-        {
-            // Must be the end of the path to open Application Package FS type
-            if (currentPath.Value.At(0) == 0)
-            {
-                if (type == FileSystemProxyType.Package)
-                {
-                    outFileSystem.SetByMove(ref nspFileSystem.Ref);
-                    return Result.Success;
-                }
-
-                return ResultFs.InvalidArgument.Log();
-            }
-
-            baseFileSystem.SetByMove(ref nspFileSystem.Ref);
-        }
-
-        if (!mountNameInfo.CanMountNca)
-        {
-            return ResultFs.UnexpectedInNcaFileSystemServiceImplA.Log();
-        }
-
-        ulong openProgramId = mountNameInfo.IsHostFs ? ulong.MaxValue : id;
-
-        res = ParseNca(ref currentPath, out Nca nca, ref baseFileSystem.Ref, openProgramId);
-        if (res.IsFailure()) return res.Miss();
-
-        using var ncaSectionStorage = new SharedRef<IStorage>();
-        res = OpenStorageByContentType(ref ncaSectionStorage.Ref, nca, out NcaFormatType fsType, type,
-            mountNameInfo.IsGameCard, canMountSystemDataPrivate);
-        if (res.IsFailure()) return res.Miss();
-
-        switch (fsType)
-        {
-            case NcaFormatType.Romfs:
-                return _config.RomFsCreator.Create(ref outFileSystem, ref ncaSectionStorage.Ref);
-            case NcaFormatType.Pfs0:
-                return _config.PartitionFsCreator.Create(ref outFileSystem, ref ncaSectionStorage.Ref);
-            default:
-                return ResultFs.InvalidNcaFileSystemType.Log();
-        }
-    }
-
-    public Result OpenDataFileSystem(ref SharedRef<IFileSystem> outFileSystem, ref readonly Path path,
-        FileSystemProxyType fsType, ulong programId, bool isDirectory)
+    public long GetAddOnContentDivisionSize()
     {
         throw new NotImplementedException();
     }
 
-    public Result OpenStorageWithPatch(ref SharedRef<IStorage> outStorage, out Hash ncaHeaderDigest,
-        ref readonly Path originalNcaPath, ref readonly Path currentNcaPath, FileSystemProxyType fsType, ulong id)
+    public long GetRomDivisionSize()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result OpenFileSystem(ref SharedRef<IFileSystem> outFileSystem, ref readonly Path path,
+        ContentAttributes attributes, FileSystemProxyType type, bool canMountSystemDataPrivate, ulong id,
+        bool isDirectory)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result OpenFileSystem(ref SharedRef<IFileSystem> outFileSystem, ref readonly Path path,
+        ContentAttributes attributes, FileSystemProxyType type, ulong id, bool isDirectory)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result OpenFileSystem(ref SharedRef<IFileSystem> outFileSystem, out CodeVerificationData outVerificationData,
+        ref readonly Path path, ContentAttributes attributes, FileSystemProxyType type, bool canMountSystemDataPrivate,
+        ulong id, bool isDirectory)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result OpenDataFileSystem(ref SharedRef<IFileSystem> outFileSystem, ref readonly Path path,
+        ContentAttributes attributes, FileSystemProxyType fsType, ulong programId, bool isDirectory)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result OpenDataFileSystem(ref SharedRef<IFileSystem> outFileSystem)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result OpenDataStorage(ref SharedRef<IStorage> outStorage,
+        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, out Hash outNcaHeaderDigest,
+        ref readonly Path path, ContentAttributes attributes, FileSystemProxyType fsType, ulong id)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result OpenDataStorage(ref SharedRef<IStorage> outStorage,
+        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, out Hash outNcaHeaderDigest,
+        ref readonly Path path, ContentAttributes attributes, FileSystemProxyType fsType, ulong id,
+        bool canMountSystemDataPrivate)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result OpenStorageWithPatch(ref SharedRef<IStorage> outStorage,
+        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, out Hash ncaHeaderDigest,
+        ref readonly Path originalNcaPath, ContentAttributes originalAttributes, ref readonly Path currentNcaPath,
+        ContentAttributes currentAttributes, FileSystemProxyType fsType, ulong originalId, ulong currentId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result OpenStorageWithPatch(ref SharedRef<IStorage> outStorage,
+        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, out Hash ncaHeaderDigest,
+        ref readonly Path originalNcaPath, ContentAttributes originalAttributes, ref readonly Path currentNcaPath,
+        ContentAttributes currentAttributes, FileSystemProxyType fsType, ulong originalId, ulong currentId,
+        bool canMountSystemDataPrivate)
     {
         throw new NotImplementedException();
     }
 
     public Result OpenFileSystemWithPatch(ref SharedRef<IFileSystem> outFileSystem, ref readonly Path originalNcaPath,
-        ref readonly Path currentNcaPath, FileSystemProxyType fsType, ulong id)
+        ContentAttributes originalAttributes, ref readonly Path currentNcaPath, ContentAttributes currentAttributes,
+        FileSystemProxyType fsType, ulong originalId, ulong currentId)
     {
-        using var romFsStorage = new SharedRef<IStorage>();
-        Result res = OpenStorageWithPatch(ref romFsStorage.Ref, out Unsafe.NullRef<Hash>(), in originalNcaPath,
-            in currentNcaPath, fsType, id);
-        if (res.IsFailure()) return res.Miss();
-
-        return _config.RomFsCreator.Create(ref outFileSystem, ref romFsStorage.Ref);
+        throw new NotImplementedException();
     }
 
     public Result OpenContentStorageFileSystem(ref SharedRef<IFileSystem> outFileSystem,
         ContentStorageId contentStorageId)
     {
-        using var fileSystem = new SharedRef<IFileSystem>();
-        Result res;
-
-        // Open the appropriate base file system for the content storage ID
-        switch (contentStorageId)
-        {
-            case ContentStorageId.System:
-                res = _config.BaseFsService.OpenBisFileSystem(ref fileSystem.Ref, BisPartitionId.System);
-                if (res.IsFailure()) return res.Miss();
-                break;
-            case ContentStorageId.User:
-                res = _config.BaseFsService.OpenBisFileSystem(ref fileSystem.Ref, BisPartitionId.User);
-                if (res.IsFailure()) return res.Miss();
-                break;
-            case ContentStorageId.SdCard:
-                res = _config.BaseFsService.OpenSdCardProxyFileSystem(ref fileSystem.Ref);
-                if (res.IsFailure()) return res.Miss();
-                break;
-            default:
-                return ResultFs.InvalidArgument.Log();
-        }
-
-        Span<byte> contentStoragePathBuffer = stackalloc byte[64];
-        //Unsafe.SkipInit(out Array64<byte> contentStoragePathBuffer);
-
-        // Build the appropriate path for the content storage ID
-        if (contentStorageId == ContentStorageId.SdCard)
-        {
-            var sb = new U8StringBuilder(contentStoragePathBuffer);
-            sb.Append(StringTraits.DirectorySeparator).Append(CommonDirNames.SdCardNintendoRootDirectoryName);
-            sb.Append(StringTraits.DirectorySeparator).Append(CommonDirNames.ContentStorageDirectoryName);
-        }
-        else
-        {
-            var sb = new U8StringBuilder(contentStoragePathBuffer);
-            sb.Append(StringTraits.DirectorySeparator).Append(CommonDirNames.ContentStorageDirectoryName);
-        }
-
-        using scoped var contentStoragePath = new Path();
-        res = PathFunctions.SetUpFixedPath(ref contentStoragePath.Ref(), contentStoragePathBuffer);
-        if (res.IsFailure()) return res.Miss();
-
-        // Make sure the content storage path exists
-        res = Utility.EnsureDirectory(fileSystem.Get, in contentStoragePath);
-        if (res.IsFailure()) return res.Miss();
-
-        using var subDirFs = new SharedRef<IFileSystem>();
-        res = _config.SubDirectoryFsCreator.Create(ref subDirFs.Ref, ref fileSystem.Ref, in contentStoragePath);
-        if (res.IsFailure()) return res.Miss();
-
-        // Only content on the SD card is encrypted
-        if (contentStorageId == ContentStorageId.SdCard)
-        {
-            using SharedRef<IFileSystem> tempFileSystem = SharedRef<IFileSystem>.CreateMove(ref subDirFs.Ref);
-            res = _config.EncryptedFsCreator.Create(ref subDirFs.Ref, ref tempFileSystem.Ref,
-                IEncryptedFileSystemCreator.KeyId.Content, in _encryptionSeed);
-            if (res.IsFailure()) return res.Miss();
-        }
-
-        outFileSystem.SetByMove(ref subDirFs.Ref);
-
-        return Result.Success;
+        throw new NotImplementedException();
     }
 
-    public Result GetRightsId(out RightsId rightsId, out byte keyGeneration, ref readonly Path path, ProgramId programId)
+    public Result GetRightsId(out RightsId rightsId, out byte keyGeneration, ref readonly Path path,
+        ContentAttributes attributes, ProgramId programId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result GetProgramId(out ProgramId outProgramId, ref readonly Path path, ContentAttributes attributes, ProgramId programId)
     {
         throw new NotImplementedException();
     }
 
     public Result RegisterExternalKey(in RightsId rightsId, in AccessKey accessKey)
     {
-        return _externalKeyManager.Add(rightsId, accessKey);
+        return _externalKeyManager.Register(in rightsId, in accessKey).Ret();
     }
 
     public Result UnregisterExternalKey(in RightsId rightsId)
     {
-        _externalKeyManager.Remove(rightsId);
-
-        return Result.Success;
+        return _externalKeyManager.Unregister(in rightsId).Ret();
     }
 
     public Result UnregisterAllExternalKey()
     {
-        _externalKeyManager.Clear();
-
-        return Result.Success;
+        return _externalKeyManager.UnregisterAll().Ret();
     }
 
-    public Result RegisterUpdatePartition(ulong programId, ref readonly Path path)
+    public Result RegisterUpdatePartition(ulong programId, ref readonly Path path, ContentAttributes attributes)
     {
         throw new NotImplementedException();
     }
@@ -313,360 +268,78 @@ public class NcaFileSystemServiceImpl
         throw new NotImplementedException();
     }
 
-    private Result ParseMountName(ref U8Span path, ref SharedRef<IFileSystem> outFileSystem,
-        out bool shouldContinue, out MountInfo info)
+    private Result ParseMountName(ref U8Span path, ref SharedRef<IFileSystem> outFileSystem, out MountInfo outMountInfo)
     {
-        info = new MountInfo();
-        shouldContinue = true;
-
-        if (StringUtils.Compare(path, GameCardFileSystemMountName,
-            GameCardFileSystemMountName.Length) == 0)
-        {
-            path = path.Slice(GameCardFileSystemMountName.Length);
-
-            if (StringUtils.GetLength(path.Value, 9) < 9)
-                return ResultFs.InvalidPath.Log();
-
-            GameCardPartition partition;
-            if (StringUtils.CompareCaseInsensitive(path, GameCardFileSystemMountNameSuffixUpdate) == 0)
-                partition = GameCardPartition.Update;
-            else if (StringUtils.CompareCaseInsensitive(path, GameCardFileSystemMountNameSuffixNormal) == 0)
-                partition = GameCardPartition.Normal;
-            else if (StringUtils.CompareCaseInsensitive(path, GameCardFileSystemMountNameSuffixSecure) == 0)
-                partition = GameCardPartition.Secure;
-            else
-                return ResultFs.InvalidPath.Log();
-
-            path = path.Slice(1);
-            bool handleParsed = Utf8Parser.TryParse(path, out int handle, out int bytesConsumed);
-
-            if (!handleParsed || handle == -1 || bytesConsumed != 8)
-                return ResultFs.InvalidPath.Log();
-
-            path = path.Slice(8);
-
-            Result res = _config.BaseFsService.OpenGameCardFileSystem(ref outFileSystem, (uint)handle, partition);
-            if (res.IsFailure()) return res.Miss();
-
-            info.GcHandle = handle;
-            info.IsGameCard = true;
-            info.CanMountNca = true;
-        }
-
-        else if (StringUtils.Compare(path, ContentStorageSystemMountName,
-            ContentStorageSystemMountName.Length) == 0)
-        {
-            path = path.Slice(ContentStorageSystemMountName.Length);
-
-            Result res = OpenContentStorageFileSystem(ref outFileSystem, ContentStorageId.System);
-            if (res.IsFailure()) return res.Miss();
-
-            info.CanMountNca = true;
-        }
-
-        else if (StringUtils.Compare(path, ContentStorageUserMountName,
-            ContentStorageUserMountName.Length) == 0)
-        {
-            path = path.Slice(ContentStorageUserMountName.Length);
-
-            Result res = OpenContentStorageFileSystem(ref outFileSystem, ContentStorageId.User);
-            if (res.IsFailure()) return res.Miss();
-
-            info.CanMountNca = true;
-        }
-
-        else if (StringUtils.Compare(path, ContentStorageSdCardMountName,
-            ContentStorageSdCardMountName.Length) == 0)
-        {
-            path = path.Slice(ContentStorageSdCardMountName.Length);
-
-            Result res = OpenContentStorageFileSystem(ref outFileSystem, ContentStorageId.SdCard);
-            if (res.IsFailure()) return res.Miss();
-
-            info.CanMountNca = true;
-        }
-
-        else if (StringUtils.Compare(path, BisCalibrationFilePartitionMountName,
-            BisCalibrationFilePartitionMountName.Length) == 0)
-        {
-            path = path.Slice(BisCalibrationFilePartitionMountName.Length);
-
-            Result res = _config.BaseFsService.OpenBisFileSystem(ref outFileSystem, BisPartitionId.CalibrationFile);
-            if (res.IsFailure()) return res.Miss();
-        }
-
-        else if (StringUtils.Compare(path, BisSafeModePartitionMountName,
-            BisSafeModePartitionMountName.Length) == 0)
-        {
-            path = path.Slice(BisSafeModePartitionMountName.Length);
-
-            Result res = _config.BaseFsService.OpenBisFileSystem(ref outFileSystem, BisPartitionId.SafeMode);
-            if (res.IsFailure()) return res.Miss();
-        }
-
-        else if (StringUtils.Compare(path, BisUserPartitionMountName,
-            BisUserPartitionMountName.Length) == 0)
-        {
-            path = path.Slice(BisUserPartitionMountName.Length);
-
-            Result res = _config.BaseFsService.OpenBisFileSystem(ref outFileSystem, BisPartitionId.User);
-            if (res.IsFailure()) return res.Miss();
-        }
-
-        else if (StringUtils.Compare(path, BisSystemPartitionMountName,
-            BisSystemPartitionMountName.Length) == 0)
-        {
-            path = path.Slice(BisSystemPartitionMountName.Length);
-
-            Result res = _config.BaseFsService.OpenBisFileSystem(ref outFileSystem, BisPartitionId.System);
-            if (res.IsFailure()) return res.Miss();
-        }
-
-        else if (StringUtils.Compare(path, SdCardFileSystemMountName,
-            SdCardFileSystemMountName.Length) == 0)
-        {
-            path = path.Slice(SdCardFileSystemMountName.Length);
-
-            Result res = _config.BaseFsService.OpenSdCardProxyFileSystem(ref outFileSystem);
-            if (res.IsFailure()) return res.Miss();
-        }
-
-        else if (StringUtils.Compare(path, HostRootFileSystemMountName,
-            HostRootFileSystemMountName.Length) == 0)
-        {
-            path = path.Slice(HostRootFileSystemMountName.Length);
-
-            using var rootPathEmpty = new Path();
-            Result res = rootPathEmpty.InitializeAsEmpty();
-            if (res.IsFailure()) return res.Miss();
-
-            info.IsHostFs = true;
-            info.CanMountNca = true;
-
-            res = OpenHostFileSystem(ref outFileSystem, in rootPathEmpty, openCaseSensitive: false);
-            if (res.IsFailure()) return res.Miss();
-        }
-
-        else if (StringUtils.Compare(path, RegisteredUpdatePartitionMountName,
-            RegisteredUpdatePartitionMountName.Length) == 0)
-        {
-            path = path.Slice(RegisteredUpdatePartitionMountName.Length);
-
-            info.CanMountNca = true;
-
-            throw new NotImplementedException();
-        }
-
-        else
-        {
-            return ResultFs.PathNotFound.Log();
-        }
-
-        if (StringUtils.GetLength(path, PathTool.EntryNameLengthMax) == 0)
-        {
-            shouldContinue = false;
-        }
-
-        return Result.Success;
+        throw new NotImplementedException();
     }
 
-    private Result CheckDirOrNcaOrNsp(ref U8Span path, out bool isDirectory)
+    private Result CheckNcaOrNsp(ref U8Span path)
     {
-        UnsafeHelpers.SkipParamInit(out isDirectory);
-
-        ReadOnlySpan<byte> mountSeparator = ":/"u8;
-
-        if (StringUtils.Compare(mountSeparator, path, mountSeparator.Length) != 0)
-        {
-            return ResultFs.PathNotFound.Log();
-        }
-
-        path = path.Slice(1);
-        int pathLen = StringUtils.GetLength(path);
-
-        if (path[pathLen - 1] == '/')
-        {
-            isDirectory = true;
-            return Result.Success;
-        }
-
-        // Now make sure the path has a content file extension
-        if (pathLen < 5)
-            return ResultFs.PathNotFound.Log();
-
-        ReadOnlySpan<byte> fileExtension = path.Value.Slice(pathLen - 4);
-
-        ReadOnlySpan<byte> ncaExtension = ".nca"u8;
-        ReadOnlySpan<byte> nspExtension = ".nsp"u8;
-
-        if (StringUtils.CompareCaseInsensitive(fileExtension, ncaExtension) == 0 ||
-            StringUtils.CompareCaseInsensitive(fileExtension, nspExtension) == 0)
-        {
-            isDirectory = false;
-            return Result.Success;
-        }
-
-        return ResultFs.PathNotFound.Log();
+        throw new NotImplementedException();
     }
 
     private Result ParseDir(ref readonly Path path, ref SharedRef<IFileSystem> outContentFileSystem,
         ref SharedRef<IFileSystem> baseFileSystem, FileSystemProxyType fsType, bool preserveUnc)
     {
         using var fileSystem = new SharedRef<IFileSystem>();
-        Result res = _config.SubDirectoryFsCreator.Create(ref fileSystem.Ref, ref baseFileSystem, in path);
+        Result res = _config.SubDirectoryFsCreator.Create(ref fileSystem.Ref, baseFileSystem, path);
         if (res.IsFailure()) return res.Miss();
 
         return ParseContentTypeForDirectory(ref outContentFileSystem, ref fileSystem.Ref, fsType);
     }
 
-    private Result ParseDirWithPathCaseNormalizationOnCaseSensitiveHostFs(ref SharedRef<IFileSystem> outFileSystem,
-        ref readonly Path path)
+    private Result ParseDirWithPathCaseNormalizationOnCaseSensitiveHostOrLocalFs(
+        ref SharedRef<IFileSystem> outFileSystem, ref readonly Path path, MountInfo.FileSystemType fsType)
     {
-        using var pathRoot = new Path();
-        using var pathData = new Path();
-
-        Result res = PathFunctions.SetUpFixedPath(ref pathData.Ref(), "/data"u8);
-        if (res.IsFailure()) return res.Miss();
-
-        res = pathRoot.Combine(in path, in pathData);
-        if (res.IsFailure()) return res.Miss();
-
-        res = _config.TargetManagerFsCreator.NormalizeCaseOfPath(out bool isSupported, ref pathRoot.Ref());
-        if (res.IsFailure()) return res.Miss();
-
-        res = _config.TargetManagerFsCreator.Create(ref outFileSystem, in pathRoot, isSupported, false,
-            Result.Success);
-        if (res.IsFailure()) return res.Miss();
-
-        return Result.Success;
+        throw new NotImplementedException();
     }
 
-    private Result ParseNsp(ref U8Span path, ref SharedRef<IFileSystem> outFileSystem,
-        ref SharedRef<IFileSystem> baseFileSystem)
+    private Result ParseNsp(out bool outFoundNspPath, ref U8Span path, ref SharedRef<IFileSystem> outFileSystem,
+        ref readonly SharedRef<IFileSystem> baseFileSystem)
     {
-        ReadOnlySpan<byte> nspExtension = ".nsp"u8;
-
-        // Search for the end of the nsp part of the path
-        int nspPathLen = 0;
-
-        while (true)
-        {
-            U8Span currentSpan;
-
-            while (true)
-            {
-                currentSpan = path.Slice(nspPathLen);
-                if (StringUtils.CompareCaseInsensitive(nspExtension, currentSpan, 4) == 0)
-                    break;
-
-                if (currentSpan.Length == 0 || currentSpan[0] == 0)
-                {
-                    return ResultFs.PathNotFound.Log();
-                }
-
-                nspPathLen++;
-            }
-
-            // The nsp filename must be the end of the entire path or the end of a path segment
-            if (currentSpan.Length <= 4 || currentSpan[4] == 0 || currentSpan[4] == (byte)'/')
-                break;
-
-            nspPathLen += 4;
-        }
-
-        nspPathLen += 4;
-
-        using var pathNsp = new Path();
-        Result res = pathNsp.InitializeWithNormalization(path, nspPathLen);
-        if (res.IsFailure()) return res.Miss();
-
-        using var nspFileStorage = new SharedRef<FileStorageBasedFileSystem>(new FileStorageBasedFileSystem());
-
-        res = nspFileStorage.Get.Initialize(ref baseFileSystem, in pathNsp, OpenMode.Read);
-        if (res.IsFailure()) return res.Miss();
-
-        using SharedRef<IStorage> tempStorage = SharedRef<IStorage>.CreateMove(ref nspFileStorage.Ref);
-        res = _config.PartitionFsCreator.Create(ref outFileSystem, ref tempStorage.Ref);
-
-        if (res.IsSuccess())
-        {
-            path = path.Slice(nspPathLen);
-        }
-
-        return res;
+        throw new NotImplementedException();
     }
 
-    private Result ParseNca(ref U8Span path, out Nca nca, ref SharedRef<IFileSystem> baseFileSystem, ulong ncaId)
+    private Result ParseNca(ref SharedRef<NcaReader> outNcaReader, ref readonly SharedRef<IFileSystem> baseFileSystem,
+        U8Span path, ContentAttributes attributes, ulong programId)
+    {
+        throw new NotImplementedException();
+    }
+
+    private Result ParseNca(ref SharedRef<NcaReader> outNcaReader, out bool outIsGameCard, U8Span path,
+        ContentAttributes attributes, ulong programId)
     {
         throw new NotImplementedException();
     }
 
     private Result ParseContentTypeForDirectory(ref SharedRef<IFileSystem> outFileSystem,
-        ref SharedRef<IFileSystem> baseFileSystem, FileSystemProxyType fsType)
+        ref readonly SharedRef<IFileSystem> baseFileSystem, FileSystemProxyType fsType)
     {
-        ReadOnlySpan<byte> dirName;
-
-        // Get the name of the subdirectory for the filesystem type
-        switch (fsType)
-        {
-            case FileSystemProxyType.Package:
-                outFileSystem.SetByMove(ref baseFileSystem);
-                return Result.Success;
-
-            case FileSystemProxyType.Code:
-                dirName = "/code/"u8;
-                break;
-            case FileSystemProxyType.Rom:
-            case FileSystemProxyType.Control:
-            case FileSystemProxyType.Manual:
-            case FileSystemProxyType.Meta:
-            case FileSystemProxyType.RegisteredUpdate:
-                dirName = "/data/"u8;
-                break;
-            case FileSystemProxyType.Logo:
-                dirName = "/logo/"u8;
-                break;
-
-            default:
-                return ResultFs.InvalidArgument.Log();
-        }
-
-        using var subDirFs = new SharedRef<IFileSystem>();
-
-        using var directoryPath = new Path();
-        Result res = PathFunctions.SetUpFixedPath(ref directoryPath.Ref(), dirName);
-        if (res.IsFailure()) return res.Miss();
-
-        if (directoryPath.IsEmpty())
-            return ResultFs.InvalidArgument.Log();
-
-        // Open the subdirectory filesystem
-        res = _config.SubDirectoryFsCreator.Create(ref subDirFs.Ref, ref baseFileSystem, in directoryPath);
-        if (res.IsFailure()) return res.Miss();
-
-        outFileSystem.SetByMove(ref subDirFs.Ref);
-        return Result.Success;
+        throw new NotImplementedException();
     }
 
-    private Result SetExternalKeyForRightsId(Nca nca)
+    public Result SetExternalKeyForRightsId(NcaReader ncaReader)
     {
-        var rightsId = new RightsId(nca.Header.RightsId);
-        var zero = new RightsId();
-
-        if (Crypto.CryptoUtil.IsSameBytes(rightsId.Value, zero.Value, Unsafe.SizeOf<RightsId>()))
-            return Result.Success;
-
-        // ReSharper disable once UnusedVariable
-        Result res = _externalKeyManager.Get(rightsId, out AccessKey accessKey);
-        if (res.IsFailure()) return res.Miss();
-
-        // todo: Set key in nca reader
-
-        return Result.Success;
+        throw new NotImplementedException();
     }
 
-    private Result OpenStorageByContentType(ref SharedRef<IStorage> outNcaStorage, Nca nca,
-        out NcaFormatType fsType, FileSystemProxyType fsProxyType, bool isGameCard, bool canMountSystemDataPrivate)
+    public bool IsAvailableKeySource(ReadOnlySpan<byte> keySource)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result OpenStorageByContentType(ref SharedRef<IStorage> outNcaStorage,
+        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter,
+        ref readonly SharedRef<NcaReader> ncaReader, out NcaFsHeader.FsType outFsType, FileSystemProxyType fsProxyType,
+        bool isGameCard, bool canMountSystemDataPrivate)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result OpenStorageWithPatchByContentType(ref SharedRef<IStorage> outNcaStorage,
+        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter,
+        ref readonly SharedRef<NcaReader> originalNcaReader, ref readonly SharedRef<NcaReader> currentNcaReader,
+        out NcaFsHeader.FsType outFsType, FileSystemProxyType fsProxyType, bool canMountSystemDataPrivate)
     {
         throw new NotImplementedException();
     }
@@ -678,105 +351,151 @@ public class NcaFileSystemServiceImpl
         return Result.Success;
     }
 
-    public Result ResolveRomReferenceProgramId(out ProgramId targetProgramId, ProgramId programId,
+    public Result ResolveRomReferenceProgramId(out ProgramId outTargetProgramId, ProgramId programId,
         byte programIndex)
     {
-        UnsafeHelpers.SkipParamInit(out targetProgramId);
+        UnsafeHelpers.SkipParamInit(out outTargetProgramId);
 
-        ProgramId mainProgramId = _config.ProgramRegistryService.GetProgramIdByIndex(programId, programIndex);
-        if (mainProgramId == ProgramId.InvalidId)
+        ProgramId targetProgramId = _config.ProgramRegistryService.GetProgramIdByIndex(programId, programIndex);
+        if (targetProgramId == ProgramId.InvalidId)
             return ResultFs.ProgramIndexNotFound.Log();
 
-        targetProgramId = mainProgramId;
+        outTargetProgramId = targetProgramId;
         return Result.Success;
     }
 
-    public Result ResolveProgramPath(out bool isDirectory, ref Path path, ProgramId programId, StorageId storageId)
+    public Result ResolveProgramPath(out bool isDirectory, ref Path outPath, out ContentAttributes outContentAttributes,
+        ProgramId programId, StorageId storageId)
     {
-        Result res = _locationResolverSet.ResolveProgramPath(out isDirectory, ref path, programId, storageId);
-        if (res.IsSuccess())
-            return Result.Success;
-
-        isDirectory = false;
-
-        res = _locationResolverSet.ResolveDataPath(ref path, new DataId(programId.Value), storageId);
-        if (res.IsSuccess())
-            return Result.Success;
-
-        return ResultFs.TargetNotFound.Log();
+        throw new NotImplementedException();
     }
 
-    public Result ResolveRomPath(out bool isDirectory, ref Path path, ulong id, StorageId storageId)
+    public Result ResolveApplicationControlPath(ref Path outPath, out ContentAttributes outContentAttributes,
+        ApplicationId applicationId, StorageId storageId)
     {
-        return _locationResolverSet.ResolveRomPath(out isDirectory, ref path, new ProgramId(id), storageId);
+        throw new NotImplementedException();
     }
 
-    public Result ResolveApplicationHtmlDocumentPath(out bool isDirectory, ref Path path,
-        Ncm.ApplicationId applicationId, StorageId storageId)
+    public Result ResolveRomPath(out bool isDirectory, ref Path outPath, out ContentAttributes outContentAttributes,
+        out ulong outOriginalProgramId, ulong programId, StorageId storageId)
     {
-        return _locationResolverSet.ResolveApplicationHtmlDocumentPath(out isDirectory, ref path, applicationId,
-            storageId);
+        throw new NotImplementedException();
     }
 
-    public Result ResolveRegisteredHtmlDocumentPath(ref Path path, ulong id)
+    public Result ResolveApplicationHtmlDocumentPath(out bool isDirectory, ref Path outPath,
+        out ContentAttributes outContentAttributes, out ulong outOriginalProgramId, ulong programId,
+        StorageId storageId)
     {
-        return _locationResolverSet.ResolveRegisteredHtmlDocumentPath(ref path, id);
+        throw new NotImplementedException();
+    }
+
+    public Result ResolveDataPath(ref Path outPath, out ContentAttributes outContentAttributes, DataId dataId,
+        StorageId storageId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result ResolveAddOnContentPath(ref Path outPath, out ContentAttributes outContentAttributes,
+        ref Path outPatchPath, out ContentAttributes outPatchContentAttributes, DataId dataId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result ResolveRegisteredProgramPath(ref Path outPath, out ContentAttributes outContentAttributes,
+        ulong programId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result ResolveRegisteredHtmlDocumentPath(ref Path outPath, out ContentAttributes outContentAttributes,
+        ulong programId)
+    {
+        throw new NotImplementedException();
     }
 
     internal StorageLayoutType GetStorageFlag(ulong programId)
     {
-        if (programId >= _config.SpeedEmulationRange.ProgramIdMin &&
-            programId <= _config.SpeedEmulationRange.ProgramIdMax)
+        Assert.SdkRequiresNotEqual(_config.SpeedEmulationRange.ProgramIdWithoutPlatformIdMax, 0ul);
+
+        ulong programIdWithoutPlatformId = Utility.ClearPlatformIdInProgramId(programId);
+
+        if (programIdWithoutPlatformId >= _config.SpeedEmulationRange.ProgramIdWithoutPlatformIdMin &&
+            programIdWithoutPlatformId <= _config.SpeedEmulationRange.ProgramIdWithoutPlatformIdMax)
             return StorageLayoutType.Bis;
         else
             return StorageLayoutType.All;
     }
 
-    public Result HandleResolubleAccessFailure(out bool wasDeferred, Result resultForNoFailureDetected,
+    public Result HandleResolubleAccessFailure(out bool wasDeferred, Result nonDeferredResult,
         ulong processId)
     {
-        throw new NotImplementedException();
+        return _config.AccessFailureManagementService
+            .HandleResolubleAccessFailure(out wasDeferred, nonDeferredResult, processId).Ret();
+    }
+
+    public void IncrementRomFsDeepRetryStartCount()
+    {
+        using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _romfsCountMutex);
+        _romFsDeepRetryStartCount++;
     }
 
     public void IncrementRomFsRemountForDataCorruptionCount()
     {
-        using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _romfsCountMutex);
-
+        using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _romfsCountMutex);
         _romFsRemountForDataCorruptionCount++;
     }
 
     public void IncrementRomFsUnrecoverableDataCorruptionByRemountCount()
     {
-        using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _romfsCountMutex);
-
+        using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _romfsCountMutex);
         _romfsUnrecoverableDataCorruptionByRemountCount++;
     }
 
     public void IncrementRomFsRecoveredByInvalidateCacheCount()
     {
-        using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _romfsCountMutex);
-
+        using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _romfsCountMutex);
         _romFsRecoveredByInvalidateCacheCount++;
     }
 
-    public void GetAndClearRomFsErrorInfo(out int recoveredByRemountCount, out int unrecoverableCount,
-        out int recoveredByCacheInvalidationCount)
+    public void IncrementRomFsUnrecoverableByGameCardAccessFailedCount()
     {
-        using ScopedLock<SdkMutexType> lk = ScopedLock.Lock(ref _romfsCountMutex);
+        using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _romfsCountMutex);
+        _romFsUnrecoverableByGameCardAccessFailedCount++;
+    }
 
-        recoveredByRemountCount = _romFsRemountForDataCorruptionCount;
-        unrecoverableCount = _romfsUnrecoverableDataCorruptionByRemountCount;
-        recoveredByCacheInvalidationCount = _romFsRecoveredByInvalidateCacheCount;
+    public void GetAndClearRomFsErrorInfo(out uint outDeepRetryStartCount, out uint outRemountForDataCorruptionCount,
+        out uint outUnrecoverableDataCorruptionByRemountCount, out uint outRecoveredByInvalidateCacheCount,
+        out uint outUnrecoverableByGameCardAccessFailedCount)
+    {
+        using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _romfsCountMutex);
 
+        outDeepRetryStartCount = _romFsDeepRetryStartCount;
+        outRemountForDataCorruptionCount = _romFsRemountForDataCorruptionCount;
+        outUnrecoverableDataCorruptionByRemountCount = _romfsUnrecoverableDataCorruptionByRemountCount;
+        outRecoveredByInvalidateCacheCount = _romFsRecoveredByInvalidateCacheCount;
+        outUnrecoverableByGameCardAccessFailedCount = _romFsUnrecoverableByGameCardAccessFailedCount;
+
+        _romFsDeepRetryStartCount = 0;
         _romFsRemountForDataCorruptionCount = 0;
         _romfsUnrecoverableDataCorruptionByRemountCount = 0;
         _romFsRecoveredByInvalidateCacheCount = 0;
+        _romFsUnrecoverableByGameCardAccessFailedCount = 0;
+    }
+
+    public Result CreateNotifier(ref UniqueRef<SystemDataUpdateEventNotifier> outNotifier)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Result NotifySystemDataUpdateEvent()
+    {
+        throw new NotImplementedException();
     }
 
     public Result OpenHostFileSystem(ref SharedRef<IFileSystem> outFileSystem, ref readonly Path rootPath, bool openCaseSensitive)
     {
         return _config.TargetManagerFsCreator.Create(ref outFileSystem, in rootPath, openCaseSensitive, false,
-            Result.Success);
+            Result.Success).Ret();
     }
 
     internal Result GetProgramInfoByProcessId(out ProgramInfo programInfo, ulong processId)
@@ -790,40 +509,16 @@ public class NcaFileSystemServiceImpl
         var registry = new ProgramRegistryImpl(_config.FsServer);
         return registry.GetProgramInfoByProgramId(out programInfo, programId);
     }
-
-    private Result GetPartitionIndex(out int index, FileSystemProxyType fspType)
-    {
-        switch (fspType)
-        {
-            case FileSystemProxyType.Code:
-            case FileSystemProxyType.Control:
-            case FileSystemProxyType.Manual:
-            case FileSystemProxyType.Meta:
-            case FileSystemProxyType.Data:
-                index = 0;
-                return Result.Success;
-            case FileSystemProxyType.Rom:
-            case FileSystemProxyType.RegisteredUpdate:
-                index = 1;
-                return Result.Success;
-            case FileSystemProxyType.Logo:
-                index = 2;
-                return Result.Success;
-            default:
-                UnsafeHelpers.SkipParamInit(out index);
-                return ResultFs.InvalidArgument.Log();
-        }
-    }
 }
 
 public readonly struct InternalProgramIdRangeForSpeedEmulation
 {
-    public readonly ulong ProgramIdMin;
-    public readonly ulong ProgramIdMax;
+    public readonly ulong ProgramIdWithoutPlatformIdMin;
+    public readonly ulong ProgramIdWithoutPlatformIdMax;
 
     public InternalProgramIdRangeForSpeedEmulation(ulong min, ulong max)
     {
-        ProgramIdMin = min;
-        ProgramIdMax = max;
+        ProgramIdWithoutPlatformIdMin = min;
+        ProgramIdWithoutPlatformIdMax = max;
     }
 }

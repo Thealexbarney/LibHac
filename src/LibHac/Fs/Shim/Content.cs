@@ -34,8 +34,8 @@ public static class Content
         }
     }
 
-    private static Result MountContentImpl(FileSystemClient fs, U8Span mountName, U8Span path, ulong id,
-        ContentType contentType)
+    private static Result MountContentImpl(FileSystemClient fs, U8Span mountName, U8Span path,
+        ContentAttributes attributes, ulong id, ContentType contentType)
     {
         Result res = fs.Impl.CheckMountNameAcceptingReservedMountName(mountName);
         if (res.IsFailure()) return res.Miss();
@@ -48,7 +48,7 @@ public static class Content
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
         using var fileSystem = new SharedRef<IFileSystemSf>();
 
-        res = fileSystemProxy.Get.OpenFileSystemWithId(ref fileSystem.Ref, in sfPath, id, fsType);
+        res = fileSystemProxy.Get.OpenFileSystemWithId(ref fileSystem.Ref, in sfPath, attributes, id, fsType);
         if (res.IsFailure()) return res.Miss();
 
         using var fileSystemAdapter =
@@ -63,7 +63,8 @@ public static class Content
         return Result.Success;
     }
 
-    public static Result MountContent(this FileSystemClient fs, U8Span mountName, U8Span path, ContentType contentType)
+    public static Result MountContent(this FileSystemClient fs, U8Span mountName, U8Span path,
+        ContentAttributes attributes, ContentType contentType)
     {
         Result res;
         Span<byte> logBuffer = stackalloc byte[0x300];
@@ -96,7 +97,7 @@ public static class Content
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = MountContentImpl(fs, mountName, path, programId.Value, contentType);
+            res = MountContentImpl(fs, mountName, path, attributes, programId.Value, contentType);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var idString = new IdString();
@@ -111,7 +112,7 @@ public static class Content
         }
         else
         {
-            res = MountContentImpl(fs, mountName, path, programId.Value, contentType);
+            res = MountContentImpl(fs, mountName, path, attributes, programId.Value, contentType);
         }
 
         fs.Impl.AbortIfNeeded(res);
@@ -131,8 +132,8 @@ public static class Content
         }
     }
 
-    public static Result MountContent(this FileSystemClient fs, U8Span mountName, U8Span path, ProgramId programId,
-        ContentType contentType)
+    public static Result MountContent(this FileSystemClient fs, U8Span mountName, U8Span path,
+        ContentAttributes attributes, ProgramId programId, ContentType contentType)
     {
         Result res;
         Span<byte> logBuffer = stackalloc byte[0x300];
@@ -140,7 +141,7 @@ public static class Content
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = MountContentImpl(fs, mountName, path, programId.Value, contentType);
+            res = MountContentImpl(fs, mountName, path, attributes, programId.Value, contentType);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var idString = new IdString();
@@ -157,7 +158,7 @@ public static class Content
         }
         else
         {
-            res = MountContentImpl(fs, mountName, path, programId.Value, contentType);
+            res = MountContentImpl(fs, mountName, path, attributes, programId.Value, contentType);
         }
 
         fs.Impl.AbortIfNeeded(res);
@@ -169,8 +170,8 @@ public static class Content
         return Result.Success;
     }
 
-    public static Result MountContent(this FileSystemClient fs, U8Span mountName, U8Span path, DataId dataId,
-        ContentType contentType)
+    public static Result MountContent(this FileSystemClient fs, U8Span mountName, U8Span path,
+        ContentAttributes attributes, DataId dataId, ContentType contentType)
     {
         Result res;
         Span<byte> logBuffer = stackalloc byte[0x300];
@@ -178,7 +179,7 @@ public static class Content
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = MountContentImpl(fs, mountName, path, dataId.Value, contentType);
+            res = MountContentImpl(fs, mountName, path, attributes, dataId.Value, contentType);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var idString = new IdString();
@@ -193,7 +194,7 @@ public static class Content
         }
         else
         {
-            res = MountContentImpl(fs, mountName, path, dataId.Value, contentType);
+            res = MountContentImpl(fs, mountName, path, attributes, dataId.Value, contentType);
         }
 
         fs.Impl.AbortIfNeeded(res);

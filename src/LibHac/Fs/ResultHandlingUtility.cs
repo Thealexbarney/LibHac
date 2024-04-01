@@ -1,5 +1,9 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using System.Runtime.CompilerServices;
 using LibHac.Diag;
+using LibHac.Htc;
+using LibHac.HtcFs;
+using LibHac.HtcLow;
 
 namespace LibHac.Fs;
 
@@ -74,5 +78,24 @@ public static class ResultHandlingUtility
 
         if (!result.IsSuccess())
             Abort.DoAbort(result);
+    }
+
+    public static bool IsResultHtcAccessFailed(Result result)
+    {
+        if (ResultHtc.ConnectionFailure.Module == result.Module)
+            return true;
+
+        if (ResultHtcLow.ConnectionFailure.Module == result.Module)
+            return true;
+
+        if (ResultHtcFs.ConnectionFailure.Module == result.Module)
+            return true;
+
+        return false;
+    }
+
+    public static void SetErrorContextEnabled(this FileSystemClientImpl fs, bool isEnabled)
+    {
+        // Todo
     }
 }

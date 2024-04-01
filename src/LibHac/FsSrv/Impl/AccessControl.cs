@@ -498,6 +498,10 @@ public class AccessControl
                 return accessBits.CanSetDebugConfiguration();
             case OperationType.OpenDataStorageByPath:
                 return accessBits.CanOpenDataStorageByPath();
+            case OperationType.NotifyErrorContextServiceReady:
+                return accessBits.CanNotifyErrorContextServiceReady();
+            case OperationType.GetProgramId:
+                return accessBits.CanGetProgramId();
             default:
                 Abort.UnexpectedDefault();
                 return default;
@@ -593,6 +597,8 @@ public readonly struct AccessControlBits
         RegisterProgramIndexMapInfo = 1UL << 34,
         CreateOwnSaveData = 1UL << 35,
         MoveCacheStorage = 1UL << 36,
+        DeviceTreeBlob = 1UL << 37,
+        NotifyErrorContextServiceReady = 1UL << 38,
         Debug = 1UL << 62,
         FullPermission = 1UL << 63
     }
@@ -630,6 +636,7 @@ public readonly struct AccessControlBits
     public bool CanGetGameCardAsicInfo() => Has(Bits.GameCardPrivate);
     public bool CanGetGameCardDeviceCertificate() => Has(Bits.GameCard);
     public bool CanGetGameCardIdSet() => Has(Bits.GameCard);
+    public bool CanGetProgramId() => Has(Bits.GetRightsId);
     public bool CanGetRightsId() => Has(Bits.GetRightsId);
     public bool CanGetSaveDataCommitId() => Has(Bits.SaveDataTransferVersion2 | Bits.SaveDataBackUp);
     public bool CanInvalidateBisCache() => Has(Bits.BisAllRaw);
@@ -682,6 +689,7 @@ public readonly struct AccessControlBits
     public bool CanMountSystemSaveDataWrite() => Has(Bits.SaveDataBackUp | Bits.SystemSaveData);
     public bool CanMountTemporaryDirectoryRead() => Has(Bits.Debug);
     public bool CanMountTemporaryDirectoryWrite() => Has(Bits.Debug);
+    public bool CanNotifyErrorContextServiceReady() => Has(Bits.NotifyErrorContextServiceReady);
     public bool CanNotifySystemDataUpdateEvent() => Has(Bits.SystemUpdate);
     public bool CanOpenAccessFailureDetectionEventNotifier() => Has(Bits.AccessFailureResolution);
     public bool CanOpenBisPartitionBootConfigAndPackage2Part1Read() => Has(Bits.SystemUpdate | Bits.BisAllRaw);
@@ -870,7 +878,9 @@ public enum OperationType
     FindOwnSaveDataWithFilter,
     OpenSaveDataTransferManagerForRepair,
     SetDebugConfiguration,
-    OpenDataStorageByPath
+    OpenDataStorageByPath,
+    NotifyErrorContextServiceReady,
+    GetProgramId
 }
 
 public enum AccessibilityType
