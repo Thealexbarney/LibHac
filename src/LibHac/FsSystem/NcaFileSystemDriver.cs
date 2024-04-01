@@ -1,11 +1,8 @@
-﻿// ReSharper disable UnusedMember.Local
-using System;
+﻿using System;
 using LibHac.Common;
-using LibHac.Common.FixedArrays;
 using LibHac.Crypto;
 using LibHac.Diag;
 using LibHac.Fs;
-using LibHac.FsSrv;
 
 namespace LibHac.FsSystem;
 
@@ -30,20 +27,6 @@ public struct NcaCryptoConfiguration
 
     public const int KeyGenerationMax = 32;
     public const int KeyAreaEncryptionKeyCount = KeyAreaEncryptionKeyIndexCount * KeyGenerationMax;
-
-    public Array2<Array256<byte>> Header1SignKeyModuli;
-    public Array3<byte> Header1SignKeyPublicExponent;
-    public Array3<Array16<byte>> KeyAreaEncryptionKeySources;
-    public Array16<byte> HeaderEncryptionKeySource;
-    public Array2<Array16<byte>> HeaderEncryptedEncryptionKeys;
-    public GenerateKeyFunction GenerateKey;
-    public CryptAesXtsFunction EncryptAesXtsForExternalKey;
-    public CryptAesXtsFunction DecryptAesXtsForExternalKey;
-    public DecryptAesCtrFunction DecryptAesCtr;
-    public DecryptAesCtrFunction DecryptAesCtrForExternalKey;
-    public VerifySign1Function VerifySign1;
-    public bool IsDev;
-    public bool IsAvailableSwKey;
 }
 
 public struct NcaCompressionConfiguration
@@ -88,12 +71,12 @@ public enum KeyType
 
 file static class Anonymous
 {
-    public static long GetFsOffset(NcaReader17 reader, int index)
+    public static long GetFsOffset(NcaReader reader, int index)
     {
         return (long)reader.GetFsOffset(index);
     }
 
-    public static long GetFsEndOffset(NcaReader17 reader, int index)
+    public static long GetFsEndOffset(NcaReader reader, int index)
     {
         return (long)reader.GetFsEndOffset(index);
     }
@@ -102,12 +85,12 @@ file static class Anonymous
 file class SharedNcaBodyStorage : IStorage
 {
     private SharedRef<IStorage> _storage;
-    private SharedRef<NcaReader17> _ncaReader;
+    private SharedRef<NcaReader> _ncaReader;
 
-    public SharedNcaBodyStorage(in SharedRef<IStorage> baseStorage, in SharedRef<NcaReader17> ncaReader)
+    public SharedNcaBodyStorage(in SharedRef<IStorage> baseStorage, in SharedRef<NcaReader> ncaReader)
     {
         _storage = SharedRef<IStorage>.CreateCopy(in baseStorage);
-        _ncaReader = SharedRef<NcaReader17>.CreateCopy(in ncaReader);
+        _ncaReader = SharedRef<NcaReader>.CreateCopy(in ncaReader);
     }
 
     public override void Dispose()
@@ -202,14 +185,14 @@ public class NcaFileSystemDriver : IDisposable
         None = 1
     }
 
-    public NcaFileSystemDriver(ref readonly SharedRef<NcaReader17> ncaReader, MemoryResource allocator,
+    public NcaFileSystemDriver(ref readonly SharedRef<NcaReader> ncaReader, MemoryResource allocator,
         IBufferManager bufferManager, IHash256GeneratorFactorySelector hashGeneratorFactorySelector)
     {
         throw new NotImplementedException();
     }
 
-    public NcaFileSystemDriver(ref readonly SharedRef<NcaReader17> originalNcaReader,
-        ref readonly SharedRef<NcaReader17> currentNcaReader, MemoryResource allocator, IBufferManager bufferManager,
+    public NcaFileSystemDriver(ref readonly SharedRef<NcaReader> originalNcaReader,
+        ref readonly SharedRef<NcaReader> currentNcaReader, MemoryResource allocator, IBufferManager bufferManager,
         IHash256GeneratorFactorySelector hashGeneratorFactorySelector)
     {
         throw new NotImplementedException();
@@ -221,20 +204,20 @@ public class NcaFileSystemDriver : IDisposable
     }
 
     public Result OpenStorage(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, out NcaFsHeaderReader17 outHeaderReader,
+        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, out NcaFsHeaderReader outHeaderReader,
         int fsIndex)
     {
         throw new NotImplementedException();
     }
 
-    private Result OpenStorageImpl(ref SharedRef<IStorage> outStorage, out NcaFsHeaderReader17 outHeaderReader,
+    private Result OpenStorageImpl(ref SharedRef<IStorage> outStorage, out NcaFsHeaderReader outHeaderReader,
         int fsIndex, ref StorageContext storageContext)
     {
         throw new NotImplementedException();
     }
 
     private Result OpenIndirectableStorageAsOriginal(ref SharedRef<IStorage> outStorage,
-        in NcaFsHeaderReader17 headerReader, ref StorageContext storageContext)
+        in NcaFsHeaderReader headerReader, ref StorageContext storageContext)
     {
         throw new NotImplementedException();
     }
@@ -375,7 +358,7 @@ public class NcaFileSystemDriver : IDisposable
         throw new NotImplementedException();
     }
 
-    private Result CreateRegionSwitchStorage(ref SharedRef<IStorage> outStorage, in NcaFsHeaderReader17 headerReader,
+    private Result CreateRegionSwitchStorage(ref SharedRef<IStorage> outStorage, in NcaFsHeaderReader headerReader,
         ref readonly SharedRef<IStorage> insideRegionStorage, ref readonly SharedRef<IStorage> outsideRegionStorage)
     {
         throw new NotImplementedException();

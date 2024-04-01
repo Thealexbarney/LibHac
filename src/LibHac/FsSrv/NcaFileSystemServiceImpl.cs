@@ -13,8 +13,6 @@ using LibHac.Spl;
 using LibHac.Tools.FsSystem.NcaUtils;
 using LibHac.Util;
 using static LibHac.Fs.Impl.CommonMountNames;
-using NcaFsHeader = LibHac.Tools.FsSystem.NcaUtils.NcaFsHeader;
-using NcaHeader = LibHac.FsSystem.NcaHeader;
 using RightsId = LibHac.Fs.RightsId;
 using Utility = LibHac.FsSystem.Utility;
 
@@ -272,9 +270,10 @@ public class NcaFileSystemServiceImpl
         {
             using SharedRef<IFileSystem> tempFileSystem = SharedRef<IFileSystem>.CreateMove(ref subDirFs.Ref);
             res = _config.EncryptedFsCreator.Create(ref subDirFs.Ref, ref tempFileSystem.Ref,
-               IEncryptedFileSystemCreator.KeyId.Content, in _encryptionSeed);
+                IEncryptedFileSystemCreator.KeyId.Content, in _encryptionSeed);
             if (res.IsFailure()) return res.Miss();
         }
+
         outFileSystem.SetByMove(ref subDirFs.Ref);
 
         return Result.Success;
@@ -355,7 +354,7 @@ public class NcaFileSystemServiceImpl
         }
 
         else if (StringUtils.Compare(path, ContentStorageSystemMountName,
-                ContentStorageSystemMountName.Length) == 0)
+            ContentStorageSystemMountName.Length) == 0)
         {
             path = path.Slice(ContentStorageSystemMountName.Length);
 
@@ -366,7 +365,7 @@ public class NcaFileSystemServiceImpl
         }
 
         else if (StringUtils.Compare(path, ContentStorageUserMountName,
-                ContentStorageUserMountName.Length) == 0)
+            ContentStorageUserMountName.Length) == 0)
         {
             path = path.Slice(ContentStorageUserMountName.Length);
 
@@ -377,7 +376,7 @@ public class NcaFileSystemServiceImpl
         }
 
         else if (StringUtils.Compare(path, ContentStorageSdCardMountName,
-                ContentStorageSdCardMountName.Length) == 0)
+            ContentStorageSdCardMountName.Length) == 0)
         {
             path = path.Slice(ContentStorageSdCardMountName.Length);
 
@@ -388,7 +387,7 @@ public class NcaFileSystemServiceImpl
         }
 
         else if (StringUtils.Compare(path, BisCalibrationFilePartitionMountName,
-                BisCalibrationFilePartitionMountName.Length) == 0)
+            BisCalibrationFilePartitionMountName.Length) == 0)
         {
             path = path.Slice(BisCalibrationFilePartitionMountName.Length);
 
@@ -397,7 +396,7 @@ public class NcaFileSystemServiceImpl
         }
 
         else if (StringUtils.Compare(path, BisSafeModePartitionMountName,
-                BisSafeModePartitionMountName.Length) == 0)
+            BisSafeModePartitionMountName.Length) == 0)
         {
             path = path.Slice(BisSafeModePartitionMountName.Length);
 
@@ -406,7 +405,7 @@ public class NcaFileSystemServiceImpl
         }
 
         else if (StringUtils.Compare(path, BisUserPartitionMountName,
-                BisUserPartitionMountName.Length) == 0)
+            BisUserPartitionMountName.Length) == 0)
         {
             path = path.Slice(BisUserPartitionMountName.Length);
 
@@ -415,7 +414,7 @@ public class NcaFileSystemServiceImpl
         }
 
         else if (StringUtils.Compare(path, BisSystemPartitionMountName,
-                BisSystemPartitionMountName.Length) == 0)
+            BisSystemPartitionMountName.Length) == 0)
         {
             path = path.Slice(BisSystemPartitionMountName.Length);
 
@@ -424,7 +423,7 @@ public class NcaFileSystemServiceImpl
         }
 
         else if (StringUtils.Compare(path, SdCardFileSystemMountName,
-                SdCardFileSystemMountName.Length) == 0)
+            SdCardFileSystemMountName.Length) == 0)
         {
             path = path.Slice(SdCardFileSystemMountName.Length);
 
@@ -433,7 +432,7 @@ public class NcaFileSystemServiceImpl
         }
 
         else if (StringUtils.Compare(path, HostRootFileSystemMountName,
-                HostRootFileSystemMountName.Length) == 0)
+            HostRootFileSystemMountName.Length) == 0)
         {
             path = path.Slice(HostRootFileSystemMountName.Length);
 
@@ -449,7 +448,7 @@ public class NcaFileSystemServiceImpl
         }
 
         else if (StringUtils.Compare(path, RegisteredUpdatePartitionMountName,
-                RegisteredUpdatePartitionMountName.Length) == 0)
+            RegisteredUpdatePartitionMountName.Length) == 0)
         {
             path = path.Slice(RegisteredUpdatePartitionMountName.Length);
 
@@ -599,34 +598,7 @@ public class NcaFileSystemServiceImpl
 
     private Result ParseNca(ref U8Span path, out Nca nca, ref SharedRef<IFileSystem> baseFileSystem, ulong ncaId)
     {
-        UnsafeHelpers.SkipParamInit(out nca);
-
-        // Todo: Create ref-counted storage
-        var ncaFileStorage = new FileStorageBasedFileSystem();
-
-        using var pathNca = new Path();
-        Result res = pathNca.InitializeWithNormalization(path);
-        if (res.IsFailure()) return res.Miss();
-
-        res = ncaFileStorage.Initialize(ref baseFileSystem, in pathNca, OpenMode.Read);
-        if (res.IsFailure()) return res.Miss();
-
-        res = _config.StorageOnNcaCreator.OpenNca(out Nca ncaTemp, ncaFileStorage);
-        if (res.IsFailure()) return res.Miss();
-
-        if (ncaId == ulong.MaxValue)
-        {
-            ulong ncaProgramId = ncaTemp.Header.TitleId;
-
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-            if (ncaProgramId != ulong.MaxValue && ncaId != ncaProgramId)
-            {
-                return ResultFs.InvalidNcaId.Log();
-            }
-        }
-
-        nca = ncaTemp;
-        return Result.Success;
+        throw new NotImplementedException();
     }
 
     private Result ParseContentTypeForDirectory(ref SharedRef<IFileSystem> outFileSystem,
@@ -696,63 +668,7 @@ public class NcaFileSystemServiceImpl
     private Result OpenStorageByContentType(ref SharedRef<IStorage> outNcaStorage, Nca nca,
         out NcaFormatType fsType, FileSystemProxyType fsProxyType, bool isGameCard, bool canMountSystemDataPrivate)
     {
-        UnsafeHelpers.SkipParamInit(out fsType);
-
-        NcaHeader.ContentType contentType = (NcaHeader.ContentType)nca.Header.ContentType;
-
-        switch (fsProxyType)
-        {
-            case FileSystemProxyType.Code:
-            case FileSystemProxyType.Rom:
-            case FileSystemProxyType.Logo:
-            case FileSystemProxyType.RegisteredUpdate:
-                if (contentType != NcaHeader.ContentType.Program)
-                    return ResultFs.PreconditionViolation.Log();
-
-                break;
-
-            case FileSystemProxyType.Control:
-                if (contentType != NcaHeader.ContentType.Control)
-                    return ResultFs.PreconditionViolation.Log();
-
-                break;
-            case FileSystemProxyType.Manual:
-                if (contentType != NcaHeader.ContentType.Manual)
-                    return ResultFs.PreconditionViolation.Log();
-
-                break;
-            case FileSystemProxyType.Meta:
-                if (contentType != NcaHeader.ContentType.Meta)
-                    return ResultFs.PreconditionViolation.Log();
-
-                break;
-            case FileSystemProxyType.Data:
-                if (contentType != NcaHeader.ContentType.Data && contentType != NcaHeader.ContentType.PublicData)
-                    return ResultFs.PreconditionViolation.Log();
-
-                if (contentType == NcaHeader.ContentType.Data && !canMountSystemDataPrivate)
-                    return ResultFs.PermissionDenied.Log();
-
-                break;
-            default:
-                return ResultFs.InvalidArgument.Log();
-        }
-
-        if (nca.Header.DistributionType == DistributionType.GameCard && !isGameCard)
-            return ResultFs.PermissionDenied.Log();
-
-        Result res = SetExternalKeyForRightsId(nca);
-        if (res.IsFailure()) return res.Miss();
-
-        res = GetPartitionIndex(out int sectionIndex, fsProxyType);
-        if (res.IsFailure()) return res.Miss();
-
-        res = _config.StorageOnNcaCreator.Create(ref outNcaStorage, out NcaFsHeader fsHeader, nca,
-            sectionIndex, fsProxyType == FileSystemProxyType.Code);
-        if (res.IsFailure()) return res.Miss();
-
-        fsType = fsHeader.FormatType;
-        return Result.Success;
+        throw new NotImplementedException();
     }
 
     public Result SetSdCardEncryptionSeed(in EncryptionSeed encryptionSeed)

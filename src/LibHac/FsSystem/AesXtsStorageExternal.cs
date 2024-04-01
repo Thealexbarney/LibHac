@@ -9,6 +9,8 @@ using LibHac.Util;
 
 namespace LibHac.FsSystem;
 
+public delegate Result CryptAesXtsFunction(Span<byte> dest, ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2, ReadOnlySpan<byte> iv, ReadOnlySpan<byte> source);
+
 /// <summary>
 /// Reads and writes to an <see cref="IStorage"/> that's encrypted with AES-XTS-128.
 /// All encryption or decryption will be done externally via a provided function.
