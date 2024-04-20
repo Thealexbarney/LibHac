@@ -209,11 +209,16 @@ public class BufferedStorageTests
         var memoryStorageEntry = new StorageTester.Entry(memoryStorage, memoryStorageArray);
         var bufferedStorageEntry = new StorageTester.Entry(bufferedStorage, bufferedStorageArray);
 
-        var testerConfig = new StorageTester.Configuration()
+        var accessParams = new StorageTester.AccessParam[config.SizeClassProbs.Length];
+        for (int i = 0; i < accessParams.Length; i++)
+        {
+            accessParams[i] = new StorageTester.AccessParam(config.SizeClassProbs[i], config.SizeClassMaxSizes[i]);
+        }
+
+        var testerConfig = new StorageTester.Configuration
         {
             Entries = [memoryStorageEntry, bufferedStorageEntry],
-            SizeClassProbs = config.SizeClassProbs,
-            SizeClassMaxSizes = config.SizeClassMaxSizes,
+            AccessParams = accessParams,
             TaskProbs = config.TaskProbs,
             AccessTypeProbs = config.AccessTypeProbs,
             RngSeed = config.RngSeed,
