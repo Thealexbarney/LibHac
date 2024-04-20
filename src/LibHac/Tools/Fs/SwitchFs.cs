@@ -232,13 +232,20 @@ public class SwitchFs : IDisposable
                 control.Get.Read(out _, 0, title.Control.ByteSpan).ThrowIfFailure();
             }
 
+            int i = 0;
+            bool nameSet = false;
             foreach (ref readonly ApplicationControlProperty.ApplicationTitle desc in title.Control.Value.Title)
             {
                 if (!desc.NameString.IsEmpty())
                 {
-                    title.Name = desc.NameString.ToString();
-                    break;
+                    if (!nameSet)
+                    {
+                        title.Name = desc.NameString.ToString();
+                        nameSet = true;
+                    }
+                    title.Languages.Add((ApplicationControlProperty.Language)i);
                 }
+                i++;
             }
         }
     }
@@ -359,6 +366,8 @@ public class Title
     public SwitchFsNca MetaNca { get; internal set; }
     public SwitchFsNca MainNca { get; internal set; }
     public SwitchFsNca ControlNca { get; internal set; }
+
+    public List<ApplicationControlProperty.Language> Languages { get; internal set; } = [];
 
     public long GetSize()
     {

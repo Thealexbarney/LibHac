@@ -237,7 +237,7 @@ internal static class ProcessSwitchFs
 
     public static string ListTitles(SwitchFs sdfs)
     {
-        var table = new TableBuilder("Title ID", "Version", "", "Type", "Size", "Display Version", "Name");
+        var table = new TableBuilder("Title ID", "Version", "", "Type", "Size", "Display Version", "Name", "Languages");
 
         foreach (Title title in sdfs.Titles.Values.OrderBy(x => x.Id))
         {
@@ -247,7 +247,8 @@ internal static class ProcessSwitchFs
                 title.Metadata?.Type.Print(),
                 Utilities.GetBytesReadable(title.GetSize()),
                 title.Control.Value.DisplayVersionString.ToString(),
-                title.Name);
+                title.Name,
+                string.Join(',', from x in title.Languages select ApplicationControlProperty.LanguageCode[(int)x]));
         }
 
         return table.Print();

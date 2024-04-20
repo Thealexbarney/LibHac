@@ -133,6 +133,26 @@ public struct ApplicationControlProperty
         BrazilianPortuguese = 15
     }
 
+    public static readonly string[] LanguageCode =
+    [
+        "en-US",
+        "en-GB",
+        "ja",
+        "fr",
+        "de",
+        "es-419",
+        "es",
+        "it",
+        "nl",
+        "fr-CA",
+        "pt",
+        "ru",
+        "ko",
+        "zh-TW",
+        "zh-CN",
+        "pt-Br"
+    ];
+
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     public enum Organization
     {
