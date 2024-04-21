@@ -28,7 +28,8 @@ public enum ContentStorageId
 {
     System = 0,
     User = 1,
-    SdCard = 2
+    SdCard = 2,
+    System0 = 3
 }
 
 public enum GameCardPartition

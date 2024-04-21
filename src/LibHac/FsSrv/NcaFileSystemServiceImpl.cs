@@ -260,12 +260,17 @@ public class NcaFileSystemServiceImpl : IDisposable
 
     public Result RegisterUpdatePartition(ulong programId, ref readonly Path path, ContentAttributes attributes)
     {
-        throw new NotImplementedException();
+        return _updatePartitionPath.Set(programId, in path, attributes).Ret();
     }
 
     public Result OpenRegisteredUpdatePartition(ref SharedRef<IFileSystem> outFileSystem)
     {
-        throw new NotImplementedException();
+        using var path = new Path();
+        Result res = _updatePartitionPath.Get(ref path.Ref(), out ContentAttributes contentAttributes, out ulong updaterProgramId);
+        if (res.IsFailure()) return res.Miss();
+
+        return OpenFileSystem(ref outFileSystem, in path, contentAttributes, FileSystemProxyType.RegisteredUpdate,
+            updaterProgramId, isDirectory: false).Ret();
     }
 
     private Result ParseMountName(ref U8Span path, ref SharedRef<IFileSystem> outFileSystem, out MountInfo outMountInfo)

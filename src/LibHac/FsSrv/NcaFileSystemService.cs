@@ -506,13 +506,12 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         ContentStorageId contentStorageId)
     {
         StorageLayoutType storageFlag = contentStorageId == ContentStorageId.System ? StorageLayoutType.Bis : StorageLayoutType.All;
-        using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         Result res = GetProgramInfo(out ProgramInfo programInfo);
         if (res.IsFailure()) return res.Miss();
 
-        Accessibility accessibility =
-            programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountContentStorage);
+        Accessibility accessibility = programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountContentStorage);
 
         if (!accessibility.CanRead || !accessibility.CanWrite)
             return ResultFs.PermissionDenied.Log();
@@ -522,14 +521,10 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         if (res.IsFailure()) return res.Miss();
 
         // Add all the file system wrappers
-        using var typeSetFileSystem =
-            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref, storageFlag));
-
-        using var asyncFileSystem =
-            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref));
-
-        using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref, false);
+        using var typeSetFileSystem = new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref, storageFlag));
+        using var alignmentMatchableFileSystem = new SharedRef<IFileSystem>(new AlignmentMatchableFileSystem(ref fileSystem.Ref));
+        using var asyncFileSystem = new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref alignmentMatchableFileSystem.Ref));
+        using SharedRef<IFileSystemSf> fileSystemAdapter = FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref, allowAllOperations: false);
 
         outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
@@ -544,7 +539,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         if (!programInfo.AccessControl.CanCall(OperationType.RegisterExternalKey))
             return ResultFs.PermissionDenied.Log();
 
-        return _serviceImpl.RegisterExternalKey(in rightsId, in accessKey);
+        return _serviceImpl.RegisterExternalKey(in rightsId, in accessKey).Ret();
     }
 
     public Result UnregisterExternalKey(in RightsId rightsId)
@@ -555,7 +550,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         if (!programInfo.AccessControl.CanCall(OperationType.RegisterExternalKey))
             return ResultFs.PermissionDenied.Log();
 
-        return _serviceImpl.UnregisterExternalKey(in rightsId);
+        return _serviceImpl.UnregisterExternalKey(in rightsId).Ret();
     }
 
     public Result UnregisterAllExternalKey()
@@ -584,13 +579,13 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
             targetProgramId, programInfo.StorageId);
         if (res.IsFailure()) return res.Miss();
 
-        return _serviceImpl.RegisterUpdatePartition(targetProgramId, in programPath, contentAttributes);
+        return _serviceImpl.RegisterUpdatePartition(targetProgramId, in programPath, contentAttributes).Ret();
     }
 
     public Result OpenRegisteredUpdatePartition(ref SharedRef<IFileSystemSf> outFileSystem)
     {
-        var storageFlag = StorageLayoutType.All;
-        using var scopedLayoutType = new ScopedStorageLayoutTypeSetter(storageFlag);
+        const StorageLayoutType storageFlag = StorageLayoutType.All;
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         Result res = GetProgramInfo(out ProgramInfo programInfo);
         if (res.IsFailure()) return res.Miss();
@@ -612,7 +607,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
             new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref));
 
         using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref, false);
+            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref, allowAllOperations: false);
 
         outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
@@ -632,7 +627,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
         if (!programInfo.AccessControl.CanCall(OperationType.SetEncryptionSeed))
             return ResultFs.PermissionDenied.Log();
 
-        return _serviceImpl.SetSdCardEncryptionSeed(in encryptionSeed);
+        return _serviceImpl.SetSdCardEncryptionSeed(in encryptionSeed).Ret();
     }
 
     public Result OpenHostFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, ref readonly FspPath path)
@@ -652,7 +647,7 @@ internal class NcaFileSystemService : IRomFileSystemAccessFailureManager
 
     public Result HandleResolubleAccessFailure(out bool wasDeferred, Result nonDeferredResult)
     {
-        return _serviceImpl.HandleResolubleAccessFailure(out wasDeferred, nonDeferredResult, _processId);
+        return _serviceImpl.HandleResolubleAccessFailure(out wasDeferred, nonDeferredResult, _processId).Ret();
     }
 
     Result IRomFileSystemAccessFailureManager.OpenDataStorageCore(ref SharedRef<IStorage> outStorage,
