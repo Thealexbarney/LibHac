@@ -238,7 +238,7 @@ public class NcaFileSystemServiceImpl : IDisposable
         throw new NotImplementedException();
     }
 
-    public Result GetProgramId(out ProgramId outProgramId, ref readonly Path path, ContentAttributes attributes, ProgramId programId)
+    public Result GetProgramId(out ProgramId outProgramId, ref readonly Path path, ContentAttributes attributes)
     {
         throw new NotImplementedException();
     }
