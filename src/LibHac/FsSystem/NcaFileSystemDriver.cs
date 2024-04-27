@@ -204,13 +204,13 @@ public class NcaFileSystemDriver : IDisposable
     }
 
     public Result OpenStorage(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, out NcaFsHeaderReader outHeaderReader,
+        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, ref NcaFsHeaderReader outHeaderReader,
         int fsIndex)
     {
         throw new NotImplementedException();
     }
 
-    private Result OpenStorageImpl(ref SharedRef<IStorage> outStorage, out NcaFsHeaderReader outHeaderReader,
+    private Result OpenStorageImpl(ref SharedRef<IStorage> outStorage, ref NcaFsHeaderReader outHeaderReader,
         int fsIndex, ref StorageContext storageContext)
     {
         throw new NotImplementedException();

@@ -6,5 +6,5 @@ namespace LibHac.FsSrv.FsCreator;
 
 public interface IRomFileSystemCreator
 {
-    Result Create(ref SharedRef<IFileSystem> outFileSystem, ref SharedRef<IStorage> romFsStorage);
+    Result Create(ref SharedRef<IFileSystem> outFileSystem, ref readonly SharedRef<IStorage> romFsStorage);
 }

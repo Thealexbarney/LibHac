@@ -13,6 +13,6 @@ public interface IEncryptedFileSystemCreator
         CustomStorage = 2
     }
 
-    Result Create(ref SharedRef<IFileSystem> outEncryptedFileSystem, ref SharedRef<IFileSystem> baseFileSystem,
+    Result Create(ref SharedRef<IFileSystem> outEncryptedFileSystem, ref readonly SharedRef<IFileSystem> baseFileSystem,
         KeyId idIndex, in EncryptionSeed encryptionSeed);
 }

@@ -84,14 +84,6 @@ public static class PathExtensions
             return p == null;
         }
     }
-
-    public static unsafe bool IsNullRef(ref readonly int path)
-    {
-        fixed (int* p = &path)
-        {
-            return p == null;
-        }
-    }
 #pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
 #pragma warning restore LH0001 // DoNotCopyValue
 }

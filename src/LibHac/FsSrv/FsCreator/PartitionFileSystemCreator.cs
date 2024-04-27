@@ -7,7 +7,7 @@ namespace LibHac.FsSrv.FsCreator;
 
 public class PartitionFileSystemCreator : IPartitionFileSystemCreator
 {
-    public Result Create(ref SharedRef<IFileSystem> outFileSystem, ref SharedRef<IStorage> baseStorage)
+    public Result Create(ref SharedRef<IFileSystem> outFileSystem, ref readonly SharedRef<IStorage> baseStorage)
     {
         using var partitionFs = new SharedRef<PartitionFileSystem>(new PartitionFileSystem());
 

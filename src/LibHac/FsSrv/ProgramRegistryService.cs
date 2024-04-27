@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSrv.Impl;
@@ -14,7 +13,7 @@ namespace LibHac.FsSrv;
 /// </summary>
 /// <remarks>Appropriate methods calls on IFileSystemProxy are forwarded to this class
 /// which then checks the calling process' permissions and performs the requested operation.
-/// <para>Based on nnSdk 13.4.0 (FS 13.1.0)</para></remarks>
+/// <para>Based on nnSdk 17.5.0 (FS 17.0.0)</para></remarks>
 internal readonly struct ProgramIndexRegistryService
 {
     private readonly ProgramRegistryServiceImpl _serviceImpl;
@@ -53,10 +52,13 @@ internal readonly struct ProgramIndexRegistryService
                 return ResultFs.PermissionDenied.Log();
         }
 
-        // Return early if the program count is 0 so we leave any previously
+        // Return early if the program count is 0, so we leave any previously
         // registered entries as they were
         if (programCount == 0)
             return Result.Success;
+
+        if (programIndexMapInfo.IsNull)
+            return ResultFs.NullptrArgument.Log();
 
         // Verify that the provided buffer is large enough to hold "programCount" entries
         ReadOnlySpan<ProgramIndexMapInfo> mapInfo = programIndexMapInfo.AsSpan<ProgramIndexMapInfo>();
@@ -65,7 +67,7 @@ internal readonly struct ProgramIndexRegistryService
             return ResultFs.InvalidSize.Log();
 
         // Register the map info
-        return _serviceImpl.ResetProgramIndexMapInfo(mapInfo.Slice(0, programCount));
+        return _serviceImpl.ResetProgramIndexMapInfo(mapInfo.Slice(0, programCount)).Ret();
     }
 
     /// <summary>
@@ -88,10 +90,10 @@ internal readonly struct ProgramIndexRegistryService
         if (res.IsFailure()) return res.Miss();
 
         // Try to get map info for this process
-        Optional<ProgramIndexMapInfo> mapInfo = _serviceImpl.GetProgramIndexMapInfo(programInfo.ProgramId);
+        Optional<ProgramIndexMapInfo> programMapInfo = _serviceImpl.GetProgramIndexMapInfo(programInfo.ProgramId);
 
         // Set the output program index if map info was found
-        programIndex = mapInfo.HasValue ? mapInfo.ValueRo.ProgramIndex : 0;
+        programIndex = programMapInfo.HasValue ? programMapInfo.ValueRo.ProgramIndex : 0;
 
         // Set the number of programs in the current application
         programCount = _serviceImpl.GetProgramIndexMapInfoCount();
@@ -110,7 +112,7 @@ internal readonly struct ProgramIndexRegistryService
 /// <summary>
 /// Manages the main program registry and the multi-program registry.
 /// </summary>
-/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
+/// <remarks>Based on nnSdk 17.5.0 (FS 17.0.0)</remarks>
 public class ProgramRegistryServiceImpl : IDisposable
 {
     // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
@@ -142,43 +144,43 @@ public class ProgramRegistryServiceImpl : IDisposable
         ReadOnlySpan<byte> accessControlData, ReadOnlySpan<byte> accessControlDescriptor)
     {
         return _registryManager.RegisterProgram(processId, programId, storageId, accessControlData,
-            accessControlDescriptor);
+            accessControlDescriptor).Ret();
     }
 
     /// <inheritdoc cref="ProgramRegistryManager.UnregisterProgram" />
     public Result UnregisterProgramInfo(ulong processId)
     {
-        return _registryManager.UnregisterProgram(processId);
+        return _registryManager.UnregisterProgram(processId).Ret();
     }
 
     /// <inheritdoc cref="ProgramRegistryManager.GetProgramInfo"/>
     public Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
     {
-        return _registryManager.GetProgramInfo(out programInfo, processId);
+        return _registryManager.GetProgramInfo(out programInfo, processId).Ret();
     }
 
     /// <inheritdoc cref="ProgramRegistryManager.GetProgramInfoByProgramId"/>
     public Result GetProgramInfoByProgramId(out ProgramInfo programInfo, ulong programId)
     {
-        return _registryManager.GetProgramInfoByProgramId(out programInfo, programId);
+        return _registryManager.GetProgramInfoByProgramId(out programInfo, programId).Ret();
     }
 
     /// <inheritdoc cref="ProgramIndexMapInfoManager.Reset"/>
     public Result ResetProgramIndexMapInfo(ReadOnlySpan<ProgramIndexMapInfo> programIndexMapInfo)
     {
-        return _programIndexManager.Reset(programIndexMapInfo);
-    }
-
-    /// <inheritdoc cref="ProgramIndexMapInfoManager.GetProgramId"/>
-    public ProgramId GetProgramIdByIndex(ProgramId programId, byte programIndex)
-    {
-        return _programIndexManager.GetProgramId(programId, programIndex);
+        return _programIndexManager.Reset(programIndexMapInfo).Ret();
     }
 
     /// <inheritdoc cref="ProgramIndexMapInfoManager.Get"/>
     public Optional<ProgramIndexMapInfo> GetProgramIndexMapInfo(ProgramId programId)
     {
         return _programIndexManager.Get(programId);
+    }
+
+    /// <inheritdoc cref="ProgramIndexMapInfoManager.GetProgramId"/>
+    public ProgramId GetProgramIdByIndex(ProgramId programId, byte programIndex)
+    {
+        return _programIndexManager.GetProgramId(programId, programIndex);
     }
 
     /// <summary>
@@ -188,5 +190,15 @@ public class ProgramRegistryServiceImpl : IDisposable
     public int GetProgramIndexMapInfoCount()
     {
         return _programIndexManager.GetProgramCount();
+    }
+
+    public ProgramId GetApplicationProgramProgramIdByPatchProgramProgramId(ProgramId programId)
+    {
+        return _programIndexManager.GetApplicationProgramId(programId);
+    }
+
+    public ProgramId GetApplicationHtmlDocumentProgramIdByPatchProgramProgramId(ProgramId programId)
+    {
+        return GetApplicationProgramProgramIdByPatchProgramProgramId(programId);
     }
 }

@@ -10,6 +10,9 @@ public static class CommonMountNames
     /// <summary>"<c>@Host</c>"</summary>
     public static ReadOnlySpan<byte> HostRootFileSystemMountName => "@Host"u8;
 
+    /// <summary>"<c>@Local</c>"</summary>
+    public static ReadOnlySpan<byte> LocalRootFileSystemMountName => "@Local"u8;
+
     /// <summary>"<c>@Sdcard</c>"</summary>
     public static ReadOnlySpan<byte> SdCardFileSystemMountName => "@Sdcard"u8;
 
@@ -37,6 +40,9 @@ public static class CommonMountNames
 
     /// <summary>"<c>@System</c>"</summary>
     public static ReadOnlySpan<byte> BisSystemPartitionMountName => "@System"u8;
+
+    /// <summary>"<c>@System0</c>"</summary>
+    public static ReadOnlySpan<byte> BisSystemPartition0MountName => "@System0"u8;
 
     //Content storage names.
     /// <summary>"<c>@SystemContent</c>"</summary>

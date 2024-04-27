@@ -1191,7 +1191,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
                 res = Utility.WrapSubDirectory(ref baseFileSystem.Ref, ref tempFileSystem.Ref, in pathSdRoot, createIfMissing);
                 if (res.IsFailure()) return res.Miss();
 
-                res = _config.EncryptedFsCreator.Create(ref outFileSystem, ref baseFileSystem.Ref,
+                res = _config.EncryptedFsCreator.Create(ref outFileSystem, in baseFileSystem,
                     IEncryptedFileSystemCreator.KeyId.Save, in _encryptionSeed);
                 if (res.IsFailure()) return res.Miss();
 

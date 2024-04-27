@@ -28,7 +28,7 @@ public class StorageOnNcaCreator : IStorageOnNcaCreator
     }
 
     public Result Create(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, out NcaFsHeaderReader outHeaderReader,
+        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, ref NcaFsHeaderReader outHeaderReader,
         ref readonly SharedRef<NcaReader> ncaReader, int fsIndex)
     {
         var ncaFsDriver = new NcaFileSystemDriver(in ncaReader, _memoryResource, _bufferManager, _hashGeneratorFactorySelector);
@@ -36,7 +36,7 @@ public class StorageOnNcaCreator : IStorageOnNcaCreator
         using var storage = new SharedRef<IStorage>();
         using var storageAccessSplitter = new SharedRef<IAsynchronousAccessSplitter>();
         Result res = RomResultConverter.ConvertRomResult(ncaFsDriver.OpenStorage(ref storage.Ref,
-            ref storageAccessSplitter.Ref, out outHeaderReader, fsIndex));
+            ref storageAccessSplitter.Ref, ref outHeaderReader, fsIndex));
         if (res.IsFailure()) return res.Miss();
 
         using var resultConvertStorage = new SharedRef<RomResultConvertStorage>(new RomResultConvertStorage(in storage));
@@ -48,7 +48,7 @@ public class StorageOnNcaCreator : IStorageOnNcaCreator
     }
 
     public Result CreateWithPatch(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, out NcaFsHeaderReader outHeaderReader,
+        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, ref NcaFsHeaderReader outHeaderReader,
         ref readonly SharedRef<NcaReader> originalNcaReader, ref readonly SharedRef<NcaReader> currentNcaReader,
         int fsIndex)
     {
@@ -58,7 +58,7 @@ public class StorageOnNcaCreator : IStorageOnNcaCreator
         using var storage = new SharedRef<IStorage>();
         using var storageAccessSplitter = new SharedRef<IAsynchronousAccessSplitter>();
         Result res = RomResultConverter.ConvertRomResult(ncaFsDriver.OpenStorage(ref storage.Ref,
-            ref storageAccessSplitter.Ref, out outHeaderReader, fsIndex));
+            ref storageAccessSplitter.Ref, ref outHeaderReader, fsIndex));
         if (res.IsFailure()) return res.Miss();
 
         using var resultConvertStorage = new SharedRef<RomResultConvertStorage>(new RomResultConvertStorage(in storage));

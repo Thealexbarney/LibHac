@@ -13,8 +13,10 @@ namespace LibHac.FsSrv;
 
 public static class FileSystemServerInitializer
 {
-    private const ulong SpeedEmulationProgramIdMinimum = 0x100000000000000;
-    private const ulong SpeedEmulationProgramIdMaximum = 0x100000000001FFF;
+    private const ulong SpeedEmulationProgramIdWithoutPlatformIdMinimum = 0;
+    private const ulong SpeedEmulationProgramIdWithoutPlatformIdMaximum = 0x1FFF;
+
+    private const uint ContentDivisionSize = ConcatenationFileSystem.DefaultInternalFileSize;
 
     private const int BufferManagerHeapSize = 1024 * 1024 * 14;
     private const int BufferManagerCacheSize = 1024;
@@ -108,8 +110,8 @@ public static class FileSystemServerInitializer
             new AccessFailureManagementServiceImpl(in accessFailureManagementServiceConfig);
 
         var speedEmulationRange =
-            new InternalProgramIdRangeForSpeedEmulation(SpeedEmulationProgramIdMinimum,
-                SpeedEmulationProgramIdMaximum);
+            new InternalProgramIdRangeForSpeedEmulation(SpeedEmulationProgramIdWithoutPlatformIdMinimum,
+                SpeedEmulationProgramIdWithoutPlatformIdMaximum);
 
         var ncaFsServiceConfig = new NcaFileSystemServiceImpl.Configuration();
         ncaFsServiceConfig.BaseFsService = baseFsService;
@@ -123,6 +125,8 @@ public static class FileSystemServerInitializer
         ncaFsServiceConfig.ProgramRegistryService = programRegistryService;
         ncaFsServiceConfig.AccessFailureManagementService = accessFailureManagementService;
         ncaFsServiceConfig.SpeedEmulationRange = speedEmulationRange;
+        ncaFsServiceConfig.AddOnContentDivisionSize = ContentDivisionSize;
+        ncaFsServiceConfig.RomDivisionSize = ContentDivisionSize;
         ncaFsServiceConfig.FsServer = server;
 
         var ncaFsService = new NcaFileSystemServiceImpl(in ncaFsServiceConfig);
@@ -141,6 +145,12 @@ public static class FileSystemServerInitializer
         saveFsServiceConfig.SaveDataFileSystemCacheCount = 1;
         saveFsServiceConfig.SaveIndexerManager = saveDataIndexerManager;
         saveFsServiceConfig.DebugConfigService = debugConfigurationService;
+        saveFsServiceConfig.JournalIntegritySaveDataVersion = 0x50000;
+        saveFsServiceConfig.JournalIntegritySupportedVersionMin = 0x40000;
+        saveFsServiceConfig.JournalIntegritySupportedVersionMax = 0x50000;
+        saveFsServiceConfig.IntegritySaveDataVersion = 0x10000;
+        saveFsServiceConfig.IntegritySupportedVersionMin = 0x10000;
+        saveFsServiceConfig.IntegritySupportedVersionMax = 0x10000;
         saveFsServiceConfig.FsServer = server;
 
         var saveFsService = new SaveDataFileSystemServiceImpl(in saveFsServiceConfig);

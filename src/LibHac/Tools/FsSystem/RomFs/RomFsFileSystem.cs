@@ -26,9 +26,9 @@ public class RomFsFileSystem : IFileSystem
         FileTable = new HierarchicalRomFileTable<RomFileInfo>(dirHashTable, dirEntryTable, fileHashTable, fileEntryTable);
     }
 
-    public RomFsFileSystem(ref SharedRef<IStorage> storage) : this(storage.Get)
+    public RomFsFileSystem(ref readonly SharedRef<IStorage> storage) : this(storage.Get)
     {
-        _baseStorageShared = SharedRef<IStorage>.CreateMove(ref storage);
+        _baseStorageShared = SharedRef<IStorage>.CreateCopy(in storage);
     }
 
     public override void Dispose()

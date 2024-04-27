@@ -21,7 +21,9 @@ public enum BisPartitionId
     System = 31,
     SystemProperEncryption = 32,
     SystemProperPartition = 33,
-    SignedSystemPartitionOnSafeMode = 34
+    SignedSystemPartitionOnSafeMode = 34,
+    DeviceTreeBlob = 35,
+    System0 = 36
 }
 
 public enum ContentStorageId

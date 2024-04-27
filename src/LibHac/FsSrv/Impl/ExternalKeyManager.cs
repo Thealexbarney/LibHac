@@ -34,12 +34,12 @@ public class ExternalKeyManager
         throw new NotImplementedException();
     }
 
-    public Result Find(out AccessKey outAccessKey, in RightsId rightsId)
+    public Result Find(out AccessKey outAccessKey, RightsId rightsId)
     {
         throw new NotImplementedException();
     }
 
-    private Result FindCore(out AccessKey outAccessKey, in RightsId rightsId)
+    private Result FindCore(out AccessKey outAccessKey, RightsId rightsId)
     {
         throw new NotImplementedException();
     }

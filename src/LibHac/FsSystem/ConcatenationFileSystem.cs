@@ -490,7 +490,7 @@ public class ConcatenationFileSystem : IFileSystem
         }
     }
 
-    public static readonly long DefaultInternalFileSize = 0xFFFF0000; // Hard-coded value used by FS
+    public const uint DefaultInternalFileSize = 0xFFFF0000; // Hard-coded value used by FS
 
     private UniqueRef<IAttributeFileSystem> _baseFileSystem;
     private long _internalFileSize;
