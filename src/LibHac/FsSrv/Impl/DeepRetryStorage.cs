@@ -152,7 +152,7 @@ public class DeepRetryStorage : IStorage
         for (int i = 0; i < maxRetryCount; i++)
         {
             retryResult = _parent.Get.OpenDataStorageCore(ref remountStorage.Ref, ref remountStorageAccessSplitter.Ref,
-                out digest, _dataStorageContext.GetProgramIdValue(), _dataStorageContext.GetStorageId());
+                ref digest, _dataStorageContext.GetProgramIdValue(), _dataStorageContext.GetStorageId());
 
             if (!ResultFs.DataCorrupted.Includes(retryResult))
                 break;

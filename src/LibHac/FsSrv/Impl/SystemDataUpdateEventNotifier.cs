@@ -1,9 +1,10 @@
 ﻿using System;
+using LibHac.FsSrv.Sf;
 using LibHac.Sf;
 
 namespace LibHac.FsSrv.Impl;
 
-public class SystemDataUpdateEventNotifier : IDisposable
+public class SystemDataUpdateEventNotifier : IEventNotifier
 {
     public SystemDataUpdateEventNotifier()
     {

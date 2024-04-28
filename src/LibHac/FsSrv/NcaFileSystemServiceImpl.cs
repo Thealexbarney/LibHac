@@ -169,10 +169,10 @@ file static class Anonymous
 /// <remarks>Based on nnSdk 17.5.0 (FS 17.0.0)</remarks>
 public class NcaFileSystemServiceImpl : IDisposable
 {
-    private Configuration _config;
-    private UpdatePartitionPath _updatePartitionPath;
-    private ExternalKeyManager _externalKeyManager;
-    private SystemDataUpdateEventManager _systemDataUpdateEventManager;
+    private readonly Configuration _config;
+    private readonly UpdatePartitionPath _updatePartitionPath;
+    private readonly ExternalKeyManager _externalKeyManager;
+    private readonly SystemDataUpdateEventManager _systemDataUpdateEventManager;
     private EncryptionSeed _encryptionSeed;
     private uint _romFsDeepRetryStartCount;
     private uint _romFsRemountForDataCorruptionCount;
@@ -915,16 +915,6 @@ public class NcaFileSystemServiceImpl : IDisposable
         return ResultFs.PathNotFound.Log();
     }
 
-    private Result ParseDir(ref readonly Path path, ref SharedRef<IFileSystem> outContentFileSystem,
-        ref SharedRef<IFileSystem> baseFileSystem, FileSystemProxyType type, bool preserveUnc)
-    {
-        using var fileSystem = new SharedRef<IFileSystem>();
-        Result res = _config.SubDirectoryFsCreator.Create(ref fileSystem.Ref, baseFileSystem, path);
-        if (res.IsFailure()) return res.Miss();
-
-        return ParseContentTypeForDirectory(ref outContentFileSystem, ref fileSystem.Ref, type);
-    }
-
     private Result ParseDirWithPathCaseNormalizationOnCaseSensitiveHostOrLocalFs(
         ref SharedRef<IFileSystem> outFileSystem, ref readonly Path path, MountInfo.FileSystemType fsType)
     {
@@ -1139,7 +1129,7 @@ public class NcaFileSystemServiceImpl : IDisposable
         zeroRightsId.Clear();
         ncaReader.GetRightsId(rightsId);
 
-        bool hasRightsId = !Crypto.CryptoUtil.IsSameBytes(rightsId, zeroRightsId, Unsafe.SizeOf<RightsId>());
+        bool hasRightsId = !CryptoUtil.IsSameBytes(rightsId, zeroRightsId, Unsafe.SizeOf<RightsId>());
 
         if (hasRightsId)
         {

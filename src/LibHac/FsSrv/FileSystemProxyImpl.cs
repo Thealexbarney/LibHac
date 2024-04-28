@@ -263,13 +263,13 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
         return ncaFsService.OpenDataFileSystemByDataId(ref outFileSystem, dataId, storageId).Ret();
     }
 
-    public Result OpenDataStorageByPath(ref SharedRef<IFileSystemSf> outFileSystem, ref readonly FspPath path,
+    public Result OpenDataStorageByPath(ref SharedRef<IStorageSf> outStorage, ref readonly FspPath path,
         ContentAttributes attributes, FileSystemProxyType fsType)
     {
         Result res = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
         if (res.IsFailure()) return res.Miss();
 
-        return ncaFsService.OpenDataStorageByPath(ref outFileSystem, in path, attributes, fsType).Ret();
+        return ncaFsService.OpenDataStorageByPath(ref outStorage, in path, attributes, fsType).Ret();
     }
 
     public Result OpenPatchDataStorageByCurrentProcess(ref SharedRef<IStorageSf> outStorage)

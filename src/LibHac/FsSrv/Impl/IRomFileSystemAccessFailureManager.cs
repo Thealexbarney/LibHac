@@ -8,7 +8,7 @@ namespace LibHac.FsSrv.Impl;
 
 public interface IRomFileSystemAccessFailureManager : IDisposable
 {
-    Result OpenDataStorageCore(ref SharedRef<IStorage> outStorage, ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, out Hash ncaHeaderDigest, ulong id, StorageId storageId);
+    Result OpenDataStorageCore(ref SharedRef<IStorage> outStorage, ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, ref Hash outNcaDigest, ulong id, StorageId storageId);
     Result HandleResolubleAccessFailure(out bool wasDeferred, Result nonDeferredResult);
     void IncrementRomFsDeepRetryStartCount();
     void IncrementRomFsRemountForDataCorruptionCount();

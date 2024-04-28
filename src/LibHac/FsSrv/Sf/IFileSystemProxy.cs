@@ -80,7 +80,7 @@ public interface IFileSystemProxy : IDisposable
     Result OpenPatchDataStorageByCurrentProcess(ref SharedRef<IStorageSf> outStorage);
     Result OpenDataFileSystemWithProgramIndex(ref SharedRef<IFileSystemSf> outFileSystem, byte programIndex);
     Result OpenDataStorageWithProgramIndex(ref SharedRef<IStorageSf> outStorage, byte programIndex);
-    Result OpenDataStorageByPath(ref SharedRef<IFileSystemSf> outFileSystem, ref readonly FspPath path, ContentAttributes attributes, FileSystemProxyType fsType);
+    Result OpenDataStorageByPath(ref SharedRef<IStorageSf> outStorage, ref readonly FspPath path, ContentAttributes attributes, FileSystemProxyType fsType);
     Result OpenDataFileSystemByDataId(ref SharedRef<IFileSystemSf> outFileSystem, DataId dataId, StorageId storageId);
     Result OpenDeviceOperator(ref SharedRef<IDeviceOperator> outDeviceOperator);
     Result OpenSdCardDetectionEventNotifier(ref SharedRef<IEventNotifier> outEventNotifier);
