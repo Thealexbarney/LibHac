@@ -312,7 +312,7 @@ public class NcaFileSystemServiceImpl : IDisposable
                 res = ParseDirWithPathCaseNormalizationOnCaseSensitiveHostOrLocalFs(ref hostFileSystem.Ref, in directoryPath, mountInfo.FsType);
                 if (res.IsFailure()) return res.Miss();
 
-                using var readOnlyFileSystem = new SharedRef<IFileSystem>(new ReadOnlyFileSystem(ref hostFileSystem.Ref));
+                using var readOnlyFileSystem = new SharedRef<IFileSystem>(new ReadOnlyFileSystem(in hostFileSystem));
                 outFileSystem.SetByMove(ref readOnlyFileSystem.Ref);
 
                 return Result.Success;
@@ -444,7 +444,7 @@ public class NcaFileSystemServiceImpl : IDisposable
             res = ParseDirWithPathCaseNormalizationOnCaseSensitiveHostOrLocalFs(ref hostFileSystem.Ref, in directoryPath, mountInfo.FsType);
             if (res.IsFailure()) return res.Miss();
 
-            using var readOnlyFileSystem = new SharedRef<ReadOnlyFileSystem>(new ReadOnlyFileSystem(ref hostFileSystem.Ref));
+            using var readOnlyFileSystem = new SharedRef<ReadOnlyFileSystem>(new ReadOnlyFileSystem(in hostFileSystem));
 
             outFileSystem.SetByMove(ref readOnlyFileSystem.Ref);
             return Result.Success;

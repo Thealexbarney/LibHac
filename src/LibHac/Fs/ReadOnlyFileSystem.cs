@@ -76,9 +76,9 @@ public class ReadOnlyFileSystem : IFileSystem
 {
     private SharedRef<IFileSystem> _baseFileSystem;
 
-    public ReadOnlyFileSystem(ref SharedRef<IFileSystem> baseFileSystem)
+    public ReadOnlyFileSystem(ref readonly SharedRef<IFileSystem> baseFileSystem)
     {
-        _baseFileSystem = SharedRef<IFileSystem>.CreateMove(ref baseFileSystem);
+        _baseFileSystem = SharedRef<IFileSystem>.CreateCopy(in baseFileSystem);
 
         Assert.SdkRequires(_baseFileSystem.HasValue);
     }

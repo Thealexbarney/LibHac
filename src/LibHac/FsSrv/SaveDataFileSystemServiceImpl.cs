@@ -321,7 +321,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         if (openReadOnly)
         {
             using SharedRef<IFileSystem> tempFs = SharedRef<IFileSystem>.CreateMove(ref registerFs.Ref);
-            using var readOnlyFileSystem = new SharedRef<ReadOnlyFileSystem>(new ReadOnlyFileSystem(ref tempFs.Ref));
+            using var readOnlyFileSystem = new SharedRef<ReadOnlyFileSystem>(new ReadOnlyFileSystem(in tempFs));
 
             if (!readOnlyFileSystem.HasValue)
                 return ResultFs.AllocationMemoryFailedInSaveDataFileSystemServiceImplB.Log();
