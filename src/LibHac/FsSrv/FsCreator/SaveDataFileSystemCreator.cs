@@ -281,7 +281,8 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
         seed.CopyTo(_macGenerationSeed.Value);
     }
 
-    public Result CreateRaw(ref SharedRef<IFile> outFile, in SharedRef<IFileSystem> fileSystem, ulong saveDataId, OpenMode openMode)
+    public Result CreateRaw(ref SharedRef<IFile> outFile, ref readonly SharedRef<IFileSystem> fileSystem,
+        ulong saveDataId, OpenMode openMode)
     {
         Unsafe.SkipInit(out Array18<byte> saveImageNameBuffer);
 
@@ -419,7 +420,8 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
     }
 
     public Result CreateExtraDataAccessor(ref SharedRef<ISaveDataExtraDataAccessor> outExtraDataAccessor,
-        in SharedRef<IStorage> baseStorage, bool isDeviceUniqueMac, bool isIntegritySaveData, bool isReconstructible)
+        ref readonly SharedRef<IStorage> baseStorage, bool isDeviceUniqueMac, bool isIntegritySaveData,
+        bool isReconstructible)
     {
         using var saveDataFs = new SharedRef<ISaveDataFileSystem>();
 
@@ -455,8 +457,9 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
     }
 
     public Result CreateInternalStorage(ref SharedRef<IFileSystem> outFileSystem,
-        in SharedRef<IFileSystem> baseFileSystem, SaveDataSpaceId spaceId, ulong saveDataId, bool isDeviceUniqueMac,
-        bool useUniqueKey1, ISaveDataCommitTimeStampGetter timeStampGetter, bool isReconstructible)
+        ref readonly SharedRef<IFileSystem> baseFileSystem, SaveDataSpaceId spaceId, ulong saveDataId,
+        bool isDeviceUniqueMac, bool useUniqueKey1, ISaveDataCommitTimeStampGetter timeStampGetter,
+        bool isReconstructible)
     {
         Result res;
         Unsafe.SkipInit(out Array18<byte> saveImageNameBuffer);
@@ -510,7 +513,7 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
         return Result.Success;
     }
 
-    public Result RecoverMasterHeader(in SharedRef<IFileSystem> baseFileSystem, ulong saveDataId,
+    public Result RecoverMasterHeader(ref readonly SharedRef<IFileSystem> baseFileSystem, ulong saveDataId,
         IBufferManager bufferManager, bool isDeviceUniqueMac, bool isReconstructible)
     {
         Unsafe.SkipInit(out Array18<byte> saveImageNameBuffer);
@@ -554,8 +557,8 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
         return Result.Success;
     }
 
-    public Result UpdateMac(in SharedRef<IFileSystem> baseFileSystem, ulong saveDataId, bool isDeviceUniqueMac,
-        bool isReconstructible)
+    public Result UpdateMac(ref readonly SharedRef<IFileSystem> baseFileSystem, ulong saveDataId,
+        bool isDeviceUniqueMac, bool isReconstructible)
     {
         Unsafe.SkipInit(out Array18<byte> saveImageNameBuffer);
 
@@ -599,7 +602,7 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
     }
 
     public Result IsProvisionallyCommittedSaveData(out bool outIsProvisionallyCommitted,
-        in SharedRef<IFileSystem> baseFileSystem, in SaveDataInfo info, bool isDeviceUniqueMac,
+        ref readonly SharedRef<IFileSystem> baseFileSystem, in SaveDataInfo info, bool isDeviceUniqueMac,
         ISaveDataCommitTimeStampGetter timeStampGetter, bool isReconstructible)
     {
         UnsafeHelpers.SkipParamInit(out outIsProvisionallyCommitted);

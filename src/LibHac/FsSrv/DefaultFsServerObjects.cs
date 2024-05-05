@@ -62,9 +62,9 @@ public class DefaultFsServerObjects
         };
     }
 
-    public static Result InitializeNcaReader(ref SharedRef<NcaReader> outReader, in SharedRef<IStorage> baseStorage,
-        in NcaCompressionConfiguration compressionConfig, IHash256GeneratorFactorySelector hashGeneratorFactorySelector,
-        ContentAttributes contentAttributes)
+    public static Result InitializeNcaReader(ref SharedRef<NcaReader> outReader,
+        ref readonly SharedRef<IStorage> baseStorage, in NcaCompressionConfiguration compressionConfig,
+        IHash256GeneratorFactorySelector hashGeneratorFactorySelector, ContentAttributes contentAttributes)
     {
         throw new NotImplementedException();
     }

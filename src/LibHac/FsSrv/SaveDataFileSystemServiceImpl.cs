@@ -551,7 +551,8 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         using (var extraDataAccessor = new SharedRef<ISaveDataExtraDataAccessor>())
         {
             res = _config.SaveFsCreator.CreateExtraDataAccessor(ref extraDataAccessor.Ref, in saveDataStorage,
-                IsDeviceUniqueMac(spaceId), isIntegritySaveData: true, SaveDataProperties.IsReconstructible(type, spaceId));
+                IsDeviceUniqueMac(spaceId), isIntegritySaveData: true,
+                isReconstructible: SaveDataProperties.IsReconstructible(type, spaceId));
             if (res.IsFailure()) return res.Miss();
 
             res = extraDataAccessor.Get.ReadExtraData(out SaveDataExtraData extraData);

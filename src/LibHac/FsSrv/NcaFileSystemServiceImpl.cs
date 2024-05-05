@@ -150,7 +150,7 @@ file static class Anonymous
 
         return Result.Success;
 
-        static Result ReadData(in UniqueRef<IFile> file, ref CodeVerificationData outData)
+        static Result ReadData(ref readonly UniqueRef<IFile> file, ref CodeVerificationData outData)
         {
             Result res = file.Get.GetSize(out long verificationDataSize);
             if (res.IsFailure()) return res.Miss();

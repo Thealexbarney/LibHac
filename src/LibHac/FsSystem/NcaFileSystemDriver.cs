@@ -87,7 +87,7 @@ file class SharedNcaBodyStorage : IStorage
     private SharedRef<IStorage> _storage;
     private SharedRef<NcaReader> _ncaReader;
 
-    public SharedNcaBodyStorage(in SharedRef<IStorage> baseStorage, in SharedRef<NcaReader> ncaReader)
+    public SharedNcaBodyStorage(ref readonly SharedRef<IStorage> baseStorage, ref readonly SharedRef<NcaReader> ncaReader)
     {
         _storage = SharedRef<IStorage>.CreateCopy(in baseStorage);
         _ncaReader = SharedRef<NcaReader>.CreateCopy(in ncaReader);
