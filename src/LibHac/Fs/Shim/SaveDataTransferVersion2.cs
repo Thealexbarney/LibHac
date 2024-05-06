@@ -266,9 +266,9 @@ namespace LibHac.Fs
     {
         private SharedRef<ISaveDataTransferProhibiter> _prohibiter;
 
-        public SaveDataTransferProhibiterForCloudBackUp(ref SharedRef<ISaveDataTransferProhibiter> prohibiter)
+        public SaveDataTransferProhibiterForCloudBackUp(ref readonly SharedRef<ISaveDataTransferProhibiter> prohibiter)
         {
-            _prohibiter = SharedRef<ISaveDataTransferProhibiter>.CreateMove(ref prohibiter);
+            _prohibiter = SharedRef<ISaveDataTransferProhibiter>.CreateCopy(in prohibiter);
         }
 
         public void Dispose()

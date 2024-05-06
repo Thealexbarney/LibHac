@@ -12,7 +12,7 @@ public interface ISaveDataFileSystemCreator : IDisposable
 {
     Result CreateRaw(ref SharedRef<IFile> outFile, ref readonly SharedRef<IFileSystem> fileSystem, ulong saveDataId, OpenMode openMode);
 
-    Result Create(ref SharedRef<ISaveDataFileSystem> outFileSystem, ref SharedRef<IFileSystem> baseFileSystem,
+    Result Create(ref SharedRef<ISaveDataFileSystem> outFileSystem, ref readonly SharedRef<IFileSystem> baseFileSystem,
         SaveDataSpaceId spaceId, ulong saveDataId, bool allowDirectorySaveData, bool isDeviceUniqueMac,
         bool isJournalingSupported, bool isMultiCommitSupported, bool openReadOnly, bool openShared,
         ISaveDataCommitTimeStampGetter timeStampGetter, bool isReconstructible);

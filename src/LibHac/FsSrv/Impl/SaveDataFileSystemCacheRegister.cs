@@ -17,10 +17,10 @@ public class SaveDataFileSystemCacheRegister : IFileSystem
     private SaveDataSpaceId _spaceId;
     private ulong _saveDataId;
 
-    public SaveDataFileSystemCacheRegister(ref SharedRef<ISaveDataFileSystem> baseFileSystem,
+    public SaveDataFileSystemCacheRegister(ref readonly SharedRef<ISaveDataFileSystem> baseFileSystem,
         SaveDataFileSystemCacheManager cacheManager, SaveDataSpaceId spaceId, ulong saveDataId)
     {
-        _baseFileSystem = SharedRef<ISaveDataFileSystem>.CreateMove(ref baseFileSystem);
+        _baseFileSystem = SharedRef<ISaveDataFileSystem>.CreateCopy(in baseFileSystem);
         _cacheManager = cacheManager;
         _spaceId = spaceId;
         _saveDataId = saveDataId;

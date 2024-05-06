@@ -36,9 +36,9 @@ public class SaveDataFileSystemCacheManager : IDisposable
             return SharedRef<ISaveDataFileSystem>.CreateMove(ref _fileSystem);
         }
 
-        public void Register(ref SharedRef<ISaveDataFileSystem> fileSystem, SaveDataSpaceId spaceId, ulong saveDataId)
+        public void Register(ref readonly SharedRef<ISaveDataFileSystem> fileSystem, SaveDataSpaceId spaceId, ulong saveDataId)
         {
-            _fileSystem.SetByMove(ref fileSystem);
+            _fileSystem.SetByCopy(in fileSystem);
             _spaceId = spaceId;
             _saveDataId = saveDataId;
         }

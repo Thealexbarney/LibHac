@@ -7,8 +7,8 @@ namespace LibHac.FsSrv.Impl;
 
 public class AsynchronousAccessFileSystem : ForwardingFileSystem
 {
-    public AsynchronousAccessFileSystem(ref SharedRef<IFileSystem> baseFileSystem) : base(
-        ref baseFileSystem)
+    public AsynchronousAccessFileSystem(ref readonly SharedRef<IFileSystem> baseFileSystem) : base(
+        in baseFileSystem)
     { }
 
     // ReSharper disable once RedundantOverriddenMember

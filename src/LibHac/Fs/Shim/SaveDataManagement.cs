@@ -26,9 +26,9 @@ namespace LibHac.Fs
         private readonly FileSystemClient _fsClient;
         private SharedRef<ISaveDataInfoReader> _reader;
 
-        internal SaveDataIterator(FileSystemClient fsClient, ref SharedRef<ISaveDataInfoReader> reader)
+        internal SaveDataIterator(FileSystemClient fsClient, ref readonly SharedRef<ISaveDataInfoReader> reader)
         {
-            _reader = SharedRef<ISaveDataInfoReader>.CreateMove(ref reader);
+            _reader = SharedRef<ISaveDataInfoReader>.CreateCopy(in reader);
             _fsClient = fsClient;
         }
 

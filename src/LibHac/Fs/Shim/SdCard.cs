@@ -54,10 +54,10 @@ public static class SdCard
     }
 
     private static Result RegisterFileSystem(FileSystemClient fs, U8Span mountName,
-        ref SharedRef<IFileSystemSf> fileSystem)
+        ref readonly SharedRef<IFileSystemSf> fileSystem)
     {
         using var fileSystemAdapter =
-            new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem));
+            new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(in fileSystem));
 
         if (!fileSystemAdapter.HasValue)
             return ResultFs.AllocationMemoryFailedInSdCardA.Log();
@@ -214,7 +214,7 @@ public static class SdCard
 
         return isInserted;
 
-        static Result CheckIfInserted(FileSystemClient fs, ref SharedRef<IDeviceOperator> deviceOperator,
+        static Result CheckIfInserted(FileSystemClient fs, ref readonly SharedRef<IDeviceOperator> deviceOperator,
             out bool isInserted)
         {
             UnsafeHelpers.SkipParamInit(out isInserted);

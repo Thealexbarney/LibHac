@@ -47,7 +47,7 @@ public static class FileSystemProxyServiceObject
             return ResultFs.PortAcceptableCountLimited.Log();
         }
 
-        public Result OpenCodeFileSystem(ref SharedRef<IFileSystem> fileSystem, OutBuffer outVerificationData,
+        public Result OpenCodeFileSystem(ref SharedRef<IFileSystem> outFileSystem, OutBuffer outVerificationData,
             ref readonly FspPath path, ContentAttributes attributes, ProgramId programId)
         {
             return ResultFs.PortAcceptableCountLimited.Log();

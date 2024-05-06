@@ -116,9 +116,9 @@ internal class SaveDataInfoFilterReader : SaveDataInfoReaderImpl
     private SharedRef<SaveDataInfoReaderImpl> _reader;
     private SaveDataInfoFilter _infoFilter;
 
-    public SaveDataInfoFilterReader(ref SharedRef<SaveDataInfoReaderImpl> reader, in SaveDataInfoFilter infoFilter)
+    public SaveDataInfoFilterReader(ref readonly SharedRef<SaveDataInfoReaderImpl> reader, in SaveDataInfoFilter infoFilter)
     {
-        _reader = SharedRef<SaveDataInfoReaderImpl>.CreateMove(ref reader);
+        _reader = SharedRef<SaveDataInfoReaderImpl>.CreateCopy(in reader);
         _infoFilter = infoFilter;
     }
 

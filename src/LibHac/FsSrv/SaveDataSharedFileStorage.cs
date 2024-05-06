@@ -168,10 +168,10 @@ public class SaveDataSharedFileStorage : IStorage
     private SharedRef<SaveDataOpenTypeSetFileStorage> _baseStorage;
     private SaveDataOpenTypeSetFileStorage.OpenType _type;
 
-    public SaveDataSharedFileStorage(ref SharedRef<SaveDataOpenTypeSetFileStorage> baseStorage,
+    public SaveDataSharedFileStorage(ref readonly SharedRef<SaveDataOpenTypeSetFileStorage> baseStorage,
         SaveDataOpenTypeSetFileStorage.OpenType type)
     {
-        _baseStorage = SharedRef<SaveDataOpenTypeSetFileStorage>.CreateMove(ref baseStorage);
+        _baseStorage = SharedRef<SaveDataOpenTypeSetFileStorage>.CreateCopy(in baseStorage);
         _type = type;
     }
 
@@ -278,10 +278,10 @@ public class SaveDataFileStorageHolder
         private SaveDataSpaceId _spaceId;
         private ulong _saveDataId;
 
-        public Entry(ref SharedRef<SaveDataOpenTypeSetFileStorage> storage, SaveDataSpaceId spaceId,
+        public Entry(ref readonly SharedRef<SaveDataOpenTypeSetFileStorage> storage, SaveDataSpaceId spaceId,
             ulong saveDataId)
         {
-            _storage = SharedRef<SaveDataOpenTypeSetFileStorage>.CreateMove(ref storage);
+            _storage = SharedRef<SaveDataOpenTypeSetFileStorage>.CreateCopy(in storage);
             _spaceId = spaceId;
             _saveDataId = saveDataId;
         }

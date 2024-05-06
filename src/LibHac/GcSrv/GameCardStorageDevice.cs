@@ -26,17 +26,17 @@ internal class GameCardStorageDevice : GameCardStorageInterfaceAdapter, IStorage
     private WeakRef<GameCardStorageDevice> _selfReference;
     private readonly IGcApi _gc;
 
-    private GameCardStorageDevice(IGcApi gc, ref SharedRef<IGameCardManager> manager,
+    private GameCardStorageDevice(IGcApi gc, ref readonly SharedRef<IGameCardManager> manager,
         ref readonly SharedRef<IStorage> baseStorage, GameCardHandle handle) : base(in baseStorage)
     {
-        _manager = SharedRef<IGameCardManager>.CreateMove(ref manager);
+        _manager = SharedRef<IGameCardManager>.CreateCopy(in manager);
         _handle = handle;
         _isSecure = false;
 
         _gc = gc;
     }
 
-    private GameCardStorageDevice(IGcApi gc, ref SharedRef<IGameCardManager> manager,
+    private GameCardStorageDevice(IGcApi gc, ref readonly SharedRef<IGameCardManager> manager,
         ref readonly SharedRef<IStorage> baseStorage, GameCardHandle handle, bool isSecure,
         ReadOnlySpan<byte> cardDeviceId, ReadOnlySpan<byte> cardImageHash)
         : base(in baseStorage)
@@ -44,7 +44,7 @@ internal class GameCardStorageDevice : GameCardStorageInterfaceAdapter, IStorage
         Assert.SdkRequiresEqual(cardDeviceId.Length, Values.GcCardDeviceIdSize);
         Assert.SdkRequiresEqual(cardImageHash.Length, Values.GcCardImageHashSize);
 
-        _manager = SharedRef<IGameCardManager>.CreateMove(ref manager);
+        _manager = SharedRef<IGameCardManager>.CreateCopy(in manager);
         _handle = handle;
         _isSecure = isSecure;
 
@@ -54,10 +54,10 @@ internal class GameCardStorageDevice : GameCardStorageInterfaceAdapter, IStorage
         _gc = gc;
     }
 
-    public static SharedRef<GameCardStorageDevice> CreateShared(IGcApi gc, ref SharedRef<IGameCardManager> manager,
+    public static SharedRef<GameCardStorageDevice> CreateShared(IGcApi gc, ref readonly SharedRef<IGameCardManager> manager,
         ref readonly SharedRef<IStorage> baseStorage, GameCardHandle handle)
     {
-        var storageDevice = new GameCardStorageDevice(gc, ref manager, in baseStorage, handle);
+        var storageDevice = new GameCardStorageDevice(gc, in manager, in baseStorage, handle);
 
         using var sharedStorageDevice = new SharedRef<GameCardStorageDevice>(storageDevice);
         storageDevice._selfReference.Set(in sharedStorageDevice);
@@ -65,11 +65,11 @@ internal class GameCardStorageDevice : GameCardStorageInterfaceAdapter, IStorage
         return SharedRef<GameCardStorageDevice>.CreateMove(ref sharedStorageDevice.Ref);
     }
 
-    public static SharedRef<GameCardStorageDevice> CreateShared(IGcApi gc, ref SharedRef<IGameCardManager> manager,
+    public static SharedRef<GameCardStorageDevice> CreateShared(IGcApi gc, ref readonly SharedRef<IGameCardManager> manager,
         ref readonly SharedRef<IStorage> baseStorage, GameCardHandle handle, bool isSecure,
         ReadOnlySpan<byte> cardDeviceId, ReadOnlySpan<byte> cardImageHash)
     {
-        var storageDevice = new GameCardStorageDevice(gc, ref manager, in baseStorage, handle, isSecure, cardDeviceId,
+        var storageDevice = new GameCardStorageDevice(gc, in manager, in baseStorage, handle, isSecure, cardDeviceId,
             cardImageHash);
 
         using var sharedStorageDevice = new SharedRef<GameCardStorageDevice>(storageDevice);

@@ -9,9 +9,9 @@ public class AddOnContentLocationResolver : IDisposable
 {
     private SharedRef<IAddOnContentLocationResolver> _interface;
 
-    public AddOnContentLocationResolver(ref SharedRef<IAddOnContentLocationResolver> baseInterface)
+    public AddOnContentLocationResolver(ref readonly SharedRef<IAddOnContentLocationResolver> baseInterface)
     {
-        _interface = SharedRef<IAddOnContentLocationResolver>.CreateMove(ref baseInterface);
+        _interface = SharedRef<IAddOnContentLocationResolver>.CreateCopy(in baseInterface);
     }
 
     public void Dispose()

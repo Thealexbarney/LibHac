@@ -313,7 +313,7 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
         return Result.Success;
     }
 
-    public Result Create(ref SharedRef<ISaveDataFileSystem> outFileSystem, ref SharedRef<IFileSystem> baseFileSystem,
+    public Result Create(ref SharedRef<ISaveDataFileSystem> outFileSystem, ref readonly SharedRef<IFileSystem> baseFileSystem,
         SaveDataSpaceId spaceId, ulong saveDataId, bool allowDirectorySaveData, bool isDeviceUniqueMac,
         bool isJournalingSupported, bool isMultiCommitSupported, bool openReadOnly, bool openShared,
         ISaveDataCommitTimeStampGetter timeStampGetter, bool isReconstructible)
@@ -345,7 +345,7 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
             }
 
             // Get a file system over the save directory
-            using var baseFs = new UniqueRef<SubdirectoryFileSystem>(new SubdirectoryFileSystem(ref baseFileSystem));
+            using var baseFs = new UniqueRef<SubdirectoryFileSystem>(new SubdirectoryFileSystem(in baseFileSystem));
 
             if (!baseFs.HasValue)
                 return ResultFs.AllocationMemoryFailedInSaveDataFileSystemCreatorA.Log();
@@ -374,7 +374,7 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
             Optional<OpenType> openType =
                 openShared ? new Optional<OpenType>(OpenType.Normal) : new Optional<OpenType>();
 
-            res = _fsServer.OpenSaveDataStorage(ref fileStorage.Ref, ref baseFileSystem, spaceId, saveDataId,
+            res = _fsServer.OpenSaveDataStorage(ref fileStorage.Ref, in baseFileSystem, spaceId, saveDataId,
                 OpenMode.ReadWrite, openType);
             if (res.IsFailure()) return res.Miss();
 

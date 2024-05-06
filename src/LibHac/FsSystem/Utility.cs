@@ -488,13 +488,13 @@ internal static class Utility
     }
 
     public static Result MakeUniqueLockWithPin<T>(ref UniqueRef<IUniqueLock> outUniqueLock,
-        SemaphoreAdapter semaphore, ref SharedRef<T> objectToPin) where T : class, IDisposable
+        SemaphoreAdapter semaphore, ref readonly SharedRef<T> objectToPin) where T : class, IDisposable
     {
         using var semaphoreAdapter = new UniqueLock<SemaphoreAdapter>();
         Result res = TryAcquireCountSemaphore(ref semaphoreAdapter.Ref(), semaphore);
         if (res.IsFailure()) return res.Miss();
 
-        var lockWithPin = new UniqueLockWithPin<T>(ref semaphoreAdapter.Ref(), ref objectToPin);
+        var lockWithPin = new UniqueLockWithPin<T>(ref semaphoreAdapter.Ref(), in objectToPin);
         using var uniqueLock = new UniqueRef<IUniqueLock>(lockWithPin);
 
         outUniqueLock.Set(ref uniqueLock.Ref);

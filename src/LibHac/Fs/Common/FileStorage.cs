@@ -31,10 +31,10 @@ public class FileStorage : IStorage
         _fileSize = InvalidSize;
     }
 
-    public FileStorage(ref SharedRef<IFile> baseFile)
+    public FileStorage(ref readonly SharedRef<IFile> baseFile)
     {
         _baseFile = baseFile.Get;
-        _baseFileShared = SharedRef<IFile>.CreateMove(ref baseFile);
+        _baseFileShared = SharedRef<IFile>.CreateCopy(in baseFile);
         _fileSize = InvalidSize;
     }
 

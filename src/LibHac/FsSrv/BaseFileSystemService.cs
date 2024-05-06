@@ -262,8 +262,7 @@ public readonly struct BaseFileSystemService
         return Result.Success;
     }
 
-    public Result OpenImageDirectoryFileSystem(ref SharedRef<IFileSystemSf> outFileSystem,
-        ImageDirectoryId directoryId)
+    public Result OpenImageDirectoryFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, ImageDirectoryId directoryId)
     {
         // Caller must have the MountImageAndVideoStorage permission
         Result res = GetProgramInfo(out ProgramInfo programInfo);

@@ -9,9 +9,9 @@ public class LocationResolver : IDisposable
 {
     private SharedRef<ILocationResolver> _interface;
 
-    public LocationResolver(ref SharedRef<ILocationResolver> baseInterface)
+    public LocationResolver(ref readonly SharedRef<ILocationResolver> baseInterface)
     {
-        _interface = SharedRef<ILocationResolver>.CreateMove(ref baseInterface);
+        _interface = SharedRef<ILocationResolver>.CreateCopy(in baseInterface);
     }
 
     public void Dispose()

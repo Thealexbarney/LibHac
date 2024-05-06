@@ -28,7 +28,7 @@ public static class BaseFileSystem
         ref SharedRef<IFileSystemSf> fileSystem)
     {
         using var fileSystemAdapter =
-            new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref));
+            new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(in fileSystem));
 
         Result res = fs.Register(mountName, ref fileSystemAdapter.Ref);
         if (res.IsFailure()) return res.Miss();

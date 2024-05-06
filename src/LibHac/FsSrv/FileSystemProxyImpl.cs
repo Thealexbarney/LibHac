@@ -180,13 +180,13 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
         return ncaFsService.OpenFileSystemWithPatch(ref outFileSystem, programId, fsType).Ret();
     }
 
-    public Result OpenCodeFileSystem(ref SharedRef<IFileSystemSf> fileSystem, OutBuffer outVerificationData,
+    public Result OpenCodeFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, OutBuffer outVerificationData,
         ref readonly FspPath path, ContentAttributes attributes, ProgramId programId)
     {
         Result res = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
         if (res.IsFailure()) return res.Miss();
 
-        return ncaFsService.OpenCodeFileSystem(ref fileSystem, outVerificationData, in path, attributes, programId).Ret();
+        return ncaFsService.OpenCodeFileSystem(ref outFileSystem, outVerificationData, in path, attributes, programId).Ret();
     }
 
     public Result SetCurrentProcess(ulong processId)

@@ -210,10 +210,10 @@ public static class FileSystemServerInitializer
             _server = server;
         }
 
-        public Result GetServiceObject(ref SharedRef<IDisposable> serviceObject)
+        public Result GetServiceObject(ref SharedRef<IDisposable> outServiceObject)
         {
             using SharedRef<IFileSystemProxy> derivedObject = _server.Impl.GetFileSystemProxyServiceObject();
-            serviceObject.SetByMove(ref derivedObject.Ref);
+            outServiceObject.SetByMove(ref derivedObject.Ref);
             return Result.Success;
         }
 
@@ -229,10 +229,10 @@ public static class FileSystemServerInitializer
             _server = server;
         }
 
-        public Result GetServiceObject(ref SharedRef<IDisposable> serviceObject)
+        public Result GetServiceObject(ref SharedRef<IDisposable> outServiceObject)
         {
             using SharedRef<IFileSystemProxyForLoader> derivedObject = _server.Impl.GetFileSystemProxyForLoaderServiceObject();
-            serviceObject.SetByMove(ref derivedObject.Ref);
+            outServiceObject.SetByMove(ref derivedObject.Ref);
             return Result.Success;
         }
 
@@ -248,10 +248,10 @@ public static class FileSystemServerInitializer
             _server = server;
         }
 
-        public Result GetServiceObject(ref SharedRef<IDisposable> serviceObject)
+        public Result GetServiceObject(ref SharedRef<IDisposable> outServiceObject)
         {
             using SharedRef<IProgramRegistry> derivedObject = _server.Impl.GetProgramRegistryServiceObject();
-            serviceObject.SetByMove(ref derivedObject.Ref);
+            outServiceObject.SetByMove(ref derivedObject.Ref);
             return Result.Success;
         }
 

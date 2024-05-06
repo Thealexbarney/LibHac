@@ -38,12 +38,12 @@ public class GameCardRootPartition : IDisposable
     // LibHac addition so we can access fssrv::storage functions
     private readonly FileSystemServer _fsServer;
 
-    public GameCardRootPartition(GameCardHandle handle, ref SharedRef<IStorage> rootStorage,
+    public GameCardRootPartition(GameCardHandle handle, ref readonly SharedRef<IStorage> rootStorage,
         IGameCardStorageCreator storageCreator, ref UniqueRef<Sha256PartitionFileSystemMeta> partitionFsMeta,
         FileSystemServer fsServer)
     {
         _partitionFsMeta = new UniqueRef<Sha256PartitionFileSystemMeta>(ref partitionFsMeta);
-        _alignedRootStorage = SharedRef<IStorage>.CreateMove(ref rootStorage);
+        _alignedRootStorage = SharedRef<IStorage>.CreateCopy(in rootStorage);
         _gcHandle = handle;
         _gameCardStorageCreator = storageCreator;
         _logoPartitionStorage = new SharedRef<IStorage>();

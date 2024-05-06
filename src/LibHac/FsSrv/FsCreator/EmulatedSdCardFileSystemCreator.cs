@@ -17,16 +17,16 @@ public class EmulatedSdCardFileSystemCreator : ISdCardProxyFileSystemCreator, ID
     private SharedRef<IFileSystem> _sdCardFileSystem;
     private string _path;
 
-    public EmulatedSdCardFileSystemCreator(SdmmcApi sdmmc, ref SharedRef<IFileSystem> rootFileSystem)
+    public EmulatedSdCardFileSystemCreator(SdmmcApi sdmmc, ref readonly SharedRef<IFileSystem> rootFileSystem)
     {
         _sdmmc = sdmmc;
-        _rootFileSystem = SharedRef<IFileSystem>.CreateMove(ref rootFileSystem);
+        _rootFileSystem = SharedRef<IFileSystem>.CreateCopy(in rootFileSystem);
     }
 
-    public EmulatedSdCardFileSystemCreator(SdmmcApi sdmmc, ref SharedRef<IFileSystem> rootFileSystem, string path)
+    public EmulatedSdCardFileSystemCreator(SdmmcApi sdmmc, ref readonly SharedRef<IFileSystem> rootFileSystem, string path)
     {
         _sdmmc = sdmmc;
-        _rootFileSystem = SharedRef<IFileSystem>.CreateMove(ref rootFileSystem);
+        _rootFileSystem = SharedRef<IFileSystem>.CreateCopy(in rootFileSystem);
         _path = path;
     }
 

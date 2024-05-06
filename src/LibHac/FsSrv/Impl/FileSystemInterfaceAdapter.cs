@@ -27,9 +27,9 @@ public class FileInterfaceAdapter : IFileSf
     private bool _allowAllOperations;
 
     public FileInterfaceAdapter(ref UniqueRef<IFile> baseFile,
-        ref SharedRef<FileSystemInterfaceAdapter> parentFileSystem, bool allowAllOperations)
+        ref readonly SharedRef<FileSystemInterfaceAdapter> parentFileSystem, bool allowAllOperations)
     {
-        _parentFs = SharedRef<FileSystemInterfaceAdapter>.CreateMove(ref parentFileSystem);
+        _parentFs = SharedRef<FileSystemInterfaceAdapter>.CreateCopy(in parentFileSystem);
         _baseFile = new UniqueRef<IFile>(ref baseFile);
         _allowAllOperations = allowAllOperations;
     }
@@ -187,9 +187,9 @@ public class DirectoryInterfaceAdapter : IDirectorySf
     private UniqueRef<IDirectory> _baseDirectory;
 
     public DirectoryInterfaceAdapter(ref UniqueRef<IDirectory> baseDirectory,
-        ref SharedRef<FileSystemInterfaceAdapter> parentFileSystem)
+        ref readonly SharedRef<FileSystemInterfaceAdapter> parentFileSystem)
     {
-        _parentFs = SharedRef<FileSystemInterfaceAdapter>.CreateMove(ref parentFileSystem);
+        _parentFs = SharedRef<FileSystemInterfaceAdapter>.CreateCopy(in parentFileSystem);
         _baseDirectory = new UniqueRef<IDirectory>(ref baseDirectory);
     }
 
@@ -251,24 +251,24 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
     // creating files and directories. We don't have an ISharedObject, so a self-reference is used instead.
     private WeakRef<FileSystemInterfaceAdapter> _selfReference;
 
-    private FileSystemInterfaceAdapter(ref SharedRef<IFileSystem> fileSystem,
+    private FileSystemInterfaceAdapter(ref readonly SharedRef<IFileSystem> fileSystem,
         bool allowAllOperations)
     {
-        _baseFileSystem = SharedRef<IFileSystem>.CreateMove(ref fileSystem);
+        _baseFileSystem = SharedRef<IFileSystem>.CreateCopy(in fileSystem);
         _allowAllOperations = allowAllOperations;
     }
 
-    private FileSystemInterfaceAdapter(ref SharedRef<IFileSystem> fileSystem, PathFlags flags,
+    private FileSystemInterfaceAdapter(ref readonly SharedRef<IFileSystem> fileSystem, PathFlags flags,
         bool allowAllOperations)
     {
-        _baseFileSystem = SharedRef<IFileSystem>.CreateMove(ref fileSystem);
+        _baseFileSystem = SharedRef<IFileSystem>.CreateCopy(in fileSystem);
         _pathFlags = flags;
         _allowAllOperations = allowAllOperations;
     }
 
-    public static SharedRef<IFileSystemSf> CreateShared(ref SharedRef<IFileSystem> baseFileSystem, bool allowAllOperations)
+    public static SharedRef<IFileSystemSf> CreateShared(ref readonly SharedRef<IFileSystem> baseFileSystem, bool allowAllOperations)
     {
-        var adapter = new FileSystemInterfaceAdapter(ref baseFileSystem, allowAllOperations);
+        var adapter = new FileSystemInterfaceAdapter(in baseFileSystem, allowAllOperations);
         using var sharedAdapter = new SharedRef<FileSystemInterfaceAdapter>(adapter);
 
         adapter._selfReference.Set(in sharedAdapter);
@@ -277,9 +277,9 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
     }
 
     public static SharedRef<IFileSystemSf> CreateShared(
-        ref SharedRef<IFileSystem> baseFileSystem, PathFlags flags, bool allowAllOperations)
+        ref readonly SharedRef<IFileSystem> baseFileSystem, PathFlags flags, bool allowAllOperations)
     {
-        var adapter = new FileSystemInterfaceAdapter(ref baseFileSystem, flags, allowAllOperations);
+        var adapter = new FileSystemInterfaceAdapter(in baseFileSystem, flags, allowAllOperations);
         using var sharedAdapter = new SharedRef<FileSystemInterfaceAdapter>(adapter);
 
         adapter._selfReference.Set(in sharedAdapter);
@@ -605,9 +605,9 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         return Result.Success;
     }
 
-    public Result GetImpl(ref SharedRef<IFileSystem> fileSystem)
+    public Result GetImpl(ref SharedRef<IFileSystem> outFileSystem)
     {
-        fileSystem.SetByCopy(in _baseFileSystem);
+        outFileSystem.SetByCopy(in _baseFileSystem);
         return Result.Success;
     }
 }

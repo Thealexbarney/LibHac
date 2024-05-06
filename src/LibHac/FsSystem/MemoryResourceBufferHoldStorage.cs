@@ -16,10 +16,10 @@ public class MemoryResourceBufferHoldStorage : IStorage
     private MemoryResource _memoryResource;
     private Mem.Buffer _buffer;
 
-    public MemoryResourceBufferHoldStorage(ref SharedRef<IStorage> baseStorage, MemoryResource memoryResource,
+    public MemoryResourceBufferHoldStorage(ref readonly SharedRef<IStorage> baseStorage, MemoryResource memoryResource,
         int bufferSize)
     {
-        _storage = SharedRef<IStorage>.CreateMove(ref baseStorage);
+        _storage = SharedRef<IStorage>.CreateCopy(in baseStorage);
         _memoryResource = memoryResource;
         _buffer = memoryResource.Allocate(bufferSize);
     }

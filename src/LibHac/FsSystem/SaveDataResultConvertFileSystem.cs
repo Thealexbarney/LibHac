@@ -55,8 +55,8 @@ public class SaveDataResultConvertFileSystem : IResultConvertFileSystem<ISaveDat
 {
     private bool _isReconstructible;
 
-    public SaveDataResultConvertFileSystem(ref SharedRef<ISaveDataFileSystem> baseFileSystem, bool isReconstructible) :
-        base(ref baseFileSystem)
+    public SaveDataResultConvertFileSystem(ref readonly SharedRef<ISaveDataFileSystem> baseFileSystem, bool isReconstructible) :
+        base(in baseFileSystem)
     {
         _isReconstructible = isReconstructible;
     }

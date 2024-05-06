@@ -31,13 +31,13 @@ public class FatFileSystemCreator : IFatFileSystemCreator
         // Missing: Call nn::fat::SetMemoryResource
     }
 
-    public Result Create(ref SharedRef<IFileSystem> outFileSystem, ref SharedRef<IStorage> baseStorage,
+    public Result Create(ref SharedRef<IFileSystem> outFileSystem, ref readonly SharedRef<IStorage> baseStorage,
         FatAttribute attribute, int driveId, Result invalidFatFormatResult, Result usableSpaceNotEnoughResult)
     {
         throw new NotImplementedException();
     }
 
-    public Result Format(ref SharedRef<IStorage> partitionStorage, FatAttribute attribute, FatFormatParam formatParam,
+    public Result Format(ref readonly SharedRef<IStorage> partitionStorage, FatAttribute attribute, FatFormatParam formatParam,
         int driveId, Result invalidFatFormatResult, Result usableSpaceNotEnoughResult)
     {
         throw new NotImplementedException();

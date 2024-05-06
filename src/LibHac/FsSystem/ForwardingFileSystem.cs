@@ -78,9 +78,9 @@ public class ForwardingFileSystem : IFileSystem
 {
     protected SharedRef<IFileSystem> BaseFileSystem;
 
-    protected ForwardingFileSystem(ref SharedRef<IFileSystem> baseFileSystem)
+    protected ForwardingFileSystem(ref readonly SharedRef<IFileSystem> baseFileSystem)
     {
-        BaseFileSystem = SharedRef<IFileSystem>.CreateMove(ref baseFileSystem);
+        BaseFileSystem = SharedRef<IFileSystem>.CreateCopy(in baseFileSystem);
     }
 
     public override void Dispose()

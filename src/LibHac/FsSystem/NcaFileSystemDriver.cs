@@ -233,7 +233,7 @@ public class NcaFileSystemDriver : IDisposable
         throw new NotImplementedException();
     }
 
-    private Result CreateAesXtsStorage(ref SharedRef<IStorage> outStorage, ref SharedRef<IStorage> baseStorage,
+    private Result CreateAesXtsStorage(ref SharedRef<IStorage> outStorage, ref readonly SharedRef<IStorage> baseStorage,
         long offset)
     {
         throw new NotImplementedException();
@@ -269,7 +269,7 @@ public class NcaFileSystemDriver : IDisposable
     }
 
     private Result CreateSparseStorageWithVerification(ref SharedRef<IStorage> outStorage, out long outFsDataOffset,
-        out SharedRef<SparseStorage> outSparseStorage, ref SharedRef<IStorage> outSparseStorageMetaStorage,
+        ref SharedRef<SparseStorage> outSparseStorage, ref SharedRef<IStorage> outSparseStorageMetaStorage,
         ref SharedRef<IStorage> outLayerInfoStorage, int index, NcaFsHeader.EncryptionType encryptionType,
         in NcaAesCtrUpperIv upperIv, in NcaSparseInfo sparseInfo, in NcaMetaDataHashDataInfo metaDataHashDataInfo,
         NcaFsHeader.MetaDataHashType metaDataHashType)

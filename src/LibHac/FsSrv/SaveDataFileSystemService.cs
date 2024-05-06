@@ -1825,16 +1825,16 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             openReadOnly).Ret();
     }
 
-    public Result OpenSaveDataFileSystem(ref SharedRef<IFileSystemSf> fileSystem, SaveDataSpaceId spaceId,
+    public Result OpenSaveDataFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, SaveDataSpaceId spaceId,
         in SaveDataAttribute attribute)
     {
-        return OpenUserSaveDataFileSystem(ref fileSystem, spaceId, in attribute, openReadOnly: false).Ret();
+        return OpenUserSaveDataFileSystem(ref outFileSystem, spaceId, in attribute, openReadOnly: false).Ret();
     }
 
-    public Result OpenReadOnlySaveDataFileSystem(ref SharedRef<IFileSystemSf> fileSystem, SaveDataSpaceId spaceId,
+    public Result OpenReadOnlySaveDataFileSystem(ref SharedRef<IFileSystemSf> outGileSystem, SaveDataSpaceId spaceId,
         in SaveDataAttribute attribute)
     {
-        return OpenUserSaveDataFileSystem(ref fileSystem, spaceId, in attribute, openReadOnly: true).Ret();
+        return OpenUserSaveDataFileSystem(ref outGileSystem, spaceId, in attribute, openReadOnly: true).Ret();
     }
 
     public Result OpenSaveDataFileSystemBySystemSaveDataId(ref SharedRef<IFileSystemSf> outFileSystem,

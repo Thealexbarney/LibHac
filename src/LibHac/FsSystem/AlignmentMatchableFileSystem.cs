@@ -105,7 +105,7 @@ public class AlignmentMatchingFile : ForwardingFile
 
 public class AlignmentMatchableFileSystem : ForwardingFileSystem
 {
-    public AlignmentMatchableFileSystem(ref SharedRef<IFileSystem> baseFileSystem) : base(ref baseFileSystem) { }
+    public AlignmentMatchableFileSystem(ref readonly SharedRef<IFileSystem> baseFileSystem) : base(in baseFileSystem) { }
 
     protected override Result DoOpenFile(ref UniqueRef<IFile> outFile, ref readonly Path path, OpenMode mode)
     {

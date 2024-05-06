@@ -128,10 +128,10 @@ internal class StorageLayoutTypeSetFile : IFile
         Assert.SdkAssert(StorageLayoutTypeFunctions.IsStorageFlagValid(storageFlag));
     }
 
-    public StorageLayoutTypeSetFile(ref SharedRef<IFile> baseFile, StorageLayoutType storageFlag)
+    public StorageLayoutTypeSetFile(ref readonly SharedRef<IFile> baseFile, StorageLayoutType storageFlag)
     {
         _baseFile = baseFile.Get;
-        _baseFileShared = SharedRef<IFile>.CreateMove(ref baseFile);
+        _baseFileShared = SharedRef<IFile>.CreateCopy(in baseFile);
         _storageFlag = storageFlag;
 
         Assert.SdkAssert(StorageLayoutTypeFunctions.IsStorageFlagValid(storageFlag));
@@ -235,9 +235,9 @@ internal class StorageLayoutTypeSetFileSystem : IFileSystem
     private SharedRef<IFileSystem> _baseFileSystem;
     private StorageLayoutType _storageFlag;
 
-    public StorageLayoutTypeSetFileSystem(ref SharedRef<IFileSystem> baseFileSystem, StorageLayoutType storageFlag)
+    public StorageLayoutTypeSetFileSystem(ref readonly SharedRef<IFileSystem> baseFileSystem, StorageLayoutType storageFlag)
     {
-        _baseFileSystem = SharedRef<IFileSystem>.CreateMove(ref baseFileSystem);
+        _baseFileSystem = SharedRef<IFileSystem>.CreateCopy(in baseFileSystem);
         _storageFlag = storageFlag;
 
         Assert.SdkAssert(StorageLayoutTypeFunctions.IsStorageFlagValid(storageFlag));

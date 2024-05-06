@@ -299,7 +299,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
                 bool openShared = SaveDataProperties.IsSharedOpenNeeded(type);
                 bool isReconstructible = SaveDataProperties.IsReconstructible(type, spaceId);
 
-                res = _config.SaveFsCreator.Create(ref saveDataFs.Ref, ref fileSystem.Ref, spaceId, saveDataId,
+                res = _config.SaveFsCreator.Create(ref saveDataFs.Ref, fileSystem.Ref, spaceId, saveDataId,
                     isEmulatedOnHost, isDeviceUniqueMac, isJournalingSupported, isMultiCommitSupported,
                     openReadOnly, openShared, _timeStampGetter, isReconstructible);
                 if (res.IsFailure()) return res.Miss();
