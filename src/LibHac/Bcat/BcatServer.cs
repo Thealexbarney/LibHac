@@ -36,7 +36,7 @@ public class BcatServer
 
         using SharedRef<IServiceCreator> service = GetServiceCreator(type);
 
-        Result res = Hos.Sm.RegisterService(new BcatServiceObject(ref service.Ref), name);
+        Result res = Hos.Sm.RegisterService(new BcatServiceObject(in service), name);
         if (res.IsFailure())
         {
             throw new HorizonResultException(res, "Abort");

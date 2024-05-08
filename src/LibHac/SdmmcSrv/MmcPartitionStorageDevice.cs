@@ -60,8 +60,7 @@ internal abstract class MmcPartitionStorageDevice : IDisposable
         using SharedRef<MmcPartitionStorageDevice> storageDevice =
             SharedRef<MmcPartitionStorageDevice>.Create(in SelfReference);
 
-        using var deviceOperator =
-            new SharedRef<MmcDeviceOperator>(new MmcDeviceOperator(ref storageDevice.Ref, Sdmmc));
+        using var deviceOperator = new SharedRef<MmcDeviceOperator>(new MmcDeviceOperator(in storageDevice, Sdmmc));
 
         if (!deviceOperator.HasValue)
             return ResultFs.AllocationMemoryFailedInSdmmcStorageServiceA.Log();

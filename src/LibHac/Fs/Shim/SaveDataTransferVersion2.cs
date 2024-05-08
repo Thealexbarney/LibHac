@@ -85,7 +85,7 @@ namespace LibHac.Fs
             _fsClient.Impl.LogResultErrorMessage(res);
             if (res.IsFailure()) return res.Miss();
 
-            outExporter.Reset(new SaveDataExporterVersion2(_fsClient, ref exporterInterface.Ref));
+            outExporter.Reset(new SaveDataExporterVersion2(_fsClient, in exporterInterface));
             return Result.Success;
         }
 
@@ -100,7 +100,7 @@ namespace LibHac.Fs
             _fsClient.Impl.LogResultErrorMessage(res);
             if (res.IsFailure()) return res.Miss();
 
-            outExporter.Reset(new SaveDataExporterVersion2(_fsClient, ref exporterInterface.Ref));
+            outExporter.Reset(new SaveDataExporterVersion2(_fsClient, in exporterInterface));
             return Result.Success;
         }
 
@@ -115,7 +115,7 @@ namespace LibHac.Fs
             _fsClient.Impl.LogResultErrorMessage(res);
             if (res.IsFailure()) return res.Miss();
 
-            outExporter.Reset(new SaveDataExporterVersion2(_fsClient, ref exporterInterface.Ref));
+            outExporter.Reset(new SaveDataExporterVersion2(_fsClient, in exporterInterface));
             return Result.Success;
         }
 
@@ -130,7 +130,7 @@ namespace LibHac.Fs
             _fsClient.Impl.LogResultErrorMessage(res);
             if (res.IsFailure()) return res.Miss();
 
-            outImporter.Reset(new SaveDataImporterVersion2(_fsClient, ref importerInterface.Ref));
+            outImporter.Reset(new SaveDataImporterVersion2(_fsClient, in importerInterface));
             return Result.Success;
         }
 
@@ -145,7 +145,7 @@ namespace LibHac.Fs
             _fsClient.Impl.LogResultErrorMessage(res);
             if (res.IsFailure()) return res.Miss();
 
-            outImporter.Reset(new SaveDataImporterVersion2(_fsClient, ref importerInterface.Ref));
+            outImporter.Reset(new SaveDataImporterVersion2(_fsClient, in importerInterface));
             return Result.Success;
         }
 
@@ -160,7 +160,7 @@ namespace LibHac.Fs
             _fsClient.Impl.LogResultErrorMessage(res);
             if (res.IsFailure()) return res.Miss();
 
-            outImporter.Reset(new SaveDataImporterVersion2(_fsClient, ref importerInterface.Ref));
+            outImporter.Reset(new SaveDataImporterVersion2(_fsClient, in importerInterface));
             return Result.Success;
         }
 
@@ -175,7 +175,7 @@ namespace LibHac.Fs
             _fsClient.Impl.LogResultErrorMessage(res);
             if (res.IsFailure()) return res.Miss();
 
-            outImporter.Reset(new SaveDataImporterVersion2(_fsClient, ref importerInterface.Ref));
+            outImporter.Reset(new SaveDataImporterVersion2(_fsClient, in importerInterface));
             return Result.Success;
         }
 
@@ -196,7 +196,7 @@ namespace LibHac.Fs
             _fsClient.Impl.LogResultErrorMessage(res);
             if (res.IsFailure()) return res.Miss();
 
-            outImporter.Reset(new SaveDataImporterVersion2(_fsClient, ref importerInterface.Ref));
+            outImporter.Reset(new SaveDataImporterVersion2(_fsClient, in importerInterface));
             return Result.Success;
         }
 
@@ -296,7 +296,7 @@ namespace LibHac.Fs.Shim
             // Result res = fileSystemProxy.Get.OpenSaveDataTransferProhibiter(ref prohibiter.Ref, applicationId);
             // if (res.IsFailure()) return res.Miss();
 
-            outProhibiter.Reset(new SaveDataTransferProhibiterForCloudBackUp(ref prohibiter.Ref));
+            outProhibiter.Reset(new SaveDataTransferProhibiterForCloudBackUp(in prohibiter));
 
             return Result.Success;
         }

@@ -87,7 +87,7 @@ public static class SystemSaveData
             res = fileSystemProxy.Get.OpenSaveDataFileSystemBySystemSaveDataId(ref fileSystem.Ref, spaceId, in attribute);
             if (res.IsFailure()) return res.Miss();
 
-            var fileSystemAdapterRaw = new FileSystemServiceObjectAdapter(ref fileSystem.Ref);
+            var fileSystemAdapterRaw = new FileSystemServiceObjectAdapter(in fileSystem);
             using var fileSystemAdapter = new UniqueRef<IFileSystem>(fileSystemAdapterRaw);
 
             if (!fileSystemAdapter.HasValue)

@@ -62,14 +62,14 @@ internal static class SdCardService
         res = storageDeviceManager.Get.OpenStorage(ref sdCardStorage.Ref, 0);
         if (res.IsFailure()) return res.Miss();
 
-        using var storage = new SharedRef<IStorage>(new StorageServiceObjectAdapter(ref sdCardStorage.Ref));
+        using var storage = new SharedRef<IStorage>(new StorageServiceObjectAdapter(in sdCardStorage));
 
         SdCardEventSimulator eventSimulator = service.FsSrv.Impl.GetSdCardEventSimulator();
         using var deviceEventSimulationStorage =
-            new SharedRef<IStorage>(new DeviceEventSimulationStorage(ref storage.Ref, eventSimulator));
+            new SharedRef<IStorage>(new DeviceEventSimulationStorage(in storage, eventSimulator));
 
         using var emulationStorage = new SharedRef<IStorage>(
-            new SpeedEmulationStorage(ref deviceEventSimulationStorage.Ref, service.FsSrv));
+            new SpeedEmulationStorage(in deviceEventSimulationStorage, service.FsSrv));
 
         outStorage.SetByMove(ref emulationStorage.Ref);
         return Result.Success;

@@ -51,8 +51,7 @@ public static class Content
         res = fileSystemProxy.Get.OpenFileSystemWithId(ref fileSystem.Ref, in sfPath, attributes, id, fsType);
         if (res.IsFailure()) return res.Miss();
 
-        using var fileSystemAdapter =
-            new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref));
+        using var fileSystemAdapter = new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(in fileSystem));
 
         if (!fileSystemAdapter.HasValue)
             return ResultFs.AllocationMemoryFailedInContentA.Log();
@@ -253,8 +252,7 @@ public static class Content
             res = fileSystemProxy.Get.OpenFileSystemWithPatch(ref fileSystem.Ref, programId, fsType);
             if (res.IsFailure()) return res.Miss();
 
-            using var fileSystemAdapter =
-                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref));
+            using var fileSystemAdapter = new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(in fileSystem));
 
             if (!fileSystemAdapter.HasValue)
                 return ResultFs.AllocationMemoryFailedInContentA.Log();

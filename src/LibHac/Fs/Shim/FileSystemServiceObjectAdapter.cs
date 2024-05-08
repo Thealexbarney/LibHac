@@ -274,7 +274,7 @@ internal class FileSystemServiceObjectAdapter : IFileSystem, IMultiCommitTarget
         res = _baseFs.Get.OpenDirectory(ref directoryServiceObject.Ref, in sfPath, (uint)mode);
         if (res.IsFailure()) return res.Miss();
 
-        outDirectory.Reset(new DirectoryServiceObjectAdapter(ref directoryServiceObject.Ref));
+        outDirectory.Reset(new DirectoryServiceObjectAdapter(in directoryServiceObject));
         return Result.Success;
     }
 

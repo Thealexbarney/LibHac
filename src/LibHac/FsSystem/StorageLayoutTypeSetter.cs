@@ -51,9 +51,9 @@ internal class StorageLayoutTypeSetStorage : IStorage
     private SharedRef<IStorage> _baseStorage;
     private StorageLayoutType _storageFlag;
 
-    public StorageLayoutTypeSetStorage(ref SharedRef<IStorage> baseStorage, StorageLayoutType storageFlag)
+    public StorageLayoutTypeSetStorage(ref readonly SharedRef<IStorage> baseStorage, StorageLayoutType storageFlag)
     {
-        _baseStorage = SharedRef<IStorage>.CreateMove(ref baseStorage);
+        _baseStorage = SharedRef<IStorage>.CreateCopy(in baseStorage);
         _storageFlag = storageFlag;
 
         Assert.SdkAssert(StorageLayoutTypeFunctions.IsStorageFlagValid(storageFlag));

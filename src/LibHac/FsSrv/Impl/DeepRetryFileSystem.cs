@@ -22,7 +22,7 @@ public class DeepRetryFileSystem : ForwardingFileSystem
         using var retryFileSystem = new SharedRef<DeepRetryFileSystem>(
             new DeepRetryFileSystem(in baseFileSystem, in accessFailureManager));
 
-        retryFileSystem.Get._selfReference.Set(in retryFileSystem.Ref);
+        retryFileSystem.Get._selfReference.Set(in retryFileSystem);
 
         return SharedRef<IFileSystem>.CreateMove(ref retryFileSystem.Ref);
     }

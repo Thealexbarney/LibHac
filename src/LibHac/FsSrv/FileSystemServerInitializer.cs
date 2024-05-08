@@ -45,7 +45,7 @@ public static class FileSystemServerInitializer
         ulong processId = client.Os.GetCurrentProcessId().Value;
         fileSystemProxy.Get.SetCurrentProcess(processId).IgnoreResult();
 
-        client.Fs.Impl.InitializeDfcFileSystemProxyServiceObject(ref fileSystemProxy.Ref);
+        client.Fs.Impl.InitializeDfcFileSystemProxyServiceObject(in fileSystemProxy);
 
         InitializeFileSystemProxyServer(client, server);
 

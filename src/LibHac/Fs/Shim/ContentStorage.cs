@@ -117,8 +117,7 @@ public static class ContentStorage
                 fs.Hos.Os.SleepThread(TimeSpan.FromMilliSeconds(retryInterval));
             }
 
-            using var fileSystemAdapter =
-                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref));
+            using var fileSystemAdapter = new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(in fileSystem));
 
             if (!fileSystemAdapter.HasValue)
                 return ResultFs.AllocationMemoryFailedInContentStorageA.Log();

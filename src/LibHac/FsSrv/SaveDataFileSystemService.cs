@@ -42,9 +42,9 @@ file class SaveDataOpenCountAdapter : IEntryOpenCountSemaphoreManager
 {
     private SharedRef<SaveDataFileSystemService> _saveService;
 
-    public SaveDataOpenCountAdapter(ref SharedRef<SaveDataFileSystemService> saveService)
+    public SaveDataOpenCountAdapter(ref readonly SharedRef<SaveDataFileSystemService> saveService)
     {
-        _saveService = SharedRef<SaveDataFileSystemService>.CreateMove(ref saveService);
+        _saveService = SharedRef<SaveDataFileSystemService>.CreateCopy(in saveService);
     }
 
     public void Dispose()
@@ -1752,14 +1752,12 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         if (res.IsFailure()) return res.Miss();
 
         // Add all the wrappers for the file system
-        using var typeSetFileSystem =
-            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref, storageFlag));
-
+        using var typeSetFileSystem = new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(in fileSystem, storageFlag));
         using var asyncFileSystem = new SharedRef<IFileSystem>();
 
         if (useAsyncFileSystem)
         {
-            asyncFileSystem.Reset(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref));
+            asyncFileSystem.Reset(new AsynchronousAccessFileSystem(in typeSetFileSystem));
         }
         else
         {
@@ -1768,17 +1766,17 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
         using SharedRef<SaveDataFileSystemService> saveService = GetSharedFromThis();
         using var openEntryCountAdapter =
-            new SharedRef<IEntryOpenCountSemaphoreManager>(new SaveDataOpenCountAdapter(ref saveService.Ref));
+            new SharedRef<IEntryOpenCountSemaphoreManager>(new SaveDataOpenCountAdapter(in saveService));
 
-        using var openCountFileSystem = new SharedRef<IFileSystem>(new OpenCountFileSystem(ref asyncFileSystem.Ref,
-            ref openEntryCountAdapter.Ref, ref mountCountSemaphore.Ref));
+        using var openCountFileSystem = new SharedRef<IFileSystem>(new OpenCountFileSystem(in asyncFileSystem,
+            in openEntryCountAdapter, ref mountCountSemaphore.Ref));
 
         PathFlags pathFlags = FileSystemInterfaceAdapter.GetDefaultPathFlags();
         pathFlags.AllowBackslash();
         pathFlags.AllowInvalidCharacter();
 
         using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref openCountFileSystem.Ref, pathFlags, false);
+            FileSystemInterfaceAdapter.CreateShared(in openCountFileSystem, pathFlags, allowAllOperations: false);
 
         outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
         return Result.Success;
@@ -1879,14 +1877,12 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         if (res.IsFailure()) return res.Miss();
 
         // Add all the wrappers for the file system
-        using var typeSetFileSystem =
-            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref, storageFlag));
-
+        using var typeSetFileSystem = new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(in fileSystem, storageFlag));
         using var asyncFileSystem = new SharedRef<IFileSystem>();
 
         if (useAsyncFileSystem)
         {
-            asyncFileSystem.Reset(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref));
+            asyncFileSystem.Reset(new AsynchronousAccessFileSystem(in typeSetFileSystem));
         }
         else
         {
@@ -1895,17 +1891,17 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
         using SharedRef<SaveDataFileSystemService> saveService = GetSharedFromThis();
         using var openEntryCountAdapter =
-            new SharedRef<IEntryOpenCountSemaphoreManager>(new SaveDataOpenCountAdapter(ref saveService.Ref));
+            new SharedRef<IEntryOpenCountSemaphoreManager>(new SaveDataOpenCountAdapter(in saveService));
 
         using var openCountFileSystem = new SharedRef<IFileSystem>(
-            new OpenCountFileSystem(ref asyncFileSystem.Ref, ref openEntryCountAdapter.Ref));
+            new OpenCountFileSystem(in asyncFileSystem, in openEntryCountAdapter));
 
         PathFlags pathFlags = FileSystemInterfaceAdapter.GetDefaultPathFlags();
         pathFlags.AllowBackslash();
         pathFlags.AllowInvalidCharacter();
 
         using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref openCountFileSystem.Ref, pathFlags, allowAllOperations: false);
+            FileSystemInterfaceAdapter.CreateShared(in openCountFileSystem, pathFlags, allowAllOperations: false);
 
         outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
         return Result.Success;
@@ -2257,14 +2253,13 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             if (res.IsFailure()) return res.Miss();
 
             using var reader = new SharedRef<SaveDataInfoReaderImpl>();
-
             res = accessor.Get.GetInterface().OpenSaveDataInfoReader(ref reader.Ref);
             if (res.IsFailure()) return res.Miss();
 
             var filter = new SaveDataInfoFilter(ConvertToRealSpaceId(spaceId), programId: default,
                 saveDataType: default, userId: default, saveDataId: default, index: default, (int)SaveDataRank.Primary);
 
-            filterReader.Reset(new SaveDataInfoFilterReader(ref reader.Ref, in filter));
+            filterReader.Reset(new SaveDataInfoFilterReader(in reader, in filter));
         }
 
         outInfoReader.Set(ref filterReader.Ref);
@@ -2300,7 +2295,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
             var infoFilter = new SaveDataInfoFilter(ConvertToRealSpaceId(spaceId), in filter);
 
-            filterReader.Reset(new SaveDataInfoFilterReader(ref reader.Ref, in infoFilter));
+            filterReader.Reset(new SaveDataInfoFilterReader(in reader, in infoFilter));
         }
 
         outInfoReader.Set(ref filterReader.Ref);
@@ -2323,7 +2318,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         if (res.IsFailure()) return res.Miss();
 
         using var filterReader =
-            new UniqueRef<SaveDataInfoFilterReader>(new SaveDataInfoFilterReader(ref reader.Ref, in infoFilter));
+            new UniqueRef<SaveDataInfoFilterReader>(new SaveDataInfoFilterReader(in reader, in infoFilter));
 
         return filterReader.Get.Read(out count, new OutBuffer(SpanHelpers.AsByteSpan(ref info))).Ret();
     }
@@ -2427,9 +2422,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             in saveDataRootPath, isTemporaryTransferSave, isReconstructible);
         if (res.IsFailure()) return res.Miss();
 
-        using var typeSetFileSystem =
-            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref, storageFlag));
-
+        using var typeSetFileSystem = new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(in fileSystem, storageFlag));
         outFileSystem.SetByMove(ref typeSetFileSystem.Ref);
         return Result.Success;
     }
@@ -2476,17 +2469,17 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         if (res.IsFailure()) return res.Miss();
 
         // Add all the wrappers for the file system
-        using var asyncFileSystem = new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref fileSystem.Ref));
+        using var asyncFileSystem = new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(in fileSystem));
 
         using SharedRef<SaveDataFileSystemService> saveService = GetSharedFromThis();
         using var openEntryCountAdapter =
-            new SharedRef<IEntryOpenCountSemaphoreManager>(new SaveDataOpenCountAdapter(ref saveService.Ref));
+            new SharedRef<IEntryOpenCountSemaphoreManager>(new SaveDataOpenCountAdapter(in saveService));
 
-        using var openCountFileSystem = new SharedRef<IFileSystem>(new OpenCountFileSystem(ref asyncFileSystem.Ref,
-            ref openEntryCountAdapter.Ref, ref mountCountSemaphore.Ref));
+        using var openCountFileSystem = new SharedRef<IFileSystem>(new OpenCountFileSystem(in asyncFileSystem,
+            in openEntryCountAdapter, ref mountCountSemaphore.Ref));
 
         using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref openCountFileSystem.Ref, allowAllOperations: false);
+            FileSystemInterfaceAdapter.CreateShared(in openCountFileSystem, allowAllOperations: false);
 
         outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
         return Result.Success;
@@ -2599,7 +2592,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
             var filter = new SaveDataInfoFilter(ConvertToRealSpaceId(spaceId), resolvedProgramId, SaveDataType.Cache,
                 userId: default, saveDataId: default, index: default, (int)SaveDataRank.Primary);
 
-            filterReader.Reset(new SaveDataInfoFilterReader(ref reader.Ref, in filter));
+            filterReader.Reset(new SaveDataInfoFilterReader(in reader, in filter));
         }
 
         outInfoReader.Set(ref filterReader.Ref);
@@ -2617,8 +2610,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         Result res = _serviceImpl.OpenSaveDataMetaDirectoryFileSystem(ref fileSystem.Ref, spaceId, saveDataId);
         if (res.IsFailure()) return res.Miss();
 
-        using var typeSetFileSystem =
-            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref, storageFlag));
+        using var typeSetFileSystem = new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(in fileSystem, storageFlag));
 
         Unsafe.SkipInit(out Array15<byte> pathMetaBuffer);
 
@@ -2681,13 +2673,9 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         res = _serviceImpl.OpenSaveDataMetaDirectoryFileSystem(ref tmpFileSystem.Ref, spaceId, targetSaveDataId);
         if (res.IsFailure()) return res.Miss();
 
-        using var typeSetFileSystem =
-            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref tmpFileSystem.Ref, storageFlag));
-
-        using var asyncFileSystem = new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref));
-
-        using SharedRef<IFileSystemSf> fileSystem =
-            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref, allowAllOperations: false);
+        using var typeSetFileSystem = new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(in tmpFileSystem, storageFlag));
+        using var asyncFileSystem = new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(in typeSetFileSystem));
+        using SharedRef<IFileSystemSf> fileSystem = FileSystemInterfaceAdapter.CreateShared(in asyncFileSystem, allowAllOperations: false);
 
         Unsafe.SkipInit(out Sf.Path sfPath);
         var sb = new U8StringBuilder(SpanHelpers.AsByteSpan(ref sfPath));
@@ -2847,8 +2835,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
 
         using SharedRef<ISaveDataTransferCoreInterface> transferInterface = GetSaveDataTransferCoreInterfaceFromThis();
         using var manager = new SharedRef<ISaveDataTransferManager>(
-            new SaveDataTransferManager(_serviceImpl.GetSaveDataTransferCryptoConfiguration(),
-                in transferInterface.Ref));
+            new SaveDataTransferManager(_serviceImpl.GetSaveDataTransferCryptoConfiguration(), in transferInterface));
 
         if (!manager.HasValue)
             return ResultFs.AllocationMemoryFailedInFileSystemProxyImplA.Log();
@@ -2896,7 +2883,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         using SharedRef<ISaveDataTransferCoreInterface> transferInterface = GetSaveDataTransferCoreInterfaceFromThis();
         using var manager = new SharedRef<ISaveDataTransferManagerForSaveDataRepair>(
             new SaveDataTransferManagerForSaveDataRepair<SaveDataTransferManagerForSaveDataRepairPolicyV0>(
-                _serviceImpl.GetSaveDataTransferCryptoConfiguration(), in transferInterface.Ref,
+                _serviceImpl.GetSaveDataTransferCryptoConfiguration(), in transferInterface,
                 _serviceImpl.GetSaveDataPorterManager(), isOpenPorterWithKeyEnabled));
 
         if (!manager.HasValue)
@@ -2919,7 +2906,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
         using SharedRef<ISaveDataTransferCoreInterface> transferInterface = GetSaveDataTransferCoreInterfaceFromThis();
         using var manager = new SharedRef<ISaveDataTransferManagerForRepair>(
             new Impl.SaveDataTransferManagerForRepair(_serviceImpl.GetSaveDataTransferCryptoConfiguration(),
-                in transferInterface.Ref, _serviceImpl.GetSaveDataPorterManager()));
+                in transferInterface, _serviceImpl.GetSaveDataPorterManager()));
 
         if (!manager.HasValue)
             return ResultFs.AllocationMemoryFailedInFileSystemProxyImplA.Log();
@@ -3318,7 +3305,7 @@ internal class SaveDataFileSystemService : ISaveDataTransferCoreInterface, ISave
     {
         using SharedRef<ISaveDataMultiCommitCoreInterface> commitInterface = GetSharedMultiCommitInterfaceFromThis();
 
-        outCommitManager.Reset(new MultiCommitManager(_serviceImpl.FsServer, ref commitInterface.Ref));
+        outCommitManager.Reset(new MultiCommitManager(_serviceImpl.FsServer, in commitInterface));
 
         return Result.Success;
     }

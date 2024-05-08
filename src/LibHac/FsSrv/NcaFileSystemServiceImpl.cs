@@ -382,7 +382,7 @@ public class NcaFileSystemServiceImpl : IDisposable
 
         using var ncaReader = new SharedRef<NcaReader>();
         ulong openProgramId = mountInfo.IsHostOrLocalFs() ? ulong.MaxValue : id;
-        res = ParseNca(ref ncaReader.Ref, ref baseFileSystem.Ref, currentPath, attributes, openProgramId);
+        res = ParseNca(ref ncaReader.Ref, in baseFileSystem, currentPath, attributes, openProgramId);
         if (res.IsFailure()) return res.Miss();
 
         using var storage = new SharedRef<IStorage>();

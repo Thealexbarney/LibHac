@@ -178,7 +178,7 @@ public class SaveDataExporterVersion2 : ISaveDataDivisionExporter
         _fsClient.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
-        outIterator.Reset(new SaveDataChunkIterator(_fsClient, ref iteratorObject.Ref));
+        outIterator.Reset(new SaveDataChunkIterator(_fsClient, in iteratorObject));
         return Result.Success;
     }
 
@@ -190,7 +190,7 @@ public class SaveDataExporterVersion2 : ISaveDataDivisionExporter
         _fsClient.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
-        outExporter.Reset(new SaveDataChunkExporter(_fsClient, ref exporterObject.Ref));
+        outExporter.Reset(new SaveDataChunkExporter(_fsClient, in exporterObject));
         return Result.Success;
     }
 
@@ -404,7 +404,7 @@ public class SaveDataImporterVersion2 : ISaveDataDivisionImporter
         _fsClient.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
-        outIterator.Reset(new SaveDataChunkIterator(_fsClient, ref iteratorObject.Ref));
+        outIterator.Reset(new SaveDataChunkIterator(_fsClient, in iteratorObject));
         return Result.Success;
     }
 
@@ -416,7 +416,7 @@ public class SaveDataImporterVersion2 : ISaveDataDivisionImporter
         _fsClient.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
-        outImporter.Reset(new SaveDataChunkImporter(_fsClient, ref importerObject.Ref));
+        outImporter.Reset(new SaveDataChunkImporter(_fsClient, in importerObject));
         return Result.Success;
     }
 

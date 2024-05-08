@@ -145,7 +145,7 @@ internal class GameCardStorageDevice : GameCardStorageInterfaceAdapter, IStorage
             SharedRef<GameCardStorageDevice>.Create(in _selfReference);
 
         using var deviceOperator =
-            new SharedRef<GameCardDeviceOperator>(new GameCardDeviceOperator(ref storageDevice.Ref, _gc));
+            new SharedRef<GameCardDeviceOperator>(new GameCardDeviceOperator(in storageDevice, _gc));
 
         if (!deviceOperator.HasValue)
             return ResultFs.AllocationMemoryFailedInGameCardManagerG.Log();

@@ -142,7 +142,7 @@ public class SaveDataFileSystemCacheManager : IDisposable
             {
                 using ScopedLock<SdkRecursiveMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
-                _cachedFileSystems[_nextCacheIndex].Register(ref fileSystem, spaceId, saveDataId);
+                _cachedFileSystems[_nextCacheIndex].Register(in fileSystem, spaceId, saveDataId);
                 _nextCacheIndex = (_nextCacheIndex + 1) % _maxCachedFileSystemCount;
             }
         }

@@ -79,13 +79,9 @@ public readonly struct BaseStorageService
         res = _serviceImpl.OpenBisStorage(ref storage.Ref, id);
         if (res.IsFailure()) return res.Miss();
 
-        using var typeSetStorage =
-            new SharedRef<IStorage>(new StorageLayoutTypeSetStorage(ref storage.Ref, storageFlag));
-
+        using var typeSetStorage = new SharedRef<IStorage>(new StorageLayoutTypeSetStorage(in storage, storageFlag));
         // Todo: Async storage
-
-        using var storageAdapter =
-            new SharedRef<IStorageSf>(new StorageInterfaceAdapter(ref typeSetStorage.Ref));
+        using var storageAdapter = new SharedRef<IStorageSf>(new StorageInterfaceAdapter(in typeSetStorage));
 
         outStorage.SetByMove(ref storageAdapter.Ref);
 
@@ -122,9 +118,7 @@ public readonly struct BaseStorageService
         if (res.IsFailure()) return res.Miss();
 
         // Todo: Async storage
-
-        using var storageAdapter =
-            new SharedRef<IStorageSf>(new StorageInterfaceAdapter(ref storage.Ref));
+        using var storageAdapter = new SharedRef<IStorageSf>(new StorageInterfaceAdapter(in storage));
 
         outStorage.SetByMove(ref storageAdapter.Ref);
 

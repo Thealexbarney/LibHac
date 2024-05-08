@@ -280,7 +280,7 @@ public class GameCardFileSystemCreator : IGameCardFileSystemCreator
                 res = rootPartitionFsMeta.Get.Initialize(rootFsStorage.Get, _allocator, status.PartitionFsHeaderHash, salt);
                 if (res.IsFailure()) return res.Miss();
 
-                _rootPartition.Reset(new GameCardRootPartition(handle, ref rootFsStorage.Ref, _gameCardStorageCreator,
+                _rootPartition.Reset(new GameCardRootPartition(handle, in rootFsStorage, _gameCardStorageCreator,
                     ref rootPartitionFsMeta.Ref, _fsServer));
 
                 if (!_rootPartition.HasValue)

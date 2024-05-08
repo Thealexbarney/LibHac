@@ -38,7 +38,7 @@ public class ReadOnlyBlockCacheStorageTests
             }
 
             using var baseStorage = new SharedRef<IStorage>(new MemoryStorage(BaseData));
-            CacheStorage = new ReadOnlyBlockCacheStorage(ref baseStorage.Ref, _blockSize, CacheBuffer, _cacheBlockCount);
+            CacheStorage = new ReadOnlyBlockCacheStorage(in baseStorage, _blockSize, CacheBuffer, _cacheBlockCount);
         }
 
         public Span<byte> GetBaseDataBlock(int index) => BaseData.AsSpan(_blockSize * index, _blockSize);

@@ -31,8 +31,6 @@ public class DefaultFsServerObjects
         var gcStorageCreator = new GameCardStorageCreator(fsServer);
 
         using var sharedRootFileSystem = new SharedRef<IFileSystem>(rootFileSystem);
-        using SharedRef<IFileSystem> sharedRootFileSystemCopy =
-            SharedRef<IFileSystem>.CreateCopy(in sharedRootFileSystem);
 
         var memoryResource = new ArrayPoolMemoryResource();
         IBufferManager bufferManager = null;
@@ -47,8 +45,8 @@ public class DefaultFsServerObjects
         creators.GameCardStorageCreator = gcStorageCreator;
         creators.GameCardFileSystemCreator = new GameCardFileSystemCreator(memoryResource, gcStorageCreator, fsServer);
         creators.EncryptedFileSystemCreator = new EncryptedFileSystemCreator(keySet);
-        creators.BuiltInStorageFileSystemCreator = new EmulatedBisFileSystemCreator(ref sharedRootFileSystem.Ref);
-        creators.SdCardFileSystemCreator = new EmulatedSdCardFileSystemCreator(sdmmcNew, ref sharedRootFileSystemCopy.Ref);
+        creators.BuiltInStorageFileSystemCreator = new EmulatedBisFileSystemCreator(in sharedRootFileSystem);
+        creators.SdCardFileSystemCreator = new EmulatedSdCardFileSystemCreator(sdmmcNew, in sharedRootFileSystem);
 
         var storageDeviceManagerFactory = new EmulatedStorageDeviceManagerFactory(fsServer, sdmmcNew, gameCardNew, hasGameCard: true);
 

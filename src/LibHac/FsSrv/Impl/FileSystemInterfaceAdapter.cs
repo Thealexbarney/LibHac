@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
@@ -251,8 +250,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
     // creating files and directories. We don't have an ISharedObject, so a self-reference is used instead.
     private WeakRef<FileSystemInterfaceAdapter> _selfReference;
 
-    private FileSystemInterfaceAdapter(ref readonly SharedRef<IFileSystem> fileSystem,
-        bool allowAllOperations)
+    private FileSystemInterfaceAdapter(ref readonly SharedRef<IFileSystem> fileSystem, bool allowAllOperations)
     {
         _baseFileSystem = SharedRef<IFileSystem>.CreateCopy(in fileSystem);
         _allowAllOperations = allowAllOperations;
@@ -506,7 +504,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         using SharedRef<FileSystemInterfaceAdapter> selfReference =
             SharedRef<FileSystemInterfaceAdapter>.Create(in _selfReference);
 
-        var adapter = new FileInterfaceAdapter(ref file.Ref, ref selfReference.Ref, _allowAllOperations);
+        var adapter = new FileInterfaceAdapter(ref file.Ref, in selfReference, _allowAllOperations);
         outFile.Reset(adapter);
 
         return Result.Success;
@@ -537,7 +535,7 @@ public class FileSystemInterfaceAdapter : IFileSystemSf
         using SharedRef<FileSystemInterfaceAdapter> selfReference =
             SharedRef<FileSystemInterfaceAdapter>.Create(in _selfReference);
 
-        var adapter = new DirectoryInterfaceAdapter(ref directory.Ref, ref selfReference.Ref);
+        var adapter = new DirectoryInterfaceAdapter(ref directory.Ref, in selfReference);
         outDirectory.Reset(adapter);
 
         return Result.Success;

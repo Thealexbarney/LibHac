@@ -105,12 +105,12 @@ internal static class MmcService
         res = storageDeviceManager.Get.OpenStorage(ref mmcStorage.Ref, attribute);
         if (res.IsFailure()) return res.Miss();
 
-        using var storage = new SharedRef<IStorage>(new StorageServiceObjectAdapter(ref mmcStorage.Ref));
+        using var storage = new SharedRef<IStorage>(new StorageServiceObjectAdapter(in mmcStorage));
 
         if (IsSpeedEmulationNeeded(partition))
         {
             using var emulationStorage =
-                new SharedRef<IStorage>(new SpeedEmulationStorage(ref storage.Ref, service.FsSrv));
+                new SharedRef<IStorage>(new SpeedEmulationStorage(in storage, service.FsSrv));
 
             outStorage.SetByMove(ref emulationStorage.Ref);
             return Result.Success;

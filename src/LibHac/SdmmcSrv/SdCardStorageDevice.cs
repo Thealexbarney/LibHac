@@ -73,7 +73,7 @@ internal class SdCardStorageDevice : SdmmcStorageInterfaceAdapter, IStorageDevic
         using SharedRef<SdCardStorageDevice> storageDevice = SharedRef<SdCardStorageDevice>.Create(in _selfReference);
 
         using var deviceOperator =
-            new SharedRef<SdCardDeviceOperator>(new SdCardDeviceOperator(ref storageDevice.Ref, _sdmmc));
+            new SharedRef<SdCardDeviceOperator>(new SdCardDeviceOperator(in storageDevice, _sdmmc));
 
         if (!deviceOperator.HasValue)
             return ResultFs.AllocationMemoryFailedInSdmmcStorageServiceA.Log();

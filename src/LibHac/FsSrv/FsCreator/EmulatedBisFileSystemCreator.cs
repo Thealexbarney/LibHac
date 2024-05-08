@@ -83,7 +83,7 @@ public class EmulatedBisFileSystemCreator : IBuiltInStorageFileSystemCreator
         if (res.IsFailure()) return res.Miss();
 
         using var partitionFileSystem = new SharedRef<IFileSystem>();
-        res = Utility.WrapSubDirectory(ref partitionFileSystem.Ref, ref rootFileSystem.Ref, in bisRootPath, true);
+        res = Utility.WrapSubDirectory(ref partitionFileSystem.Ref, in rootFileSystem, in bisRootPath, true);
         if (res.IsFailure()) return res.Miss();
 
         outFileSystem.SetByMove(ref partitionFileSystem.Ref);

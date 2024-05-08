@@ -1,5 +1,4 @@
-﻿using System;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using LibHac.Diag;
 using LibHac.Htc;
 using LibHac.HtcFs;

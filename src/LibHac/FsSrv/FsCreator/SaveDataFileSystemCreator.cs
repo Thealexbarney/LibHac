@@ -413,7 +413,7 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
 
         // Wrap the save FS in a result convert FS and set it as the output FS
         using var resultConvertFs = new SharedRef<SaveDataResultConvertFileSystem>(
-            new SaveDataResultConvertFileSystem(ref saveDataFs.Ref, isReconstructible));
+            new SaveDataResultConvertFileSystem(in saveDataFs, isReconstructible));
 
         outFileSystem.SetByMove(ref resultConvertFs.Ref);
         return Result.Success;
@@ -450,7 +450,7 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
         }
 
         using var resultConvertFs = new SharedRef<SaveDataResultConvertFileSystem>(
-            new SaveDataResultConvertFileSystem(ref saveDataFs.Ref, isReconstructible));
+            new SaveDataResultConvertFileSystem(in saveDataFs, isReconstructible));
 
         outExtraDataAccessor.SetByMove(ref resultConvertFs.Ref);
         return Result.Success;
@@ -507,7 +507,7 @@ public class SaveDataFileSystemCreator : ISaveDataFileSystemCreator
 
         using SharedRef<ISaveDataFileSystem> tempSaveFs = SharedRef<ISaveDataFileSystem>.CreateMove(ref saveFs.Ref);
         using var resultConvertFs = new SharedRef<SaveDataResultConvertFileSystem>(
-            new SaveDataResultConvertFileSystem(ref tempSaveFs.Ref, isReconstructible));
+            new SaveDataResultConvertFileSystem(in tempSaveFs, isReconstructible));
 
         outFileSystem.SetByMove(ref resultConvertFs.Ref);
         return Result.Success;

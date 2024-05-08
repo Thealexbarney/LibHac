@@ -559,14 +559,14 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
     {
         using SharedRef<IGameCardManager> manager = SharedRef<IGameCardManager>.Create(in _selfReference);
 
-        return new ReadOnlyGameCardStorage(ref manager.Ref, _gc);
+        return new ReadOnlyGameCardStorage(in manager, _gc);
     }
 
     private WriteOnlyGameCardStorage MakeWriteOnlyGameCardStorage()
     {
         using SharedRef<IGameCardManager> manager = SharedRef<IGameCardManager>.Create(in _selfReference);
 
-        return new WriteOnlyGameCardStorage(ref manager.Ref, _gc);
+        return new WriteOnlyGameCardStorage(in manager, _gc);
     }
 
     private SharedRef<IStorageDevice> CreateStorageDeviceNonSecure(ref readonly SharedRef<IStorage> baseStorage,
@@ -575,7 +575,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         using SharedRef<IGameCardManager> manager = SharedRef<IGameCardManager>.Create(in _selfReference);
 
         using SharedRef<GameCardStorageDevice> storageDevice =
-            GameCardStorageDevice.CreateShared(_gc, ref manager.Ref, in baseStorage, handle);
+            GameCardStorageDevice.CreateShared(_gc, in manager, in baseStorage, handle);
 
         return SharedRef<IStorageDevice>.CreateMove(ref storageDevice.Ref);
     }
@@ -586,7 +586,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         using SharedRef<IGameCardManager> manager = SharedRef<IGameCardManager>.Create(in _selfReference);
 
         using SharedRef<GameCardStorageDevice> storageDevice = GameCardStorageDevice.CreateShared(
-            _gc, ref manager.Ref, in baseStorage, handle, isSecure: true, cardDeviceId, cardImageHash);
+            _gc, in manager, in baseStorage, handle, isSecure: true, cardDeviceId, cardImageHash);
 
         return SharedRef<IStorageDevice>.CreateMove(ref storageDevice.Ref);
     }
