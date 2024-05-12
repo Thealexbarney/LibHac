@@ -38,14 +38,15 @@ public static class StringUtils
         return i;
     }
 
-    public static int Strlcpy(Span<byte> dest, ReadOnlySpan<byte> source, int maxLen)
+    public static int Strlcpy(Span<byte> dest, ReadOnlySpan<byte> source, int size)
     {
-        int maxLenLocal = Math.Min(Math.Min(dest.Length, source.Length), maxLen);
+        int destSize = Math.Min(dest.Length, size);
 
         int i = 0;
-        if (maxLenLocal > 0)
+        if (destSize > 0)
         {
-            for (; i < maxLenLocal - 1 && source[i] != 0; i++)
+            int maxCopySize = Math.Min(destSize - 1, source.Length);
+            for (; i < maxCopySize && source[i] != 0; i++)
             {
                 dest[i] = source[i];
             }
