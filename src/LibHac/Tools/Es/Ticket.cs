@@ -37,11 +37,24 @@ public class Ticket
         0x27, 0xAE, 0x41, 0xE4, 0x64, 0x9B, 0x93, 0x4C, 0xA4, 0x95, 0x99, 0x1B, 0x78, 0x52, 0xB8, 0x55
     ];
 
+    // Ticket files are often found in .xci files. Reading a file from a hashed partition file system found in these
+    // will error when the start offset of a read falls within the first 0x200 (usually) bytes of the file, and the end
+    // offset falls past that region. We work around this while pushing off a rewrite of the Ticket class by reading
+    // the entire ticket into memory in one read.
+    private static MemoryStream ReadTicketData(Stream stream)
+    {
+        int ticketSize = (int)Math.Min(0x600, stream.Length - stream.Position);
+        byte[] ticketData = new byte[ticketSize];
+
+        int bytesRead = stream.Read(ticketData);
+        return new MemoryStream(ticketData, 0, bytesRead);
+    }
+
     public Ticket() { }
 
-    public Ticket(Stream stream) : this(new BinaryReader(stream)) { }
+    public Ticket(Stream stream) : this(new BinaryReader(ReadTicketData(stream))) { }
 
-    public Ticket(BinaryReader reader)
+    private Ticket(BinaryReader reader)
     {
         long fileStart = reader.BaseStream.Position;
         SignatureType = (TicketSigType)reader.ReadUInt32();
