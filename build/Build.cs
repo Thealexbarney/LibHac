@@ -48,7 +48,6 @@ partial class Build : NukeBuild
     AbsolutePath CliNativeExe => CliNativeDir / $"hactoolnet{NativeProgramExtension}";
     AbsolutePath CliCoreZip => ArtifactsDirectory / $"hactoolnet-{VersionString}-netcore.zip";
     AbsolutePath CliNativeZip => ArtifactsDirectory / $"hactoolnet-{VersionString}-{HostOsName}.zip";
-    AbsolutePath LicenseFile => RootDirectory / "LICENSE";
 
     Project LibHacProject => _solution.GetProject("LibHac").NotNull();
     Project LibHacTestProject => _solution.GetProject("LibHac.Tests").NotNull();
@@ -289,7 +288,6 @@ partial class Build : NukeBuild
         {
             string[] namesCore = Directory.EnumerateFiles(CliCoreDir, "*.json")
                 .Concat(Directory.EnumerateFiles(CliCoreDir, "*.dll"))
-                .Append((string)LicenseFile)
                 .ToArray();
 
             ArtifactsDirectory.CreateDirectory();
@@ -397,7 +395,7 @@ partial class Build : NukeBuild
 
         ArtifactsDirectory.CreateOrCleanDirectory();
 
-        ZipFiles(CliNativeZip, [CliNativeExe, LicenseFile], CommitTime);
+        ZipFile(CliNativeZip, CliNativeExe, $"hactoolnet{NativeProgramExtension}", CommitTime);
         Serilog.Log.Debug($"Created {CliNativeZip}");
         Serilog.Log.Debug($"Created {CliNativeZip}");
 
