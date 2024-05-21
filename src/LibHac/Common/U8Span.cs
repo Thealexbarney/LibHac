@@ -63,7 +63,7 @@ public readonly ref struct U8Span
         return new U8Span(_buffer.Slice(start, length));
     }
 
-    public static implicit operator ReadOnlySpan<byte>(in U8Span value) => value.Value;
+    public static implicit operator ReadOnlySpan<byte>(scoped in U8Span value) => value.Value;
     public static implicit operator U8Span(ReadOnlySpan<byte> value) => new U8Span(value);
 
     public static explicit operator string(in U8Span value) => value.ToString();
