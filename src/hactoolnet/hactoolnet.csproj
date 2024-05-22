@@ -40,8 +40,8 @@
 
   <PropertyGroup Condition=" '$(BuildType)' == 'native-minimal' ">
     <OptimizationPreference>Size</OptimizationPreference>
-	<InvariantGlobalization>true</InvariantGlobalization>
-	<StackTraceSupport>false</StackTraceSupport>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <StackTraceSupport>false</StackTraceSupport>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(BuildType)' == 'native-untrimmed' ">
