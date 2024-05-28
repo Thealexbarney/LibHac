@@ -186,6 +186,10 @@ internal static partial class DefaultKeySet
         keys.Add(new KeyInfo(250, Type.CommonSeed, "save_mac_kek_source", (set, _) => set.DeviceUniqueSaveMacKekSource));
         keys.Add(new KeyInfo(251, Type.CommonSeed, "save_mac_key_source", 0, 2, (set, i) => set.DeviceUniqueSaveMacKeySources[i]));
         keys.Add(new KeyInfo(252, Type.DeviceDrvd, "save_mac_key", 0, 2, (set, i) => set.DeviceUniqueSaveMacKeys[i]));
+        
+        // Some old programs exported only the first set of save mac keys/sources without the _00 suffix in the key name.
+        // Support reading these keys for compatibility but not writing them.
+        keys.Add(new KeyInfo(-01, Type.CommonSeed, "save_mac_key", (set, _) => set.DeviceUniqueSaveMacKeys[0]));
         keys.Add(new KeyInfo(-01, Type.CommonSeed, "save_mac_key_source", (set, _) => set.DeviceUniqueSaveMacKeySources[0]));
 
         keys.Add(new KeyInfo(253, Type.CommonSeed, "save_mac_sd_card_kek_source", (set, _) => set.SeedUniqueSaveMacKekSource));
