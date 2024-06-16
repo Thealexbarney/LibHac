@@ -471,7 +471,7 @@ public static class ResultCodeGen
                 {
                     for (int i = prevResult + 1; i < result.DescriptionStart; i++)
                     {
-                        int innerValue = 2 & 0x1ff | ((i & 0x7ffff) << 9);
+                        int innerValue = module.Id & 0x1ff | ((i & 0x7ffff) << 9);
                         string unknownResultLine = $"Result_{result.ModuleId}_{i} = {innerValue},";
                         sb.AppendLine(unknownResultLine);
                     }
@@ -488,7 +488,7 @@ public static class ResultCodeGen
             {
                 for (int i = prevResult + 1; i < 8192; i++)
                 {
-                    int innerValue = 2 & 0x1ff | ((i & 0x7ffff) << 9);
+                    int innerValue = module.Id & 0x1ff | ((i & 0x7ffff) << 9);
                     string unknownResultLine = $"Result_{module.Id}_{i} = {innerValue},";
                     sb.AppendLine(unknownResultLine);
                 }

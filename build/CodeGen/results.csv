@@ -204,7 +204,7 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,2555,,,,GameCardInvalidT1CardCertificate,
 
 2,2557,,,,GameCardInvalidCa10Certificate,
-2,2558,,,,GameCardInvalidCa10CardHeader,
+2,2558,,,,GameCardInvalidResponseVerificationValue,
 
 2,2565,2595,,,GameCardCommunicationFailure,
 2,2566,,,,GameCardFinishOperationFailed,
@@ -241,7 +241,7 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,2655,,,,GameCardChallengeAndResponseFailure,
 2,2658,,,,GameCardChangeModeToSecureFailure,
 2,2659,,,,GameCardExchangeRandomValuesFailure,
-2,2660,,,,GameCardAsicChallengeCardExistenceFailure,
+2,2660,,,,GameCardChallengeCardExistenceFailure,
 2,2663,,,,GameCardInitializeAsicTimeOut,
 
 2,2665,2669,,,GameCardSplFailure,

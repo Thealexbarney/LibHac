@@ -316,7 +316,7 @@ public static class ResultFs
                 /// <summary>Error code: 2002-2557; Inner value: 0x13fa02</summary>
                 public static Result.Base GameCardInvalidCa10Certificate => new Result.Base(ModuleFs, 2557);
                 /// <summary>Error code: 2002-2558; Inner value: 0x13fc02</summary>
-                public static Result.Base GameCardInvalidCa10CardHeader => new Result.Base(ModuleFs, 2558);
+                public static Result.Base GameCardInvalidResponseVerificationValue => new Result.Base(ModuleFs, 2558);
 
             /// <summary>Error code: 2002-2565; Range: 2565-2595; Inner value: 0x140a02</summary>
             public static Result.Base GameCardCommunicationFailure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2565, 2595); }
@@ -387,7 +387,7 @@ public static class ResultFs
                 /// <summary>Error code: 2002-2659; Inner value: 0x14c602</summary>
                 public static Result.Base GameCardExchangeRandomValuesFailure => new Result.Base(ModuleFs, 2659);
                 /// <summary>Error code: 2002-2660; Inner value: 0x14c802</summary>
-                public static Result.Base GameCardAsicChallengeCardExistenceFailure => new Result.Base(ModuleFs, 2660);
+                public static Result.Base GameCardChallengeCardExistenceFailure => new Result.Base(ModuleFs, 2660);
                 /// <summary>Error code: 2002-2663; Inner value: 0x14ce02</summary>
                 public static Result.Base GameCardInitializeAsicTimeOut => new Result.Base(ModuleFs, 2663);
 
