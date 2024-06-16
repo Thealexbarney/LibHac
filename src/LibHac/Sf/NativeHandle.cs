@@ -21,10 +21,18 @@ public class NativeHandle : IDisposable
         Handle = handle;
         IsManaged = isManaged;
     }
+    
+    public OsNativeHandle GetOsHandle() => throw new NotImplementedException();
 
     public void Dispose()
     {
         if (IsManaged)
             Os.CloseNativeHandle(Handle.Object);
+    }
+
+    public void Detach()
+    {
+        IsManaged = false;
+        Handle = new Handle();
     }
 }

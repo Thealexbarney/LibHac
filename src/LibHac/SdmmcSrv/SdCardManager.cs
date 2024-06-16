@@ -94,6 +94,8 @@ public class SdCardManager : IStorageDeviceManager, IStorageDeviceOperator, ISdm
         if (_isInitialized)
             return;
 
+        _sdmmc.Initialize(_port);
+
         // Missing: Work buffer management
 
         if (_detectionEventManager.HasValue)

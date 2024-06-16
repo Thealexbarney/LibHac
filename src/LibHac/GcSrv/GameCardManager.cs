@@ -22,7 +22,7 @@ namespace LibHac.GcSrv;
 /// <summary>
 /// Provides access to the game card and game card ASIC.
 /// </summary>
-/// <remarks><para> he manager keeps track of the state of the ASIC and uses a handle system to control access to the
+/// <remarks><para>The manager keeps track of the state of the ASIC and uses a handle system to control access to the
 /// storage device. When a consumer wants to access the device, they are given a handle that will be used to make sure
 /// they're accessing the same device that they originally opened. The manager's internal handle is incremented every
 /// time the game card is deactivated. This ensures the consumer doesn't do things like accidentally continue reading
@@ -980,7 +980,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         if (res.IsFailure()) return res.Miss();
 
         devHeaderBuffer.CopyTo(pooledBuffer.GetBuffer());
-        res = _gc.Writer.Write(pooledBuffer.GetBuffer(), GcCardKeyAreaPageCount, 1);
+        res = _gc.Writer.Write(pooledBuffer.GetBuffer(), GcCardKeyAreaPageCount, GcDeviceCertificatePageCount);
         if (res.IsFailure()) return res.Miss();
 
         // Read the cert area
@@ -988,7 +988,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         res = _gc.Activate();
         if (res.IsFailure()) return res.Miss();
 
-        res = _gc.Read(pooledBuffer.GetBuffer(), GcCertAreaPageAddress, 1);
+        res = _gc.Read(pooledBuffer.GetBuffer(), GcCertAreaPageAddress, GcDeviceCertificatePageCount);
         if (res.IsFailure()) return res.Miss();
 
         Span<byte> deviceCert = stackalloc byte[writeSize];
@@ -1000,7 +1000,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         if (res.IsFailure()) return res.Miss();
 
         originalHeaderBuffer.CopyTo(pooledBuffer.GetBuffer());
-        res = _gc.Writer.Write(pooledBuffer.GetBuffer(), GcCardKeyAreaPageCount, 1);
+        res = _gc.Writer.Write(pooledBuffer.GetBuffer(), GcCardKeyAreaPageCount, GcDeviceCertificatePageCount);
         if (res.IsFailure()) return res.Miss();
 
         deviceCert.CopyTo(outBuffer);

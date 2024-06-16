@@ -10,6 +10,7 @@ namespace LibHac.Common.FixedArrays;
 [InlineArray(6)] public struct Array6<T> { public readonly int Length => 6; private T _0; }
 [InlineArray(7)] public struct Array7<T> { public readonly int Length => 7; private T _0; }
 [InlineArray(8)] public struct Array8<T> { public readonly int Length => 8; private T _0; }
+[InlineArray(9)] public struct Array9<T> { public readonly int Length => 9; private T _0; }
 [InlineArray(11)] public struct Array11<T> { public readonly int Length => 11; private T _0; }
 [InlineArray(12)] public struct Array12<T> { public readonly int Length => 12; private T _0; }
 [InlineArray(14)] public struct Array14<T> { public readonly int Length => 14; private T _0; }
