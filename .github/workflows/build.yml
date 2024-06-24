@@ -1,0 +1,14 @@
+name: Build hactoolnet
+
+on:
+  push:
+    branches:
+      - master
+      - feature-integration
+    paths-ignore:
+      - 'Dockerfile'
+      - '.github/workflows/image.yml'
+
+jobs:
+  build-workflow:
+    uses: ./.github/workflows/build-jobs.yaml
