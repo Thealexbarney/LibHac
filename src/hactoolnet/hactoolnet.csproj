@@ -44,7 +44,11 @@
     <StackTraceSupport>false</StackTraceSupport>
   </PropertyGroup>
 
-  <ItemGroup Condition=" '$(BuildType)' == 'native-untrimmed' ">
+  <PropertyGroup Condition=" '$(BuildType)' == 'native-untrimmed' ">
+    <IlcDehydrate>false</IlcDehydrate>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(BuildType)' == 'native-untrimmed' ">    
     <TrimmerRootAssembly Include="LibHac" />
   </ItemGroup>
 
