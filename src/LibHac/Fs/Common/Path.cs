@@ -1217,7 +1217,7 @@ public static class PathFunctions
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.InvalidArgument"/>: <paramref name="pathBuffer"/> was too small to contain the built path.</returns>
     internal static Result SetUpFixedPathSingleEntry(scoped ref Path path, Span<byte> pathBuffer,
-        ReadOnlySpan<byte> entryName)
+        scoped ReadOnlySpan<byte> entryName)
     {
         var sb = new U8StringBuilder(pathBuffer);
         sb.Append((byte)'/').Append(entryName);
@@ -1225,7 +1225,7 @@ public static class PathFunctions
         if (sb.Overflowed)
             return ResultFs.InvalidArgument.Log();
 
-        return SetUpFixedPath(ref path, pathBuffer);
+        return SetUpFixedPath(ref path, pathBuffer).Ret();
     }
 
     // /%s/%s
@@ -1248,7 +1248,7 @@ public static class PathFunctions
         if (sb.Overflowed)
             return ResultFs.InvalidArgument.Log();
 
-        return SetUpFixedPath(ref path, pathBuffer);
+        return SetUpFixedPath(ref path, pathBuffer).Ret();
     }
 
     // /%016llx
@@ -1268,7 +1268,7 @@ public static class PathFunctions
         if (sb.Overflowed)
             return ResultFs.InvalidArgument.Log();
 
-        return SetUpFixedPath(ref path, pathBuffer);
+        return SetUpFixedPath(ref path, pathBuffer).Ret();
     }
 
     // /%08x.meta
@@ -1290,7 +1290,7 @@ public static class PathFunctions
         if (sb.Overflowed)
             return ResultFs.InvalidArgument.Log();
 
-        return SetUpFixedPath(ref path, pathBuffer);
+        return SetUpFixedPath(ref path, pathBuffer).Ret();
     }
 
     // /saveMeta/%016llx
@@ -1312,6 +1312,30 @@ public static class PathFunctions
         if (sb.Overflowed)
             return ResultFs.InvalidArgument.Log();
 
-        return SetUpFixedPath(ref path, pathBuffer);
+        return SetUpFixedPath(ref path, pathBuffer).Ret();
+    }
+
+    // %s/%08x
+    /// <summary>
+    /// Initializes a <see cref="Path"/> using the format string <c>%s/%08x</c>
+    /// </summary>
+    /// <param name="path">The <see cref="Path"/> to be initialized.</param>
+    /// <param name="pathBuffer">The buffer that will contain the built string.</param>
+    /// <param name="entryName">The first entry in the generated path.</param>
+    /// <param name="value">The value to insert into the path.</param>
+    /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
+    /// <see cref="ResultFs.InvalidArgument"/>: <paramref name="pathBuffer"/> was too small to contain the built path.<br/>
+    /// <see cref="ResultFs.InvalidCharacter"/>: The path contains an invalid character.<br/>
+    /// <see cref="ResultFs.InvalidPathFormat"/>: The path is in an invalid format or is not normalized.</returns>
+    internal static Result SetUpFixedPathEntryWithInt(scoped ref Path path, Span<byte> pathBuffer, scoped ReadOnlySpan<byte> entryName, int value)
+    {
+        var sb = new U8StringBuilder(pathBuffer);
+        sb.Append(entryName)
+            .Append((byte)'/').AppendFormat(value, 'x', 8);
+
+        if (sb.Overflowed)
+            return ResultFs.InvalidArgument.Log();
+
+        return SetUpFixedPath(ref path, pathBuffer).Ret();
     }
 }

@@ -20,4 +20,9 @@ public interface ISdCardProxyFileSystemCreator
     /// </summary>
     /// <returns>The <see cref="Result"/> of the operation.</returns>
     Result Format();
+
+    public Result Create(ref SharedRef<IFileSystem> outFileSystem)
+    {
+        return Create(ref outFileSystem, openCaseSensitive: false).Ret();
+    }
 }

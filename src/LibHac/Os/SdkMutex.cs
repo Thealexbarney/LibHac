@@ -81,7 +81,7 @@ public struct SdkMutexType : ILockable
     }
 }
 
-public class SdkRecursiveMutex : IBasicLockable
+public class SdkRecursiveMutex : ILockable
 {
     private SdkRecursiveMutexType _impl;
 
@@ -93,6 +93,11 @@ public class SdkRecursiveMutex : IBasicLockable
     public void Lock()
     {
         _impl.Lock();
+    }
+
+    public bool TryLock()
+    {
+        return _impl.TryLock();
     }
 
     public void Unlock()

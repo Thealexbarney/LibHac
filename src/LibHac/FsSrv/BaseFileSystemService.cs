@@ -4,6 +4,7 @@ using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.FsSystem;
 using LibHac.Sf;
+using static LibHac.FsSrv.Anonymous;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
 using Path = LibHac.Fs.Path;
@@ -11,44 +12,31 @@ using Utility = LibHac.FsSrv.Impl.Utility;
 
 namespace LibHac.FsSrv;
 
-public readonly struct BaseFileSystemService
+file static class Anonymous
 {
-    private readonly BaseFileSystemServiceImpl _serviceImpl;
-    private readonly ulong _processId;
-
-    public BaseFileSystemService(BaseFileSystemServiceImpl serviceImpl, ulong processId)
+    public static Result GetProgramInfo(FileSystemServer fsServer, out ProgramInfo programInfo, ulong processId)
     {
-        _serviceImpl = serviceImpl;
-        _processId = processId;
+        var programRegistry = new ProgramRegistryImpl(fsServer);
+        return programRegistry.GetProgramInfo(out programInfo, processId).Ret();
     }
 
-    private Result GetProgramInfo(out ProgramInfo programInfo)
+    public static Result CheckCapabilityById(FileSystemServer fsServer, BaseFileSystemId id, ulong processId)
     {
-        return GetProgramInfo(out programInfo, _processId);
-    }
-
-    private Result GetProgramInfo(out ProgramInfo programInfo, ulong processId)
-    {
-        return _serviceImpl.GetProgramInfo(out programInfo, processId);
-    }
-
-    private Result CheckCapabilityById(BaseFileSystemId id, ulong processId)
-    {
-        Result res = GetProgramInfo(out ProgramInfo programInfo, processId);
+        Result res = GetProgramInfo(fsServer, out ProgramInfo programInfo, processId);
         if (res.IsFailure()) return res.Miss();
+
+        AccessControl accessControl = programInfo.AccessControl;
 
         if (id == BaseFileSystemId.TemporaryDirectory)
         {
-            Accessibility accessibility =
-                programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountTemporaryDirectory);
+            Accessibility accessibility = accessControl.GetAccessibilityFor(AccessibilityType.MountTemporaryDirectory);
 
             if (!accessibility.CanRead || !accessibility.CanWrite)
                 return ResultFs.PermissionDenied.Log();
         }
         else
         {
-            Accessibility accessibility =
-                programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountAllBaseFileSystem);
+            Accessibility accessibility = accessControl.GetAccessibilityFor(AccessibilityType.MountAllBaseFileSystem);
 
             if (!accessibility.CanRead || !accessibility.CanWrite)
                 return ResultFs.PermissionDenied.Log();
@@ -56,10 +44,28 @@ public readonly struct BaseFileSystemService
 
         return Result.Success;
     }
+}
+
+/// <summary>
+/// Handles managing and opening file systems that aren't NCAs or save data. 
+/// </summary>
+/// <remarks>Based on nnSdk 18.3.0 (FS 18.0.0)</remarks>
+public readonly struct BaseFileSystemService
+{
+    private readonly BaseFileSystemServiceImpl _serviceImpl;
+    private readonly ulong _processId;
+
+    private FileSystemServer FsServer => _serviceImpl.FsServer;
+
+    public BaseFileSystemService(BaseFileSystemServiceImpl serviceImpl, ulong processId)
+    {
+        _serviceImpl = serviceImpl;
+        _processId = processId;
+    }
 
     public Result OpenBaseFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, BaseFileSystemId fileSystemId)
     {
-        Result res = CheckCapabilityById(fileSystemId, _processId);
+        Result res = CheckCapabilityById(FsServer, fileSystemId, _processId);
         if (res.IsFailure()) return res.Miss();
 
         // Open the file system
@@ -68,8 +74,7 @@ public readonly struct BaseFileSystemService
         if (res.IsFailure()) return res.Miss();
 
         // Create an SF adapter for the file system
-        using SharedRef<IFileSystemSf> fileSystemAdapter = FileSystemInterfaceAdapter.CreateShared(in fileSystem, false);
-
+        using SharedRef<IFileSystemSf> fileSystemAdapter = FileSystemInterfaceAdapter.CreateShared(in fileSystem, allowAllOperations: false);
         outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
         return Result.Success;
@@ -77,38 +82,72 @@ public readonly struct BaseFileSystemService
 
     public Result FormatBaseFileSystem(BaseFileSystemId fileSystemId)
     {
-        Result res = CheckCapabilityById(fileSystemId, _processId);
+        Result res = CheckCapabilityById(FsServer, fileSystemId, _processId);
         if (res.IsFailure()) return res.Miss();
 
-        return _serviceImpl.FormatBaseFileSystem(fileSystemId);
+        return _serviceImpl.FormatBaseFileSystem(fileSystemId).Ret();
     }
 
     public Result OpenBisFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, ref readonly FspPath rootPath,
         BisPartitionId partitionId)
     {
-        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        Result res = GetProgramInfo(FsServer, out ProgramInfo programInfo, _processId);
         if (res.IsFailure()) return res.Miss();
 
-        // Get the permissions the caller needs
-        AccessibilityType requiredAccess = partitionId switch
-        {
-            BisPartitionId.CalibrationFile => AccessibilityType.MountBisCalibrationFile,
-            BisPartitionId.SafeMode => AccessibilityType.MountBisSafeMode,
-            BisPartitionId.User => AccessibilityType.MountBisUser,
-            BisPartitionId.System => AccessibilityType.MountBisSystem,
-            BisPartitionId.SystemProperPartition => AccessibilityType.MountBisSystemProperPartition,
-            _ => AccessibilityType.NotMount
-        };
-
-        // Reject opening invalid partitions
-        if (requiredAccess == AccessibilityType.NotMount)
-            return ResultFs.InvalidArgument.Log();
-
         // Verify the caller has the required permissions
-        Accessibility accessibility = programInfo.AccessControl.GetAccessibilityFor(requiredAccess);
+        switch (partitionId)
+        {
+            case BisPartitionId.CalibrationFile:
+            {
+                Accessibility accessibility = programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountBisCalibrationFile);
+                if (!accessibility.CanRead || !accessibility.CanWrite)
+                    return ResultFs.PermissionDenied.Log();
 
-        if (!accessibility.CanRead || !accessibility.CanWrite)
-            return ResultFs.PermissionDenied.Log();
+                break;
+            }
+            case BisPartitionId.SafeMode:
+            {
+                Accessibility accessibility = programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountBisSafeMode);
+                if (!accessibility.CanRead || !accessibility.CanWrite)
+                    return ResultFs.PermissionDenied.Log();
+
+                break;
+            }
+            case BisPartitionId.System:
+            {
+                Accessibility accessibility = programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountBisSystem);
+                if (!accessibility.CanRead || !accessibility.CanWrite)
+                    return ResultFs.PermissionDenied.Log();
+
+                break;
+            }
+            case BisPartitionId.System0:
+            {
+                Accessibility accessibility = programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountBisSystem);
+                if (!accessibility.CanRead || !accessibility.CanWrite)
+                    return ResultFs.PermissionDenied.Log();
+
+                break;
+            }
+            case BisPartitionId.User:
+            {
+                Accessibility accessibility = programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountBisUser);
+                if (!accessibility.CanRead || !accessibility.CanWrite)
+                    return ResultFs.PermissionDenied.Log();
+
+                break;
+            }
+            case BisPartitionId.SystemProperPartition:
+            {
+                Accessibility accessibility = programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountBisSystemProperPartition);
+                if (!accessibility.CanRead || !accessibility.CanWrite)
+                    return ResultFs.PermissionDenied.Log();
+
+                break;
+            }
+            default:
+                return ResultFs.InvalidArgument.Log();
+        }
 
         const StorageLayoutType storageFlag = StorageLayoutType.Bis;
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
@@ -125,7 +164,7 @@ public readonly struct BaseFileSystemService
 
         // Open the file system
         using var fileSystem = new SharedRef<IFileSystem>();
-        res = _serviceImpl.OpenBisFileSystem(ref fileSystem.Ref, partitionId, false);
+        res = _serviceImpl.OpenBisFileSystem(ref fileSystem.Ref, partitionId, caseSensitive: false);
         if (res.IsFailure()) return res.Miss();
 
         using var subDirFileSystem = new SharedRef<IFileSystem>();
@@ -149,46 +188,46 @@ public readonly struct BaseFileSystemService
             return ResultFs.InvalidSize.Log();
 
         // Caller must have the FillBis permission
-        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        Result res = GetProgramInfo(FsServer, out ProgramInfo programInfo, _processId);
         if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.FillBis))
             return ResultFs.PermissionDenied.Log();
 
-        return _serviceImpl.CreatePaddingFile(size);
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.Bis);
+
+        return _serviceImpl.CreatePaddingFile(size).Ret();
     }
 
     public Result DeleteAllPaddingFiles()
     {
         // Caller must have the FillBis permission
-        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        Result res = GetProgramInfo(FsServer, out ProgramInfo programInfo, _processId);
         if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.FillBis))
             return ResultFs.PermissionDenied.Log();
 
-        return _serviceImpl.DeleteAllPaddingFiles();
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.Bis);
+
+        return _serviceImpl.DeleteAllPaddingFiles().Ret();
     }
 
     public Result OpenGameCardFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, GameCardHandle handle,
         GameCardPartition partitionId)
     {
-        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        Result res = GetProgramInfo(FsServer, out ProgramInfo programInfo, _processId);
         if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountGameCard).CanRead)
             return ResultFs.PermissionDenied.Log();
 
         using var fileSystem = new SharedRef<IFileSystem>();
-
         res = _serviceImpl.OpenGameCardFileSystem(ref fileSystem.Ref, handle, partitionId);
         if (res.IsFailure()) return res.Miss();
 
-        using var asyncFileSystem =
-            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(in fileSystem));
-
-        using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(in asyncFileSystem, false);
+        using var asyncFileSystem = new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(in fileSystem));
+        using SharedRef<IFileSystemSf> fileSystemAdapter = FileSystemInterfaceAdapter.CreateShared(in asyncFileSystem, allowAllOperations: false);
 
         outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
@@ -197,7 +236,7 @@ public readonly struct BaseFileSystemService
 
     public Result OpenSdCardFileSystem(ref SharedRef<IFileSystemSf> outFileSystem)
     {
-        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        Result res = GetProgramInfo(FsServer, out ProgramInfo programInfo, _processId);
         if (res.IsFailure()) return res.Miss();
 
         Accessibility accessibility = programInfo.AccessControl.GetAccessibilityFor(AccessibilityType.MountSdCard);
@@ -205,7 +244,7 @@ public readonly struct BaseFileSystemService
         if (!accessibility.CanRead || !accessibility.CanWrite)
             return ResultFs.PermissionDenied.Log();
 
-        const StorageLayoutType storageFlag = StorageLayoutType.Bis;
+        const StorageLayoutType storageFlag = StorageLayoutType.SdCard;
         using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
 
         using var fileSystem = new SharedRef<IFileSystem>();
@@ -225,20 +264,24 @@ public readonly struct BaseFileSystemService
     public Result FormatSdCardFileSystem()
     {
         // Caller must have the FormatSdCard permission
-        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        Result res = GetProgramInfo(FsServer, out ProgramInfo programInfo, _processId);
         if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.FormatSdCard))
             return ResultFs.PermissionDenied.Log();
 
-        return _serviceImpl.FormatSdCardProxyFileSystem();
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.SdCard);
+
+        return _serviceImpl.FormatSdCardProxyFileSystem().Ret();
     }
 
     public Result FormatSdCardDryRun()
     {
         // No permissions are needed to call this method
 
-        return _serviceImpl.FormatSdCardProxyFileSystem();
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(StorageLayoutType.SdCard);
+
+        return _serviceImpl.FormatSdCardDryRun().Ret();
     }
 
     public Result IsExFatSupported(out bool isSupported)
@@ -251,8 +294,11 @@ public readonly struct BaseFileSystemService
 
     public Result OpenImageDirectoryFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, ImageDirectoryId directoryId)
     {
+        const StorageLayoutType storageFlag = StorageLayoutType.NonGameCard;
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
+
         // Caller must have the MountImageAndVideoStorage permission
-        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        Result res = GetProgramInfo(FsServer, out ProgramInfo programInfo, _processId);
         if (res.IsFailure()) return res.Miss();
 
         Accessibility accessibility =
@@ -280,7 +326,7 @@ public readonly struct BaseFileSystemService
         if (res.IsFailure()) return res.Miss();
 
         using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(in baseFileSystem, false);
+            FileSystemInterfaceAdapter.CreateShared(in baseFileSystem, allowAllOperations: false);
 
         outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
@@ -290,8 +336,11 @@ public readonly struct BaseFileSystemService
     public Result OpenBisWiper(ref SharedRef<IWiper> outBisWiper, NativeHandle transferMemoryHandle,
         ulong transferMemorySize)
     {
+        const StorageLayoutType storageFlag = StorageLayoutType.Bis;
+        using var scopedContext = new ScopedStorageLayoutTypeSetter(storageFlag);
+
         // Caller must have the OpenBisWiper permission
-        Result res = GetProgramInfo(out ProgramInfo programInfo);
+        Result res = GetProgramInfo(FsServer, out ProgramInfo programInfo, _processId);
         if (res.IsFailure()) return res.Miss();
 
         if (!programInfo.AccessControl.CanCall(OperationType.OpenBisWiper))
