@@ -170,7 +170,7 @@ public static class FileSystemServerInitializer
         var statusReportService = new StatusReportServiceImpl(in statusReportServiceConfig);
 
         var accessLogServiceConfig = new AccessLogServiceImpl.Configuration();
-        accessLogServiceConfig.MinimumProgramIdForSdCardLog = 0x0100000000003000;
+        accessLogServiceConfig.ProgramIdWithoutPlatformIdMinForAccessLog = 0x3000;
         accessLogServiceConfig.FsServer = server;
 
         var accessLogService = new AccessLogServiceImpl(in accessLogServiceConfig);
