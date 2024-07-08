@@ -3,6 +3,7 @@
 using System;
 using LibHac.Common;
 using LibHac.Common.FixedArrays;
+using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
@@ -36,38 +37,92 @@ public class StorageDuplicator : IDisposable
     private SharedRef<IStorage> _destinationFileStorage;
     private SharedRef<IFileSystem> _destinationFileSystem;
     private long _offset;
-    private long _restSize;
+    private long _remainingSize;
 
     public StorageDuplicator(ref readonly SharedRef<IStorage> sourceFileStorage,
         ref readonly SharedRef<IStorage> destinationFileStorage,
         ref readonly SharedRef<IFileSystem> destinationFileSystem)
     {
-        throw new NotImplementedException();
+        _sourceFileStorage = SharedRef<IStorage>.CreateCopy(in sourceFileStorage);
+        _destinationFileStorage = SharedRef<IStorage>.CreateCopy(in destinationFileStorage);
+        _destinationFileSystem = SharedRef<IFileSystem>.CreateCopy(in destinationFileSystem);
+
+        _offset = 0;
+        _remainingSize = -1;
     }
 
     public void Dispose()
     {
-        throw new NotImplementedException();
+        _sourceFileStorage.Destroy();
+        _destinationFileStorage.Destroy();
+        _destinationFileSystem.Destroy();
     }
 
     public Result Initialize()
     {
-        throw new NotImplementedException();
+        Result res = _sourceFileStorage.Get.GetSize(out long sourceSize);
+        if (res.IsFailure()) return res.Miss();
+
+        res = _destinationFileStorage.Get.GetSize(out long destinationSize);
+        if (res.IsFailure()) return res.Miss();
+
+        if (sourceSize != destinationSize)
+            return ResultFs.SaveDataPorterSaveDataModified.Log();
+
+        _remainingSize = destinationSize;
+        return Result.Success;
     }
 
     public Result FinalizeObject()
     {
-        throw new NotImplementedException();
+        Result res = _destinationFileStorage.Get.Flush();
+        if (res.IsFailure()) return res.Miss();
+
+        res = _destinationFileSystem.Get.Commit();
+        if (res.IsFailure()) return res.Miss();
+
+        return Result.Success;
     }
 
-    public Result ProcessDuplication(out long outRestSize, Span<byte> workBuffer, long sizeToProcess)
+    public Result ProcessDuplication(out long outRemainingSize, Span<byte> workBuffer, long sizeToProcess)
     {
-        throw new NotImplementedException();
+        UnsafeHelpers.SkipParamInit(out outRemainingSize);
+        Assert.SdkGreaterEqual(_remainingSize, 0);
+
+        long remainingSizeToProcess = Math.Min(sizeToProcess, _remainingSize);
+
+        while (remainingSizeToProcess > 0)
+        {
+            int processSize = (int)Math.Min(workBuffer.Length, Math.Min(sizeToProcess, remainingSizeToProcess));
+            Span<byte> buffer = workBuffer.Slice(0, processSize);
+
+            Result res = _sourceFileStorage.Get.Read(_offset, buffer);
+            if (res.IsFailure()) return res.Miss();
+
+            res = _destinationFileStorage.Get.Write(_offset, buffer);
+            if (res.IsFailure()) return res.Miss();
+
+            _offset += processSize;
+            remainingSizeToProcess -= processSize;
+            _remainingSize -= processSize;
+        }
+
+        outRemainingSize = _remainingSize;
+        return Result.Success;
     }
 
-    public Result ProcessDuplication(out long outRestSize, long sizeToProcess)
+    public Result ProcessDuplication(out long outRemainingSize, long sizeToProcess)
     {
-        throw new NotImplementedException();
+        const int bufferSize = 0x8000;
+
+        UnsafeHelpers.SkipParamInit(out outRemainingSize);
+        Assert.SdkGreaterEqual(_remainingSize, 0);
+
+        using var buffer = new PooledBuffer();
+        Result res = buffer.Allocate(bufferSize, bufferSize);
+        if (res.IsFailure()) return res.Miss();
+
+        return ProcessDuplication(out outRemainingSize, buffer.GetBuffer(), sizeToProcess).Ret();
     }
 }
 

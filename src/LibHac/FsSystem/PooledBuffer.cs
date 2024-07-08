@@ -137,10 +137,10 @@ public struct PooledBuffer : IDisposable
         return enableLargeCapacity ? HeapAllocatableSizeMaxForLarge : HeapAllocatableSizeMax;
     }
 
-    public void Allocate(int idealSize, int requiredSize) => AllocateCore(idealSize, requiredSize, false);
-    public void AllocateParticularlyLarge(int idealSize, int requiredSize) => AllocateCore(idealSize, requiredSize, true);
+    public Result Allocate(int idealSize, int requiredSize) => AllocateCore(idealSize, requiredSize, false).Ret();
+    public Result AllocateParticularlyLarge(int idealSize, int requiredSize) => AllocateCore(idealSize, requiredSize, true).Ret();
 
-    private void AllocateCore(int idealSize, int requiredSize, bool enableLargeCapacity)
+    private Result AllocateCore(int idealSize, int requiredSize, bool enableLargeCapacity)
     {
         Assert.SdkRequiresNull(_array);
 
@@ -160,6 +160,8 @@ public struct PooledBuffer : IDisposable
         }
 
         _length = _array.Length;
+
+        return Result.Success;
     }
 
     public void Deallocate()
