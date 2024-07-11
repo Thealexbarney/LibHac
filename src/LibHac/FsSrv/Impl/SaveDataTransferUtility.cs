@@ -329,7 +329,8 @@ public static partial class SaveDataTransferUtilityGlobalMethods
     public static Result OpenSaveDataInternalStorageAccessor(this FileSystemServer fsSrv,
         ref SharedRef<SaveDataInternalStorageAccessor> outAccessor, SaveDataSpaceId spaceId, ulong saveDataId)
     {
-        throw new NotImplementedException();
+        outAccessor.Reset(new SaveDataInternalStorageAccessor(spaceId, saveDataId));
+        return Result.Success;
     }
 
     public static Result CommitConcatenatedSaveDataStorage(this FileSystemServer fsSrv, IFileSystem fileSystem,
