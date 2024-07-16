@@ -4,6 +4,10 @@ using LibHac.Fs.Fsa;
 
 namespace LibHac.FsSrv.FsCreator;
 
+/// <summary>
+/// Creates an <see cref="IFileSystem"/> from an <see cref="IStorage"/> containing a partition filesystem.
+/// </summary>
+/// <remarks>Based on nnSdk 18.3.0 (FS 18.0.0)</remarks>
 public interface IPartitionFileSystemCreator
 {
     Result Create(ref SharedRef<IFileSystem> outFileSystem, ref readonly SharedRef<IStorage> baseStorage);

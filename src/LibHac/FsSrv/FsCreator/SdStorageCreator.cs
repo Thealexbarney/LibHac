@@ -7,7 +7,7 @@ namespace LibHac.FsSrv.FsCreator;
 /// <summary>
 /// Creates <see cref="IStorage"/>s for accessing the inserted SD card's storage.
 /// </summary>
-/// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
+/// <remarks>Based on nnSdk 18.3.0 (FS 18.0.0)</remarks>
 public class SdStorageCreator : ISdStorageCreator
 {
     // LibHac addition
