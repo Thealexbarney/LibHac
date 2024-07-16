@@ -73,7 +73,7 @@ namespace LibHac.FsSystem
         protected MemoryResource Allocator;
         protected Buffer MetaDataBuffer;
 
-        private ref readonly THeader Header => ref MemoryMarshal.GetReference(HeaderBuffer.GetSpan<THeader>());
+        protected ref readonly THeader Header => ref MemoryMarshal.GetReference(HeaderBuffer.GetSpan<THeader>());
         private ReadOnlySpan<TEntry> Entries => EntryBuffer.GetSpan<TEntry>();
         private ReadOnlySpan<byte> NameTable => NameTableBuffer.Span;
 
@@ -356,11 +356,23 @@ namespace LibHac.FsSystem
             return Result.Success;
         }
     }
+}
 
+namespace LibHac.FsSystem
+{
     /// <summary>
     /// Reads the metadata for a <see cref="PartitionFileSystem"/>.
     /// </summary>
     /// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
     public class PartitionFileSystemMeta : PartitionFileSystemMetaCore<PartitionFileSystemFormat,
         PartitionFileSystemFormat.PartitionFileSystemHeaderImpl, PartitionFileSystemFormat.PartitionEntry> { }
+
+    public class NintendoSubmissionPackageRootFileSystemMeta : PartitionFileSystemMetaCore<
+        NintendoSubmissionPackageRootFileSystemFormat,
+        NintendoSubmissionPackageRootFileSystemFormat.PartitionFileSystemHeaderImpl,
+        NintendoSubmissionPackageRootFileSystemFormat.PartitionEntry>
+    {
+        public byte GetTargetPlatform() => Header.TargetPlatform;
+        public long GetTotalSize() => Header.TotalSize;
+    }
 }

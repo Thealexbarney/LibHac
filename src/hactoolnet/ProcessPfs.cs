@@ -8,6 +8,7 @@ using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
+using LibHac.FsSystem.Impl;
 using LibHac.Tools.Es;
 using LibHac.Tools.Fs;
 using LibHac.Tools.FsSystem;
@@ -16,6 +17,11 @@ using static hactoolnet.Print;
 using Path = LibHac.Fs.Path;
 
 namespace hactoolnet;
+
+using NspRootFileSystemCore =
+    PartitionFileSystemCore<NintendoSubmissionPackageRootFileSystemMeta, NintendoSubmissionPackageRootFileSystemFormat,
+        NintendoSubmissionPackageRootFileSystemFormat.PartitionFileSystemHeaderImpl,
+        NintendoSubmissionPackageRootFileSystemFormat.PartitionEntry>;
 
 internal static class ProcessPfs
 {
@@ -26,9 +32,12 @@ internal static class ProcessPfs
         IFileSystem fs = null;
         using UniqueRef<PartitionFileSystem> pfs = new UniqueRef<PartitionFileSystem>();
         using UniqueRef<Sha256PartitionFileSystem> hfs = new UniqueRef<Sha256PartitionFileSystem>();
+        using UniqueRef<NspRootFileSystemCore> nsp = new UniqueRef<NspRootFileSystemCore>();
+
+        using var sharedFile = new SharedRef<IStorage>(file);
 
         pfs.Reset(new PartitionFileSystem());
-        Result res = pfs.Get.Initialize(file);
+        Result res = pfs.Get.Initialize(in sharedFile);
         if (res.IsSuccess())
         {
             fs = pfs.Get;
@@ -43,18 +52,30 @@ internal static class ProcessPfs
             // Reading the input as a PartitionFileSystem didn't work. Try reading it as an Sha256PartitionFileSystem
             hfs.Reset(new Sha256PartitionFileSystem());
             res = hfs.Get.Initialize(file);
-            if (res.IsFailure())
+            if (res.IsSuccess())
             {
-                if (ResultFs.Sha256PartitionSignatureVerificationFailed.Includes(res))
-                {
-                    ResultFs.PartitionSignatureVerificationFailed.Value.ThrowIfFailure();
-                }
-
+                fs = hfs.Get;
+                ctx.Logger.LogMessage(hfs.Get.Print());
+            }
+            else if (!ResultFs.Sha256PartitionSignatureVerificationFailed.Includes(res))
+            {
                 res.ThrowIfFailure();
             }
+            else
+            {
+                nsp.Reset(new NspRootFileSystemCore());
+                res = nsp.Get.Initialize(file);
 
-            fs = hfs.Get;
-            ctx.Logger.LogMessage(hfs.Get.Print());
+                if (res.IsSuccess())
+                {
+                    fs = nsp.Get;
+                    ctx.Logger.LogMessage(nsp.Get.Print());
+                }
+                else
+                {
+                    res.ThrowIfFailure();
+                }
+            }
         }
 
         if (ctx.Options.OutDir != null)

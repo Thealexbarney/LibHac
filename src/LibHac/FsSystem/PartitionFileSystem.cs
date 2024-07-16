@@ -6,10 +6,16 @@ using LibHac.Crypto;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
+using LibHac.FsSystem.Impl;
 using LibHac.Util;
 using Buffer = LibHac.Mem.Buffer;
 
 namespace LibHac.FsSystem;
+
+using NspRootFileSystemCore =
+    PartitionFileSystemCore<NintendoSubmissionPackageRootFileSystemMeta, NintendoSubmissionPackageRootFileSystemFormat,
+        NintendoSubmissionPackageRootFileSystemFormat.PartitionFileSystemHeaderImpl,
+        NintendoSubmissionPackageRootFileSystemFormat.PartitionEntry>;
 
 /// <summary>
 /// The allocator used by a <see cref="PartitionFileSystemCore{TMetaData,TFormat,THeader,TEntry}"/> when none is provided.
@@ -52,18 +58,18 @@ file sealed class DefaultAllocatorForPartitionFileSystem : MemoryResource
 /// </summary>
 /// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 public class PartitionFileSystem : PartitionFileSystemCore<PartitionFileSystemMeta,
-    Impl.PartitionFileSystemFormat,
-    Impl.PartitionFileSystemFormat.PartitionFileSystemHeaderImpl,
-    Impl.PartitionFileSystemFormat.PartitionEntry> { }
+    PartitionFileSystemFormat,
+    PartitionFileSystemFormat.PartitionFileSystemHeaderImpl,
+    PartitionFileSystemFormat.PartitionEntry>;
 
 /// <summary>
 /// Reads a hashed partition file system. These files start with "HFS0" and are typically found inside XCIs.
 /// </summary>
 /// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 public class Sha256PartitionFileSystem : PartitionFileSystemCore<Sha256PartitionFileSystemMeta,
-    Impl.Sha256PartitionFileSystemFormat,
-    Impl.PartitionFileSystemFormat.PartitionFileSystemHeaderImpl,
-    Impl.Sha256PartitionFileSystemFormat.PartitionEntry> { }
+    Sha256PartitionFileSystemFormat,
+    PartitionFileSystemFormat.PartitionFileSystemHeaderImpl,
+    Sha256PartitionFileSystemFormat.PartitionEntry>;
 
 /// <summary>
 /// Provides the base for an <see cref="IFileSystem"/> that can read from different partition file system files.
@@ -197,6 +203,11 @@ public class PartitionFileSystemCore<TMetaData, TFormat, THeader, TEntry> : IFil
                 return DoRead(fileSha, out bytesRead, offset, destination, in option).Ret();
             }
 
+            if (this is NspRootFileSystemCore.PartitionFile fileNsp)
+            {
+                return DoRead(fileNsp, out bytesRead, offset, destination, in option).Ret();
+            }
+
             UnsafeHelpers.SkipParamInit(out bytesRead);
             Abort.DoAbort("PartitionFileSystemCore.PartitionFile type is not supported.");
             return ResultFs.NotImplemented.Log();
@@ -316,6 +327,22 @@ public class PartitionFileSystemCore<TMetaData, TFormat, THeader, TEntry> : IFil
         }
 
         private static Result DoRead(PartitionFileSystem.PartitionFile fs, out long bytesRead, long offset,
+            Span<byte> destination, in ReadOption option)
+        {
+            UnsafeHelpers.SkipParamInit(out bytesRead);
+
+            Result res = fs.DryRead(out long readSize, offset, destination.Length, in option, fs._mode);
+            if (res.IsFailure()) return res.Miss();
+
+            res = fs._parent._baseStorage.Read(fs._parent._metaDataSize + fs._partitionEntry.Offset + offset,
+                destination.Slice(0, (int)readSize));
+            if (res.IsFailure()) return res.Miss();
+
+            bytesRead = readSize;
+            return Result.Success;
+        }
+
+        private static Result DoRead(NspRootFileSystemCore.PartitionFile fs, out long bytesRead, long offset,
             Span<byte> destination, in ReadOption option)
         {
             UnsafeHelpers.SkipParamInit(out bytesRead);

@@ -69,3 +69,46 @@ public struct Sha256PartitionFileSystemFormat : IPartitionFileSystemFormat
         readonly int IPartitionFileSystemEntry.NameOffset => NameOffset;
     }
 }
+
+public struct NintendoSubmissionPackageRootFileSystemFormat : IPartitionFileSystemFormat
+{
+    public static ReadOnlySpan<byte> VersionSignature => "NSP1"u8;
+    public static uint EntryNameLengthMax => PathTool.EntryNameLengthMax;
+    public static uint FileDataAlignmentSize => 0x20;
+    public static Result ResultSignatureVerificationFailed => ResultFs.PartitionSignatureVerificationFailed.Value;
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PartitionEntry : IPartitionFileSystemEntry
+    {
+        public long Offset;
+        public long Size;
+        public int NameOffset;
+        public uint Reserved;
+
+        readonly long IPartitionFileSystemEntry.Offset => Offset;
+        readonly long IPartitionFileSystemEntry.Size => Size;
+        readonly int IPartitionFileSystemEntry.NameOffset => NameOffset;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PartitionFileSystemHeaderImpl : IPartitionFileSystemHeader
+    {
+        private Array4<byte> _signature;
+        public int EntryCount;
+        public int NameTableSize;
+        public byte TargetPlatform;
+        public long TotalSize;
+
+        public readonly ReadOnlySpan<byte> Signature
+        {
+            get
+            {
+                ReadOnlySpan<byte> span = _signature;
+                return MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetReference(span), span.Length);
+            }
+        }
+
+        readonly int IPartitionFileSystemHeader.EntryCount => EntryCount;
+        readonly int IPartitionFileSystemHeader.NameTableSize => NameTableSize;
+    }
+}
