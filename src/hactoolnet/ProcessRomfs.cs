@@ -3,7 +3,7 @@ using LibHac.Fs;
 using LibHac.FsSystem;
 using LibHac.Tools.Fs;
 using LibHac.Tools.FsSystem;
-using LibHac.Tools.FsSystem.RomFs;
+using RomFsFileSystem = LibHac.Tools.FsSystem.RomFs.RomFsFileSystem;
 
 namespace hactoolnet;
 

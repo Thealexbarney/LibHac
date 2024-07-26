@@ -563,4 +563,36 @@ public class TypeLayoutTests
         Assert.Equal(8, Unsafe.SizeOf<Int64>());
         Assert.Equal(4, AlignOf<Int64>());
     }
+
+    [Fact]
+    public static void RomFileSystemInformation_Layout()
+    {
+        var s = new RomFileSystemInformation();
+
+        Assert.Equal(0x50, Unsafe.SizeOf<RomFileSystemInformation>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.HeaderSize));
+        Assert.Equal(0x08, GetOffset(in s, in s.DirectoryBucketOffset));
+        Assert.Equal(0x10, GetOffset(in s, in s.DirectoryBucketSize));
+        Assert.Equal(0x18, GetOffset(in s, in s.DirectoryEntryOffset));
+        Assert.Equal(0x20, GetOffset(in s, in s.DirectoryEntrySize));
+        Assert.Equal(0x28, GetOffset(in s, in s.FileBucketOffset));
+        Assert.Equal(0x30, GetOffset(in s, in s.FileBucketSize));
+        Assert.Equal(0x38, GetOffset(in s, in s.FileEntryOffset));
+        Assert.Equal(0x40, GetOffset(in s, in s.FileEntrySize));
+        Assert.Equal(0x48, GetOffset(in s, in s.DataOffset));
+    }
+
+    [Fact]
+    public static void RomFileInfo_Layout()
+    {
+        var s = new RomFileInfo();
+
+        Assert.Equal(0x10, Unsafe.SizeOf<RomFileInfo>());
+
+        Assert.Equal(0, GetOffset(in s, in s.Offset));
+        Assert.Equal(8, GetOffset(in s, in s.Size));
+
+        Assert.Equal(4, AlignOf<RomFileInfo>());
+    }
 }

@@ -12,8 +12,8 @@ using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
 using LibHac.Spl;
 using LibHac.Tools.Crypto;
-using LibHac.Tools.FsSystem.RomFs;
 using KeyType = LibHac.Common.Keys.KeyType;
+using RomFsFileSystem = LibHac.Tools.FsSystem.RomFs.RomFsFileSystem;
 
 namespace LibHac.Tools.FsSystem.NcaUtils;
 

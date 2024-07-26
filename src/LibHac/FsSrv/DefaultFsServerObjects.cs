@@ -36,7 +36,7 @@ public class DefaultFsServerObjects
         IBufferManager bufferManager = null;
         IHash256GeneratorFactorySelector ncaHashGeneratorFactorySelector = null;
 
-        creators.RomFileSystemCreator = new RomFileSystemCreator();
+        creators.RomFileSystemCreator = new RomFileSystemCreator(memoryResource);
         creators.PartitionFileSystemCreator = new PartitionFileSystemCreator();
         creators.StorageOnNcaCreator = new StorageOnNcaCreator(memoryResource, bufferManager, InitializeNcaReader, new NcaCompressionConfiguration(), ncaHashGeneratorFactorySelector);
         creators.TargetManagerFileSystemCreator = new TargetManagerFileSystemCreator();
