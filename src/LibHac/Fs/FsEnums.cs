@@ -124,6 +124,7 @@ public enum OperationId
     QueryUnpreparedRange = 4,
     QueryLazyLoadCompletionRate = 5,
     SetLazyLoadPriority = 6,
+    GetAsynchronousAccessSplitter = 7,
     ReadyLazyLoadFile = 10001
 }
 

@@ -1192,7 +1192,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
                 if (res.IsFailure()) return res.Miss();
 
                 res = _config.EncryptedFsCreator.Create(ref outFileSystem, in baseFileSystem,
-                    IEncryptedFileSystemCreator.KeyId.Save, in _encryptionSeed);
+                    IEncryptedFileSystemCreator.KeyId.Save);
                 if (res.IsFailure()) return res.Miss();
 
                 break;

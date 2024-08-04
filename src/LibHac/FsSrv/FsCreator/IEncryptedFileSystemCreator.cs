@@ -14,5 +14,7 @@ public interface IEncryptedFileSystemCreator
     }
 
     Result Create(ref SharedRef<IFileSystem> outEncryptedFileSystem, ref readonly SharedRef<IFileSystem> baseFileSystem,
-        KeyId idIndex, in EncryptionSeed encryptionSeed);
+        KeyId keyId);
+
+    Result SetEncryptionSeed(KeyId keyId, in EncryptionSeed encryptionSeed);
 }

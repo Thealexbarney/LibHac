@@ -31,7 +31,7 @@ public struct NcaCryptoConfiguration
 
 public struct NcaCompressionConfiguration
 {
-    public GetDecompressorFunction GetDecompressorFunc;
+    public IDecompressorFactory DecompressorFactory;
 }
 
 public static class NcaKeyFunctions
@@ -203,9 +203,7 @@ public class NcaFileSystemDriver : IDisposable
         throw new NotImplementedException();
     }
 
-    public Result OpenStorage(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, ref NcaFsHeaderReader outHeaderReader,
-        int fsIndex)
+    public Result OpenStorage(ref SharedRef<IStorage> outStorage, ref NcaFsHeaderReader outHeaderReader, int fsIndex)
     {
         throw new NotImplementedException();
     }
@@ -323,7 +321,7 @@ public class NcaFileSystemDriver : IDisposable
 
     private Result CreateIntegrityVerificationStorage(ref SharedRef<IStorage> outStorage,
         ref readonly SharedRef<IStorage> baseStorage, in NcaFsHeader.HashData.IntegrityMetaInfo metaInfo,
-        IHash256GeneratorFactory hashGeneratorFactory)
+        bool alwaysCreateCacheEntries, IHash256GeneratorFactory hashGeneratorFactory)
     {
         throw new NotImplementedException();
     }
@@ -338,22 +336,22 @@ public class NcaFileSystemDriver : IDisposable
     private Result CreateIntegrityVerificationStorageImpl(ref SharedRef<IStorage> outStorage,
         ref readonly SharedRef<IStorage> baseStorage, in NcaFsHeader.HashData.IntegrityMetaInfo metaInfo,
         long layerInfoOffset, int maxDataCacheEntries, int maxHashCacheEntries, sbyte bufferLevel,
-        IHash256GeneratorFactory hashGeneratorFactory)
+        bool alwaysCreateCacheEntries, IHash256GeneratorFactory hashGeneratorFactory)
     {
         throw new NotImplementedException();
     }
 
     public static Result CreateCompressedStorage(ref SharedRef<IStorage> outStorage,
         ref SharedRef<CompressedStorage> outCompressedStorage, ref SharedRef<IStorage> outMetaStorage,
-        ref readonly SharedRef<IStorage> baseStorage, in NcaCompressionInfo compressionInfo,
-        GetDecompressorFunction getDecompressor, MemoryResource allocator, IBufferManager bufferManager)
+        ref readonly SharedRef<IStorage> baseStorage, in NcaCompressionInfo compressionInfo, uint alignment,
+        IDecompressorFactory decompressorFactory, MemoryResource allocator, IBufferManager bufferManager)
     {
         throw new NotImplementedException();
     }
 
     private Result CreateCompressedStorage(ref SharedRef<IStorage> outStorage,
         ref SharedRef<CompressedStorage> outCompressedStorage, ref SharedRef<IStorage> outMetaStorage,
-        ref readonly SharedRef<IStorage> baseStorage, in NcaCompressionInfo compressionInfo)
+        ref readonly SharedRef<IStorage> baseStorage, in NcaCompressionInfo compressionInfo, uint alignment)
     {
         throw new NotImplementedException();
     }

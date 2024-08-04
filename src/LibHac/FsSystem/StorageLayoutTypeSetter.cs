@@ -13,6 +13,8 @@ internal enum StorageLayoutType
     SdCard = 1 << 1,
     GameCard = 1 << 2,
     Usb = 1 << 3,
+    
+    IsApp = 1 << 24,
 
     NonGameCard = Bis | SdCard | Usb,
     All = Bis | SdCard | GameCard | Usb

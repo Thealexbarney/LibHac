@@ -188,8 +188,7 @@ public class BlockCacheBufferedStorage : IStorage
         throw new NotImplementedException();
     }
 
-    private Result GetAssociateBuffer(out Buffer outRange, out CacheEntry outEntry, long offset, int idealSize,
-        bool isAllocateForWrite)
+    private Result GetAssociateBuffer(out Buffer outRange, out CacheEntry outEntry, long offset, bool isAllocateForWrite)
     {
         throw new NotImplementedException();
     }
@@ -241,8 +240,9 @@ public class BlockCacheBufferedStorage : IStorage
         throw new NotImplementedException();
     }
 
-    private Result BulkRead(long offset, Span<byte> buffer, ref Buffer memoryRangeHead, ref Buffer memoryRangeTail,
-        ref CacheEntry entryHead, ref CacheEntry entryTail, bool isHeadCacheNeeded, bool isTailCacheNeeded)
+    private Result BulkRead(out bool outIsHeadCacheStored, out bool outIsTailCacheStored, long offset,
+        Span<byte> buffer, ref Buffer memoryRangeHead, ref Buffer memoryRangeTail, ref CacheEntry entryHead,
+        ref CacheEntry entryTail)
     {
         throw new NotImplementedException();
     }

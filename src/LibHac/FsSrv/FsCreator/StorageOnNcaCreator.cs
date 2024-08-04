@@ -27,28 +27,22 @@ public class StorageOnNcaCreator : IStorageOnNcaCreator
         _hashGeneratorFactorySelector = hashGeneratorFactorySelector;
     }
 
-    public Result Create(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, ref NcaFsHeaderReader outHeaderReader,
-        ref readonly SharedRef<NcaReader> ncaReader, int fsIndex)
+    public Result Create(ref SharedRef<IStorage> outStorage, ref NcaFsHeaderReader outHeaderReader, ref readonly SharedRef<NcaReader> ncaReader, int fsIndex)
     {
         var ncaFsDriver = new NcaFileSystemDriver(in ncaReader, _memoryResource, _bufferManager, _hashGeneratorFactorySelector);
 
         using var storage = new SharedRef<IStorage>();
-        using var storageAccessSplitter = new SharedRef<IAsynchronousAccessSplitter>();
-        Result res = RomResultConverter.ConvertRomResult(ncaFsDriver.OpenStorage(ref storage.Ref,
-            ref storageAccessSplitter.Ref, ref outHeaderReader, fsIndex));
+        Result res = RomResultConverter.ConvertRomResult(ncaFsDriver.OpenStorage(ref storage.Ref, ref outHeaderReader, fsIndex));
         if (res.IsFailure()) return res.Miss();
 
         using var resultConvertStorage = new SharedRef<RomResultConvertStorage>(new RomResultConvertStorage(in storage));
-
         outStorage.SetByMove(ref resultConvertStorage.Ref);
-        outStorageAccessSplitter.SetByMove(ref storageAccessSplitter.Ref);
 
         return Result.Success;
     }
 
     public Result CreateWithPatch(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, ref NcaFsHeaderReader outHeaderReader,
+        ref NcaFsHeaderReader outHeaderReader,
         ref readonly SharedRef<NcaReader> originalNcaReader, ref readonly SharedRef<NcaReader> currentNcaReader,
         int fsIndex)
     {
@@ -56,15 +50,11 @@ public class StorageOnNcaCreator : IStorageOnNcaCreator
             _bufferManager, _hashGeneratorFactorySelector);
 
         using var storage = new SharedRef<IStorage>();
-        using var storageAccessSplitter = new SharedRef<IAsynchronousAccessSplitter>();
-        Result res = RomResultConverter.ConvertRomResult(ncaFsDriver.OpenStorage(ref storage.Ref,
-            ref storageAccessSplitter.Ref, ref outHeaderReader, fsIndex));
+        Result res = RomResultConverter.ConvertRomResult(ncaFsDriver.OpenStorage(ref storage.Ref, ref outHeaderReader, fsIndex));
         if (res.IsFailure()) return res.Miss();
 
         using var resultConvertStorage = new SharedRef<RomResultConvertStorage>(new RomResultConvertStorage(in storage));
-
         outStorage.SetByMove(ref resultConvertStorage.Ref);
-        outStorageAccessSplitter.SetByMove(ref storageAccessSplitter.Ref);
 
         return Result.Success;
     }

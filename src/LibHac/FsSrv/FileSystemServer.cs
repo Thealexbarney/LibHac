@@ -47,6 +47,7 @@ internal struct FileSystemServerGlobals : IDisposable
     public GameCardServiceGlobals GameCardService;
     public HierarchicalIntegrityVerificationStorageGlobals HierarchicalIntegrityVerificationStorage;
     public SpeedEmulationConfigurationGlobals SpeedEmulationConfiguration;
+    public StorageAccessSpeedControlGlobals StorageAccessSpeedControl;
 
     public void Initialize(HorizonClient horizonClient, FileSystemServer fsServer)
     {

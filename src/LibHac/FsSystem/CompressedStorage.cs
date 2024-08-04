@@ -18,7 +18,8 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
         private long _continuousReadingSizeMax;
         private readonly BucketTree _bucketTree;
         private ValueSubStorage _dataStorage;
-        private GetDecompressorFunction _getDecompressorFunction;
+        private IDecompressorFactory _decompressorFactory;
+        private ulong _alignment;
 
         public CompressedStorageCore()
         {
@@ -67,12 +68,12 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
         public Result Initialize(MemoryResource allocatorForBucketTree, ref readonly ValueSubStorage dataStorage,
             ref readonly ValueSubStorage nodeStorage, ref readonly ValueSubStorage entryStorage,
             int bucketTreeEntryCount, long blockSizeMax, long continuousReadingSizeMax,
-            GetDecompressorFunction getDecompressorFunc)
+            IDecompressorFactory decompressorFactory, ulong alignment)
         {
             Assert.SdkRequiresNotNull(allocatorForBucketTree);
             Assert.SdkRequiresLess(0, blockSizeMax);
             Assert.SdkRequiresLessEqual(blockSizeMax, continuousReadingSizeMax);
-            Assert.SdkRequiresNotNull(getDecompressorFunc);
+            Assert.SdkRequiresNotNull(decompressorFactory);
 
             Result res = _bucketTree.Initialize(allocatorForBucketTree, in nodeStorage, in entryStorage, NodeSize,
                 Unsafe.SizeOf<Entry>(), bucketTreeEntryCount);
@@ -81,7 +82,8 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
             _blockSizeMax = blockSizeMax;
             _continuousReadingSizeMax = continuousReadingSizeMax;
             _dataStorage.Set(in dataStorage);
-            _getDecompressorFunction = getDecompressorFunc;
+            _decompressorFactory = decompressorFactory;
+            _alignment = alignment;
 
             return Result.Success;
         }
@@ -119,14 +121,6 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
             long accessSize, long alignmentSize)
         {
             throw new NotImplementedException();
-        }
-
-        private DecompressorFunction GetDecompressor(CompressionType type)
-        {
-            if (CompressionTypeUtility.IsUnknownType(type))
-                return null;
-
-            return _getDecompressorFunction(type);
         }
     }
 
@@ -299,11 +293,11 @@ public class CompressedStorage : IStorage, IAsynchronousAccessSplitter
     public Result Initialize(MemoryResource allocatorForBucketTree, IBufferManager allocatorForCacheManager,
         ref readonly ValueSubStorage dataStorage, ref readonly ValueSubStorage nodeStorage,
         ref readonly ValueSubStorage entryStorage, int bucketTreeEntryCount, long blockSizeMax,
-        long continuousReadingSizeMax, GetDecompressorFunction getDecompressorFunc, long cacheSize0, long cacheSize1,
-        int maxCacheEntries)
+        long continuousReadingSizeMax, IDecompressorFactory decompressorFactory, ulong alignment, long cacheSize0,
+        long cacheSize1, int maxCacheEntries)
     {
         Result res = _core.Initialize(allocatorForBucketTree, in dataStorage, in nodeStorage, in entryStorage,
-            bucketTreeEntryCount, blockSizeMax, continuousReadingSizeMax, getDecompressorFunc);
+            bucketTreeEntryCount, blockSizeMax, continuousReadingSizeMax, decompressorFactory, alignment);
         if (res.IsFailure()) return res.Miss();
 
         res = _core.GetSize(out long size);

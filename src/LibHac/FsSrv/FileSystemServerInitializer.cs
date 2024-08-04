@@ -15,6 +15,9 @@ public static class FileSystemServerInitializer
 {
     private const ulong SpeedEmulationProgramIdWithoutPlatformIdMinimum = 0;
     private const ulong SpeedEmulationProgramIdWithoutPlatformIdMaximum = 0x1FFF;
+    
+    private const ulong StorageAccessSpeedControlProgramIdWithoutPlatformIdMinimum = 0x3000;
+    private const ulong StorageAccessSpeedControlProgramIdWithoutPlatformIdMaximum = 0x_00FF_FFFF_FFFF_FFFF;
 
     private const uint ContentDivisionSize = ConcatenationFileSystem.DefaultInternalFileSize;
 
@@ -109,9 +112,11 @@ public static class FileSystemServerInitializer
         var accessFailureManagementService =
             new AccessFailureManagementServiceImpl(in accessFailureManagementServiceConfig);
 
-        var speedEmulationRange =
-            new InternalProgramIdRangeForSpeedEmulation(SpeedEmulationProgramIdWithoutPlatformIdMinimum,
-                SpeedEmulationProgramIdWithoutPlatformIdMaximum);
+        var speedEmulationRange = new InternalProgramIdRangeForSpeedEmulation(
+            SpeedEmulationProgramIdWithoutPlatformIdMinimum, SpeedEmulationProgramIdWithoutPlatformIdMaximum);
+
+        var storageAccessSpeedControlRange = new InternalProgramIdRangeForStorageAccessSpeedControl(
+            StorageAccessSpeedControlProgramIdWithoutPlatformIdMinimum, StorageAccessSpeedControlProgramIdWithoutPlatformIdMaximum);
 
         var ncaFsServiceConfig = new NcaFileSystemServiceImpl.Configuration();
         ncaFsServiceConfig.BaseFsService = baseFsService;
@@ -127,6 +132,7 @@ public static class FileSystemServerInitializer
         ncaFsServiceConfig.SpeedEmulationRange = speedEmulationRange;
         ncaFsServiceConfig.AddOnContentDivisionSize = ContentDivisionSize;
         ncaFsServiceConfig.RomDivisionSize = ContentDivisionSize;
+        ncaFsServiceConfig.StorageAccessSpeedControlRange = storageAccessSpeedControlRange;
         ncaFsServiceConfig.FsServer = server;
 
         var ncaFsService = new NcaFileSystemServiceImpl(in ncaFsServiceConfig);

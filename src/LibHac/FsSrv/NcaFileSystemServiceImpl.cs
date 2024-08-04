@@ -166,14 +166,13 @@ file static class Anonymous
 /// <summary>
 /// Handles locating and opening NCA content files.
 /// </summary>
-/// <remarks>Based on nnSdk 17.5.0 (FS 17.0.0)</remarks>
+/// <remarks>Based on nnSdk 18.3.0 (FS 18.0.0)</remarks>
 public class NcaFileSystemServiceImpl : IDisposable
 {
     private readonly Configuration _config;
     private readonly UpdatePartitionPath _updatePartitionPath;
     private readonly ExternalKeyManager _externalKeyManager;
     private readonly SystemDataUpdateEventManager _systemDataUpdateEventManager;
-    private EncryptionSeed _encryptionSeed;
     private uint _romFsDeepRetryStartCount;
     private uint _romFsRemountForDataCorruptionCount;
     private uint _romfsUnrecoverableDataCorruptionByRemountCount;
@@ -193,11 +192,13 @@ public class NcaFileSystemServiceImpl : IDisposable
         public IEncryptedFileSystemCreator EncryptedFsCreator;
         public INspRootFileSystemCreator NspRootFileSystemCreator;
         public LocationResolverSet LocationResolverSet;
+        public Func<DataId, StorageId, DataId> RedirectDataId;
         public ProgramRegistryServiceImpl ProgramRegistryService;
         public AccessFailureManagementServiceImpl AccessFailureManagementService;
         public InternalProgramIdRangeForSpeedEmulation SpeedEmulationRange;
         public long AddOnContentDivisionSize;
         public long RomDivisionSize;
+        public InternalProgramIdRangeForStorageAccessSpeedControl StorageAccessSpeedControlRange;
 
         // LibHac additions
         public FileSystemServer FsServer;
@@ -244,6 +245,8 @@ public class NcaFileSystemServiceImpl : IDisposable
         _romFsUnrecoverableByGameCardAccessFailedCount = 0;
 
         _romfsCountMutex = new SdkMutexType();
+
+        StorageAccessSpeedControl.SetTargetProgramIdRange(_config.FsServer, _config.StorageAccessSpeedControlRange);
     }
 
     public void Dispose()
@@ -386,9 +389,8 @@ public class NcaFileSystemServiceImpl : IDisposable
         if (res.IsFailure()) return res.Miss();
 
         using var storage = new SharedRef<IStorage>();
-        using var storageAccessSplitter = new SharedRef<IAsynchronousAccessSplitter>();
-        res = OpenStorageByContentType(ref storage.Ref, ref storageAccessSplitter.Ref, in ncaReader,
-            out NcaFsHeader.FsType fsType, type, mountInfo.IsGameCard(), canMountSystemDataPrivate);
+        res = OpenStorageByContentType(ref storage.Ref, in ncaReader, out NcaFsHeader.FsType fsType, type,
+            mountInfo.IsGameCard(), canMountSystemDataPrivate);
         if (res.IsFailure()) return res.Miss();
 
         switch (fsType)
@@ -475,9 +477,8 @@ public class NcaFileSystemServiceImpl : IDisposable
         if (res.IsFailure()) return res.Miss();
 
         using var storage = new SharedRef<IStorage>();
-        using var storageAccessSplitter = new SharedRef<IAsynchronousAccessSplitter>();
-        res = OpenStorageByContentType(ref storage.Ref, ref storageAccessSplitter.Ref, in ncaReader,
-            out NcaFsHeader.FsType fsType, type, mountInfo.IsGameCard(), canMountSystemDataPrivate: false);
+        res = OpenStorageByContentType(ref storage.Ref, in ncaReader, out NcaFsHeader.FsType fsType, type,
+            mountInfo.IsGameCard(), canMountSystemDataPrivate: false);
         if (res.IsFailure()) return res.Miss();
 
         if (fsType != NcaFsHeader.FsType.RomFs)
@@ -486,18 +487,15 @@ public class NcaFileSystemServiceImpl : IDisposable
         return _config.RomFsCreator.Create(ref outFileSystem, in storage).Ret();
     }
 
-    public Result OpenDataStorage(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, ref Hash outNcaDigest,
-        ref readonly Path path, ContentAttributes attributes, FileSystemProxyType type, ulong id)
+    public Result OpenDataStorage(ref SharedRef<IStorage> outStorage, ref Hash outNcaDigest, ref readonly Path path,
+        ContentAttributes attributes, FileSystemProxyType type, ulong id)
     {
-        return OpenDataStorage(ref outStorage, ref outStorageAccessSplitter, ref outNcaDigest, in path, attributes,
-            type, id, canMountSystemDataPrivate: false).Ret();
+        return OpenDataStorage(ref outStorage, ref outNcaDigest, in path, attributes, type, id,
+            canMountSystemDataPrivate: false).Ret();
     }
 
-    public Result OpenDataStorage(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, ref Hash outNcaDigest,
-        ref readonly Path path, ContentAttributes attributes, FileSystemProxyType type, ulong id,
-        bool canMountSystemDataPrivate)
+    public Result OpenDataStorage(ref SharedRef<IStorage> outStorage, ref Hash outNcaDigest, ref readonly Path path,
+        ContentAttributes attributes, FileSystemProxyType type, ulong id, bool canMountSystemDataPrivate)
     {
         using var ncaReader = new SharedRef<NcaReader>();
         Result res = ParseNca(ref ncaReader.Ref, out bool isGameCard, path.GetString(), attributes, id);
@@ -508,8 +506,8 @@ public class NcaFileSystemServiceImpl : IDisposable
             GenerateNcaDigest(out outNcaDigest, ncaReader.Get, null);
         }
 
-        res = OpenStorageByContentType(ref outStorage, ref outStorageAccessSplitter, in ncaReader,
-            out NcaFsHeader.FsType fsType, type, isGameCard, canMountSystemDataPrivate);
+        res = OpenStorageByContentType(ref outStorage, in ncaReader, out NcaFsHeader.FsType fsType, type, isGameCard,
+            canMountSystemDataPrivate);
         if (res.IsFailure()) return res.Miss();
 
         if (fsType != NcaFsHeader.FsType.RomFs)
@@ -518,18 +516,15 @@ public class NcaFileSystemServiceImpl : IDisposable
         return Result.Success;
     }
 
-    public Result OpenStorageWithPatch(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, ref Hash outNcaDigest,
+    public Result OpenStorageWithPatch(ref SharedRef<IStorage> outStorage, ref Hash outNcaDigest,
         ref readonly Path originalNcaPath, ContentAttributes originalAttributes, ref readonly Path currentNcaPath,
         ContentAttributes currentAttributes, FileSystemProxyType type, ulong originalId, ulong currentId)
     {
-        return OpenStorageWithPatch(ref outStorage, ref outStorageAccessSplitter, ref outNcaDigest,
-            in originalNcaPath, originalAttributes, in currentNcaPath, currentAttributes, type, originalId, currentId,
-            false).Ret();
+        return OpenStorageWithPatch(ref outStorage, ref outNcaDigest, in originalNcaPath, originalAttributes,
+            in currentNcaPath, currentAttributes, type, originalId, currentId, false).Ret();
     }
 
-    public Result OpenStorageWithPatch(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, ref Hash outNcaDigest,
+    public Result OpenStorageWithPatch(ref SharedRef<IStorage> outStorage, ref Hash outNcaDigest,
         ref readonly Path originalNcaPath, ContentAttributes originalAttributes, ref readonly Path currentNcaPath,
         ContentAttributes currentAttributes, FileSystemProxyType type, ulong originalId, ulong currentId,
         bool canMountSystemDataPrivate)
@@ -567,8 +562,8 @@ public class NcaFileSystemServiceImpl : IDisposable
             GenerateNcaDigest(out outNcaDigest, originalNcaReader.Get, currentNcaReader.Get);
         }
 
-        res = OpenStorageWithPatchByContentType(ref outStorage, ref outStorageAccessSplitter, in originalNcaReader,
-            in currentNcaReader, out NcaFsHeader.FsType fsType, type, canMountSystemDataPrivate);
+        res = OpenStorageWithPatchByContentType(ref outStorage, in originalNcaReader, in currentNcaReader,
+            out NcaFsHeader.FsType fsType, type, canMountSystemDataPrivate);
         if (res.IsFailure()) return res.Miss();
 
         if (fsType != NcaFsHeader.FsType.RomFs)
@@ -582,11 +577,10 @@ public class NcaFileSystemServiceImpl : IDisposable
         FileSystemProxyType type, ulong originalId, ulong currentId)
     {
         using var storage = new SharedRef<IStorage>();
-        using var storageAccessSplitter = new SharedRef<IAsynchronousAccessSplitter>();
         using var fileSystem = new SharedRef<IFileSystem>();
 
-        Result res = OpenStorageWithPatch(ref storage.Ref, ref storageAccessSplitter.Ref, ref Unsafe.NullRef<Hash>(),
-            in originalNcaPath, originalAttributes, in currentNcaPath, currentAttributes, type, originalId, currentId,
+        Result res = OpenStorageWithPatch(ref storage.Ref, ref Unsafe.NullRef<Hash>(), in originalNcaPath,
+            originalAttributes, in currentNcaPath, currentAttributes, type, originalId, currentId,
             canMountSystemDataPrivate: false);
         if (res.IsFailure()) return res.Miss();
 
@@ -658,7 +652,7 @@ public class NcaFileSystemServiceImpl : IDisposable
         {
             using SharedRef<IFileSystem> tempFileSystem = SharedRef<IFileSystem>.CreateMove(ref subDirFs.Ref);
             res = _config.EncryptedFsCreator.Create(ref subDirFs.Ref, in tempFileSystem,
-                IEncryptedFileSystemCreator.KeyId.Content, in _encryptionSeed);
+                IEncryptedFileSystemCreator.KeyId.Content);
             if (res.IsFailure()) return res.Miss();
         }
 
@@ -933,7 +927,7 @@ public class NcaFileSystemServiceImpl : IDisposable
                 res = OpenHostFileSystem(ref outFileSystem, in pathRoot, openCaseSensitive: true);
                 if (res.IsFailure()) return res.Miss();
                 break;
-            
+
             case MountInfo.FileSystemType.LocalFs:
                 res = _config.LocalFsCreator.Create(ref outFileSystem, in pathRoot, openCaseSensitive: true);
                 if (res.IsFailure()) return res.Miss();
@@ -1148,7 +1142,6 @@ public class NcaFileSystemServiceImpl : IDisposable
     }
 
     public Result OpenStorageByContentType(ref SharedRef<IStorage> outNcaStorage,
-        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter,
         ref readonly SharedRef<NcaReader> ncaReader, out NcaFsHeader.FsType outFsType, FileSystemProxyType fsProxyType,
         bool isGameCard, bool canMountSystemDataPrivate)
     {
@@ -1221,8 +1214,7 @@ public class NcaFileSystemServiceImpl : IDisposable
 
         var ncaFsHeaderReader = new NcaFsHeaderReader();
 
-        res = _config.StorageOnNcaCreator.Create(ref outNcaStorage, ref outStorageAccessSplitter, ref ncaFsHeaderReader,
-            in ncaReader, partitionIndex);
+        res = _config.StorageOnNcaCreator.Create(ref outNcaStorage, ref ncaFsHeaderReader, in ncaReader, partitionIndex);
         if (res.IsFailure()) return res.Miss();
 
         outFsType = ncaFsHeaderReader.GetFsType();
@@ -1230,7 +1222,6 @@ public class NcaFileSystemServiceImpl : IDisposable
     }
 
     public Result OpenStorageWithPatchByContentType(ref SharedRef<IStorage> outNcaStorage,
-        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter,
         ref readonly SharedRef<NcaReader> originalNcaReader, ref readonly SharedRef<NcaReader> currentNcaReader,
         out NcaFsHeader.FsType outFsType, FileSystemProxyType fsProxyType, bool canMountSystemDataPrivate)
     {
@@ -1279,18 +1270,11 @@ public class NcaFileSystemServiceImpl : IDisposable
 
         var ncaFsHeaderReader = new NcaFsHeaderReader();
 
-        res = _config.StorageOnNcaCreator.CreateWithPatch(ref outNcaStorage, ref outStorageAccessSplitter,
-            ref ncaFsHeaderReader, in originalNcaReader, in currentNcaReader, partitionIndex);
+        res = _config.StorageOnNcaCreator.CreateWithPatch(ref outNcaStorage, ref ncaFsHeaderReader,
+            in originalNcaReader, in currentNcaReader, partitionIndex);
         if (res.IsFailure()) return res.Miss();
 
         outFsType = ncaFsHeaderReader.GetFsType();
-        return Result.Success;
-    }
-
-    public Result SetSdCardEncryptionSeed(in EncryptionSeed encryptionSeed)
-    {
-        _encryptionSeed = encryptionSeed;
-
         return Result.Success;
     }
 
@@ -1393,6 +1377,11 @@ public class NcaFileSystemServiceImpl : IDisposable
         return Result.Success;
     }
 
+    public DataId RedirectDataId(DataId dataId, StorageId storageId)
+    {
+        return _config.RedirectDataId?.Invoke(dataId, storageId) ?? dataId;
+    }
+
     public Result ResolveDataPath(ref Path outPath, out ContentAttributes outContentAttributes, DataId dataId,
         StorageId storageId)
     {
@@ -1418,17 +1407,38 @@ public class NcaFileSystemServiceImpl : IDisposable
         return _config.LocationResolverSet.ResolveRegisteredHtmlDocumentPath(ref outPath, out outContentAttributes, programId).Ret();
     }
 
-    internal StorageLayoutType GetStorageFlag(ulong programId)
+    internal StorageLayoutType GetStorageFlag(ulong contentProgramId, ulong callerProgramId)
     {
         Assert.SdkRequiresNotEqual(_config.SpeedEmulationRange.ProgramIdWithoutPlatformIdMax, 0ul);
 
-        ulong programIdWithoutPlatformId = Impl.Utility.ClearPlatformIdInProgramId(programId);
+        StorageLayoutType storageFlag = 0;
+
+        if (StorageAccessSpeedControl.IsTargetProgramId(_config.FsServer, callerProgramId))
+        {
+            storageFlag |= StorageLayoutType.IsApp;
+        }
+
+        ulong programIdWithoutPlatformId = Impl.Utility.ClearPlatformIdInProgramId(contentProgramId);
 
         if (programIdWithoutPlatformId >= _config.SpeedEmulationRange.ProgramIdWithoutPlatformIdMin &&
             programIdWithoutPlatformId <= _config.SpeedEmulationRange.ProgramIdWithoutPlatformIdMax)
             return StorageLayoutType.Bis;
         else
-            return StorageLayoutType.All;
+            return storageFlag | StorageLayoutType.All;
+    }
+
+    internal StorageLayoutType GetStorageFlag(ulong programId)
+    {
+        return GetStorageFlag(programId, programId);
+    }
+
+    internal StorageLayoutType GetStorageFlagByContentStorageId(ContentStorageId storageId, ulong programId)
+    {
+        if (storageId == ContentStorageId.System)
+            return StorageLayoutType.Bis;
+
+        StorageLayoutType flag = StorageAccessSpeedControl.IsTargetProgramId(_config.FsServer, programId) ? StorageLayoutType.IsApp : 0;
+        return flag | StorageLayoutType.All;
     }
 
     public Result HandleResolubleAccessFailure(out bool wasDeferred, Result nonDeferredResult,

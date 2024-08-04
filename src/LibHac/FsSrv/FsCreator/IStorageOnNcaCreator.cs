@@ -6,12 +6,10 @@ namespace LibHac.FsSrv.FsCreator;
 
 public interface IStorageOnNcaCreator
 {
-    Result Create(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, ref NcaFsHeaderReader outHeaderReader,
+    Result Create(ref SharedRef<IStorage> outStorage, ref NcaFsHeaderReader outHeaderReader,
         ref readonly SharedRef<NcaReader> ncaReader, int fsIndex);
 
-    Result CreateWithPatch(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, ref NcaFsHeaderReader outHeaderReader,
+    Result CreateWithPatch(ref SharedRef<IStorage> outStorage, ref NcaFsHeaderReader outHeaderReader,
         ref readonly SharedRef<NcaReader> originalNcaReader, ref readonly SharedRef<NcaReader> currentNcaReader,
         int fsIndex);
 

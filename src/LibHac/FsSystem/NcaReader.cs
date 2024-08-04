@@ -22,7 +22,7 @@ public class NcaReader : IDisposable
     private SharedRef<IStorage> _bodyStorage;
     private SharedRef<IStorage> _headerStorage;
     private SharedRef<IAesCtrDecryptor> _aesCtrDecryptor;
-    private GetDecompressorFunction _getDecompressorFunc;
+    private IDecompressorFactory _decompressorFactory;
     private IHash256GeneratorFactorySelector _hashGeneratorFactorySelector;
 
     public NcaReader(in RuntimeNcaHeader runtimeNcaHeader, ref readonly SharedRef<IStorage> notVerifiedHeaderStorage,
@@ -39,7 +39,7 @@ public class NcaReader : IDisposable
         _bodyStorage = SharedRef<IStorage>.CreateCopy(in bodyStorage);
         _aesCtrDecryptor = SharedRef<IAesCtrDecryptor>.CreateCopy(in aesCtrDecryptor);
 
-        _getDecompressorFunc = compressionConfig.GetDecompressorFunc;
+        _decompressorFactory = compressionConfig.DecompressorFactory;
         _hashGeneratorFactorySelector = hashGeneratorFactorySelector;
     }
 
@@ -181,10 +181,10 @@ public class NcaReader : IDisposable
         return SharedRef<IAesCtrDecryptor>.CreateCopy(in _aesCtrDecryptor);
     }
 
-    public GetDecompressorFunction GetDecompressor()
+    public IDecompressorFactory GetDecompressorFactory()
     {
-        Assert.SdkRequiresNotNull(_getDecompressorFunc);
-        return _getDecompressorFunc;
+        Assert.SdkRequiresNotNull(_decompressorFactory);
+        return _decompressorFactory;
     }
 
     public IHash256GeneratorFactorySelector GetHashGeneratorFactorySelector()

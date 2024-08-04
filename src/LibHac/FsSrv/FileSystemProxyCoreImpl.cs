@@ -66,7 +66,7 @@ public class FileSystemProxyCoreImpl
 
             tempFs.SetByMove(ref fileSystem.Ref);
             res = _fsCreators.EncryptedFileSystemCreator.Create(ref fileSystem.Ref, in tempFs,
-                IEncryptedFileSystemCreator.KeyId.CustomStorage, in _sdEncryptionSeed);
+                IEncryptedFileSystemCreator.KeyId.CustomStorage);
             if (res.IsFailure()) return res.Miss();
         }
         else
@@ -114,7 +114,6 @@ public class FileSystemProxyCoreImpl
 
     public Result SetSdCardEncryptionSeed(in EncryptionSeed seed)
     {
-        _sdEncryptionSeed = seed;
-        return Result.Success;
+        return _fsCreators.EncryptedFileSystemCreator.SetEncryptionSeed(IEncryptedFileSystemCreator.KeyId.Save, in seed).Ret();
     }
 }

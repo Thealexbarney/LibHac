@@ -141,7 +141,7 @@ internal class CompressedStorage : IStorage
                 res = _dataStorage.Read(currentEntry.PhysicalOffset + dataOffsetInEntry, entryDestination);
                 if (res.IsFailure()) return res.Miss();
             }
-            else if (currentEntry.CompressionType == CompressionType.Zeroed)
+            else if (currentEntry.CompressionType == CompressionType.FillZero)
             {
                 entryDestination.Clear();
             }

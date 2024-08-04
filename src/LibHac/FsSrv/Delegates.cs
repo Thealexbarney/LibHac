@@ -1,11 +1,14 @@
 ﻿using System;
 using LibHac.Common;
+using LibHac.Fs;
 using LibHac.FsSrv.FsCreator;
 
 namespace LibHac.FsSrv;
 
 public delegate Result GenerateSeedUniqueMac(Span<byte> outMacBuffer, ReadOnlySpan<byte> data, ReadOnlySpan<byte> seed);
 public delegate Result GenerateDeviceUniqueMac(Span<byte> outMacBuffer, ReadOnlySpan<byte> data, DeviceUniqueMacType macType);
+
+public delegate void GenerateSdEncryptionKey(Span<byte> outKey, IEncryptedFileSystemCreator.KeyId keyId, in EncryptionSeed seed);
 
 public delegate Result SaveTransferAesKeyGenerator(Span<byte> outKeyBuffer,
     SaveDataTransferCryptoConfiguration.KeyIndex index, ReadOnlySpan<byte> keySource, int keyGeneration);

@@ -12,7 +12,6 @@ namespace LibHac.FsSrv.Impl;
 public class DeepRetryStorage : IStorage
 {
     private AsynchronousAccessStorage _asyncStorage;
-    private SharedRef<IAsynchronousAccessSplitter> _accessSplitter;
     private SharedRef<IRomFileSystemAccessFailureManager> _parent;
     private UniqueRef<IUniqueLock> _mountCountLock;
     private DataStorageContext _dataStorageContext;
@@ -52,14 +51,12 @@ public class DeepRetryStorage : IStorage
     }
 
     public DeepRetryStorage(ref readonly SharedRef<IStorage> baseStorage,
-        ref readonly SharedRef<IAsynchronousAccessSplitter> accessSplitter,
         ref readonly SharedRef<IRomFileSystemAccessFailureManager> parent,
         ref UniqueRef<IUniqueLock> mountCountSemaphore,
         bool deepRetryEnabled, FileSystemServer fsServer)
     {
         // Missing: Getting the thread pool via GetRegisteredThreadPool()
-        _asyncStorage = new AsynchronousAccessStorage(in baseStorage, accessSplitter.Get);
-        _accessSplitter = SharedRef<IAsynchronousAccessSplitter>.CreateCopy(in accessSplitter);
+        _asyncStorage = new AsynchronousAccessStorage(in baseStorage);
         _parent = SharedRef<IRomFileSystemAccessFailureManager>.CreateCopy(in parent);
         _mountCountLock = UniqueRef<IUniqueLock>.Create(ref mountCountSemaphore);
         _dataStorageContext = new DataStorageContext();
@@ -70,14 +67,12 @@ public class DeepRetryStorage : IStorage
     }
 
     public DeepRetryStorage(ref readonly SharedRef<IStorage> baseStorage,
-        ref readonly SharedRef<IAsynchronousAccessSplitter> accessSplitter,
         ref readonly SharedRef<IRomFileSystemAccessFailureManager> parent,
         ref UniqueRef<IUniqueLock> mountCountSemaphore,
         in Hash hash, ulong programId, StorageId storageId, FileSystemServer fsServer)
     {
         // Missing: Getting the thread pool via GetRegisteredThreadPool()
-        _asyncStorage = new AsynchronousAccessStorage(in baseStorage, accessSplitter.Get);
-        _accessSplitter = SharedRef<IAsynchronousAccessSplitter>.CreateCopy(in accessSplitter);
+        _asyncStorage = new AsynchronousAccessStorage(in baseStorage);
         _parent = SharedRef<IRomFileSystemAccessFailureManager>.CreateCopy(in parent);
         _mountCountLock = UniqueRef<IUniqueLock>.Create(ref mountCountSemaphore);
         _dataStorageContext = new DataStorageContext(in hash, programId, storageId);
@@ -92,7 +87,6 @@ public class DeepRetryStorage : IStorage
         _readWriteLock.Dispose();
         _mountCountLock.Destroy();
         _parent.Destroy();
-        _accessSplitter.Destroy();
         _asyncStorage.Dispose();
 
         base.Dispose();
@@ -143,7 +137,6 @@ public class DeepRetryStorage : IStorage
         Assert.SdkNotNull(_parent);
 
         using var remountStorage = new SharedRef<IStorage>();
-        using var remountStorageAccessSplitter = new SharedRef<IAsynchronousAccessSplitter>();
 
         const int maxRetryCount = 2;
 
@@ -151,8 +144,8 @@ public class DeepRetryStorage : IStorage
         Hash digest = default;
         for (int i = 0; i < maxRetryCount; i++)
         {
-            retryResult = _parent.Get.OpenDataStorageCore(ref remountStorage.Ref, ref remountStorageAccessSplitter.Ref,
-                ref digest, _dataStorageContext.GetProgramIdValue(), _dataStorageContext.GetStorageId());
+            retryResult = _parent.Get.OpenDataStorageCore(ref remountStorage.Ref, ref digest,
+                _dataStorageContext.GetProgramIdValue(), _dataStorageContext.GetStorageId());
 
             if (!ResultFs.DataCorrupted.Includes(retryResult))
                 break;
@@ -170,8 +163,7 @@ public class DeepRetryStorage : IStorage
             return ResultFs.NcaDigestInconsistent.Log();
         }
         
-        _accessSplitter.SetByMove(ref remountStorageAccessSplitter.Ref);
-        _asyncStorage.SetBaseStorage(in remountStorage, _accessSplitter.Get);
+        _asyncStorage.SetBaseStorage(in remountStorage);
 
         return Result.Success;
     }

@@ -957,13 +957,7 @@ public class FileSystemProxyImpl : IFileSystemProxy, IFileSystemProxyForLoader
         res = GetSaveDataFileSystemService(out SaveDataFileSystemService saveFsService);
         if (res.IsFailure()) return res.Miss();
 
-        res = saveFsService.SetSdCardEncryptionSeed(in seed);
-        if (res.IsFailure()) return res.Miss();
-
-        res = GetNcaFileSystemService(out NcaFileSystemService ncaFsService);
-        if (res.IsFailure()) return res.Miss();
-
-        return ncaFsService.SetSdCardEncryptionSeed(in seed).Ret();
+        return saveFsService.SetSdCardEncryptionSeed(in seed).Ret();
     }
 
     public Result GetAndClearErrorInfo(out FileSystemProxyErrorInfo errorInfo)
