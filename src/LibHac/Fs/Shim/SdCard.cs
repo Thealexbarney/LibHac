@@ -54,10 +54,9 @@ public static class SdCard
     }
 
     private static Result RegisterFileSystem(FileSystemClient fs, U8Span mountName,
-        ref SharedRef<IFileSystemSf> fileSystem)
+        ref readonly SharedRef<IFileSystemSf> fileSystem)
     {
-        using var fileSystemAdapter =
-            new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem));
+        using var fileSystemAdapter = new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(in fileSystem));
 
         if (!fileSystemAdapter.HasValue)
             return ResultFs.AllocationMemoryFailedInSdCardA.Log();
@@ -113,14 +112,14 @@ public static class SdCard
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = RegisterFileSystem(fs, mountName, ref fileSystem.Ref);
+            res = RegisterFileSystem(fs, mountName, in fileSystem);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(logBuffer));
         }
         else
         {
-            res = RegisterFileSystem(fs, mountName, ref fileSystem.Ref);
+            res = RegisterFileSystem(fs, mountName, in fileSystem);
         }
 
         fs.Impl.AbortIfNeeded(res);
@@ -180,14 +179,14 @@ public static class SdCard
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.Application))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = RegisterFileSystem(fs, mountName, ref fileSystem.Ref);
+            res = RegisterFileSystem(fs, mountName, in fileSystem);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             fs.Impl.OutputAccessLog(res, start, end, null, new U8Span(logBuffer));
         }
         else
         {
-            res = RegisterFileSystem(fs, mountName, ref fileSystem.Ref);
+            res = RegisterFileSystem(fs, mountName, in fileSystem);
         }
 
         fs.Impl.AbortIfNeeded(res);
@@ -208,13 +207,13 @@ public static class SdCard
         fs.Impl.LogResultErrorMessage(res);
         Abort.DoAbortUnless(res.IsSuccess());
 
-        res = CheckIfInserted(fs, ref deviceOperator.Ref, out bool isInserted);
+        res = CheckIfInserted(fs, in deviceOperator, out bool isInserted);
         fs.Impl.LogResultErrorMessage(res);
         Abort.DoAbortUnless(res.IsSuccess());
 
         return isInserted;
 
-        static Result CheckIfInserted(FileSystemClient fs, ref SharedRef<IDeviceOperator> deviceOperator,
+        static Result CheckIfInserted(FileSystemClient fs, ref readonly SharedRef<IDeviceOperator> deviceOperator,
             out bool isInserted)
         {
             UnsafeHelpers.SkipParamInit(out isInserted);

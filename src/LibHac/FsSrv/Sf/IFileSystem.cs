@@ -10,7 +10,7 @@ namespace LibHac.FsSrv.Sf;
 
 public interface IFileSystem : IDisposable
 {
-    Result GetImpl(ref SharedRef<Fs.Fsa.IFileSystem> fileSystem);
+    Result GetImpl(ref SharedRef<Fs.Fsa.IFileSystem> outFileSystem);
     Result CreateFile(ref readonly Path path, long size, int option);
     Result DeleteFile(ref readonly Path path);
     Result CreateDirectory(ref readonly Path path);

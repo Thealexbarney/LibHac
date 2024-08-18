@@ -50,7 +50,7 @@ public static class DeviceSaveData
         res = fileSystemProxy.Get.OpenSaveDataFileSystem(ref fileSystem.Ref, DeviceSaveDataSpaceId, in attribute);
         if (res.IsFailure()) return res.Miss();
 
-        var fileSystemAdapterRaw = new FileSystemServiceObjectAdapter(ref fileSystem.Ref);
+        var fileSystemAdapterRaw = new FileSystemServiceObjectAdapter(in fileSystem);
         using var fileSystemAdapter = new UniqueRef<IFileSystem>(fileSystemAdapterRaw);
 
         if (!fileSystemAdapter.HasValue)

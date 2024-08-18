@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using LibHac.Common;
 using LibHac.Common.FixedArrays;
 using LibHac.Diag;

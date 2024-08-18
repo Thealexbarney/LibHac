@@ -72,34 +72,43 @@ public enum GameCardCompatibilityType : byte
 
 public struct GameCardErrorInfo
 {
-    public ushort GameCardCrcErrorCount;
+    public ushort GameCardCrcErrorNum;
     public ushort Reserved2;
-    public ushort AsicCrcErrorCount;
+    public ushort AsicCrcErrorNum;
     public ushort Reserved6;
-    public ushort RefreshCount;
+    public ushort RefreshNum;
     public ushort ReservedA;
-    public ushort ReadRetryCount;
-    public ushort TimeoutRetryErrorCount;
+    public ushort RetryLimitOutNum;
+    public ushort TimeoutRetryNum;
 }
 
 public struct GameCardErrorReportInfo
 {
-    public GameCardErrorInfo ErrorInfo;
+    public ushort GameCardCrcErrorNum;
+    public byte LastDeactivateReason;
+    public byte Reserved3;
+    public ushort AsicCrcErrorNum;
+    public ushort Reserved6;
+    public ushort RefreshNum;
+    public ushort ReservedA;
+    public ushort RetryLimitOutNum;
+    public ushort TimeoutRetryNum;
     public ushort AsicReinitializeFailureDetail;
     public ushort InsertionCount;
     public ushort RemovalCount;
-    public ushort AsicReinitializeCount;
-    public uint AsicInitializeCount;
-    public ushort AsicReinitializeFailureCount;
-    public ushort AwakenFailureCount;
+    public ushort AsicReinitializeNum;
+    public uint AsicInitializeNum;
+    public ushort AsicReinitializeFailureNum;
+    public ushort AwakenFailureNum;
     public ushort Reserved20;
-    public ushort RefreshCount;
+    public ushort RefreshSucceededCount;
     public uint LastReadErrorPageAddress;
     public uint LastReadErrorPageCount;
     public uint AwakenCount;
     public uint ReadCountFromInsert;
     public uint ReadCountFromAwaken;
-    public Array8<byte> Reserved38;
+    public uint LastDeactivateReasonResult;
+    public Array4<byte> Reserved3C;
 }
 
 public struct GameCardUpdatePartitionInfo

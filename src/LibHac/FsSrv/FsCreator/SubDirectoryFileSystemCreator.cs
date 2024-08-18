@@ -7,7 +7,7 @@ namespace LibHac.FsSrv.FsCreator;
 
 public class SubDirectoryFileSystemCreator : ISubDirectoryFileSystemCreator
 {
-    public Result Create(ref SharedRef<IFileSystem> outSubDirFileSystem, ref SharedRef<IFileSystem> baseFileSystem,
+    public Result Create(ref SharedRef<IFileSystem> outSubDirFileSystem, ref readonly SharedRef<IFileSystem> baseFileSystem,
         ref readonly Path path)
     {
         using var directory = new UniqueRef<IDirectory>();
@@ -17,7 +17,7 @@ public class SubDirectoryFileSystemCreator : ISubDirectoryFileSystemCreator
 
         directory.Reset();
 
-        using var subFs = new SharedRef<SubdirectoryFileSystem>(new SubdirectoryFileSystem(ref baseFileSystem));
+        using var subFs = new SharedRef<SubdirectoryFileSystem>(new SubdirectoryFileSystem(in baseFileSystem));
 
         if (!subFs.HasValue)
             return ResultFs.AllocationMemoryFailedInSubDirectoryFileSystemCreatorA.Log();

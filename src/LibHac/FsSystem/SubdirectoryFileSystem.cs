@@ -20,9 +20,9 @@ public class SubdirectoryFileSystem : IFileSystem
         _baseFileSystem = baseFileSystem;
     }
 
-    public SubdirectoryFileSystem(ref SharedRef<IFileSystem> baseFileSystem)
+    public SubdirectoryFileSystem(ref readonly SharedRef<IFileSystem> baseFileSystem)
     {
-        _baseFileSystemShared = SharedRef<IFileSystem>.CreateMove(ref baseFileSystem);
+        _baseFileSystemShared = SharedRef<IFileSystem>.CreateCopy(in baseFileSystem);
         _baseFileSystem = _baseFileSystemShared.Get;
     }
 

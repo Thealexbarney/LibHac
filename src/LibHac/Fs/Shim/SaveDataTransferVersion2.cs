@@ -85,7 +85,7 @@ namespace LibHac.Fs
             _fsClient.Impl.LogResultErrorMessage(res);
             if (res.IsFailure()) return res.Miss();
 
-            outExporter.Reset(new SaveDataExporterVersion2(_fsClient, ref exporterInterface.Ref));
+            outExporter.Reset(new SaveDataExporterVersion2(_fsClient, in exporterInterface));
             return Result.Success;
         }
 
@@ -100,7 +100,7 @@ namespace LibHac.Fs
             _fsClient.Impl.LogResultErrorMessage(res);
             if (res.IsFailure()) return res.Miss();
 
-            outExporter.Reset(new SaveDataExporterVersion2(_fsClient, ref exporterInterface.Ref));
+            outExporter.Reset(new SaveDataExporterVersion2(_fsClient, in exporterInterface));
             return Result.Success;
         }
 
@@ -115,7 +115,7 @@ namespace LibHac.Fs
             _fsClient.Impl.LogResultErrorMessage(res);
             if (res.IsFailure()) return res.Miss();
 
-            outExporter.Reset(new SaveDataExporterVersion2(_fsClient, ref exporterInterface.Ref));
+            outExporter.Reset(new SaveDataExporterVersion2(_fsClient, in exporterInterface));
             return Result.Success;
         }
 
@@ -130,7 +130,7 @@ namespace LibHac.Fs
             _fsClient.Impl.LogResultErrorMessage(res);
             if (res.IsFailure()) return res.Miss();
 
-            outImporter.Reset(new SaveDataImporterVersion2(_fsClient, ref importerInterface.Ref));
+            outImporter.Reset(new SaveDataImporterVersion2(_fsClient, in importerInterface));
             return Result.Success;
         }
 
@@ -145,7 +145,7 @@ namespace LibHac.Fs
             _fsClient.Impl.LogResultErrorMessage(res);
             if (res.IsFailure()) return res.Miss();
 
-            outImporter.Reset(new SaveDataImporterVersion2(_fsClient, ref importerInterface.Ref));
+            outImporter.Reset(new SaveDataImporterVersion2(_fsClient, in importerInterface));
             return Result.Success;
         }
 
@@ -160,29 +160,36 @@ namespace LibHac.Fs
             _fsClient.Impl.LogResultErrorMessage(res);
             if (res.IsFailure()) return res.Miss();
 
-            outImporter.Reset(new SaveDataImporterVersion2(_fsClient, ref importerInterface.Ref));
+            outImporter.Reset(new SaveDataImporterVersion2(_fsClient, in importerInterface));
             return Result.Success;
         }
 
         public Result OpenSaveDataImporterImpl(ref UniqueRef<ISaveDataDivisionImporter> outImporter,
-            in InitialDataVersion2 initialData, in UserId userId, SaveDataSpaceId spaceId, bool useSwap)
+            in InitialDataVersion2 initialData, ulong staticSaveDataId, in UserId userId, ulong ownerId,
+            SaveDataSpaceId spaceId, bool useSwap)
         {
             using var importerInterface = new SharedRef<FsSrv.Sf.ISaveDataDivisionImporter>();
 
+            SaveDataCreationInfo2 creationInfo = default;
+            creationInfo.Attribute.StaticSaveDataId = staticSaveDataId;
+            creationInfo.Attribute.UserId = userId;
+            creationInfo.OwnerId = ownerId;
+
             Result res = _baseInterface.Get.OpenSaveDataImporter(ref importerInterface.Ref,
-                InBuffer.FromStruct(in initialData), in userId, spaceId, useSwap);
+                InBuffer.FromStruct(in initialData), in creationInfo, spaceId, useSwap);
 
             _fsClient.Impl.LogResultErrorMessage(res);
             if (res.IsFailure()) return res.Miss();
 
-            outImporter.Reset(new SaveDataImporterVersion2(_fsClient, ref importerInterface.Ref));
+            outImporter.Reset(new SaveDataImporterVersion2(_fsClient, in importerInterface));
             return Result.Success;
         }
 
         public Result OpenSaveDataImporter(ref UniqueRef<ISaveDataDivisionImporter> outImporter,
             in InitialDataVersion2 initialData, SaveDataSpaceId spaceId, bool useSwap)
         {
-            return OpenSaveDataImporterImpl(ref outImporter, in initialData, InvalidUserId, spaceId, useSwap);
+            return OpenSaveDataImporterImpl(ref outImporter, in initialData, InvalidSystemSaveDataId, InvalidUserId,
+                ownerId: 0, spaceId, useSwap);
         }
 
         public Result OpenSaveDataImporterByContext(ref UniqueRef<ISaveDataDivisionImporter> outImporter,
@@ -196,7 +203,7 @@ namespace LibHac.Fs
             _fsClient.Impl.LogResultErrorMessage(res);
             if (res.IsFailure()) return res.Miss();
 
-            outImporter.Reset(new SaveDataImporterVersion2(_fsClient, ref importerInterface.Ref));
+            outImporter.Reset(new SaveDataImporterVersion2(_fsClient, in importerInterface));
             return Result.Success;
         }
 
@@ -266,9 +273,9 @@ namespace LibHac.Fs
     {
         private SharedRef<ISaveDataTransferProhibiter> _prohibiter;
 
-        public SaveDataTransferProhibiterForCloudBackUp(ref SharedRef<ISaveDataTransferProhibiter> prohibiter)
+        public SaveDataTransferProhibiterForCloudBackUp(ref readonly SharedRef<ISaveDataTransferProhibiter> prohibiter)
         {
-            _prohibiter = SharedRef<ISaveDataTransferProhibiter>.CreateMove(ref prohibiter);
+            _prohibiter = SharedRef<ISaveDataTransferProhibiter>.CreateCopy(in prohibiter);
         }
 
         public void Dispose()
@@ -296,7 +303,7 @@ namespace LibHac.Fs.Shim
             // Result res = fileSystemProxy.Get.OpenSaveDataTransferProhibiter(ref prohibiter.Ref, applicationId);
             // if (res.IsFailure()) return res.Miss();
 
-            outProhibiter.Reset(new SaveDataTransferProhibiterForCloudBackUp(ref prohibiter.Ref));
+            outProhibiter.Reset(new SaveDataTransferProhibiterForCloudBackUp(in prohibiter));
 
             return Result.Success;
         }

@@ -27,9 +27,9 @@ internal class GameCardDeviceOperator : IStorageDeviceOperator
         return (uint)((ulong)byteCount / GcPageSize);
     }
 
-    public GameCardDeviceOperator(ref SharedRef<GameCardStorageDevice> storageDevice, IGcApi gc)
+    public GameCardDeviceOperator(ref readonly SharedRef<GameCardStorageDevice> storageDevice, IGcApi gc)
     {
-        _storageDevice = SharedRef<GameCardStorageDevice>.CreateMove(ref storageDevice);
+        _storageDevice = SharedRef<GameCardStorageDevice>.CreateCopy(in storageDevice);
         _gc = gc;
     }
 

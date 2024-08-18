@@ -9,9 +9,9 @@ public class AddOnContentLocationResolver : IDisposable
 {
     private SharedRef<IAddOnContentLocationResolver> _interface;
 
-    public AddOnContentLocationResolver(ref SharedRef<IAddOnContentLocationResolver> baseInterface)
+    public AddOnContentLocationResolver(ref readonly SharedRef<IAddOnContentLocationResolver> baseInterface)
     {
-        _interface = SharedRef<IAddOnContentLocationResolver>.CreateMove(ref baseInterface);
+        _interface = SharedRef<IAddOnContentLocationResolver>.CreateCopy(in baseInterface);
     }
 
     public void Dispose()
@@ -33,4 +33,13 @@ public class AddOnContentLocationResolver : IDisposable
 
     public Result UnregisterApplicationAddOnContent(Ncm.ApplicationId id) =>
         _interface.Get.UnregisterApplicationAddOnContent(id);
+
+    public Result GetRegisteredAddOnContentPaths(out Path outPath, out Path outPatchPath, DataId id) =>
+        _interface.Get.GetRegisteredAddOnContentPaths(out outPath, out outPatchPath, id);
+
+    public Result RegisterAddOnContentPath(DataId id, ApplicationId applicationId, in Path path) =>
+        _interface.Get.RegisterAddOnContentPath(id, applicationId, in path);
+
+    public Result RegisterAddOnContentPaths(DataId id, ApplicationId applicationId, in Path path, in Path patchPath) =>
+        _interface.Get.RegisterAddOnContentPaths(id, applicationId, in path, in patchPath);
 }

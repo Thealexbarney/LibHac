@@ -25,10 +25,10 @@ public static class BaseFileSystem
     }
 
     private static Result RegisterFileSystem(FileSystemClient fs, U8Span mountName,
-        ref SharedRef<IFileSystemSf> fileSystem)
+        ref readonly SharedRef<IFileSystemSf> fileSystem)
     {
         using var fileSystemAdapter =
-            new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref));
+            new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(in fileSystem));
 
         Result res = fs.Register(mountName, ref fileSystemAdapter.Ref);
         if (res.IsFailure()) return res.Miss();
@@ -47,7 +47,7 @@ public static class BaseFileSystem
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
-        res = RegisterFileSystem(fs, mountName, ref fileSystem.Ref);
+        res = RegisterFileSystem(fs, mountName, in fileSystem);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 

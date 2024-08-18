@@ -17,16 +17,16 @@ public class EmulatedSdCardFileSystemCreator : ISdCardProxyFileSystemCreator, ID
     private SharedRef<IFileSystem> _sdCardFileSystem;
     private string _path;
 
-    public EmulatedSdCardFileSystemCreator(SdmmcApi sdmmc, ref SharedRef<IFileSystem> rootFileSystem)
+    public EmulatedSdCardFileSystemCreator(SdmmcApi sdmmc, ref readonly SharedRef<IFileSystem> rootFileSystem)
     {
         _sdmmc = sdmmc;
-        _rootFileSystem = SharedRef<IFileSystem>.CreateMove(ref rootFileSystem);
+        _rootFileSystem = SharedRef<IFileSystem>.CreateCopy(in rootFileSystem);
     }
 
-    public EmulatedSdCardFileSystemCreator(SdmmcApi sdmmc, ref SharedRef<IFileSystem> rootFileSystem, string path)
+    public EmulatedSdCardFileSystemCreator(SdmmcApi sdmmc, ref readonly SharedRef<IFileSystem> rootFileSystem, string path)
     {
         _sdmmc = sdmmc;
-        _rootFileSystem = SharedRef<IFileSystem>.CreateMove(ref rootFileSystem);
+        _rootFileSystem = SharedRef<IFileSystem>.CreateCopy(in rootFileSystem);
         _path = path;
     }
 
@@ -69,7 +69,7 @@ public class EmulatedSdCardFileSystemCreator : ISdCardProxyFileSystemCreator, ID
         // Todo: Add ProxyFileSystem?
 
         using SharedRef<IFileSystem> fileSystem = SharedRef<IFileSystem>.CreateCopy(in _rootFileSystem);
-        res = Utility.WrapSubDirectory(ref _sdCardFileSystem, ref fileSystem.Ref, in sdCardPath, true);
+        res = Utility.WrapSubDirectory(ref _sdCardFileSystem, in fileSystem, in sdCardPath, true);
         if (res.IsFailure()) return res.Miss();
 
         outFileSystem.SetByCopy(in _sdCardFileSystem);

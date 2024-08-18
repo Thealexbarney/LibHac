@@ -16,14 +16,14 @@ internal class StorageServiceObjectAdapter : IStorage
 {
     private SharedRef<IStorageSf> _baseStorage;
 
-    public StorageServiceObjectAdapter(ref SharedRef<IStorageSf> baseStorage)
+    public StorageServiceObjectAdapter(ref readonly SharedRef<IStorageSf> baseStorage)
     {
-        _baseStorage = SharedRef<IStorageSf>.CreateMove(ref baseStorage);
+        _baseStorage = SharedRef<IStorageSf>.CreateCopy(in baseStorage);
     }
 
-    public StorageServiceObjectAdapter(ref SharedRef<IStorageDevice> baseStorage)
+    public StorageServiceObjectAdapter(ref readonly SharedRef<IStorageDevice> baseStorage)
     {
-        _baseStorage = SharedRef<IStorageSf>.CreateMove(ref baseStorage);
+        _baseStorage = SharedRef<IStorageSf>.CreateCopy(in baseStorage);
     }
 
     public override void Dispose()

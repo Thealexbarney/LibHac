@@ -140,8 +140,8 @@ public static class FileSystemProxyServiceObject
     /// <param name="fs">The <see cref="FileSystemClient"/> to use.</param>
     /// <param name="serviceObject">The service object this <see cref="FileSystemClient"/> will use.</param>
     public static void InitializeDfcFileSystemProxyServiceObject(this FileSystemClientImpl fs,
-        ref SharedRef<IFileSystemProxy> serviceObject)
+        ref readonly SharedRef<IFileSystemProxy> serviceObject)
     {
-        fs.Globals.FileSystemProxyServiceObject.DfcFileSystemProxyServiceObject.SetByMove(ref serviceObject);
+        fs.Globals.FileSystemProxyServiceObject.DfcFileSystemProxyServiceObject.SetByCopy(in serviceObject);
     }
 }

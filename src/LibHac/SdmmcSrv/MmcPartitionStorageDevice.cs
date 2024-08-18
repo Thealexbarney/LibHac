@@ -26,11 +26,11 @@ internal abstract class MmcPartitionStorageDevice : IDisposable
     protected WeakRef<MmcPartitionStorageDevice> SelfReference;
     protected readonly SdmmcApi Sdmmc;
 
-    protected MmcPartitionStorageDevice(MmcPartition partition, ref SharedRef<ISdmmcDeviceManager> manager,
+    protected MmcPartitionStorageDevice(MmcPartition partition, ref readonly SharedRef<ISdmmcDeviceManager> manager,
         SdmmcHandle handle, SdmmcApi sdmmc)
     {
         _partition = partition;
-        _manager = SharedRef<ISdmmcDeviceManager>.CreateMove(ref manager);
+        _manager = SharedRef<ISdmmcDeviceManager>.CreateCopy(in manager);
         _handle = handle;
         Sdmmc = sdmmc;
     }
@@ -60,8 +60,7 @@ internal abstract class MmcPartitionStorageDevice : IDisposable
         using SharedRef<MmcPartitionStorageDevice> storageDevice =
             SharedRef<MmcPartitionStorageDevice>.Create(in SelfReference);
 
-        using var deviceOperator =
-            new SharedRef<MmcDeviceOperator>(new MmcDeviceOperator(ref storageDevice.Ref, Sdmmc));
+        using var deviceOperator = new SharedRef<MmcDeviceOperator>(new MmcDeviceOperator(in storageDevice, Sdmmc));
 
         if (!deviceOperator.HasValue)
             return ResultFs.AllocationMemoryFailedInSdmmcStorageServiceA.Log();
@@ -101,8 +100,8 @@ internal abstract class MmcPartitionStorageDeviceInterfaceAdapter : MmcPartition
     private readonly IStorage _baseStorage;
 
     protected MmcPartitionStorageDeviceInterfaceAdapter(IStorage baseStorage, MmcPartition partition,
-        ref SharedRef<ISdmmcDeviceManager> manager, SdmmcHandle handle, SdmmcApi sdmmc)
-        : base(partition, ref manager, handle, sdmmc)
+        ref readonly SharedRef<ISdmmcDeviceManager> manager, SdmmcHandle handle, SdmmcApi sdmmc)
+        : base(partition, in manager, handle, sdmmc)
     {
         _baseStorage = baseStorage;
     }
@@ -148,14 +147,14 @@ internal abstract class MmcPartitionStorageDeviceInterfaceAdapter : MmcPartition
 /// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 internal class MmcUserDataPartitionStorageDevice : MmcPartitionStorageDeviceInterfaceAdapter
 {
-    private MmcUserDataPartitionStorageDevice(ref SharedRef<ISdmmcDeviceManager> manager, SdmmcHandle handle,
+    private MmcUserDataPartitionStorageDevice(ref readonly SharedRef<ISdmmcDeviceManager> manager, SdmmcHandle handle,
         SdmmcApi sdmmc)
-        : base(manager.Get.GetStorage(), MmcPartition.UserData, ref manager, handle, sdmmc) { }
+        : base(manager.Get.GetStorage(), MmcPartition.UserData, in manager, handle, sdmmc) { }
 
-    public static SharedRef<MmcUserDataPartitionStorageDevice> CreateShared(ref SharedRef<ISdmmcDeviceManager> manager,
+    public static SharedRef<MmcUserDataPartitionStorageDevice> CreateShared(ref readonly SharedRef<ISdmmcDeviceManager> manager,
         SdmmcHandle handle, SdmmcApi sdmmc)
     {
-        var storageDevice = new MmcUserDataPartitionStorageDevice(ref manager, handle, sdmmc);
+        var storageDevice = new MmcUserDataPartitionStorageDevice(in manager, handle, sdmmc);
 
         using var sharedStorageDevice = new SharedRef<MmcUserDataPartitionStorageDevice>(storageDevice);
         storageDevice.SelfReference.Set(in sharedStorageDevice);
@@ -212,14 +211,14 @@ internal class MmcUserDataPartitionStorageDevice : MmcPartitionStorageDeviceInte
 /// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 internal class MmcBootPartitionStorageDevice : MmcPartitionStorageDeviceInterfaceAdapter
 {
-    private MmcBootPartitionStorageDevice(Fs.MmcPartition partition, ref SharedRef<ISdmmcDeviceManager> manager,
+    private MmcBootPartitionStorageDevice(Fs.MmcPartition partition, ref readonly SharedRef<ISdmmcDeviceManager> manager,
         SdmmcHandle handle, SdmmcApi sdmmc)
-        : base(manager.Get.GetStorage(), GetPartition(partition), ref manager, handle, sdmmc) { }
+        : base(manager.Get.GetStorage(), GetPartition(partition), in manager, handle, sdmmc) { }
 
     public static SharedRef<MmcBootPartitionStorageDevice> CreateShared(Fs.MmcPartition partition,
-        ref SharedRef<ISdmmcDeviceManager> manager, SdmmcHandle handle, SdmmcApi sdmmc)
+        ref readonly SharedRef<ISdmmcDeviceManager> manager, SdmmcHandle handle, SdmmcApi sdmmc)
     {
-        var storageDevice = new MmcBootPartitionStorageDevice(partition, ref manager, handle, sdmmc);
+        var storageDevice = new MmcBootPartitionStorageDevice(partition, in manager, handle, sdmmc);
 
         using var sharedStorageDevice = new SharedRef<MmcBootPartitionStorageDevice>(storageDevice);
         storageDevice.SelfReference.Set(in sharedStorageDevice);

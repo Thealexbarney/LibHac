@@ -21,14 +21,17 @@ public enum BisPartitionId
     System = 31,
     SystemProperEncryption = 32,
     SystemProperPartition = 33,
-    SignedSystemPartitionOnSafeMode = 34
+    SignedSystemPartitionOnSafeMode = 34,
+    DeviceTreeBlob = 35,
+    System0 = 36
 }
 
 public enum ContentStorageId
 {
     System = 0,
     User = 1,
-    SdCard = 2
+    SdCard = 2,
+    System0 = 3
 }
 
 public enum GameCardPartition

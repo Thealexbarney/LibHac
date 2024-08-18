@@ -88,3 +88,72 @@ public class DefaultAsynchronousAccessSplitter : IAsynchronousAccessSplitter
         return Result.Success;
     }
 }
+
+public class AsynchronousAccessStorage : IStorage
+{
+    private SharedRef<IStorage> _baseStorage;
+    // private ThreadPool _threadPool;
+    private IAsynchronousAccessSplitter _baseStorageAccessSplitter;
+
+    public AsynchronousAccessStorage(ref readonly SharedRef<IStorage> baseStorage) : this(in baseStorage,
+        IAsynchronousAccessSplitter.GetDefaultAsynchronousAccessSplitter())
+    {
+    }
+
+    public AsynchronousAccessStorage(ref readonly SharedRef<IStorage> baseStorage, IAsynchronousAccessSplitter baseStorageAccessSplitter)
+    {
+        _baseStorage = SharedRef<IStorage>.CreateCopy(in baseStorage);
+        _baseStorageAccessSplitter = baseStorageAccessSplitter;
+
+        Assert.SdkRequiresNotNull(in _baseStorage);
+        Assert.SdkRequiresNotNull(_baseStorageAccessSplitter);
+    }
+
+    public override void Dispose()
+    {
+        _baseStorage.Destroy();
+        base.Dispose();
+    }
+
+    public void SetBaseStorage(ref readonly SharedRef<IStorage> baseStorage, IAsynchronousAccessSplitter baseStorageAccessSplitter)
+    {
+        _baseStorage.SetByCopy(in baseStorage);
+        _baseStorageAccessSplitter = baseStorageAccessSplitter;
+    }
+
+    // Todo: Implement
+    public override Result Read(long offset, Span<byte> destination)
+    {
+        return _baseStorage.Get.Read(offset, destination).Ret();
+    }
+
+    private Result ReadImpl(long offset, Span<byte> destination)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override Result Write(long offset, ReadOnlySpan<byte> source)
+    {
+        return _baseStorage.Get.Write(offset, source).Ret();
+    }
+
+    public override Result GetSize(out long size)
+    {
+        return _baseStorage.Get.GetSize(out size).Ret();
+    }
+
+    public override Result SetSize(long size)
+    {
+        return _baseStorage.Get.SetSize(size).Ret();
+    }
+
+    public override Result Flush()
+    {
+        return _baseStorage.Get.Flush().Ret();
+    }
+
+    public override Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size, ReadOnlySpan<byte> inBuffer)
+    {
+        return _baseStorage.Get.OperateRange(outBuffer, operationId, offset, size, inBuffer).Ret();
+    }
+}

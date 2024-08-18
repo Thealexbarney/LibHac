@@ -67,8 +67,7 @@ public static class BcatSaveData
             res = fileSystemProxy.Get.OpenSaveDataFileSystem(ref fileSystem.Ref, SaveDataSpaceId.User, in attribute);
             if (res.IsFailure()) return res.Miss();
 
-            using var fileSystemAdapter =
-                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref));
+            using var fileSystemAdapter = new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(in fileSystem));
 
             if (!fileSystemAdapter.HasValue)
                 return ResultFs.AllocationMemoryFailedInBcatSaveDataA.Log();

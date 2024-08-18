@@ -22,7 +22,7 @@ namespace LibHac.GcSrv;
 /// <summary>
 /// Provides access to the game card and game card ASIC.
 /// </summary>
-/// <remarks><para> he manager keeps track of the state of the ASIC and uses a handle system to control access to the
+/// <remarks><para>The manager keeps track of the state of the ASIC and uses a handle system to control access to the
 /// storage device. When a consumer wants to access the device, they are given a handle that will be used to make sure
 /// they're accessing the same device that they originally opened. The manager's internal handle is incremented every
 /// time the game card is deactivated. This ensures the consumer doesn't do things like accidentally continue reading
@@ -40,12 +40,31 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         Write = 3
     }
 
+    private enum DeactivateReason : byte
+    {
+        None = 0,
+        Invalidated = 1,
+        AcquireReadLockInvalidHandle = 2,
+        CardActivationInvalidInAcquireSecureLock = 3,
+        GameCardAccessResultFailure = 4,
+        CardActivationInvalidInGetHandle = 5,
+        CardActivationInvalidInNormalMode = 6,
+        SecureToNormalModeTransition = 7,
+        CardActivationInvalidInSecureMode = 8,
+        WriteModeTransition = 9,
+    }
+
+    // Missing: SettingsReadyEvent
     private ReaderWriterLock _rwLock;
+    // Missing: PooledBuffer
     private bool _isInitialized;
     private bool _isFinalized;
     private CardState _state;
+    private DeactivateReason _lastDeactivateReason;
     private GameCardHandle _currentHandle;
     private GameCardDetectionEventManager _detectionEventManager;
+    private Result _lastDeactivateReasonResult;
+    // Missing: Device address space stuff
 
     // LibHac additions
     private WeakRef<GameCardManager> _selfReference;
@@ -55,6 +74,13 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
     private GameCardManager(IGcApi gc, FileSystemServer fsServer)
     {
         _rwLock = new ReaderWriterLock(fsServer.Hos.Os);
+        
+        _lastDeactivateReasonResult = Result.Success;
+        _isInitialized = false;
+        _isFinalized = false;
+        _state = CardState.Initial;
+        _lastDeactivateReason = DeactivateReason.None;
+        _currentHandle = 0;
 
         _fsServer = fsServer;
         _gc = gc;
@@ -81,18 +107,19 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         _selfReference.Destroy();
     }
 
-    private void DeactivateAndChangeState()
+    private void DeactivateAndChangeState(DeactivateReason reason)
     {
         _gc.Deactivate();
         _currentHandle++;
         _state = CardState.Initial;
+        _lastDeactivateReason = reason;
     }
 
-    private void CheckGameCardAndDeactivate()
+    private void CheckGameCardAndDeactivate(DeactivateReason reason)
     {
         if (_state != CardState.Initial && !_gc.IsCardActivationValid())
         {
-            DeactivateAndChangeState();
+            DeactivateAndChangeState(reason);
         }
     }
 
@@ -162,7 +189,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         UnsafeHelpers.SkipParamInit(out outNewHandle);
 
         if (_state == CardState.Normal)
-            CheckGameCardAndDeactivate();
+            CheckGameCardAndDeactivate(DeactivateReason.CardActivationInvalidInNormalMode);
 
         switch (_state)
         {
@@ -183,7 +210,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
             case CardState.Secure:
             {
                 // Secure -> Initial -> Normal
-                DeactivateAndChangeState();
+                DeactivateAndChangeState(DeactivateReason.SecureToNormalModeTransition);
 
                 Result res = ActivateGameCard();
                 if (res.IsFailure()) return res.Miss();
@@ -194,7 +221,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
             case CardState.Write:
             {
                 // Write -> Initial -> Normal
-                DeactivateAndChangeState();
+                DeactivateAndChangeState(DeactivateReason.WriteModeTransition);
                 _gc.Writer.ChangeMode(AsicMode.Read);
 
                 Result res = ActivateGameCard();
@@ -217,7 +244,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         UnsafeHelpers.SkipParamInit(out outNewHandle);
 
         if (_state == CardState.Secure)
-            CheckGameCardAndDeactivate();
+            CheckGameCardAndDeactivate(DeactivateReason.CardActivationInvalidInSecureMode);
 
         switch (_state)
         {
@@ -251,7 +278,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
             case CardState.Write:
             {
                 // Write -> Initial -> Normal -> Secure
-                DeactivateAndChangeState();
+                DeactivateAndChangeState(DeactivateReason.WriteModeTransition);
                 _gc.Writer.ChangeMode(AsicMode.Read);
 
                 Result res = ActivateGameCard();
@@ -293,7 +320,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
             case CardState.Secure:
             {
                 // Normal/Secure -> Initial -> Write
-                DeactivateAndChangeState();
+                DeactivateAndChangeState(DeactivateReason.WriteModeTransition);
 
                 _gc.Writer.ChangeMode(AsicMode.Write);
                 Result res = ActivateGameCardForWriter();
@@ -559,14 +586,14 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
     {
         using SharedRef<IGameCardManager> manager = SharedRef<IGameCardManager>.Create(in _selfReference);
 
-        return new ReadOnlyGameCardStorage(ref manager.Ref, _gc);
+        return new ReadOnlyGameCardStorage(in manager, _gc);
     }
 
     private WriteOnlyGameCardStorage MakeWriteOnlyGameCardStorage()
     {
         using SharedRef<IGameCardManager> manager = SharedRef<IGameCardManager>.Create(in _selfReference);
 
-        return new WriteOnlyGameCardStorage(ref manager.Ref, _gc);
+        return new WriteOnlyGameCardStorage(in manager, _gc);
     }
 
     private SharedRef<IStorageDevice> CreateStorageDeviceNonSecure(ref readonly SharedRef<IStorage> baseStorage,
@@ -575,7 +602,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         using SharedRef<IGameCardManager> manager = SharedRef<IGameCardManager>.Create(in _selfReference);
 
         using SharedRef<GameCardStorageDevice> storageDevice =
-            GameCardStorageDevice.CreateShared(_gc, ref manager.Ref, in baseStorage, handle);
+            GameCardStorageDevice.CreateShared(_gc, in manager, in baseStorage, handle);
 
         return SharedRef<IStorageDevice>.CreateMove(ref storageDevice.Ref);
     }
@@ -586,7 +613,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         using SharedRef<IGameCardManager> manager = SharedRef<IGameCardManager>.Create(in _selfReference);
 
         using SharedRef<GameCardStorageDevice> storageDevice = GameCardStorageDevice.CreateShared(
-            _gc, ref manager.Ref, in baseStorage, handle, isSecure: true, cardDeviceId, cardImageHash);
+            _gc, in manager, in baseStorage, handle, isSecure: true, cardDeviceId, cardImageHash);
 
         return SharedRef<IStorageDevice>.CreateMove(ref storageDevice.Ref);
     }
@@ -623,10 +650,15 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
 
     public Result Invalidate()
     {
-        using var writeLock = new UniqueLock<ReaderWriterLock>(_rwLock);
-        DeactivateAndChangeState();
+        InvalidateImpl(DeactivateReason.Invalidated);
 
         return Result.Success;
+    }
+
+    private void InvalidateImpl(DeactivateReason reason)
+    {
+        using var writeLock = new UniqueLock<ReaderWriterLock>(_rwLock);
+        DeactivateAndChangeState(reason);
     }
 
     public Result Operate(int operationId)
@@ -744,6 +776,17 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
                 if (res.IsFailure()) return res.Miss();
 
                 bytesWritten = Unsafe.SizeOf<DevCardParameter>();
+                return Result.Success;
+            }
+            case GameCardManagerOperationIdValue.GetGameCardAsicCertificate:
+            {
+                if (buffer.Size < Unsafe.SizeOf<GameCardAsicCertificateSet>())
+                    return ResultFs.InvalidArgument.Log();
+
+                res = GetGameCardAsicCertificate(out buffer.As<GameCardAsicCertificateSet>());
+                if (res.IsFailure()) return res.Miss();
+
+                bytesWritten = Unsafe.SizeOf<GameCardAsicCertificateSet>();
                 return Result.Success;
             }
 
@@ -865,11 +908,11 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         Result res = _gc.GetErrorInfo(out GameCardErrorReportInfo errorInfo);
         if (res.IsFailure()) return res.Miss();
 
-        outErrorInfo.GameCardCrcErrorCount = errorInfo.ErrorInfo.GameCardCrcErrorCount;
-        outErrorInfo.AsicCrcErrorCount = errorInfo.ErrorInfo.AsicCrcErrorCount;
-        outErrorInfo.RefreshCount = errorInfo.ErrorInfo.RefreshCount;
-        outErrorInfo.TimeoutRetryErrorCount = errorInfo.ErrorInfo.TimeoutRetryErrorCount;
-        outErrorInfo.ReadRetryCount = errorInfo.ErrorInfo.ReadRetryCount;
+        outErrorInfo.GameCardCrcErrorNum = errorInfo.GameCardCrcErrorNum;
+        outErrorInfo.AsicCrcErrorNum = errorInfo.AsicCrcErrorNum;
+        outErrorInfo.RefreshNum = errorInfo.RefreshNum;
+        outErrorInfo.TimeoutRetryNum = errorInfo.TimeoutRetryNum;
+        outErrorInfo.RetryLimitOutNum = errorInfo.RetryLimitOutNum;
 
         return Result.Success;
     }
@@ -878,6 +921,9 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
     {
         Result res = _gc.GetErrorInfo(out outErrorInfo);
         if (res.IsFailure()) return res.Miss();
+
+        outErrorInfo.LastDeactivateReasonResult = _lastDeactivateReasonResult.Value;
+        outErrorInfo.LastDeactivateReason = (byte)_lastDeactivateReason;
 
         return Result.Success;
     }
@@ -934,7 +980,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         if (res.IsFailure()) return res.Miss();
 
         devHeaderBuffer.CopyTo(pooledBuffer.GetBuffer());
-        res = _gc.Writer.Write(pooledBuffer.GetBuffer(), GcCardKeyAreaPageCount, 1);
+        res = _gc.Writer.Write(pooledBuffer.GetBuffer(), GcCardKeyAreaPageCount, GcDeviceCertificatePageCount);
         if (res.IsFailure()) return res.Miss();
 
         // Read the cert area
@@ -942,7 +988,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         res = _gc.Activate();
         if (res.IsFailure()) return res.Miss();
 
-        res = _gc.Read(pooledBuffer.GetBuffer(), GcCertAreaPageAddress, 1);
+        res = _gc.Read(pooledBuffer.GetBuffer(), GcCertAreaPageAddress, GcDeviceCertificatePageCount);
         if (res.IsFailure()) return res.Miss();
 
         Span<byte> deviceCert = stackalloc byte[writeSize];
@@ -954,7 +1000,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         if (res.IsFailure()) return res.Miss();
 
         originalHeaderBuffer.CopyTo(pooledBuffer.GetBuffer());
-        res = _gc.Writer.Write(pooledBuffer.GetBuffer(), GcCardKeyAreaPageCount, 1);
+        res = _gc.Writer.Write(pooledBuffer.GetBuffer(), GcCardKeyAreaPageCount, GcDeviceCertificatePageCount);
         if (res.IsFailure()) return res.Miss();
 
         deviceCert.CopyTo(outBuffer);
@@ -1017,6 +1063,16 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
         return Result.Success;
     }
 
+    private Result GetGameCardAsicCertificate(out GameCardAsicCertificateSet outCertificateSet)
+    {
+        UnsafeHelpers.SkipParamInit(out outCertificateSet);
+
+        Result res = InitializeGcLibrary();
+        if (res.IsFailure()) return res.Miss();
+
+        return _gc.GetAsicCertificate(out outCertificateSet).Ret();
+    }
+
     public Result AcquireReadLock(ref SharedLock<ReaderWriterLock> outLock, GameCardHandle handle)
     {
         using (var readLock = new SharedLock<ReaderWriterLock>(_rwLock))
@@ -1033,7 +1089,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
             }
         }
 
-        Invalidate().IgnoreResult();
+        InvalidateImpl(DeactivateReason.AcquireReadLockInvalidHandle);
 
         return ResultFs.GameCardFsCheckHandleInAcquireReadLock.Log();
     }
@@ -1051,7 +1107,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
             if (_state != CardState.Initial && !_gc.IsCardActivationValid())
             {
                 readLock.Unlock();
-                Invalidate().IgnoreResult();
+                InvalidateImpl(DeactivateReason.CardActivationInvalidInAcquireSecureLock);
             }
             else if (_currentHandle == inOutHandle)
             {
@@ -1115,7 +1171,8 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
 
         if (result.IsFailure())
         {
-            DeactivateAndChangeState();
+            DeactivateAndChangeState(DeactivateReason.GameCardAccessResultFailure);
+            _lastDeactivateReasonResult = result;
         }
 
         return result;
@@ -1127,7 +1184,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
 
         if (_state == CardState.Normal || _state == CardState.Secure)
         {
-            CheckGameCardAndDeactivate();
+            CheckGameCardAndDeactivate(DeactivateReason.CardActivationInvalidInGetHandle);
         }
 
         switch (_state)
@@ -1144,7 +1201,7 @@ public class GameCardManager : IStorageDeviceManager, IStorageDeviceOperator, IG
                 break;
             case CardState.Write:
             {
-                DeactivateAndChangeState();
+                DeactivateAndChangeState(DeactivateReason.WriteModeTransition);
                 _gc.Writer.ChangeMode(AsicMode.Read);
 
                 Result res = ActivateGameCard();

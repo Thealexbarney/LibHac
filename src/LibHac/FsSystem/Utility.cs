@@ -24,6 +24,65 @@ public class DummyEventNotifier : IEventNotifier
     }
 }
 
+public class StageLockWithPin<T> : IUniqueLock where T : class, IDisposable
+{
+    private UniqueRef<IUniqueLock> _lock;
+    private MultilockWithPin<T> _multilock;
+
+    public StageLockWithPin(ref UniqueRef<IUniqueLock> inLock, ref readonly SharedRef<T> objectToPin, SemaphoreAdapter semaphore)
+    {
+        _lock = new UniqueRef<IUniqueLock>(ref inLock);
+        _multilock = new MultilockWithPin<T>(in objectToPin, semaphore);
+    }
+
+    public void Dispose()
+    {
+        _multilock.Dispose();
+        _lock.Destroy();
+    }
+
+    public Result Lock(int count)
+    {
+        return _multilock.Lock(count).Ret();
+    }
+}
+
+public class MultilockWithPin<T> : IUniqueLock where T : class, IDisposable
+{
+    private SharedRef<T> _pinnedObject;
+    private SemaphoreAdapter _semaphore;
+    private int _lockCount;
+
+    public MultilockWithPin(ref readonly SharedRef<T> objectToPin, SemaphoreAdapter semaphore)
+    {
+        _pinnedObject = SharedRef<T>.CreateCopy(in objectToPin);
+        _semaphore = semaphore;
+        _lockCount = 0;
+    }
+
+    public void Dispose()
+    {
+        if (_lockCount > 0)
+        {
+            _semaphore.Unlock(_lockCount);
+        }
+
+        _pinnedObject.Destroy();
+    }
+
+    public Result Lock(int count)
+    {
+        Assert.SdkRequiresEqual(_lockCount, 0);
+
+        if (!_semaphore.TryLock(out _lockCount, count))
+        {
+            return ResultFs.OpenCountLimit.Log();
+        }
+
+        return Result.Success;
+    }
+}
+
 /// <summary>
 /// Various utility functions used by the <see cref="LibHac.FsSystem"/> namespace.
 /// </summary>
@@ -429,16 +488,41 @@ internal static class Utility
     }
 
     public static Result MakeUniqueLockWithPin<T>(ref UniqueRef<IUniqueLock> outUniqueLock,
-        SemaphoreAdapter semaphore, ref SharedRef<T> objectToPin) where T : class, IDisposable
+        SemaphoreAdapter semaphore, ref readonly SharedRef<T> objectToPin) where T : class, IDisposable
     {
         using var semaphoreAdapter = new UniqueLock<SemaphoreAdapter>();
         Result res = TryAcquireCountSemaphore(ref semaphoreAdapter.Ref(), semaphore);
         if (res.IsFailure()) return res.Miss();
 
-        var lockWithPin = new UniqueLockWithPin<T>(ref semaphoreAdapter.Ref(), ref objectToPin);
+        var lockWithPin = new UniqueLockWithPin<T>(ref semaphoreAdapter.Ref(), in objectToPin);
         using var uniqueLock = new UniqueRef<IUniqueLock>(lockWithPin);
 
         outUniqueLock.Set(ref uniqueLock.Ref);
+        return Result.Success;
+    }
+
+    public static Result MakeUniqueLockWithPin<T>(ref UniqueRef<IUniqueLock> outUniqueLock,
+        SemaphoreAdapter semaphore, int count, ref readonly SharedRef<T> objectToPin) where T : class, IDisposable
+    {
+        using var multilock = new UniqueRef<MultilockWithPin<T>>(new(in objectToPin, semaphore));
+
+        Result res = multilock.Get.Lock(count);
+        if (res.IsFailure()) return res.Miss();
+
+        outUniqueLock.Set(ref multilock.Ref);
+        return Result.Success;
+    }
+
+    public static Result MakeUniqueLockWithPin<T>(ref UniqueRef<IUniqueLock> outUniqueLock,
+        ref UniqueRef<IUniqueLock> inLock, SemaphoreAdapter semaphore, int count, ref readonly SharedRef<T> objectToPin)
+        where T : class, IDisposable
+    {
+        using var stageLock = new UniqueRef<StageLockWithPin<T>>(new(ref inLock, in objectToPin, semaphore));
+
+        Result res = stageLock.Get.Lock(count);
+        if (res.IsFailure()) return res.Miss();
+
+        outUniqueLock.Set(ref stageLock.Ref);
         return Result.Success;
     }
 

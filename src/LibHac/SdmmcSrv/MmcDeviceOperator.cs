@@ -24,9 +24,9 @@ internal class MmcDeviceOperator : IStorageDeviceOperator
     // LibHac additions
     private readonly SdmmcApi _sdmmc;
 
-    public MmcDeviceOperator(ref SharedRef<MmcPartitionStorageDevice> storageDevice, SdmmcApi sdmmc)
+    public MmcDeviceOperator(ref readonly SharedRef<MmcPartitionStorageDevice> storageDevice, SdmmcApi sdmmc)
     {
-        _storageDevice = SharedRef<MmcPartitionStorageDevice>.CreateMove(ref storageDevice);
+        _storageDevice = SharedRef<MmcPartitionStorageDevice>.CreateCopy(in storageDevice);
         _sdmmc = sdmmc;
     }
 

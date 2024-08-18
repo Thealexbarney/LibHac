@@ -128,7 +128,7 @@ file struct StorageNode
 /// <remarks>Based on nnSdk 16.2.0 (FS 16.0.0)</remarks>
 public partial class BucketTree : IDisposable
 {
-    private const uint Signature = 0x52544B42; // BKTR
+    public const uint Signature = 0x52544B42; // BKTR
     private const int MaxVersion = 1;
 
     private const int NodeSizeMin = 1024;

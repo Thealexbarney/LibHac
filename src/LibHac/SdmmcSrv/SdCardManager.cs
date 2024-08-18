@@ -94,6 +94,8 @@ public class SdCardManager : IStorageDeviceManager, IStorageDeviceOperator, ISdm
         if (_isInitialized)
             return;
 
+        _sdmmc.Initialize(_port);
+
         // Missing: Work buffer management
 
         if (_detectionEventManager.HasValue)
@@ -183,9 +185,7 @@ public class SdCardManager : IStorageDeviceManager, IStorageDeviceOperator, ISdm
         if (res.IsFailure()) return res.Miss();
 
         using SharedRef<ISdmmcDeviceManager> manager = SharedRef<ISdmmcDeviceManager>.Create(in _selfReference);
-
-        using SharedRef<SdCardStorageDevice>
-            storageDevice = SdCardStorageDevice.CreateShared(ref manager.Ref, handle, _sdmmc);
+        using SharedRef<SdCardStorageDevice> storageDevice = SdCardStorageDevice.CreateShared(in manager, handle, _sdmmc);
 
         if (!storageDevice.HasValue)
             return ResultFs.AllocationMemoryFailedInSdmmcStorageServiceA.Log();

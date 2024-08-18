@@ -137,7 +137,7 @@ internal static class GameCardService
         using var storage = new SharedRef<IStorage>(new StorageServiceObjectAdapter(ref gameCardStorageDevice.Ref));
 
         using var deviceEventSimulationStorage = new SharedRef<DeviceEventSimulationStorage>(
-            new DeviceEventSimulationStorage(ref storage.Ref, service.FsSrv.Impl.GetGameCardEventSimulator()));
+            new DeviceEventSimulationStorage(in storage, service.FsSrv.Impl.GetGameCardEventSimulator()));
 
         outStorage.SetByMove(ref deviceEventSimulationStorage.Ref);
 

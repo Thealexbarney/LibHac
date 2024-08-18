@@ -17,7 +17,8 @@ namespace LibHac.Fs.Shim;
 /// <remarks>Based on nnSdk 14.3.0</remarks>
 public static class Logo
 {
-    public static Result MountLogo(this FileSystemClient fs, U8Span mountName, U8Span path, ProgramId programId)
+    public static Result MountLogo(this FileSystemClient fs, U8Span mountName, U8Span path,
+        ContentAttributes attributes, ProgramId programId)
     {
         Result res;
         Span<byte> logBuffer = stackalloc byte[0x300];
@@ -25,7 +26,7 @@ public static class Logo
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = Mount(fs, mountName, path, programId);
+            res = Mount(fs, mountName, path, attributes, programId);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             var sb = new U8StringBuilder(logBuffer, true);
@@ -38,7 +39,7 @@ public static class Logo
         }
         else
         {
-            res = Mount(fs, mountName, path, programId);
+            res = Mount(fs, mountName, path, attributes, programId);
         }
 
         fs.Impl.AbortIfNeeded(res);
@@ -49,7 +50,7 @@ public static class Logo
 
         return Result.Success;
 
-        static Result Mount(FileSystemClient fs, U8Span mountName, U8Span path, ProgramId programId)
+        static Result Mount(FileSystemClient fs, U8Span mountName, U8Span path,ContentAttributes attributes, ProgramId programId)
         {
             Result res = fs.Impl.CheckMountName(mountName);
             if (res.IsFailure()) return res.Miss();
@@ -60,12 +61,11 @@ public static class Logo
             using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
             using var fileSystem = new SharedRef<IFileSystemSf>();
 
-            res = fileSystemProxy.Get.OpenFileSystemWithId(ref fileSystem.Ref, in sfPath, programId.Value,
+            res = fileSystemProxy.Get.OpenFileSystemWithId(ref fileSystem.Ref, in sfPath, attributes, programId.Value,
                 FileSystemProxyType.Logo);
             if (res.IsFailure()) return res.Miss();
 
-            using var fileSystemAdapter =
-                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref));
+            using var fileSystemAdapter = new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(in fileSystem));
 
             if (!fileSystemAdapter.HasValue)
                 return ResultFs.AllocationMemoryFailedInLogoA.Log();

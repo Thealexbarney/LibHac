@@ -34,8 +34,7 @@ public static class SaveData
             saveDataId);
         if (res.IsFailure()) return res.Miss();
 
-        using var fileSystemAdapter =
-            new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref));
+        using var fileSystemAdapter = new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(in fileSystem));
 
         outFileSystem.Set(ref fileSystemAdapter.Ref);
 
@@ -102,7 +101,7 @@ public static class SaveData
 
         // Note: Nintendo does pass in the same object both as a unique_ptr and as a raw pointer.
         // Both of these are tied to the lifetime of the created FileSystemServiceObjectAdapter so it shouldn't be an issue.
-        var fileSystemAdapterRaw = new FileSystemServiceObjectAdapter(ref fileSystem.Ref);
+        var fileSystemAdapterRaw = new FileSystemServiceObjectAdapter(in fileSystem);
         using var fileSystemAdapter = new UniqueRef<IFileSystem>(fileSystemAdapterRaw);
 
         if (!fileSystemAdapter.HasValue)

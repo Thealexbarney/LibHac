@@ -10,6 +10,7 @@ namespace LibHac.Common.FixedArrays;
 [InlineArray(6)] public struct Array6<T> { public readonly int Length => 6; private T _0; }
 [InlineArray(7)] public struct Array7<T> { public readonly int Length => 7; private T _0; }
 [InlineArray(8)] public struct Array8<T> { public readonly int Length => 8; private T _0; }
+[InlineArray(9)] public struct Array9<T> { public readonly int Length => 9; private T _0; }
 [InlineArray(11)] public struct Array11<T> { public readonly int Length => 11; private T _0; }
 [InlineArray(12)] public struct Array12<T> { public readonly int Length => 12; private T _0; }
 [InlineArray(14)] public struct Array14<T> { public readonly int Length => 14; private T _0; }
@@ -50,6 +51,7 @@ namespace LibHac.Common.FixedArrays;
 [InlineArray(640)] public struct Array640<T> { public readonly int Length => 640; private T _0; }
 [InlineArray(768)] public struct Array768<T> { public readonly int Length => 768; private T _0; }
 [InlineArray(769)] public struct Array769<T> { public readonly int Length => 769; private T _0; }
+[InlineArray(1024)] public struct Array1024<T> { public readonly int Length => 1024; private T _0; }
 [InlineArray(3000)] public struct Array3000<T> { public readonly int Length => 3000; private T _0; }
 [InlineArray(3438)] public struct Array3438<T> { public readonly int Length => 3438; private T _0; }
 [InlineArray(5366)] public struct Array5366<T> { public readonly int Length => 5366; private T _0; }

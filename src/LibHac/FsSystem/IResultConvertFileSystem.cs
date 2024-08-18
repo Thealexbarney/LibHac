@@ -106,9 +106,9 @@ public abstract class IResultConvertFileSystem<T> : ISaveDataFileSystem where T 
 {
     private SharedRef<T> _baseFileSystem;
 
-    protected IResultConvertFileSystem(ref SharedRef<T> baseFileSystem)
+    protected IResultConvertFileSystem(ref readonly SharedRef<T> baseFileSystem)
     {
-        _baseFileSystem = SharedRef<T>.CreateMove(ref baseFileSystem);
+        _baseFileSystem = SharedRef<T>.CreateCopy(in baseFileSystem);
     }
 
     public override void Dispose()

@@ -25,7 +25,7 @@ public class NxFileStream : Stream
 
     public override int Read(byte[] buffer, int offset, int count)
     {
-        BaseFile.Read(out long bytesRead, Position, buffer.AsSpan(offset, count));
+        BaseFile.Read(out long bytesRead, Position, buffer.AsSpan(offset, count)).ThrowIfFailure();
 
         Position += bytesRead;
         return (int)bytesRead;
@@ -33,14 +33,14 @@ public class NxFileStream : Stream
 
     public override void Write(byte[] buffer, int offset, int count)
     {
-        BaseFile.Write(Position, buffer.AsSpan(offset, count));
+        BaseFile.Write(Position, buffer.AsSpan(offset, count)).ThrowIfFailure();
 
         Position += count;
     }
 
     public override void Flush()
     {
-        BaseFile.Flush();
+        BaseFile.Flush().ThrowIfFailure();
     }
 
     public override long Seek(long offset, SeekOrigin origin)

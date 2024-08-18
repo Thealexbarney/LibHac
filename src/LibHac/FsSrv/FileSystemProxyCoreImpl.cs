@@ -46,7 +46,7 @@ public class FileSystemProxyCoreImpl
             if (res.IsFailure()) return res.Miss();
 
             using SharedRef<IFileSystem> tempFs = SharedRef<IFileSystem>.CreateMove(ref fileSystem.Ref);
-            res = Utility.WrapSubDirectory(ref fileSystem.Ref, ref tempFs.Ref, in path, createIfMissing: true);
+            res = Utility.WrapSubDirectory(ref fileSystem.Ref, in tempFs, in path, createIfMissing: true);
             if (res.IsFailure()) return res.Miss();
         }
         else if (storageId == CustomStorageId.SdCard)
@@ -61,11 +61,11 @@ public class FileSystemProxyCoreImpl
             if (res.IsFailure()) return res.Miss();
 
             using SharedRef<IFileSystem> tempFs = SharedRef<IFileSystem>.CreateMove(ref fileSystem.Ref);
-            res = Utility.WrapSubDirectory(ref fileSystem.Ref, ref tempFs.Ref, in path, createIfMissing: true);
+            res = Utility.WrapSubDirectory(ref fileSystem.Ref, in tempFs, in path, createIfMissing: true);
             if (res.IsFailure()) return res.Miss();
 
             tempFs.SetByMove(ref fileSystem.Ref);
-            res = _fsCreators.EncryptedFileSystemCreator.Create(ref fileSystem.Ref, ref tempFs.Ref,
+            res = _fsCreators.EncryptedFileSystemCreator.Create(ref fileSystem.Ref, in tempFs,
                 IEncryptedFileSystemCreator.KeyId.CustomStorage, in _sdEncryptionSeed);
             if (res.IsFailure()) return res.Miss();
         }

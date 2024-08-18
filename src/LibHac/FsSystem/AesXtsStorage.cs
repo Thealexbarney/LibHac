@@ -57,10 +57,10 @@ public class AesXtsStorage : IStorage
         iv.CopyTo(_iv);
     }
 
-    public AesXtsStorage(ref SharedRef<IStorage> baseStorage, ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2,
+    public AesXtsStorage(ref readonly SharedRef<IStorage> baseStorage, ReadOnlySpan<byte> key1, ReadOnlySpan<byte> key2,
         ReadOnlySpan<byte> iv, int blockSize)
     {
-        _baseStorageShared = SharedRef<IStorage>.CreateMove(ref baseStorage);
+        _baseStorageShared = SharedRef<IStorage>.CreateCopy(in baseStorage);
         _baseStorage = _baseStorageShared.Get;
         _blockSize = blockSize;
         _mutex = new SdkMutexType();

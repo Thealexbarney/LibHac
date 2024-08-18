@@ -59,13 +59,13 @@ public class AlignmentMatchingStorage<TDataAlignment, TBufferAlignment> : IStora
     private bool _isBaseStorageSizeDirty;
     private SharedRef<IStorage> _sharedBaseStorage;
 
-    public AlignmentMatchingStorage(ref SharedRef<IStorage> baseStorage)
+    public AlignmentMatchingStorage(ref readonly SharedRef<IStorage> baseStorage)
     {
         VerifyTypeParameters();
 
         _baseStorage = baseStorage.Get;
         _isBaseStorageSizeDirty = true;
-        _sharedBaseStorage = SharedRef<IStorage>.CreateMove(ref baseStorage);
+        _sharedBaseStorage = SharedRef<IStorage>.CreateCopy(in baseStorage);
     }
 
     public AlignmentMatchingStorage(IStorage baseStorage)

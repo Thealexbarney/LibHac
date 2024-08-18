@@ -25,6 +25,7 @@ public class MemoryStorage : IStorage
         Assert.SdkRequiresNotNull(buffer);
         Assert.SdkRequiresInRange(size, 0, buffer.Length);
 
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalse
         Abort.DoAbortUnless(buffer is null || 0 <= size && size < buffer.Length);
 
         _buffer = buffer;

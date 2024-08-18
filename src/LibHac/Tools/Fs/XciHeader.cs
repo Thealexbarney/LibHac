@@ -10,6 +10,7 @@ using LibHac.Fs;
 using LibHac.Gc.Impl;
 using LibHac.Tools.Crypto;
 using LibHac.Tools.FsSystem;
+using LibHac.Util;
 using Aes = LibHac.Crypto.Aes;
 
 namespace LibHac.Tools.Fs;
@@ -177,9 +178,19 @@ public class XciHeader
 
             reader.BaseStream.Position = RootPartitionOffset;
             byte[] headerBytes = reader.ReadBytes((int)RootPartitionHeaderSize);
-
             Span<byte> actualHeaderHash = stackalloc byte[Sha256.DigestSize];
-            Sha256.GenerateSha256Hash(headerBytes, actualHeaderHash);
+
+            Optional<byte> salt = CompatibilityType == 0 ? new Optional<byte>() : CompatibilityType;
+            
+            var generator = new Sha256Generator();
+            generator.Initialize();
+            generator.Update(headerBytes);
+            if (salt.HasValue)
+            {
+                generator.Update(SpanHelpers.AsReadOnlyByteSpan(in salt.ValueRo));
+            }
+
+            generator.GetHash(actualHeaderHash);
 
             PartitionFsHeaderValidity = Utilities.SpansEqual(RootPartitionHeaderHash, actualHeaderHash) ? Validity.Valid : Validity.Invalid;
 

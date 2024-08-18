@@ -23,10 +23,10 @@ public class ReadOnlyBlockCacheStorage : IStorage
     private SharedRef<IStorage> _baseStorage;
     private int _blockSize;
 
-    public ReadOnlyBlockCacheStorage(ref SharedRef<IStorage> baseStorage, int blockSize, Memory<byte> buffer,
+    public ReadOnlyBlockCacheStorage(ref readonly SharedRef<IStorage> baseStorage, int blockSize, Memory<byte> buffer,
         int cacheBlockCount)
     {
-        _baseStorage = SharedRef<IStorage>.CreateMove(ref baseStorage);
+        _baseStorage = SharedRef<IStorage>.CreateCopy(in baseStorage);
         _blockSize = blockSize;
         _blockCache = new BlockCache();
         _mutex = new SdkMutexType();

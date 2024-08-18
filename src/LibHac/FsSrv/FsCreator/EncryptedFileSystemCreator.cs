@@ -16,7 +16,7 @@ public class EncryptedFileSystemCreator : IEncryptedFileSystemCreator
         KeySet = keySet;
     }
 
-    public Result Create(ref SharedRef<IFileSystem> outEncryptedFileSystem, ref SharedRef<IFileSystem> baseFileSystem, KeyId idIndex, in EncryptionSeed encryptionSeed)
+    public Result Create(ref SharedRef<IFileSystem> outEncryptedFileSystem, ref readonly SharedRef<IFileSystem> baseFileSystem, KeyId idIndex, in EncryptionSeed encryptionSeed)
     {
         if (idIndex < KeyId.Save || idIndex > KeyId.CustomStorage)
         {
@@ -26,7 +26,7 @@ public class EncryptedFileSystemCreator : IEncryptedFileSystemCreator
         // todo: "proper" key generation instead of a lazy hack
         KeySet.SetSdSeed(encryptionSeed.Value);
 
-        using var encryptedFileSystem = new SharedRef<AesXtsFileSystem>(new AesXtsFileSystem(ref baseFileSystem,
+        using var encryptedFileSystem = new SharedRef<AesXtsFileSystem>(new AesXtsFileSystem(in baseFileSystem,
             KeySet.SdCardEncryptionKeys[(int)idIndex].DataRo.ToArray(), 0x4000));
 
         outEncryptedFileSystem.SetByMove(ref encryptedFileSystem.Ref);

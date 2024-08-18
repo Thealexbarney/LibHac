@@ -51,9 +51,9 @@ internal class StorageLayoutTypeSetStorage : IStorage
     private SharedRef<IStorage> _baseStorage;
     private StorageLayoutType _storageFlag;
 
-    public StorageLayoutTypeSetStorage(ref SharedRef<IStorage> baseStorage, StorageLayoutType storageFlag)
+    public StorageLayoutTypeSetStorage(ref readonly SharedRef<IStorage> baseStorage, StorageLayoutType storageFlag)
     {
-        _baseStorage = SharedRef<IStorage>.CreateMove(ref baseStorage);
+        _baseStorage = SharedRef<IStorage>.CreateCopy(in baseStorage);
         _storageFlag = storageFlag;
 
         Assert.SdkAssert(StorageLayoutTypeFunctions.IsStorageFlagValid(storageFlag));
@@ -128,10 +128,10 @@ internal class StorageLayoutTypeSetFile : IFile
         Assert.SdkAssert(StorageLayoutTypeFunctions.IsStorageFlagValid(storageFlag));
     }
 
-    public StorageLayoutTypeSetFile(ref SharedRef<IFile> baseFile, StorageLayoutType storageFlag)
+    public StorageLayoutTypeSetFile(ref readonly SharedRef<IFile> baseFile, StorageLayoutType storageFlag)
     {
         _baseFile = baseFile.Get;
-        _baseFileShared = SharedRef<IFile>.CreateMove(ref baseFile);
+        _baseFileShared = SharedRef<IFile>.CreateCopy(in baseFile);
         _storageFlag = storageFlag;
 
         Assert.SdkAssert(StorageLayoutTypeFunctions.IsStorageFlagValid(storageFlag));
@@ -235,9 +235,9 @@ internal class StorageLayoutTypeSetFileSystem : IFileSystem
     private SharedRef<IFileSystem> _baseFileSystem;
     private StorageLayoutType _storageFlag;
 
-    public StorageLayoutTypeSetFileSystem(ref SharedRef<IFileSystem> baseFileSystem, StorageLayoutType storageFlag)
+    public StorageLayoutTypeSetFileSystem(ref readonly SharedRef<IFileSystem> baseFileSystem, StorageLayoutType storageFlag)
     {
-        _baseFileSystem = SharedRef<IFileSystem>.CreateMove(ref baseFileSystem);
+        _baseFileSystem = SharedRef<IFileSystem>.CreateCopy(in baseFileSystem);
         _storageFlag = storageFlag;
 
         Assert.SdkAssert(StorageLayoutTypeFunctions.IsStorageFlagValid(storageFlag));

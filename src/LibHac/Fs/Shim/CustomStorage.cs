@@ -50,8 +50,7 @@ public static class CustomStorage
             res = fileSystemProxy.Get.OpenCustomStorageFileSystem(ref fileSystem.Ref, storageId);
             if (res.IsFailure()) return res.Miss();
 
-            using var fileSystemAdapter =
-                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref));
+            using var fileSystemAdapter = new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(in fileSystem));
 
             res = fs.Register(mountName, ref fileSystemAdapter.Ref);
             if (res.IsFailure()) return res.Miss();

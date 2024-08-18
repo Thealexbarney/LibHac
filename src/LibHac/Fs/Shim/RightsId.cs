@@ -23,24 +23,13 @@ public static class RightsIdShim
         return Result.Success;
     }
 
-    public static Result GetRightsId(this FileSystemClient fs, out RightsId rightsId, U8Span path)
+    public static Result GetRightsId(this FileSystemClient fs, out RightsId rightsId, U8Span path, ContentAttributes attributes)
     {
-        UnsafeHelpers.SkipParamInit(out rightsId);
-
-        Result res = PathUtility.ConvertToFspPath(out FspPath sfPath, path);
-        fs.Impl.AbortIfNeeded(res);
-        if (res.IsFailure()) return res.Miss();
-
-        using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
-
-        res = fileSystemProxy.Get.GetRightsIdByPath(out rightsId, in sfPath);
-        fs.Impl.AbortIfNeeded(res);
-        if (res.IsFailure()) return res.Miss();
-
-        return Result.Success;
+        return GetRightsId(fs, out rightsId, out _, path, attributes);
     }
 
-    public static Result GetRightsId(this FileSystemClient fs, out RightsId rightsId, out byte keyGeneration, U8Span path)
+    public static Result GetRightsId(this FileSystemClient fs, out RightsId rightsId, out byte keyGeneration,
+        U8Span path, ContentAttributes attributes)
     {
         UnsafeHelpers.SkipParamInit(out rightsId, out keyGeneration);
 
@@ -50,7 +39,7 @@ public static class RightsIdShim
 
         using SharedRef<IFileSystemProxy> fileSystemProxy = fs.Impl.GetFileSystemProxyServiceObject();
 
-        res = fileSystemProxy.Get.GetRightsIdAndKeyGenerationByPath(out rightsId, out keyGeneration, in sfPath);
+        res = fileSystemProxy.Get.GetRightsIdAndKeyGenerationByPath(out rightsId, out keyGeneration, in sfPath, attributes);
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 

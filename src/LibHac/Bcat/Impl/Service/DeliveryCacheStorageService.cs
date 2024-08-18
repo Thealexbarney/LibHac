@@ -25,28 +25,28 @@ internal class DeliveryCacheStorageService : IDeliveryCacheStorageService
         Access = accessControl;
     }
 
-    public Result CreateFileService(ref SharedRef<IDeliveryCacheFileService> service)
+    public Result CreateFileService(ref SharedRef<IDeliveryCacheFileService> outService)
     {
         lock (Locker)
         {
             if (FileServiceOpenCount >= MaxOpenCount)
                 return ResultBcat.ServiceOpenLimitReached.Log();
 
-            service.Reset(new DeliveryCacheFileService(Server, this, ApplicationId, Access));
+            outService.Reset(new DeliveryCacheFileService(Server, this, ApplicationId, Access));
 
             FileServiceOpenCount++;
             return Result.Success;
         }
     }
 
-    public Result CreateDirectoryService(ref SharedRef<IDeliveryCacheDirectoryService> service)
+    public Result CreateDirectoryService(ref SharedRef<IDeliveryCacheDirectoryService> outService)
     {
         lock (Locker)
         {
             if (DirectoryServiceOpenCount >= MaxOpenCount)
                 return ResultBcat.ServiceOpenLimitReached.Log();
 
-            service.Reset(new DeliveryCacheDirectoryService(Server, this, ApplicationId, Access));
+            outService.Reset(new DeliveryCacheDirectoryService(Server, this, ApplicationId, Access));
 
             DirectoryServiceOpenCount++;
             return Result.Success;

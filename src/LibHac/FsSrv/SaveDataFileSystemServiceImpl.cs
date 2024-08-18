@@ -299,7 +299,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
                 bool openShared = SaveDataProperties.IsSharedOpenNeeded(type);
                 bool isReconstructible = SaveDataProperties.IsReconstructible(type, spaceId);
 
-                res = _config.SaveFsCreator.Create(ref saveDataFs.Ref, ref fileSystem.Ref, spaceId, saveDataId,
+                res = _config.SaveFsCreator.Create(ref saveDataFs.Ref, in fileSystem, spaceId, saveDataId,
                     isEmulatedOnHost, isDeviceUniqueMac, isJournalingSupported, isMultiCommitSupported,
                     openReadOnly, openShared, _timeStampGetter, isReconstructible);
                 if (res.IsFailure()) return res.Miss();
@@ -316,12 +316,12 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         }
 
         using var registerFs = new SharedRef<SaveDataFileSystemCacheRegister>(
-            new SaveDataFileSystemCacheRegister(ref saveDataFs.Ref, _saveFileSystemCacheManager, spaceId, saveDataId));
+            new SaveDataFileSystemCacheRegister(in saveDataFs, _saveFileSystemCacheManager, spaceId, saveDataId));
 
         if (openReadOnly)
         {
             using SharedRef<IFileSystem> tempFs = SharedRef<IFileSystem>.CreateMove(ref registerFs.Ref);
-            using var readOnlyFileSystem = new SharedRef<ReadOnlyFileSystem>(new ReadOnlyFileSystem(ref tempFs.Ref));
+            using var readOnlyFileSystem = new SharedRef<ReadOnlyFileSystem>(new ReadOnlyFileSystem(in tempFs));
 
             if (!readOnlyFileSystem.HasValue)
                 return ResultFs.AllocationMemoryFailedInSaveDataFileSystemServiceImplB.Log();
@@ -551,7 +551,8 @@ public class SaveDataFileSystemServiceImpl : IDisposable
         using (var extraDataAccessor = new SharedRef<ISaveDataExtraDataAccessor>())
         {
             res = _config.SaveFsCreator.CreateExtraDataAccessor(ref extraDataAccessor.Ref, in saveDataStorage,
-                IsDeviceUniqueMac(spaceId), isIntegritySaveData: true, SaveDataProperties.IsReconstructible(type, spaceId));
+                IsDeviceUniqueMac(spaceId), isIntegritySaveData: true,
+                isReconstructible: SaveDataProperties.IsReconstructible(type, spaceId));
             if (res.IsFailure()) return res.Miss();
 
             res = extraDataAccessor.Get.ReadExtraData(out SaveDataExtraData extraData);
@@ -1147,7 +1148,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
                     caseSensitive: true);
                 if (res.IsFailure()) return res.Miss();
 
-                res = Utility.WrapSubDirectory(ref outFileSystem, ref baseFileSystem.Ref, in directoryPath,
+                res = Utility.WrapSubDirectory(ref outFileSystem, in baseFileSystem, in directoryPath,
                     createIfMissing);
                 if (res.IsFailure()) return res.Miss();
 
@@ -1161,8 +1162,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
                     caseSensitive: true);
                 if (res.IsFailure()) return res.Miss();
 
-                res = Utility.WrapSubDirectory(ref outFileSystem, ref baseFileSystem.Ref, in directoryPath,
-                    createIfMissing);
+                res = Utility.WrapSubDirectory(ref outFileSystem, in baseFileSystem, in directoryPath, createIfMissing);
                 if (res.IsFailure()) return res.Miss();
 
                 break;
@@ -1188,10 +1188,10 @@ public class SaveDataFileSystemServiceImpl : IDisposable
 
                 using SharedRef<IFileSystem> tempFileSystem = SharedRef<IFileSystem>.CreateMove(ref baseFileSystem.Ref);
 
-                res = Utility.WrapSubDirectory(ref baseFileSystem.Ref, ref tempFileSystem.Ref, in pathSdRoot, createIfMissing);
+                res = Utility.WrapSubDirectory(ref baseFileSystem.Ref, in tempFileSystem, in pathSdRoot, createIfMissing);
                 if (res.IsFailure()) return res.Miss();
 
-                res = _config.EncryptedFsCreator.Create(ref outFileSystem, ref baseFileSystem.Ref,
+                res = _config.EncryptedFsCreator.Create(ref outFileSystem, in baseFileSystem,
                     IEncryptedFileSystemCreator.KeyId.Save, in _encryptionSeed);
                 if (res.IsFailure()) return res.Miss();
 
@@ -1204,8 +1204,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
                     BisPartitionId.SystemProperPartition, caseSensitive: true);
                 if (res.IsFailure()) return res.Miss();
 
-                res = Utility.WrapSubDirectory(ref outFileSystem, ref baseFileSystem.Ref, in directoryPath,
-                    createIfMissing);
+                res = Utility.WrapSubDirectory(ref outFileSystem, in baseFileSystem, in directoryPath, createIfMissing);
                 if (res.IsFailure()) return res.Miss();
 
                 break;
@@ -1217,8 +1216,7 @@ public class SaveDataFileSystemServiceImpl : IDisposable
                     caseSensitive: true);
                 if (res.IsFailure()) return res.Miss();
 
-                res = Utility.WrapSubDirectory(ref outFileSystem, ref baseFileSystem.Ref, in directoryPath,
-                    createIfMissing);
+                res = Utility.WrapSubDirectory(ref outFileSystem, in baseFileSystem, in directoryPath, createIfMissing);
                 if (res.IsFailure()) return res.Miss();
 
                 break;

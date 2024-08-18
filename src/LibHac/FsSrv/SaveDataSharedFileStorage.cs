@@ -168,10 +168,10 @@ public class SaveDataSharedFileStorage : IStorage
     private SharedRef<SaveDataOpenTypeSetFileStorage> _baseStorage;
     private SaveDataOpenTypeSetFileStorage.OpenType _type;
 
-    public SaveDataSharedFileStorage(ref SharedRef<SaveDataOpenTypeSetFileStorage> baseStorage,
+    public SaveDataSharedFileStorage(ref readonly SharedRef<SaveDataOpenTypeSetFileStorage> baseStorage,
         SaveDataOpenTypeSetFileStorage.OpenType type)
     {
-        _baseStorage = SharedRef<SaveDataOpenTypeSetFileStorage>.CreateMove(ref baseStorage);
+        _baseStorage = SharedRef<SaveDataOpenTypeSetFileStorage>.CreateCopy(in baseStorage);
         _type = type;
     }
 
@@ -278,10 +278,10 @@ public class SaveDataFileStorageHolder
         private SaveDataSpaceId _spaceId;
         private ulong _saveDataId;
 
-        public Entry(ref SharedRef<SaveDataOpenTypeSetFileStorage> storage, SaveDataSpaceId spaceId,
+        public Entry(ref readonly SharedRef<SaveDataOpenTypeSetFileStorage> storage, SaveDataSpaceId spaceId,
             ulong saveDataId)
         {
-            _storage = SharedRef<SaveDataOpenTypeSetFileStorage>.CreateMove(ref storage);
+            _storage = SharedRef<SaveDataOpenTypeSetFileStorage>.CreateCopy(in storage);
             _spaceId = spaceId;
             _saveDataId = saveDataId;
         }
@@ -366,24 +366,21 @@ public class SaveDataFileStorageHolder
             res = baseFileStorage.Get.Initialize(in baseFileSystem, in saveImageName, mode, type.ValueRo);
             if (res.IsFailure()) return res.Miss();
 
-            using SharedRef<SaveDataOpenTypeSetFileStorage> baseFileStorageCopy =
-                SharedRef<SaveDataOpenTypeSetFileStorage>.CreateCopy(in baseFileStorage);
-
-            res = Register(ref baseFileStorageCopy.Ref, spaceId, saveDataId);
+            res = Register(in baseFileStorage, spaceId, saveDataId);
             if (res.IsFailure()) return res.Miss();
         }
 
-        outSaveDataStorage.Reset(new SaveDataSharedFileStorage(ref baseFileStorage.Ref, type.ValueRo));
+        outSaveDataStorage.Reset(new SaveDataSharedFileStorage(in baseFileStorage, type.ValueRo));
 
         return Result.Success;
     }
 
-    public Result Register(ref SharedRef<SaveDataOpenTypeSetFileStorage> storage, SaveDataSpaceId spaceId,
+    public Result Register(ref readonly SharedRef<SaveDataOpenTypeSetFileStorage> storage, SaveDataSpaceId spaceId,
         ulong saveDataId)
     {
         Assert.SdkRequires(Globals.Mutex.IsLockedByCurrentThread());
 
-        _entryList.AddLast(new Entry(ref storage, spaceId, saveDataId));
+        _entryList.AddLast(new Entry(in storage, spaceId, saveDataId));
 
         return Result.Success;
     }

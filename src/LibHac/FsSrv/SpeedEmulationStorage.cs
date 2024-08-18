@@ -9,9 +9,9 @@ public class SpeedEmulationStorage : IStorage
 {
     private SharedRef<IStorage> _baseStorage;
 
-    public SpeedEmulationStorage(ref SharedRef<IStorage> baseStorage, FileSystemServer fsServer)
+    public SpeedEmulationStorage(ref readonly SharedRef<IStorage> baseStorage, FileSystemServer fsServer)
     {
-        _baseStorage = SharedRef<IStorage>.CreateMove(ref baseStorage);
+        _baseStorage = SharedRef<IStorage>.CreateCopy(in baseStorage);
     }
 
     public override void Dispose()

@@ -57,15 +57,15 @@ public abstract class IHash256GeneratorFactory : IDisposable
         return DoCreate(ref outGenerator);
     }
 
-    public void GenerateHash(Span<byte> hashBuffer, ReadOnlySpan<byte> data)
+    public Result GenerateHash(Span<byte> hashBuffer, ReadOnlySpan<byte> data)
     {
         Assert.SdkRequiresEqual(IHash256Generator.HashSize, hashBuffer.Length);
 
-        DoGenerateHash(hashBuffer, data);
+        return DoGenerateHash(hashBuffer, data).Ret();
     }
 
     protected abstract Result DoCreate(ref UniqueRef<IHash256Generator> outGenerator);
-    protected abstract void DoGenerateHash(Span<byte> hashBuffer, ReadOnlySpan<byte> data);
+    protected abstract Result DoGenerateHash(Span<byte> hashBuffer, ReadOnlySpan<byte> data);
 }
 
 /// <summary>

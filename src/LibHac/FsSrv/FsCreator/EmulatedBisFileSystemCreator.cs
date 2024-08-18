@@ -39,10 +39,10 @@ public class EmulatedBisFileSystemCreator : IBuiltInStorageFileSystemCreator
     /// Each partition will be located at their default paths in this IFileSystem.
     /// </summary>
     /// <param name="rootFileSystem">The <see cref="IFileSystem"/> to use as the root file system.</param>
-    public EmulatedBisFileSystemCreator(ref SharedRef<IFileSystem> rootFileSystem)
+    public EmulatedBisFileSystemCreator(ref readonly SharedRef<IFileSystem> rootFileSystem)
     {
         Config = new EmulatedBisFileSystemCreatorConfig();
-        Config.SetRootFileSystem(ref rootFileSystem).ThrowIfFailure();
+        Config.SetRootFileSystem(in rootFileSystem).ThrowIfFailure();
     }
 
     /// <summary>
@@ -83,7 +83,7 @@ public class EmulatedBisFileSystemCreator : IBuiltInStorageFileSystemCreator
         if (res.IsFailure()) return res.Miss();
 
         using var partitionFileSystem = new SharedRef<IFileSystem>();
-        res = Utility.WrapSubDirectory(ref partitionFileSystem.Ref, ref rootFileSystem.Ref, in bisRootPath, true);
+        res = Utility.WrapSubDirectory(ref partitionFileSystem.Ref, in rootFileSystem, in bisRootPath, true);
         if (res.IsFailure()) return res.Miss();
 
         outFileSystem.SetByMove(ref partitionFileSystem.Ref);

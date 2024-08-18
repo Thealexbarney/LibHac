@@ -19,7 +19,7 @@ internal struct ProgramRegistryImplGlobals
 /// is stored in a <see cref="ProgramInfo"/> and includes the process' process ID, program ID,
 /// storage location and file system permissions. This allows FS to resolve the program ID and
 /// verify the permissions of any process calling it. 
-/// <para>Based on nnSdk 13.4.0 (FS 13.1.0)</para></remarks>
+/// <para>Based on nnSdk 17.5.0 (FS 17.0.0)</para></remarks>
 public class ProgramRegistryImpl : IProgramRegistry
 {
     private ulong _processId;
@@ -55,8 +55,9 @@ public class ProgramRegistryImpl : IProgramRegistry
         if (accessControlDescriptorSize > accessControlDescriptor.Size)
             return ResultFs.InvalidSize.Log();
 
-        return Globals.ServiceImpl.RegisterProgramInfo(processId, programId, storageId, accessControlData.Buffer,
-            accessControlDescriptor.Buffer);
+        return Globals.ServiceImpl.RegisterProgramInfo(processId, programId, storageId,
+            accessControlData.Buffer.Slice(0, (int)accessControlDataSize),
+            accessControlDescriptor.Buffer.Slice(0, (int)accessControlDescriptorSize)).Ret();
     }
 
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
@@ -70,7 +71,7 @@ public class ProgramRegistryImpl : IProgramRegistry
         if (!_fsServer.IsInitialProgram(_processId))
             return ResultFs.PermissionDenied.Log();
 
-        return Globals.ServiceImpl.UnregisterProgramInfo(processId);
+        return Globals.ServiceImpl.UnregisterProgramInfo(processId).Ret();
     }
 
     /// <inheritdoc cref="ProgramRegistryManager.GetProgramInfo"/>
@@ -78,7 +79,7 @@ public class ProgramRegistryImpl : IProgramRegistry
     {
         Assert.SdkRequiresNotNull(Globals.ServiceImpl);
 
-        return Globals.ServiceImpl.GetProgramInfo(out programInfo, processId);
+        return Globals.ServiceImpl.GetProgramInfo(out programInfo, processId).Ret();
     }
 
     /// <inheritdoc cref="ProgramRegistryManager.GetProgramInfoByProgramId"/>
@@ -86,7 +87,7 @@ public class ProgramRegistryImpl : IProgramRegistry
     {
         Assert.SdkRequiresNotNull(Globals.ServiceImpl);
 
-        return Globals.ServiceImpl.GetProgramInfoByProgramId(out programInfo, programId);
+        return Globals.ServiceImpl.GetProgramInfoByProgramId(out programInfo, programId).Ret();
     }
 
     /// <summary>

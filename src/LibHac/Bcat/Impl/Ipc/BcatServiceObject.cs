@@ -8,9 +8,9 @@ internal class BcatServiceObject : IServiceObject
 {
     private SharedRef<IServiceCreator> _serviceCreator;
 
-    public BcatServiceObject(ref SharedRef<IServiceCreator> serviceCreator)
+    public BcatServiceObject(ref readonly SharedRef<IServiceCreator> serviceCreator)
     {
-        _serviceCreator = SharedRef<IServiceCreator>.CreateMove(ref serviceCreator);
+        _serviceCreator = SharedRef<IServiceCreator>.CreateCopy(in serviceCreator);
     }
 
     public void Dispose()
@@ -18,9 +18,9 @@ internal class BcatServiceObject : IServiceObject
         _serviceCreator.Destroy();
     }
 
-    public Result GetServiceObject(ref SharedRef<IDisposable> serviceObject)
+    public Result GetServiceObject(ref SharedRef<IDisposable> outServiceObject)
     {
-        serviceObject.SetByCopy(in _serviceCreator);
+        outServiceObject.SetByCopy(in _serviceCreator);
         return Result.Success;
     }
 }

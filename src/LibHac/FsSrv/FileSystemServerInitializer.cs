@@ -13,8 +13,10 @@ namespace LibHac.FsSrv;
 
 public static class FileSystemServerInitializer
 {
-    private const ulong SpeedEmulationProgramIdMinimum = 0x100000000000000;
-    private const ulong SpeedEmulationProgramIdMaximum = 0x100000000001FFF;
+    private const ulong SpeedEmulationProgramIdWithoutPlatformIdMinimum = 0;
+    private const ulong SpeedEmulationProgramIdWithoutPlatformIdMaximum = 0x1FFF;
+
+    private const uint ContentDivisionSize = ConcatenationFileSystem.DefaultInternalFileSize;
 
     private const int BufferManagerHeapSize = 1024 * 1024 * 14;
     private const int BufferManagerCacheSize = 1024;
@@ -43,7 +45,7 @@ public static class FileSystemServerInitializer
         ulong processId = client.Os.GetCurrentProcessId().Value;
         fileSystemProxy.Get.SetCurrentProcess(processId).IgnoreResult();
 
-        client.Fs.Impl.InitializeDfcFileSystemProxyServiceObject(ref fileSystemProxy.Ref);
+        client.Fs.Impl.InitializeDfcFileSystemProxyServiceObject(in fileSystemProxy);
 
         InitializeFileSystemProxyServer(client, server);
 
@@ -108,8 +110,8 @@ public static class FileSystemServerInitializer
             new AccessFailureManagementServiceImpl(in accessFailureManagementServiceConfig);
 
         var speedEmulationRange =
-            new InternalProgramIdRangeForSpeedEmulation(SpeedEmulationProgramIdMinimum,
-                SpeedEmulationProgramIdMaximum);
+            new InternalProgramIdRangeForSpeedEmulation(SpeedEmulationProgramIdWithoutPlatformIdMinimum,
+                SpeedEmulationProgramIdWithoutPlatformIdMaximum);
 
         var ncaFsServiceConfig = new NcaFileSystemServiceImpl.Configuration();
         ncaFsServiceConfig.BaseFsService = baseFsService;
@@ -123,9 +125,11 @@ public static class FileSystemServerInitializer
         ncaFsServiceConfig.ProgramRegistryService = programRegistryService;
         ncaFsServiceConfig.AccessFailureManagementService = accessFailureManagementService;
         ncaFsServiceConfig.SpeedEmulationRange = speedEmulationRange;
+        ncaFsServiceConfig.AddOnContentDivisionSize = ContentDivisionSize;
+        ncaFsServiceConfig.RomDivisionSize = ContentDivisionSize;
         ncaFsServiceConfig.FsServer = server;
 
-        var ncaFsService = new NcaFileSystemServiceImpl(in ncaFsServiceConfig, config.ExternalKeySet);
+        var ncaFsService = new NcaFileSystemServiceImpl(in ncaFsServiceConfig);
 
         var saveFsServiceConfig = new SaveDataFileSystemServiceImpl.Configuration();
         saveFsServiceConfig.BaseFsService = baseFsService;
@@ -141,6 +145,12 @@ public static class FileSystemServerInitializer
         saveFsServiceConfig.SaveDataFileSystemCacheCount = 1;
         saveFsServiceConfig.SaveIndexerManager = saveDataIndexerManager;
         saveFsServiceConfig.DebugConfigService = debugConfigurationService;
+        saveFsServiceConfig.JournalIntegritySaveDataVersion = 0x50000;
+        saveFsServiceConfig.JournalIntegritySupportedVersionMin = 0x40000;
+        saveFsServiceConfig.JournalIntegritySupportedVersionMax = 0x50000;
+        saveFsServiceConfig.IntegritySaveDataVersion = 0x10000;
+        saveFsServiceConfig.IntegritySupportedVersionMin = 0x10000;
+        saveFsServiceConfig.IntegritySupportedVersionMax = 0x10000;
         saveFsServiceConfig.FsServer = server;
 
         var saveFsService = new SaveDataFileSystemServiceImpl(in saveFsServiceConfig);
@@ -200,10 +210,10 @@ public static class FileSystemServerInitializer
             _server = server;
         }
 
-        public Result GetServiceObject(ref SharedRef<IDisposable> serviceObject)
+        public Result GetServiceObject(ref SharedRef<IDisposable> outServiceObject)
         {
             using SharedRef<IFileSystemProxy> derivedObject = _server.Impl.GetFileSystemProxyServiceObject();
-            serviceObject.SetByMove(ref derivedObject.Ref);
+            outServiceObject.SetByMove(ref derivedObject.Ref);
             return Result.Success;
         }
 
@@ -219,10 +229,10 @@ public static class FileSystemServerInitializer
             _server = server;
         }
 
-        public Result GetServiceObject(ref SharedRef<IDisposable> serviceObject)
+        public Result GetServiceObject(ref SharedRef<IDisposable> outServiceObject)
         {
             using SharedRef<IFileSystemProxyForLoader> derivedObject = _server.Impl.GetFileSystemProxyForLoaderServiceObject();
-            serviceObject.SetByMove(ref derivedObject.Ref);
+            outServiceObject.SetByMove(ref derivedObject.Ref);
             return Result.Success;
         }
 
@@ -238,10 +248,10 @@ public static class FileSystemServerInitializer
             _server = server;
         }
 
-        public Result GetServiceObject(ref SharedRef<IDisposable> serviceObject)
+        public Result GetServiceObject(ref SharedRef<IDisposable> outServiceObject)
         {
             using SharedRef<IProgramRegistry> derivedObject = _server.Impl.GetProgramRegistryServiceObject();
-            serviceObject.SetByMove(ref derivedObject.Ref);
+            outServiceObject.SetByMove(ref derivedObject.Ref);
             return Result.Success;
         }
 

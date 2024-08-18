@@ -19,7 +19,8 @@ public enum GameCardManagerOperationIdValue
     ReadParamDirectly = 11,
     WriteToGameCardDirectly = 12,
     ForceErase = 13,
-    SimulateDetectionEventSignaled = 14
+    SimulateDetectionEventSignaled = 14,
+    GetGameCardAsicCertificate = 15
 }
 
 /// <summary>

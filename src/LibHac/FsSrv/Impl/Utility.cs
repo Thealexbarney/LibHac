@@ -16,11 +16,11 @@ internal static class Utility
     }
 
     public static Result CreateSubDirectoryFileSystem(ref SharedRef<IFileSystem> outSubDirFileSystem,
-        ref SharedRef<IFileSystem> baseFileSystem, ref readonly Path rootPath)
+        ref readonly SharedRef<IFileSystem> baseFileSystem, ref readonly Path rootPath)
     {
         if (rootPath.IsEmpty())
         {
-            outSubDirFileSystem.SetByMove(ref baseFileSystem);
+            outSubDirFileSystem.SetByCopy(in baseFileSystem);
             return Result.Success;
         }
 
@@ -31,7 +31,7 @@ internal static class Utility
 
         dir.Reset();
 
-        using var fs = new SharedRef<SubdirectoryFileSystem>(new SubdirectoryFileSystem(ref baseFileSystem));
+        using var fs = new SharedRef<SubdirectoryFileSystem>(new SubdirectoryFileSystem(in baseFileSystem));
         if (!fs.HasValue)
             return ResultFs.AllocationMemoryFailedInSubDirectoryFileSystemCreatorA.Log();
 
@@ -44,7 +44,7 @@ internal static class Utility
     }
 
     public static Result WrapSubDirectory(ref SharedRef<IFileSystem> outFileSystem,
-        ref SharedRef<IFileSystem> baseFileSystem, ref readonly Path rootPath, bool createIfMissing)
+        ref readonly SharedRef<IFileSystem> baseFileSystem, ref readonly Path rootPath, bool createIfMissing)
     {
         // The path must already exist if we're not automatically creating it
         if (!createIfMissing)
@@ -57,7 +57,7 @@ internal static class Utility
         Result res = FsSystem.Utility.EnsureDirectory(baseFileSystem.Get, in rootPath);
         if (res.IsFailure()) return res.Miss();
 
-        return CreateSubDirectoryFileSystem(ref outFileSystem, ref baseFileSystem, in rootPath);
+        return CreateSubDirectoryFileSystem(ref outFileSystem, in baseFileSystem, in rootPath);
     }
 
     public static long ConvertZeroCommitId(in SaveDataExtraData extraData)
@@ -69,5 +69,11 @@ internal static class Utility
 
         Crypto.Sha256.GenerateSha256Hash(SpanHelpers.AsReadOnlyByteSpan(in extraData), hash);
         return BitConverter.ToInt64(hash);
+    }
+
+    public static ulong ClearPlatformIdInProgramId(ulong programId)
+    {
+        const ulong clearPlatformIdMask = 0x_00FF_FFFF_FFFF_FFFF;
+        return programId & clearPlatformIdMask;
     }
 }

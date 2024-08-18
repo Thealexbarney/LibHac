@@ -10,9 +10,10 @@ namespace LibHac.FsSrv.Impl;
 /// <summary>
 /// Keeps track of the program IDs and program indexes of each program in a multi-program application.
 /// </summary>
-/// <remarks>Based on nnSdk 13.4.0 (FS 13.1.0)</remarks>
+/// <remarks>Based on nnSdk 17.5.0 (FS 17.0.0)</remarks>
 public class ProgramIndexMapInfoManager : IDisposable
 {
+    // Changed: The original uses an intrusive list for the entries
     private LinkedList<ProgramIndexMapInfo> _mapEntries;
     private SdkMutexType _mutex;
 
@@ -38,21 +39,29 @@ public class ProgramIndexMapInfoManager : IDisposable
 
         ClearImpl();
 
-        for (int i = 0; i < programIndexMapInfo.Length; i++)
+        bool isSuccess = false;
+        try
         {
-            var entry = new ProgramIndexMapInfo
+            for (int i = 0; i < programIndexMapInfo.Length; i++)
             {
-                ProgramId = programIndexMapInfo[i].ProgramId,
-                MainProgramId = programIndexMapInfo[i].MainProgramId,
-                ProgramIndex = programIndexMapInfo[i].ProgramIndex
-            };
+                var entry = new ProgramIndexMapInfo
+                {
+                    ProgramId = programIndexMapInfo[i].ProgramId,
+                    MainProgramId = programIndexMapInfo[i].MainProgramId,
+                    ProgramIndex = programIndexMapInfo[i].ProgramIndex
+                };
 
-            _mapEntries.AddLast(entry);
+                _mapEntries.AddLast(entry);
+            }
+
+            isSuccess = true;
+            return Result.Success;
         }
-
-        // We skip running ClearImpl() if the allocation failed because we don't need to worry about that in C#
-
-        return Result.Success;
+        finally
+        {
+            if (!isSuccess)
+                ClearImpl();
+        }
     }
 
     /// <summary>
@@ -114,6 +123,19 @@ public class ProgramIndexMapInfoManager : IDisposable
         using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
 
         return _mapEntries.Count;
+    }
+
+    public ProgramId GetApplicationProgramId(ProgramId programId)
+    {
+        using ScopedLock<SdkMutexType> scopedLock = ScopedLock.Lock(ref _mutex);
+
+        Optional<ProgramIndexMapInfo> programIndexMapInfo =
+            GetImpl((in ProgramIndexMapInfo x) => x.ProgramId == programId);
+
+        if (!programIndexMapInfo.HasValue)
+            return ProgramId.InvalidId;
+
+        return new ProgramId(programIndexMapInfo.Value.MainProgramId.Value + programIndexMapInfo.Value.ProgramIndex);
     }
 
     private delegate bool EntrySelector(in ProgramIndexMapInfo candidate);

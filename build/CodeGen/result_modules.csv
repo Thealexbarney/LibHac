@@ -42,6 +42,7 @@ Id,Name,Default Namespace
 168,CReport,
 183,Debug,
 189,Pwm,
+192,Regulator,
 198,Powctl,
 202,Hid,
 204,Cs,

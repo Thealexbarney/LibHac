@@ -25,9 +25,9 @@ internal class FileServiceObjectAdapter : IFile
 {
     private SharedRef<IFileSf> _baseFile;
 
-    public FileServiceObjectAdapter(ref SharedRef<IFileSf> baseFile)
+    public FileServiceObjectAdapter(ref readonly SharedRef<IFileSf> baseFile)
     {
-        _baseFile = SharedRef<IFileSf>.CreateMove(ref baseFile);
+        _baseFile = SharedRef<IFileSf>.CreateCopy(in baseFile);
     }
 
     public override void Dispose()
@@ -91,9 +91,9 @@ internal class DirectoryServiceObjectAdapter : IDirectory
 {
     private SharedRef<IDirectorySf> _baseDirectory;
 
-    public DirectoryServiceObjectAdapter(ref SharedRef<IDirectorySf> baseDirectory)
+    public DirectoryServiceObjectAdapter(ref readonly SharedRef<IDirectorySf> baseDirectory)
     {
-        _baseDirectory = SharedRef<IDirectorySf>.CreateMove(ref baseDirectory);
+        _baseDirectory = SharedRef<IDirectorySf>.CreateCopy(in baseDirectory);
     }
 
     public override void Dispose()
@@ -136,9 +136,9 @@ internal class FileSystemServiceObjectAdapter : IFileSystem, IMultiCommitTarget
         return Result.Success;
     }
 
-    public FileSystemServiceObjectAdapter(ref SharedRef<IFileSystemSf> baseFileSystem)
+    public FileSystemServiceObjectAdapter(ref readonly SharedRef<IFileSystemSf> baseFileSystem)
     {
-        _baseFs = SharedRef<IFileSystemSf>.CreateMove(ref baseFileSystem);
+        _baseFs = SharedRef<IFileSystemSf>.CreateCopy(in baseFileSystem);
     }
 
     public override void Dispose()
@@ -274,7 +274,7 @@ internal class FileSystemServiceObjectAdapter : IFileSystem, IMultiCommitTarget
         res = _baseFs.Get.OpenDirectory(ref directoryServiceObject.Ref, in sfPath, (uint)mode);
         if (res.IsFailure()) return res.Miss();
 
-        outDirectory.Reset(new DirectoryServiceObjectAdapter(ref directoryServiceObject.Ref));
+        outDirectory.Reset(new DirectoryServiceObjectAdapter(in directoryServiceObject));
         return Result.Success;
     }
 

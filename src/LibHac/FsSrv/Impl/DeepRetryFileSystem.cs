@@ -10,19 +10,19 @@ public class DeepRetryFileSystem : ForwardingFileSystem
     private WeakRef<DeepRetryFileSystem> _selfReference;
     private SharedRef<IRomFileSystemAccessFailureManager> _accessFailureManager;
 
-    protected DeepRetryFileSystem(ref SharedRef<IFileSystem> baseFileSystem,
-        ref SharedRef<IRomFileSystemAccessFailureManager> accessFailureManager) : base(ref baseFileSystem)
+    protected DeepRetryFileSystem(ref readonly SharedRef<IFileSystem> baseFileSystem,
+        ref readonly SharedRef<IRomFileSystemAccessFailureManager> accessFailureManager) : base(in baseFileSystem)
     {
-        _accessFailureManager = SharedRef<IRomFileSystemAccessFailureManager>.CreateMove(ref accessFailureManager);
+        _accessFailureManager = SharedRef<IRomFileSystemAccessFailureManager>.CreateCopy(in accessFailureManager);
     }
 
-    public static SharedRef<IFileSystem> CreateShared(ref SharedRef<IFileSystem> baseFileSystem,
-        ref SharedRef<IRomFileSystemAccessFailureManager> accessFailureManager)
+    public static SharedRef<IFileSystem> CreateShared(ref readonly SharedRef<IFileSystem> baseFileSystem,
+        ref readonly SharedRef<IRomFileSystemAccessFailureManager> accessFailureManager)
     {
         using var retryFileSystem = new SharedRef<DeepRetryFileSystem>(
-            new DeepRetryFileSystem(ref baseFileSystem, ref accessFailureManager));
+            new DeepRetryFileSystem(in baseFileSystem, in accessFailureManager));
 
-        retryFileSystem.Get._selfReference.Set(in retryFileSystem.Ref);
+        retryFileSystem.Get._selfReference.Set(in retryFileSystem);
 
         return SharedRef<IFileSystem>.CreateMove(ref retryFileSystem.Ref);
     }

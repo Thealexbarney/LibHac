@@ -340,11 +340,16 @@ public class IndirectStorageTests : IClassFixture<IndirectStorageBuffers>
         var memoryStorageEntry = new StorageTester.Entry(memoryStorage, expectedStorageArray);
         var indirectStorageEntry = new StorageTester.Entry(indirectStorage, expectedStorageArray);
 
-        var testerConfig = new StorageTester.Configuration()
+        var accessParams = new StorageTester.AccessParam[accessConfig.SizeClassProbs.Length];
+        for (int i = 0; i < accessParams.Length; i++)
+        {
+            accessParams[i] = new StorageTester.AccessParam(accessConfig.SizeClassProbs[i], accessConfig.SizeClassMaxSizes[i]);
+        }
+
+        var testerConfig = new StorageTester.Configuration
         {
             Entries = [memoryStorageEntry, indirectStorageEntry],
-            SizeClassProbs = accessConfig.SizeClassProbs,
-            SizeClassMaxSizes = accessConfig.SizeClassMaxSizes,
+            AccessParams = accessParams,
             TaskProbs = accessConfig.TaskProbs,
             AccessTypeProbs = accessConfig.AccessTypeProbs,
             RngSeed = accessConfig.RngSeed,

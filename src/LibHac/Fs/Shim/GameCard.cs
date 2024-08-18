@@ -139,8 +139,7 @@ public static class GameCard
             res = fileSystemProxy.Get.OpenGameCardFileSystem(ref fileSystem.Ref, handle, partitionId);
             if (res.IsFailure()) return res.Miss();
 
-            using var fileSystemAdapter =
-                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref));
+            using var fileSystemAdapter = new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(in fileSystem));
 
             if (!fileSystemAdapter.HasValue)
                 return ResultFs.AllocationMemoryFailedInGameCardC.Log();
@@ -181,7 +180,7 @@ public static class GameCard
         fs.Impl.AbortIfNeeded(res);
         if (res.IsFailure()) return res.Miss();
 
-        using var storageAdapter = new UniqueRef<IStorage>(new StorageServiceObjectAdapter(ref storage.Ref));
+        using var storageAdapter = new UniqueRef<IStorage>(new StorageServiceObjectAdapter(in storage));
 
         if (!storageAdapter.HasValue)
             return ResultFs.AllocationMemoryFailedInGameCardB.Log();

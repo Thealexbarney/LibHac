@@ -33,11 +33,11 @@ public class SaveDataFileSystem : IFileSystem
 
     private KeySet KeySet { get; }
 
-    public SaveDataFileSystem(KeySet keySet, ref SharedRef<IStorage> storage,
+    public SaveDataFileSystem(KeySet keySet, ref readonly SharedRef<IStorage> storage,
         IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)
         : this(keySet, storage.Get, integrityCheckLevel, true)
     {
-        _baseStorageShared = SharedRef<IStorage>.CreateMove(ref storage);
+        _baseStorageShared = SharedRef<IStorage>.CreateCopy(in storage);
     }
 
     public SaveDataFileSystem(KeySet keySet, IStorage storage, IntegrityCheckLevel integrityCheckLevel, bool leaveOpen)

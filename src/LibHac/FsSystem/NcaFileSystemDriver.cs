@@ -1,10 +1,8 @@
-﻿// ReSharper disable UnusedMember.Local
-using System;
+﻿using System;
 using LibHac.Common;
-using LibHac.Common.FixedArrays;
 using LibHac.Crypto;
+using LibHac.Diag;
 using LibHac.Fs;
-using LibHac.FsSrv;
 
 namespace LibHac.FsSystem;
 
@@ -29,20 +27,6 @@ public struct NcaCryptoConfiguration
 
     public const int KeyGenerationMax = 32;
     public const int KeyAreaEncryptionKeyCount = KeyAreaEncryptionKeyIndexCount * KeyGenerationMax;
-
-    public Array2<Array256<byte>> Header1SignKeyModuli;
-    public Array3<byte> Header1SignKeyPublicExponent;
-    public Array3<Array16<byte>> KeyAreaEncryptionKeySources;
-    public Array16<byte> HeaderEncryptionKeySource;
-    public Array2<Array16<byte>> HeaderEncryptedEncryptionKeys;
-    public GenerateKeyFunction GenerateKey;
-    public CryptAesXtsFunction EncryptAesXtsForExternalKey;
-    public CryptAesXtsFunction DecryptAesXtsForExternalKey;
-    public DecryptAesCtrFunction DecryptAesCtr;
-    public DecryptAesCtrFunction DecryptAesCtrForExternalKey;
-    public VerifySign1Function VerifySign1;
-    public bool IsDev;
-    public bool IsAvailableSwKey;
 }
 
 public struct NcaCompressionConfiguration
@@ -83,6 +67,75 @@ public enum KeyType
     SaveDataDeviceUniqueMac = NcaCryptoConfiguration.KeyAreaEncryptionKeyCount + 3,
     SaveDataSeedUniqueMac = NcaCryptoConfiguration.KeyAreaEncryptionKeyCount + 4,
     SaveDataTransferMac = NcaCryptoConfiguration.KeyAreaEncryptionKeyCount + 5
+}
+
+file static class Anonymous
+{
+    public static long GetFsOffset(NcaReader reader, int index)
+    {
+        return (long)reader.GetFsOffset(index);
+    }
+
+    public static long GetFsEndOffset(NcaReader reader, int index)
+    {
+        return (long)reader.GetFsEndOffset(index);
+    }
+}
+
+file class SharedNcaBodyStorage : IStorage
+{
+    private SharedRef<IStorage> _storage;
+    private SharedRef<NcaReader> _ncaReader;
+
+    public SharedNcaBodyStorage(ref readonly SharedRef<IStorage> baseStorage, ref readonly SharedRef<NcaReader> ncaReader)
+    {
+        _storage = SharedRef<IStorage>.CreateCopy(in baseStorage);
+        _ncaReader = SharedRef<NcaReader>.CreateCopy(in ncaReader);
+    }
+
+    public override void Dispose()
+    {
+        _storage.Destroy();
+        _ncaReader.Destroy();
+        base.Dispose();
+    }
+
+    public override Result Read(long offset, Span<byte> destination)
+    {
+        Assert.SdkRequiresNotNull(in _storage);
+        return _storage.Get.Read(offset, destination).Ret();
+    }
+
+    public override Result Write(long offset, ReadOnlySpan<byte> source)
+    {
+        Assert.SdkRequiresNotNull(in _storage);
+        return _storage.Get.Write(offset, source).Ret();
+    }
+
+    public override Result Flush()
+    {
+        Assert.SdkRequiresNotNull(in _storage);
+        return _storage.Get.Flush().Ret();
+    }
+
+    public override Result SetSize(long size)
+    {
+        Assert.SdkRequiresNotNull(in _storage);
+        return _storage.Get.SetSize(size).Ret();
+    }
+
+    public override Result GetSize(out long size)
+    {
+        Assert.SdkRequiresNotNull(in _storage);
+        return _storage.Get.GetSize(out size).Ret();
+    }
+
+    public override Result OperateRange(Span<byte> outBuffer, OperationId operationId, long offset, long size,
+        ReadOnlySpan<byte> inBuffer)
+    {
+        Assert.SdkRequiresNotNull(in _storage);
+        return _storage.Get.OperateRange(outBuffer, operationId, offset, size, inBuffer).Ret();
+    }
 }
 
 public class NcaFileSystemDriver : IDisposable
@@ -132,14 +185,14 @@ public class NcaFileSystemDriver : IDisposable
         None = 1
     }
 
-    public NcaFileSystemDriver(ref SharedRef<NcaReader> ncaReader, MemoryResource allocator,
+    public NcaFileSystemDriver(ref readonly SharedRef<NcaReader> ncaReader, MemoryResource allocator,
         IBufferManager bufferManager, IHash256GeneratorFactorySelector hashGeneratorFactorySelector)
     {
         throw new NotImplementedException();
     }
 
-    public NcaFileSystemDriver(ref SharedRef<NcaReader> originalNcaReader, ref SharedRef<NcaReader> currentNcaReader,
-        MemoryResource allocator, IBufferManager bufferManager,
+    public NcaFileSystemDriver(ref readonly SharedRef<NcaReader> originalNcaReader,
+        ref readonly SharedRef<NcaReader> currentNcaReader, MemoryResource allocator, IBufferManager bufferManager,
         IHash256GeneratorFactorySelector hashGeneratorFactorySelector)
     {
         throw new NotImplementedException();
@@ -150,29 +203,14 @@ public class NcaFileSystemDriver : IDisposable
         throw new NotImplementedException();
     }
 
-    private bool IsUsingHwAesCtrForSpeedEmulation(FileSystemServer fs)
-    {
-        throw new NotImplementedException();
-    }
-
-    private long GetFsOffset(NcaReader reader, int index)
-    {
-        return (long)reader.GetFsOffset(index);
-    }
-
-    private long GetFsEndOffset(NcaReader reader, int index)
-    {
-        return (long)reader.GetFsEndOffset(index);
-    }
-
     public Result OpenStorage(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, out NcaFsHeaderReader outHeaderReader,
+        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, ref NcaFsHeaderReader outHeaderReader,
         int fsIndex)
     {
         throw new NotImplementedException();
     }
 
-    private Result OpenStorageImpl(ref SharedRef<IStorage> outStorage, out NcaFsHeaderReader outHeaderReader,
+    private Result OpenStorageImpl(ref SharedRef<IStorage> outStorage, ref NcaFsHeaderReader outHeaderReader,
         int fsIndex, ref StorageContext storageContext)
     {
         throw new NotImplementedException();
@@ -189,35 +227,36 @@ public class NcaFileSystemDriver : IDisposable
         throw new NotImplementedException();
     }
 
-    private Result CreateAesCtrStorage(ref SharedRef<IStorage> outStorage, ref SharedRef<IStorage> baseStorage,
+    private Result CreateAesCtrStorage(ref SharedRef<IStorage> outStorage, ref readonly SharedRef<IStorage> baseStorage,
         long offset, in NcaAesCtrUpperIv upperIv, AlignmentStorageRequirement alignmentRequirement)
     {
         throw new NotImplementedException();
     }
 
-    private Result CreateAesXtsStorage(ref SharedRef<IStorage> outStorage, ref SharedRef<IStorage> baseStorage,
+    private Result CreateAesXtsStorage(ref SharedRef<IStorage> outStorage, ref readonly SharedRef<IStorage> baseStorage,
         long offset)
     {
         throw new NotImplementedException();
     }
 
     private Result CreateSparseStorageMetaStorage(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IStorage> baseStorage, long offset, in NcaAesCtrUpperIv upperIv, in NcaSparseInfo sparseInfo)
+        ref readonly SharedRef<IStorage> baseStorage, long offset, in NcaAesCtrUpperIv upperIv,
+        in NcaSparseInfo sparseInfo)
     {
         throw new NotImplementedException();
     }
 
     private Result CreateSparseStorageMetaStorageWithVerification(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IStorage> outLayerInfoStorage, ref SharedRef<IStorage> baseStorage, long offset,
-        in NcaAesCtrUpperIv upperIv, in NcaSparseInfo sparseInfo, in NcaMetaDataHashDataInfo metaDataHashDataInfo,
-        IHash256GeneratorFactory hashGeneratorFactory)
+        ref SharedRef<IStorage> outLayerInfoStorage, ref readonly SharedRef<IStorage> baseStorage, long offset,
+        NcaFsHeader.EncryptionType encryptionType, in NcaAesCtrUpperIv upperIv, in NcaSparseInfo sparseInfo,
+        in NcaMetaDataHashDataInfo metaDataHashDataInfo, IHash256GeneratorFactory hashGeneratorFactory)
     {
         throw new NotImplementedException();
     }
 
-    private Result CreateSparseStorageCore(ref SharedRef<SparseStorage> outStorage, ref SharedRef<IStorage> baseStorage,
-        long baseStorageSize, ref SharedRef<IStorage> sparseStorageMetaStorage, in NcaSparseInfo sparseInfo,
-        bool hasExternalInfo)
+    private Result CreateSparseStorageCore(ref SharedRef<SparseStorage> outStorage,
+        ref readonly SharedRef<IStorage> baseStorage, long baseStorageSize,
+        ref readonly SharedRef<IStorage> sparseStorageMetaStorage, in NcaSparseInfo sparseInfo, bool hasExternalInfo)
     {
         throw new NotImplementedException();
     }
@@ -230,9 +269,9 @@ public class NcaFileSystemDriver : IDisposable
     }
 
     private Result CreateSparseStorageWithVerification(ref SharedRef<IStorage> outStorage, out long outFsDataOffset,
-        out SharedRef<SparseStorage> outSparseStorage, ref SharedRef<IStorage> outSparseStorageMetaStorage,
-        ref SharedRef<IStorage> outLayerInfoStorage, int index, in NcaAesCtrUpperIv upperIv,
-        in NcaSparseInfo sparseInfo, in NcaMetaDataHashDataInfo metaDataHashDataInfo,
+        ref SharedRef<SparseStorage> outSparseStorage, ref SharedRef<IStorage> outSparseStorageMetaStorage,
+        ref SharedRef<IStorage> outLayerInfoStorage, int index, NcaFsHeader.EncryptionType encryptionType,
+        in NcaAesCtrUpperIv upperIv, in NcaSparseInfo sparseInfo, in NcaMetaDataHashDataInfo metaDataHashDataInfo,
         NcaFsHeader.MetaDataHashType metaDataHashType)
     {
         throw new NotImplementedException();
@@ -240,86 +279,87 @@ public class NcaFileSystemDriver : IDisposable
 
     private Result CreatePatchMetaStorage(ref SharedRef<IStorage> outAesCtrExMetaStorage,
         ref SharedRef<IStorage> outIndirectMetaStorage, ref SharedRef<IStorage> outLayerInfoStorage,
-        ref SharedRef<IStorage> baseStorage, long offset, in NcaAesCtrUpperIv upperIv, in NcaPatchInfo patchInfo,
-        in NcaMetaDataHashDataInfo metaDataHashDataInfo, IHash256GeneratorFactory hashGeneratorFactory)
+        ref readonly SharedRef<IStorage> baseStorage, long offset, NcaFsHeader.EncryptionType encryptionType,
+        in NcaAesCtrUpperIv upperIv, in NcaPatchInfo patchInfo, in NcaMetaDataHashDataInfo metaDataHashDataInfo,
+        IHash256GeneratorFactory hashGeneratorFactory)
     {
         throw new NotImplementedException();
     }
 
     private Result CreateAesCtrExStorageMetaStorage(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IStorage> baseStorage, long offset, NcaFsHeader.EncryptionType encryptionType,
+        ref readonly SharedRef<IStorage> baseStorage, long offset, NcaFsHeader.EncryptionType encryptionType,
         in NcaAesCtrUpperIv upperIv, in NcaPatchInfo patchInfo)
     {
         throw new NotImplementedException();
     }
 
     private Result CreateAesCtrExStorage(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<AesCtrCounterExtendedStorage> outAesCtrExStorage, ref SharedRef<IStorage> baseStorage,
-        ref SharedRef<IStorage> aesCtrExMetaStorage, long counterOffset, in NcaAesCtrUpperIv upperIv,
+        ref SharedRef<AesCtrCounterExtendedStorage> outAesCtrExStorage, ref readonly SharedRef<IStorage> baseStorage,
+        ref readonly SharedRef<IStorage> aesCtrExMetaStorage, long counterOffset, in NcaAesCtrUpperIv upperIv,
         in NcaPatchInfo patchInfo)
     {
         throw new NotImplementedException();
     }
 
     private Result CreateIndirectStorageMetaStorage(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IStorage> baseStorage, in NcaPatchInfo patchInfo)
+        ref readonly SharedRef<IStorage> baseStorage, in NcaPatchInfo patchInfo)
     {
         throw new NotImplementedException();
     }
 
     private Result CreateIndirectStorage(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IndirectStorage> outIndirectStorage, ref SharedRef<IStorage> baseStorage,
-        ref SharedRef<IStorage> originalDataStorage, ref SharedRef<IStorage> indirectStorageMetaStorage,
-        in NcaPatchInfo patchInfo)
+        ref SharedRef<IndirectStorage> outIndirectStorage, ref readonly SharedRef<IStorage> baseStorage,
+        ref readonly SharedRef<IStorage> originalDataStorage,
+        ref readonly SharedRef<IStorage> indirectStorageMetaStorage, in NcaPatchInfo patchInfo)
     {
         throw new NotImplementedException();
     }
 
-    private Result CreateSha256Storage(ref SharedRef<IStorage> outStorage, ref SharedRef<IStorage> baseStorage,
+    private Result CreateSha256Storage(ref SharedRef<IStorage> outStorage, ref readonly SharedRef<IStorage> baseStorage,
         in NcaFsHeader.HashData.HierarchicalSha256Data sha256Data, IHash256GeneratorFactory hashGeneratorFactory)
     {
         throw new NotImplementedException();
     }
 
     private Result CreateIntegrityVerificationStorage(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IStorage> baseStorage, in NcaFsHeader.HashData.IntegrityMetaInfo metaInfo,
-        IHash256GeneratorFactory hashGeneratorFactory)
-    {
-        throw new NotImplementedException();
-    }
-
-    private Result CreateIntegrityVerificationStorageImpl(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IStorage> baseStorage, in NcaFsHeader.HashData.IntegrityMetaInfo metaInfo, long layerInfoOffset,
-        int maxDataCacheEntries, int maxHashCacheEntries, sbyte bufferLevel,
+        ref readonly SharedRef<IStorage> baseStorage, in NcaFsHeader.HashData.IntegrityMetaInfo metaInfo,
         IHash256GeneratorFactory hashGeneratorFactory)
     {
         throw new NotImplementedException();
     }
 
     private Result CreateIntegrityVerificationStorageForMeta(ref SharedRef<IStorage> outStorage,
-        ref SharedRef<IStorage> outLayerInfoStorage, ref SharedRef<IStorage> baseStorage, long offset,
+        ref SharedRef<IStorage> outLayerInfoStorage, ref readonly SharedRef<IStorage> baseStorage, long offset,
         in NcaMetaDataHashDataInfo metaDataHashDataInfo, IHash256GeneratorFactory hashGeneratorFactory)
+    {
+        throw new NotImplementedException();
+    }
+
+    private Result CreateIntegrityVerificationStorageImpl(ref SharedRef<IStorage> outStorage,
+        ref readonly SharedRef<IStorage> baseStorage, in NcaFsHeader.HashData.IntegrityMetaInfo metaInfo,
+        long layerInfoOffset, int maxDataCacheEntries, int maxHashCacheEntries, sbyte bufferLevel,
+        IHash256GeneratorFactory hashGeneratorFactory)
     {
         throw new NotImplementedException();
     }
 
     public static Result CreateCompressedStorage(ref SharedRef<IStorage> outStorage,
         ref SharedRef<CompressedStorage> outCompressedStorage, ref SharedRef<IStorage> outMetaStorage,
-        ref SharedRef<IStorage> baseStorage, in NcaCompressionInfo compressionInfo,
+        ref readonly SharedRef<IStorage> baseStorage, in NcaCompressionInfo compressionInfo,
         GetDecompressorFunction getDecompressor, MemoryResource allocator, IBufferManager bufferManager)
     {
         throw new NotImplementedException();
     }
 
-    public Result CreateCompressedStorage(ref SharedRef<IStorage> outStorage,
+    private Result CreateCompressedStorage(ref SharedRef<IStorage> outStorage,
         ref SharedRef<CompressedStorage> outCompressedStorage, ref SharedRef<IStorage> outMetaStorage,
-        ref SharedRef<IStorage> baseStorage, in NcaCompressionInfo compressionInfo)
+        ref readonly SharedRef<IStorage> baseStorage, in NcaCompressionInfo compressionInfo)
     {
         throw new NotImplementedException();
     }
 
-    public Result CreateRegionSwitchStorage(ref SharedRef<IStorage> outStorage, NcaFsHeaderReader headerReader,
-        ref SharedRef<IStorage> insideRegionStorage, ref SharedRef<IStorage> outsideRegionStorage)
+    private Result CreateRegionSwitchStorage(ref SharedRef<IStorage> outStorage, in NcaFsHeaderReader headerReader,
+        ref readonly SharedRef<IStorage> insideRegionStorage, ref readonly SharedRef<IStorage> outsideRegionStorage)
     {
         throw new NotImplementedException();
     }

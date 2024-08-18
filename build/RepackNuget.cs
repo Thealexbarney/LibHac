@@ -9,7 +9,6 @@ using System.Xml.Linq;
 using ICSharpCode.SharpZipLib.Zip;
 using Nuke.Common.IO;
 using Nuke.Common.Tools.NuGet;
-using static Nuke.Common.IO.FileSystemTasks;
 
 namespace LibHacBuild;
 

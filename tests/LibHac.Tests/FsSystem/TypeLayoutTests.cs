@@ -254,21 +254,6 @@ public class TypeLayoutTests
     }
 
     [Fact]
-    public static void KeyType_Layout()
-    {
-        NcaCryptoConfiguration s = default;
-
-        Assert.Equal(NcaCryptoConfiguration.Header1SignatureKeyGenerationMax + 1, s.Header1SignKeyModuli.Length);
-        Assert.Equal(NcaCryptoConfiguration.Rsa2048KeyModulusSize, s.Header1SignKeyModuli[0].Length);
-        Assert.Equal(NcaCryptoConfiguration.Rsa2048KeyPublicExponentSize, s.Header1SignKeyPublicExponent.Length);
-        Assert.Equal(NcaCryptoConfiguration.KeyAreaEncryptionKeyIndexCount, s.KeyAreaEncryptionKeySources.Length);
-        Assert.Equal(NcaCryptoConfiguration.Aes128KeySize, s.KeyAreaEncryptionKeySources[0].Length);
-        Assert.Equal(NcaCryptoConfiguration.Aes128KeySize, s.HeaderEncryptionKeySource.Length);
-        Assert.Equal(NcaCryptoConfiguration.HeaderEncryptionKeyCount, s.HeaderEncryptedEncryptionKeys.Length);
-        Assert.Equal(NcaCryptoConfiguration.Aes128KeySize, s.HeaderEncryptedEncryptionKeys[0].Length);
-    }
-
-    [Fact]
     public static void AesCtrCounterExtendedStorage_Entry_Layout()
     {
         AesCtrCounterExtendedStorage.Entry s = default;

@@ -8,9 +8,9 @@ namespace LibHac.FsSrv.FsCreator;
 public class RomFileSystemCreator : IRomFileSystemCreator
 {
     // todo: Implement properly
-    public Result Create(ref SharedRef<IFileSystem> outFileSystem, ref SharedRef<IStorage> romFsStorage)
+    public Result Create(ref SharedRef<IFileSystem> outFileSystem, ref readonly SharedRef<IStorage> romFsStorage)
     {
-        outFileSystem.Reset(new RomFsFileSystem(ref romFsStorage));
+        outFileSystem.Reset(new RomFsFileSystem(in romFsStorage));
         return Result.Success;
     }
 }

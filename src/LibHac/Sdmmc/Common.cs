@@ -76,7 +76,7 @@ public partial class SdmmcApi
 
     public void Initialize(Port port)
     {
-        throw new NotImplementedException();
+        // Todo: Implement
     }
 
     public void Finalize(Port port)

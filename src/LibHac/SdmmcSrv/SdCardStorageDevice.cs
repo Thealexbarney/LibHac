@@ -20,18 +20,18 @@ internal class SdCardStorageDevice : SdmmcStorageInterfaceAdapter, IStorageDevic
     private WeakRef<SdCardStorageDevice> _selfReference;
     private readonly SdmmcApi _sdmmc;
 
-    private SdCardStorageDevice(ref SharedRef<ISdmmcDeviceManager> manager, SdmmcHandle handle, SdmmcApi sdmmc)
+    private SdCardStorageDevice(ref readonly SharedRef<ISdmmcDeviceManager> manager, SdmmcHandle handle, SdmmcApi sdmmc)
         : base(manager.Get.GetStorage())
     {
-        _manager = SharedRef<ISdmmcDeviceManager>.CreateMove(ref manager);
+        _manager = SharedRef<ISdmmcDeviceManager>.CreateCopy(in manager);
         _handle = handle;
         _sdmmc = sdmmc;
     }
 
-    public static SharedRef<SdCardStorageDevice> CreateShared(ref SharedRef<ISdmmcDeviceManager> manager,
+    public static SharedRef<SdCardStorageDevice> CreateShared(ref readonly SharedRef<ISdmmcDeviceManager> manager,
         SdmmcHandle handle, SdmmcApi sdmmc)
     {
-        var device = new SdCardStorageDevice(ref manager, handle, sdmmc);
+        var device = new SdCardStorageDevice(in manager, handle, sdmmc);
 
         using var sharedDevice = new SharedRef<SdCardStorageDevice>(device);
         device._selfReference.Set(in sharedDevice);
@@ -73,7 +73,7 @@ internal class SdCardStorageDevice : SdmmcStorageInterfaceAdapter, IStorageDevic
         using SharedRef<SdCardStorageDevice> storageDevice = SharedRef<SdCardStorageDevice>.Create(in _selfReference);
 
         using var deviceOperator =
-            new SharedRef<SdCardDeviceOperator>(new SdCardDeviceOperator(ref storageDevice.Ref, _sdmmc));
+            new SharedRef<SdCardDeviceOperator>(new SdCardDeviceOperator(in storageDevice, _sdmmc));
 
         if (!deviceOperator.HasValue)
             return ResultFs.AllocationMemoryFailedInSdmmcStorageServiceA.Log();

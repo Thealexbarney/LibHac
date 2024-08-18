@@ -10,24 +10,26 @@ namespace LibHac.FsSrv.FsCreator;
 
 public interface ISaveDataFileSystemCreator : IDisposable
 {
-    Result CreateRaw(ref SharedRef<IFile> outFile, in SharedRef<IFileSystem> fileSystem, ulong saveDataId, OpenMode openMode);
+    Result CreateRaw(ref SharedRef<IFile> outFile, ref readonly SharedRef<IFileSystem> fileSystem, ulong saveDataId, OpenMode openMode);
 
-    Result Create(ref SharedRef<ISaveDataFileSystem> outFileSystem, ref SharedRef<IFileSystem> baseFileSystem,
+    Result Create(ref SharedRef<ISaveDataFileSystem> outFileSystem, ref readonly SharedRef<IFileSystem> baseFileSystem,
         SaveDataSpaceId spaceId, ulong saveDataId, bool allowDirectorySaveData, bool isDeviceUniqueMac,
         bool isJournalingSupported, bool isMultiCommitSupported, bool openReadOnly, bool openShared,
         ISaveDataCommitTimeStampGetter timeStampGetter, bool isReconstructible);
 
     Result CreateExtraDataAccessor(ref SharedRef<ISaveDataExtraDataAccessor> outExtraDataAccessor,
-        in SharedRef<IStorage> baseStorage, bool isDeviceUniqueMac, bool isIntegritySaveData, bool isReconstructible);
+        ref readonly SharedRef<IStorage> baseStorage, bool isDeviceUniqueMac, bool isIntegritySaveData,
+        bool isReconstructible);
 
-    Result CreateInternalStorage(ref SharedRef<IFileSystem> outFileSystem, in SharedRef<IFileSystem> baseFileSystem,
-        SaveDataSpaceId spaceId, ulong saveDataId, bool isDeviceUniqueMac, bool useUniqueKey1,
-        ISaveDataCommitTimeStampGetter timeStampGetter, bool isReconstructible);
+    Result CreateInternalStorage(ref SharedRef<IFileSystem> outFileSystem,
+        ref readonly SharedRef<IFileSystem> baseFileSystem, SaveDataSpaceId spaceId, ulong saveDataId,
+        bool isDeviceUniqueMac, bool useUniqueKey1, ISaveDataCommitTimeStampGetter timeStampGetter,
+        bool isReconstructible);
 
-    Result RecoverMasterHeader(in SharedRef<IFileSystem> baseFileSystem, ulong saveDataId, IBufferManager bufferManager,
-        bool isDeviceUniqueMac, bool isReconstructible);
+    Result RecoverMasterHeader(ref readonly SharedRef<IFileSystem> baseFileSystem, ulong saveDataId,
+        IBufferManager bufferManager, bool isDeviceUniqueMac, bool isReconstructible);
 
-    Result UpdateMac(in SharedRef<IFileSystem> baseFileSystem, ulong saveDataId, bool isDeviceUniqueMac,
+    Result UpdateMac(ref readonly SharedRef<IFileSystem> baseFileSystem, ulong saveDataId, bool isDeviceUniqueMac,
         bool isReconstructible);
 
     Result Format(in ValueSubStorage saveImageStorage, long blockSize, int countExpandMax, uint blockCount,
@@ -47,7 +49,7 @@ public interface ISaveDataFileSystemCreator : IDisposable
     void SetMacGenerationSeed(ReadOnlySpan<byte> seed);
 
     Result IsProvisionallyCommittedSaveData(out bool outIsProvisionallyCommitted,
-        in SharedRef<IFileSystem> baseFileSystem, in SaveDataInfo info, bool isDeviceUniqueMac,
+        ref readonly SharedRef<IFileSystem> baseFileSystem, in SaveDataInfo info, bool isDeviceUniqueMac,
         ISaveDataCommitTimeStampGetter timeStampGetter, bool isReconstructible);
 
     IMacGenerator GetMacGenerator(bool isDeviceUniqueMac, bool isTemporaryTransferSave);

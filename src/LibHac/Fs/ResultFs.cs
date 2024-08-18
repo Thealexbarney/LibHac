@@ -316,7 +316,7 @@ public static class ResultFs
                 /// <summary>Error code: 2002-2557; Inner value: 0x13fa02</summary>
                 public static Result.Base GameCardInvalidCa10Certificate => new Result.Base(ModuleFs, 2557);
                 /// <summary>Error code: 2002-2558; Inner value: 0x13fc02</summary>
-                public static Result.Base GameCardInvalidCa10CardHeader => new Result.Base(ModuleFs, 2558);
+                public static Result.Base GameCardInvalidResponseVerificationValue => new Result.Base(ModuleFs, 2558);
 
             /// <summary>Error code: 2002-2565; Range: 2565-2595; Inner value: 0x140a02</summary>
             public static Result.Base GameCardCommunicationFailure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 2565, 2595); }
@@ -387,7 +387,7 @@ public static class ResultFs
                 /// <summary>Error code: 2002-2659; Inner value: 0x14c602</summary>
                 public static Result.Base GameCardExchangeRandomValuesFailure => new Result.Base(ModuleFs, 2659);
                 /// <summary>Error code: 2002-2660; Inner value: 0x14c802</summary>
-                public static Result.Base GameCardAsicChallengeCardExistenceFailure => new Result.Base(ModuleFs, 2660);
+                public static Result.Base GameCardChallengeCardExistenceFailure => new Result.Base(ModuleFs, 2660);
                 /// <summary>Error code: 2002-2663; Inner value: 0x14ce02</summary>
                 public static Result.Base GameCardInitializeAsicTimeOut => new Result.Base(ModuleFs, 2663);
 
@@ -1699,6 +1699,14 @@ public static class ResultFs
             public static Result.Base UnexpectedInCompressedStorageD => new Result.Base(ModuleFs, 5327);
             /// <summary>Error code: 2002-5328; Inner value: 0x29a002</summary>
             public static Result.Base UnexpectedInPathA => new Result.Base(ModuleFs, 5328);
+            /// <summary>Error code: 2002-5333; Inner value: 0x29aa02</summary>
+            public static Result.Base UnexpectedInSaveDataFileSystemCoreImplA => new Result.Base(ModuleFs, 5333);
+            /// <summary>Error code: 2002-5334; Inner value: 0x29ac02</summary>
+            public static Result.Base UnexpectedInIntegritySaveDataFileSystemA => new Result.Base(ModuleFs, 5334);
+            /// <summary>Error code: 2002-5335; Inner value: 0x29ae02</summary>
+            public static Result.Base UnexpectedInJournalIntegritySaveDataFileSystemD => new Result.Base(ModuleFs, 5335);
+            /// <summary>Error code: 2002-5336; Inner value: 0x29b002</summary>
+            public static Result.Base UnexpectedInAlignmentMatchableFileSystemA => new Result.Base(ModuleFs, 5336);
 
         /// <summary>Error code: 2002-6000; Range: 6000-6499; Inner value: 0x2ee002</summary>
         public static Result.Base PreconditionViolation { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6000, 6499); }
@@ -1993,15 +2001,21 @@ public static class ResultFs
             /// <summary>Error code: 2002-6462; Inner value: 0x327c02</summary>
             public static Result.Base GlobalFileDataCacheAlreadyEnabled => new Result.Base(ModuleFs, 6462);
             /// <summary>The provided file system has already been added to the multi-commit manager.<br/>Error code: 2002-6463; Inner value: 0x327e02</summary>
-            public static Result.Base MultiCommitHasOverlappingTargets => new Result.Base(ModuleFs, 6463);
+            public static Result.Base MultiCommitFileSystemDuplicated => new Result.Base(ModuleFs, 6463);
             /// <summary>A multi-commit was performed while another multi-commit operation was already running.<br/>Error code: 2002-6464; Inner value: 0x328002</summary>
-            public static Result.Base MultiCommitAlreadyInProgress => new Result.Base(ModuleFs, 6464);
+            public static Result.Base SaveDataMultiCommitRepeated => new Result.Base(ModuleFs, 6464);
             /// <summary>Error code: 2002-6465; Inner value: 0x328202</summary>
             public static Result.Base UserNotExist => new Result.Base(ModuleFs, 6465);
             /// <summary>Error code: 2002-6466; Inner value: 0x328402</summary>
             public static Result.Base DefaultGlobalFileDataCacheEnabled => new Result.Base(ModuleFs, 6466);
             /// <summary>Error code: 2002-6467; Inner value: 0x328602</summary>
             public static Result.Base SaveDataRootPathUnavailable => new Result.Base(ModuleFs, 6467);
+            /// <summary>Error code: 2002-6470; Inner value: 0x328c02</summary>
+            public static Result.Base RomMountDivisionSizeUnitCountLimit => new Result.Base(ModuleFs, 6470);
+            /// <summary>Error code: 2002-6471; Inner value: 0x328e02</summary>
+            public static Result.Base RomMountCountLimit => new Result.Base(ModuleFs, 6471);
+            /// <summary>Error code: 2002-6472; Inner value: 0x329002</summary>
+            public static Result.Base AocMountDivisionSizeUnitCountLimit => new Result.Base(ModuleFs, 6472);
 
         /// <summary>Error code: 2002-6600; Range: 6600-6699; Inner value: 0x339002</summary>
         public static Result.Base NotFound { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 6600, 6699); }
@@ -2112,8 +2126,8 @@ public static class ResultFs
                 /// <summary>Error code: 2002-7114; Inner value: 0x379402</summary>
                 public static Result.Base InvalidRamDiskSaveDataCoreDataStorageSize => new Result.Base(ModuleFs, 7114);
 
-            /// <summary>Error code: 2002-7121; Range: 7121-7139; Inner value: 0x37a202</summary>
-            public static Result.Base RamDiskDatabaseCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 7121, 7139); }
+            /// <summary>Error code: 2002-7121; Range: 7121-7129; Inner value: 0x37a202</summary>
+            public static Result.Base RamDiskDatabaseCorrupted { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => new Result.Base(ModuleFs, 7121, 7129); }
                 /// <summary>Error code: 2002-7122; Inner value: 0x37a402</summary>
                 public static Result.Base InvalidRamDiskAllocationTableBlock => new Result.Base(ModuleFs, 7122);
                 /// <summary>Error code: 2002-7123; Inner value: 0x37a602</summary>

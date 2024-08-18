@@ -211,7 +211,7 @@ internal class MmcManager : IStorageDeviceManager, IStorageDeviceOperator, ISdmm
         using SharedRef<ISdmmcDeviceManager> manager = SharedRef<ISdmmcDeviceManager>.Create(in _selfReference);
 
         using SharedRef<MmcUserDataPartitionStorageDevice> storageDevice =
-            MmcUserDataPartitionStorageDevice.CreateShared(ref manager.Ref, MmcHandle, _sdmmc);
+            MmcUserDataPartitionStorageDevice.CreateShared(in manager, MmcHandle, _sdmmc);
 
         outStorageDevice.SetByMove(ref storageDevice.Ref);
     }
@@ -221,7 +221,7 @@ internal class MmcManager : IStorageDeviceManager, IStorageDeviceOperator, ISdmm
         using SharedRef<ISdmmcDeviceManager> manager = SharedRef<ISdmmcDeviceManager>.Create(in _selfReference);
 
         using SharedRef<MmcBootPartitionStorageDevice> storageDevice =
-            MmcBootPartitionStorageDevice.CreateShared(partition, ref manager.Ref, MmcHandle, _sdmmc);
+            MmcBootPartitionStorageDevice.CreateShared(partition, in manager, MmcHandle, _sdmmc);
 
         outStorageDevice.SetByMove(ref storageDevice.Ref);
     }

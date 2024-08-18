@@ -1,77 +1,84 @@
-﻿using System;
 using LibHac.Common;
-using LibHac.Common.Keys;
 using LibHac.Fs;
-using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
-using LibHac.Tools.FsSystem;
-using LibHac.Tools.FsSystem.NcaUtils;
-using NcaFsHeader = LibHac.Tools.FsSystem.NcaUtils.NcaFsHeader;
 
 namespace LibHac.FsSrv.FsCreator;
 
+/// <summary>
+/// Opens the partitions in NCAs as <see cref="IStorage"/>s.
+/// </summary>
+/// <remarks>Based on nnSdk 17.5.0 (FS 17.0.0)</remarks>
 public class StorageOnNcaCreator : IStorageOnNcaCreator
 {
-    // ReSharper disable once UnusedMember.Local
-    private bool IsEnabledProgramVerification { get; set; }
-    private KeySet KeySet { get; }
+    private MemoryResource _memoryResource;
+    private NcaCompressionConfiguration _compressionConfig;
+    private IBufferManager _bufferManager;
+    private NcaReaderInitializer _ncaReaderInitializer;
+    private IHash256GeneratorFactorySelector _hashGeneratorFactorySelector;
 
-    public StorageOnNcaCreator(KeySet keySet)
+    public StorageOnNcaCreator(MemoryResource memoryResource, IBufferManager bufferManager,
+        NcaReaderInitializer ncaReaderInitializer, in NcaCompressionConfiguration compressionConfig,
+        IHash256GeneratorFactorySelector hashGeneratorFactorySelector)
     {
-        KeySet = keySet;
+        _memoryResource = memoryResource;
+        _compressionConfig = compressionConfig;
+        _bufferManager = bufferManager;
+        _ncaReaderInitializer = ncaReaderInitializer;
+        _hashGeneratorFactorySelector = hashGeneratorFactorySelector;
     }
 
-    // todo: Implement NcaReader and other Nca classes
-    public Result Create(ref SharedRef<IStorage> outStorage, out NcaFsHeader fsHeader, Nca nca,
-        int fsIndex, bool isCodeFs)
+    public Result Create(ref SharedRef<IStorage> outStorage,
+        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, ref NcaFsHeaderReader outHeaderReader,
+        ref readonly SharedRef<NcaReader> ncaReader, int fsIndex)
     {
-        UnsafeHelpers.SkipParamInit(out fsHeader);
+        var ncaFsDriver = new NcaFileSystemDriver(in ncaReader, _memoryResource, _bufferManager, _hashGeneratorFactorySelector);
 
-        Result res = OpenStorage(out IStorage storageTemp, nca, fsIndex);
+        using var storage = new SharedRef<IStorage>();
+        using var storageAccessSplitter = new SharedRef<IAsynchronousAccessSplitter>();
+        Result res = RomResultConverter.ConvertRomResult(ncaFsDriver.OpenStorage(ref storage.Ref,
+            ref storageAccessSplitter.Ref, ref outHeaderReader, fsIndex));
         if (res.IsFailure()) return res.Miss();
 
-        if (isCodeFs)
-        {
-            using var codeFs = new PartitionFileSystem();
-            res = codeFs.Initialize(storageTemp);
-            if (res.IsFailure()) return res.Miss();
+        using var resultConvertStorage = new SharedRef<RomResultConvertStorage>(new RomResultConvertStorage(in storage));
 
-            res = VerifyAcidSignature(codeFs, nca);
-            if (res.IsFailure()) return res.Miss();
-        }
-
-        outStorage.Reset(storageTemp);
-        fsHeader = nca.GetFsHeader(fsIndex);
+        outStorage.SetByMove(ref resultConvertStorage.Ref);
+        outStorageAccessSplitter.SetByMove(ref storageAccessSplitter.Ref);
 
         return Result.Success;
     }
 
-    public Result CreateWithPatch(ref SharedRef<IStorage> outStorage, out NcaFsHeader fsHeader,
-        Nca baseNca, Nca patchNca, int fsIndex, bool isCodeFs)
+    public Result CreateWithPatch(ref SharedRef<IStorage> outStorage,
+        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, ref NcaFsHeaderReader outHeaderReader,
+        ref readonly SharedRef<NcaReader> originalNcaReader, ref readonly SharedRef<NcaReader> currentNcaReader,
+        int fsIndex)
     {
-        throw new NotImplementedException();
-    }
+        var ncaFsDriver = new NcaFileSystemDriver(in originalNcaReader, in currentNcaReader, _memoryResource,
+            _bufferManager, _hashGeneratorFactorySelector);
 
-    public Result OpenNca(out Nca nca, IStorage ncaStorage)
-    {
-        nca = new Nca(KeySet, ncaStorage);
+        using var storage = new SharedRef<IStorage>();
+        using var storageAccessSplitter = new SharedRef<IAsynchronousAccessSplitter>();
+        Result res = RomResultConverter.ConvertRomResult(ncaFsDriver.OpenStorage(ref storage.Ref,
+            ref storageAccessSplitter.Ref, ref outHeaderReader, fsIndex));
+        if (res.IsFailure()) return res.Miss();
+
+        using var resultConvertStorage = new SharedRef<RomResultConvertStorage>(new RomResultConvertStorage(in storage));
+
+        outStorage.SetByMove(ref resultConvertStorage.Ref);
+        outStorageAccessSplitter.SetByMove(ref storageAccessSplitter.Ref);
+
         return Result.Success;
     }
 
-    public Result VerifyAcidSignature(IFileSystem codeFileSystem, Nca nca)
+    public Result CreateNcaReader(ref SharedRef<NcaReader> outReader, ref readonly SharedRef<IStorage> baseStorage,
+        ContentAttributes contentAttributes)
     {
-        // todo
-        return Result.Success;
-    }
+        using var ncaReader = new SharedRef<NcaReader>();
 
-    private Result OpenStorage(out IStorage storage, Nca nca, int fsIndex)
-    {
-        UnsafeHelpers.SkipParamInit(out storage);
+        Result res = RomResultConverter.ConvertRomResult(_ncaReaderInitializer(ref ncaReader.Ref, in baseStorage,
+            in _compressionConfig, _hashGeneratorFactorySelector, contentAttributes));
+        if (res.IsFailure()) return res.Miss();
 
-        if (!nca.SectionExists(fsIndex))
-            return ResultFs.PartitionNotFound.Log();
-
-        storage = nca.OpenStorage(fsIndex, IntegrityCheckLevel.ErrorOnInvalid);
+        outReader.SetByMove(ref ncaReader.Ref);
         return Result.Success;
     }
 }

@@ -88,6 +88,42 @@ public class TypeLayoutTests
     }
 
     [Fact]
+    public static void GameCardAsicCertificateSet_Layout()
+    {
+        var s = new GameCardAsicCertificateSet();
+
+        Assert.Equal(Values.GcCertificateSetSize, Unsafe.SizeOf<GameCardAsicCertificateSet>());
+
+        Assert.Equal(0x000, GetOffset(in s, in s.Certificate));
+        Assert.Equal(0x400, GetOffset(in s, in s.SerialNumber));
+        Assert.Equal(0x410, GetOffset(in s, in s.PublicKeyModulus));
+        Assert.Equal(0x510, GetOffset(in s, in s.PublicKeyExponent));
+
+        Assert.Equal(Values.GcCertificateSize, s.Certificate.Length);
+        Assert.Equal(Values.GcAsicSerialNumberLength, s.SerialNumber.Length);
+        Assert.Equal(Values.GcRsaKeyLength, s.PublicKeyModulus.Length);
+        Assert.Equal(Values.GcRsaPublicExponentLength, s.PublicKeyExponent.Length);
+    }
+
+    [Fact]
+    public static void CardUid_Layout()
+    {
+        var s = new CardUid();
+
+        Assert.Equal(0x40, Unsafe.SizeOf<CardUid>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.MakerCode));
+        Assert.Equal(0x01, GetOffset(in s, in s.Version));
+        Assert.Equal(0x02, GetOffset(in s, in s.CardType));
+        Assert.Equal(0x03, GetOffset(in s, in s.UniqueData));
+        Assert.Equal(0x0C, GetOffset(in s, in s.Random));
+        Assert.Equal(0x10, GetOffset(in s, in s.PlatformFlag));
+        Assert.Equal(0x11, GetOffset(in s, in s.Reserved));
+        Assert.Equal(0x1C, GetOffset(in s, in s.CardId1));
+        Assert.Equal(0x20, GetOffset(in s, in s.Mac));
+    }
+
+    [Fact]
     public static void CardInitialDataPayload_Layout()
     {
         var s = new CardInitialDataPayload();
@@ -245,5 +281,65 @@ public class TypeLayoutTests
         Assert.Equal(0x100, GetOffset(in s, in s.Unk100));
         Assert.Equal(0x130, GetOffset(in s, in s.Modulus));
         Assert.Equal(0x230, GetOffset(in s, in s.Unk230));
+    }
+
+    [Fact]
+    public static void CardInitReceiveData_Layout()
+    {
+        var s = new CardInitReceiveData();
+
+        Assert.Equal(8, Unsafe.SizeOf<CardInitReceiveData>());
+
+        Assert.Equal(0, GetOffset(in s, in s.CupVersion));
+        Assert.Equal(4, GetOffset(in s, in s.CardId1));
+    }
+
+    [Fact]
+    public static void CardSecurityInformation_Layout()
+    {
+        var s = new CardSecurityInformation();
+
+        Assert.Equal(0x800, Unsafe.SizeOf<CardSecurityInformation>());
+
+        Assert.Equal(0x000, GetOffset(in s, in s.MemoryInterfaceMode));
+        Assert.Equal(0x004, GetOffset(in s, in s.AsicStatus));
+        Assert.Equal(0x008, GetOffset(in s, in s.Id1));
+        Assert.Equal(0x00C, GetOffset(in s, in s.Id2));
+        Assert.Equal(0x010, GetOffset(in s, in s.Uid));
+        Assert.Equal(0x050, GetOffset(in s, in s.Reserved));
+        Assert.Equal(0x1E0, GetOffset(in s, in s.Mac));
+        Assert.Equal(0x200, GetOffset(in s, in s.CardCertificate));
+        Assert.Equal(0x600, GetOffset(in s, in s.InitialData));
+    }
+
+    [Fact]
+    public static void TotalAsicInfo_Layout()
+    {
+        var s = new TotalAsicInfo();
+
+        Assert.Equal(0xC, Unsafe.SizeOf<TotalAsicInfo>());
+
+        Assert.Equal(0x0, GetOffset(in s, in s.InitializeCount));
+        Assert.Equal(0x4, GetOffset(in s, in s.AwakenCount));
+        Assert.Equal(0x8, GetOffset(in s, in s.AwakenFailureCount));
+        Assert.Equal(0xA, GetOffset(in s, in s.Reserved));
+    }
+
+    [Fact]
+    public static void CardAccessInternalInfo_Layout()
+    {
+        var s = new CardAccessInternalInfo();
+
+        Assert.Equal(0x1C, Unsafe.SizeOf<CardAccessInternalInfo>());
+
+        Assert.Equal(0x00, GetOffset(in s, in s.RetryLimitOutNum));
+        Assert.Equal(0x02, GetOffset(in s, in s.AsicReinitializeCount));
+        Assert.Equal(0x04, GetOffset(in s, in s.AsicReinitializeFailureNum));
+        Assert.Equal(0x06, GetOffset(in s, in s.RefreshSuccessCount));
+        Assert.Equal(0x08, GetOffset(in s, in s.LastReadErrorPageAddress));
+        Assert.Equal(0x0C, GetOffset(in s, in s.LastReadErrorPageCount));
+        Assert.Equal(0x10, GetOffset(in s, in s.ReadCountFromInsert));
+        Assert.Equal(0x14, GetOffset(in s, in s.ReadCountFromAwaken));
+        Assert.Equal(0x18, GetOffset(in s, in s.LastAsicReinitializeFailureResult));
     }
 }

@@ -26,9 +26,9 @@ namespace LibHac.Fs
         private readonly FileSystemClient _fsClient;
         private SharedRef<ISaveDataInfoReader> _reader;
 
-        internal SaveDataIterator(FileSystemClient fsClient, ref SharedRef<ISaveDataInfoReader> reader)
+        internal SaveDataIterator(FileSystemClient fsClient, ref readonly SharedRef<ISaveDataInfoReader> reader)
         {
-            _reader = SharedRef<ISaveDataInfoReader>.CreateMove(ref reader);
+            _reader = SharedRef<ISaveDataInfoReader>.CreateCopy(in reader);
             _fsClient = fsClient;
         }
 
@@ -560,7 +560,7 @@ namespace LibHac.Fs.Shim
             Result res = fileSystemProxy.Get.OpenSaveDataInfoReaderBySaveDataSpaceId(ref reader.Ref, spaceId);
             if (res.IsFailure()) return res.Miss();
 
-            using var iterator = new UniqueRef<SaveDataIterator>(new SaveDataIterator(fs.Fs, ref reader.Ref));
+            using var iterator = new UniqueRef<SaveDataIterator>(new SaveDataIterator(fs.Fs, in reader));
 
             if (!iterator.HasValue)
                 return ResultFs.AllocationMemoryFailedInSaveDataManagementA.Log();
@@ -579,7 +579,7 @@ namespace LibHac.Fs.Shim
             Result res = fileSystemProxy.Get.OpenSaveDataInfoReaderWithFilter(ref reader.Ref, spaceId, in filter);
             if (res.IsFailure()) return res.Miss();
 
-            using var iterator = new UniqueRef<SaveDataIterator>(new SaveDataIterator(fs.Fs, ref reader.Ref));
+            using var iterator = new UniqueRef<SaveDataIterator>(new SaveDataIterator(fs.Fs, in reader));
 
             if (!iterator.HasValue)
                 return ResultFs.AllocationMemoryFailedInSaveDataManagementA.Log();

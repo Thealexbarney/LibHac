@@ -204,7 +204,7 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,2555,,,,GameCardInvalidT1CardCertificate,
 
 2,2557,,,,GameCardInvalidCa10Certificate,
-2,2558,,,,GameCardInvalidCa10CardHeader,
+2,2558,,,,GameCardInvalidResponseVerificationValue,
 
 2,2565,2595,,,GameCardCommunicationFailure,
 2,2566,,,,GameCardFinishOperationFailed,
@@ -241,7 +241,7 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,2655,,,,GameCardChallengeAndResponseFailure,
 2,2658,,,,GameCardChangeModeToSecureFailure,
 2,2659,,,,GameCardExchangeRandomValuesFailure,
-2,2660,,,,GameCardAsicChallengeCardExistenceFailure,
+2,2660,,,,GameCardChallengeCardExistenceFailure,
 2,2663,,,,GameCardInitializeAsicTimeOut,
 
 2,2665,2669,,,GameCardSplFailure,
@@ -934,6 +934,10 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,5326,,,,UnexpectedInCompressedStorageC,
 2,5327,,,,UnexpectedInCompressedStorageD,
 2,5328,,,,UnexpectedInPathA,
+2,5333,,,,UnexpectedInSaveDataFileSystemCoreImplA,
+2,5334,,,,UnexpectedInIntegritySaveDataFileSystemA,
+2,5335,,,,UnexpectedInJournalIntegritySaveDataFileSystemD,
+2,5336,,,,UnexpectedInAlignmentMatchableFileSystemA,
 
 2,6000,6499,,,PreconditionViolation,
 2,6001,6199,,,InvalidArgument,
@@ -1085,11 +1089,14 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,6460,,,,GameCardLogoDataSizeInvalid,
 2,6461,,,,AllocatorAlignmentViolation,
 2,6462,,,,GlobalFileDataCacheAlreadyEnabled,
-2,6463,,,,MultiCommitHasOverlappingTargets,The provided file system has already been added to the multi-commit manager.
-2,6464,,,,MultiCommitAlreadyInProgress,A multi-commit was performed while another multi-commit operation was already running.
+2,6463,,,,MultiCommitFileSystemDuplicated,The provided file system has already been added to the multi-commit manager.
+2,6464,,,,SaveDataMultiCommitRepeated,A multi-commit was performed while another multi-commit operation was already running.
 2,6465,,,,UserNotExist,
 2,6466,,,,DefaultGlobalFileDataCacheEnabled,
 2,6467,,,,SaveDataRootPathUnavailable,
+2,6470,,,,RomMountDivisionSizeUnitCountLimit,
+2,6471,,,,RomMountCountLimit,
+2,6472,,,,AocMountDivisionSizeUnitCountLimit,
 
 2,6600,6699,,,NotFound,
 2,6602,,,,FileNotFound,
@@ -1150,7 +1157,7 @@ Module,DescriptionStart,DescriptionEnd,Flags,Namespace,Name,Summary
 2,7113,,,,InvalidRamDiskSaveDataFileReadOffset,
 2,7114,,,,InvalidRamDiskSaveDataCoreDataStorageSize,
 
-2,7121,7139,,,RamDiskDatabaseCorrupted,
+2,7121,7129,,,RamDiskDatabaseCorrupted,
 2,7122,,,,InvalidRamDiskAllocationTableBlock,
 2,7123,,,,InvalidRamDiskKeyValueListElementIndex,
 2,7124,,,,InvalidRamDiskAllocationTableChainEntry,

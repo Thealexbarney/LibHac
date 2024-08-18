@@ -1,5 +1,7 @@
-﻿using LibHac.Common;
+﻿using System;
+using LibHac.Common;
 using LibHac.Common.Keys;
+using LibHac.Fs;
 using LibHac.FsSrv.FsCreator;
 using LibHac.FsSrv.Storage;
 using LibHac.FsSystem;
@@ -29,20 +31,22 @@ public class DefaultFsServerObjects
         var gcStorageCreator = new GameCardStorageCreator(fsServer);
 
         using var sharedRootFileSystem = new SharedRef<IFileSystem>(rootFileSystem);
-        using SharedRef<IFileSystem> sharedRootFileSystemCopy =
-            SharedRef<IFileSystem>.CreateCopy(in sharedRootFileSystem);
+
+        var memoryResource = new ArrayPoolMemoryResource();
+        IBufferManager bufferManager = null;
+        IHash256GeneratorFactorySelector ncaHashGeneratorFactorySelector = null;
 
         creators.RomFileSystemCreator = new RomFileSystemCreator();
         creators.PartitionFileSystemCreator = new PartitionFileSystemCreator();
-        creators.StorageOnNcaCreator = new StorageOnNcaCreator(keySet);
+        creators.StorageOnNcaCreator = new StorageOnNcaCreator(memoryResource, bufferManager, InitializeNcaReader, new NcaCompressionConfiguration(), ncaHashGeneratorFactorySelector);
         creators.TargetManagerFileSystemCreator = new TargetManagerFileSystemCreator();
         creators.SubDirectoryFileSystemCreator = new SubDirectoryFileSystemCreator();
         creators.SaveDataFileSystemCreator = new SaveDataFileSystemCreator(fsServer, null, randomGenerator);
         creators.GameCardStorageCreator = gcStorageCreator;
-        creators.GameCardFileSystemCreator = new GameCardFileSystemCreator(new ArrayPoolMemoryResource(), gcStorageCreator, fsServer);
+        creators.GameCardFileSystemCreator = new GameCardFileSystemCreator(memoryResource, gcStorageCreator, fsServer);
         creators.EncryptedFileSystemCreator = new EncryptedFileSystemCreator(keySet);
-        creators.BuiltInStorageFileSystemCreator = new EmulatedBisFileSystemCreator(ref sharedRootFileSystem.Ref);
-        creators.SdCardFileSystemCreator = new EmulatedSdCardFileSystemCreator(sdmmcNew, ref sharedRootFileSystemCopy.Ref);
+        creators.BuiltInStorageFileSystemCreator = new EmulatedBisFileSystemCreator(in sharedRootFileSystem);
+        creators.SdCardFileSystemCreator = new EmulatedSdCardFileSystemCreator(sdmmcNew, in sharedRootFileSystem);
 
         var storageDeviceManagerFactory = new EmulatedStorageDeviceManagerFactory(fsServer, sdmmcNew, gameCardNew, hasGameCard: true);
 
@@ -54,5 +58,12 @@ public class DefaultFsServerObjects
             GameCardNew = gameCardNew,
             StorageDeviceManagerFactory = storageDeviceManagerFactory
         };
+    }
+
+    public static Result InitializeNcaReader(ref SharedRef<NcaReader> outReader,
+        ref readonly SharedRef<IStorage> baseStorage, in NcaCompressionConfiguration compressionConfig,
+        IHash256GeneratorFactorySelector hashGeneratorFactorySelector, ContentAttributes contentAttributes)
+    {
+        throw new NotImplementedException();
     }
 }

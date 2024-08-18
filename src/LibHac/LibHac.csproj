@@ -5,6 +5,7 @@
     <VersionPrefix>0.20.0</VersionPrefix>
     <TargetFramework>net8.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -33,6 +34,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="" />
     <Compile Condition="Exists('Common\ResultNameResolver.Generated.cs')" Remove="Common\ResultNameResolver.Archive.cs" />
     <Compile Condition="Exists('Common\Keys\DefaultKeySet.Generated.cs')" Remove="Common\Keys\DefaultKeySet.Empty.cs" />
   </ItemGroup>

@@ -6,6 +6,7 @@ using LibHac.Fs.Impl;
 using LibHac.FsSrv.Sf;
 using LibHac.Ncm;
 using LibHac.Os;
+using LibHac.Sf;
 using static LibHac.Fs.Impl.AccessLogStrings;
 using IFileSystem = LibHac.Fs.Fsa.IFileSystem;
 using IFileSystemSf = LibHac.FsSrv.Sf.IFileSystem;
@@ -20,13 +21,13 @@ namespace LibHac.Fs.Shim;
 public static class Code
 {
     public static Result MountCode(this FileSystemClient fs, out CodeVerificationData verificationData,
-        U8Span mountName, U8Span path, ProgramId programId)
+        U8Span mountName, U8Span path, ContentAttributes attributes, ProgramId programId)
     {
         Result res;
         if (fs.Impl.IsEnabledAccessLog(AccessLogTarget.System))
         {
             Tick start = fs.Hos.Os.GetSystemTick();
-            res = Mount(fs, out verificationData, mountName, path, programId);
+            res = Mount(fs, out verificationData, mountName, path, attributes, programId);
             Tick end = fs.Hos.Os.GetSystemTick();
 
             Span<byte> logBuffer = stackalloc byte[0x300];
@@ -40,7 +41,7 @@ public static class Code
         }
         else
         {
-            res = Mount(fs, out verificationData, mountName, path, programId);
+            res = Mount(fs, out verificationData, mountName, path, attributes, programId);
         }
 
         fs.Impl.AbortIfNeeded(res);
@@ -52,7 +53,7 @@ public static class Code
         return Result.Success;
 
         static Result Mount(FileSystemClient fs, out CodeVerificationData verificationData,
-            U8Span mountName, U8Span path, ProgramId programId)
+            U8Span mountName, U8Span path, ContentAttributes attributes, ProgramId programId)
         {
             UnsafeHelpers.SkipParamInit(out verificationData);
 
@@ -71,12 +72,11 @@ public static class Code
 
             using var fileSystem = new SharedRef<IFileSystemSf>();
 
-            res = fileSystemProxy.Get.OpenCodeFileSystem(ref fileSystem.Ref, out verificationData, in sfPath,
-                programId);
+            res = fileSystemProxy.Get.OpenCodeFileSystem(ref fileSystem.Ref, OutBuffer.FromStruct(ref verificationData),
+                in sfPath, attributes, programId);
             if (res.IsFailure()) return res.Miss();
 
-            using var fileSystemAdapter =
-                new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(ref fileSystem.Ref));
+            using var fileSystemAdapter = new UniqueRef<IFileSystem>(new FileSystemServiceObjectAdapter(in fileSystem));
 
             if (!fileSystemAdapter.HasValue)
                 return ResultFs.AllocationMemoryFailedInCodeA.Log();

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -33,19 +34,19 @@ public static class SpanExtensions
 
 public static class SpanHelpers
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining), DebuggerStepThrough]
     public static Span<T> CreateSpan<T>(ref T reference, int length)
     {
         return MemoryMarshal.CreateSpan(ref reference, length);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining), DebuggerStepThrough]
     public static Span<T> AsSpan<T>(ref T reference) where T : unmanaged
     {
         return new Span<T>(ref reference);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining), DebuggerStepThrough]
     public static Span<TSpan> AsSpan<TStruct, TSpan>(ref TStruct reference)
         where TStruct : unmanaged where TSpan : unmanaged
     {
@@ -53,25 +54,25 @@ public static class SpanHelpers
             Unsafe.SizeOf<TStruct>() / Unsafe.SizeOf<TSpan>());
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining), DebuggerStepThrough]
     public static Span<byte> AsByteSpan<T>(ref T reference) where T : unmanaged
     {
         return CreateSpan(ref Unsafe.As<T, byte>(ref reference), Unsafe.SizeOf<T>());
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining), DebuggerStepThrough]
     public static ReadOnlySpan<T> CreateReadOnlySpan<T>(ref readonly T reference, int length)
     {
         return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in reference), length);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining), DebuggerStepThrough]
     public static ReadOnlySpan<T> AsReadOnlySpan<T>(ref readonly T reference) where T : unmanaged
     {
         return new ReadOnlySpan<T>(in reference);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining), DebuggerStepThrough]
     public static ReadOnlySpan<TSpan> AsReadOnlySpan<TStruct, TSpan>(ref readonly TStruct reference)
         where TStruct : unmanaged where TSpan : unmanaged
     {
@@ -79,26 +80,26 @@ public static class SpanHelpers
             Unsafe.SizeOf<TStruct>() / Unsafe.SizeOf<TSpan>());
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining), DebuggerStepThrough]
     public static ReadOnlySpan<byte> AsReadOnlyByteSpan<T>(ref readonly T reference) where T : unmanaged
     {
         return CreateReadOnlySpan(in Unsafe.As<T, byte>(ref Unsafe.AsRef(in reference)), Unsafe.SizeOf<T>());
     }
 
     // All AsStruct methods do bounds checks on the input
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining), DebuggerStepThrough]
     public static ref T AsStruct<T>(Span<byte> span) where T : unmanaged
     {
         return ref MemoryMarshal.Cast<byte, T>(span)[0];
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining), DebuggerStepThrough]
     public static ref readonly T AsReadOnlyStruct<T>(ReadOnlySpan<byte> span) where T : unmanaged
     {
         return ref MemoryMarshal.Cast<byte, T>(span)[0];
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining), DebuggerStepThrough]
     public static ref TTo AsStruct<TFrom, TTo>(Span<TFrom> span)
         where TFrom : unmanaged
         where TTo : unmanaged
@@ -106,7 +107,7 @@ public static class SpanHelpers
         return ref MemoryMarshal.Cast<TFrom, TTo>(span)[0];
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining), DebuggerStepThrough]
     public static ref readonly TTo AsStruct<TFrom, TTo>(ReadOnlySpan<TFrom> span)
         where TFrom : unmanaged
         where TTo : unmanaged

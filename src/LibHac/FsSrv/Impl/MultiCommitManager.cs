@@ -66,20 +66,20 @@ internal class MultiCommitManager : IMultiCommitManager
     private readonly FileSystemServer _fsServer;
     private ref MultiCommitManagerGlobals Globals => ref _fsServer.Globals.MultiCommitManager;
 
-    public MultiCommitManager(FileSystemServer fsServer, ref SharedRef<ISaveDataMultiCommitCoreInterface> multiCommitInterface)
+    public MultiCommitManager(FileSystemServer fsServer, ref readonly SharedRef<ISaveDataMultiCommitCoreInterface> multiCommitInterface)
     {
         _fsServer = fsServer;
 
-        _multiCommitInterface = SharedRef<ISaveDataMultiCommitCoreInterface>.CreateMove(ref multiCommitInterface);
+        _multiCommitInterface = SharedRef<ISaveDataMultiCommitCoreInterface>.CreateCopy(in multiCommitInterface);
         _fileSystems = new SharedRef<IFileSystem>[MaxFileSystemCount];
         _fileSystemCount = 0;
         _counter = 0;
     }
 
     public static SharedRef<IMultiCommitManager> CreateShared(FileSystemServer fsServer,
-        ref SharedRef<ISaveDataMultiCommitCoreInterface> multiCommitInterface)
+        ref readonly SharedRef<ISaveDataMultiCommitCoreInterface> multiCommitInterface)
     {
-        return new SharedRef<IMultiCommitManager>(new MultiCommitManager(fsServer, ref multiCommitInterface));
+        return new SharedRef<IMultiCommitManager>(new MultiCommitManager(fsServer, in multiCommitInterface));
     }
 
     public void Dispose()
@@ -120,8 +120,8 @@ internal class MultiCommitManager : IMultiCommitManager
     /// <returns><see cref="Result.Success"/>: The operation was successful.<br/>
     /// <see cref="ResultFs.MultiCommitFileSystemLimit"/>: The maximum number of file systems have been added.
     /// <see cref="MaxFileSystemCount"/> file systems may be added to a single multi-commit.<br/>
-    /// <see cref="ResultFs.MultiCommitHasOverlappingTargets"/>: The provided file system has already been added.</returns>
-    public Result Add(ref SharedRef<IFileSystemSf> fileSystem)
+    /// <see cref="ResultFs.MultiCommitFileSystemDuplicated"/>: The provided file system has already been added.</returns>
+    public Result Add(ref readonly SharedRef<IFileSystemSf> fileSystem)
     {
         if (_fileSystemCount >= MaxFileSystemCount)
             return ResultFs.MultiCommitFileSystemLimit.Log();
@@ -134,7 +134,7 @@ internal class MultiCommitManager : IMultiCommitManager
         for (int i = 0; i < _fileSystemCount; i++)
         {
             if (ReferenceEquals(fsaFileSystem.Get, _fileSystems[i].Get))
-                return ResultFs.MultiCommitHasOverlappingTargets.Log();
+                return ResultFs.MultiCommitFileSystemDuplicated.Log();
         }
 
         _fileSystems[_fileSystemCount].SetByMove(ref fsaFileSystem.Ref);

@@ -76,15 +76,15 @@ public class StatusReportServiceImpl
 
         Assert.SdkRequiresNotNull(_config.NcaFileSystemServiceImpl);
 
-        _config.NcaFileSystemServiceImpl.GetAndClearRomFsErrorInfo(out errorInfo.RemountForDataCorruptionCount,
-            out errorInfo.UnrecoverableDataCorruptionByRemountCount,
-            out errorInfo.RecoveredByInvalidateCacheCount);
+        _config.NcaFileSystemServiceImpl.GetAndClearRomFsErrorInfo(out errorInfo.DeepRetryStartCount,
+            out errorInfo.RemountForDataCorruptionCount, out errorInfo.UnrecoverableDataCorruptionByRemountCount,
+            out errorInfo.RecoveredByInvalidateCacheCount, out errorInfo.UnrecoverableByGameCardAccessFailedCount);
 
         if (_config.FatFileSystemCreator is not null)
         {
             _config.FatFileSystemCreator.GetAndClearFatFsError(out errorInfo.FatFsError);
-            _config.FatFileSystemCreator.GetAndClearFatReportInfo(out errorInfo.BisSystemFatReportInfo,
-                out errorInfo.BisUserFatReport, out errorInfo.SdCardFatReport);
+            _config.FatFileSystemCreator.GetAndClearFatReportInfo(out errorInfo.BisSystemFatReportInfo1,
+                out errorInfo.BisUserFatReport1, out errorInfo.SdCardFatReport1);
         }
 
         Assert.SdkRequiresNotNull(_config.SaveDataFileSystemServiceImpl);

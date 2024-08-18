@@ -1,14 +1,20 @@
 ﻿using LibHac.Common;
 using LibHac.Fs;
-using LibHac.Fs.Fsa;
-using LibHac.Tools.FsSystem.NcaUtils;
+using LibHac.FsSystem;
 
 namespace LibHac.FsSrv.FsCreator;
 
 public interface IStorageOnNcaCreator
 {
-    Result Create(ref SharedRef<IStorage> outStorage, out NcaFsHeader fsHeader, Nca nca, int fsIndex, bool isCodeFs);
-    Result CreateWithPatch(ref SharedRef<IStorage> outStorage, out NcaFsHeader fsHeader, Nca baseNca, Nca patchNca, int fsIndex, bool isCodeFs);
-    Result OpenNca(out Nca nca, IStorage ncaStorage);
-    Result VerifyAcidSignature(IFileSystem codeFileSystem, Nca nca);
+    Result Create(ref SharedRef<IStorage> outStorage,
+        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, ref NcaFsHeaderReader outHeaderReader,
+        ref readonly SharedRef<NcaReader> ncaReader, int fsIndex);
+
+    Result CreateWithPatch(ref SharedRef<IStorage> outStorage,
+        ref SharedRef<IAsynchronousAccessSplitter> outStorageAccessSplitter, ref NcaFsHeaderReader outHeaderReader,
+        ref readonly SharedRef<NcaReader> originalNcaReader, ref readonly SharedRef<NcaReader> currentNcaReader,
+        int fsIndex);
+
+    Result CreateNcaReader(ref SharedRef<NcaReader> outReader, ref readonly SharedRef<IStorage> baseStorage,
+        ContentAttributes contentAttributes);
 }

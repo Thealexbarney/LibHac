@@ -12,14 +12,14 @@ public class ServiceManagerClient
         Server = server;
     }
 
-    public Result GetService<T>(ref SharedRef<T> serviceObject, ReadOnlySpan<char> name) where T : class, IDisposable
+    public Result GetService<T>(ref SharedRef<T> outServiceObject, ReadOnlySpan<char> name) where T : class, IDisposable
     {
         using var service = new SharedRef<IDisposable>();
 
         Result res = Server.GetService(ref service.Ref, ServiceName.Encode(name));
         if (res.IsFailure()) return res.Miss();
 
-        if (serviceObject.TryCastSet(ref service.Ref))
+        if (outServiceObject.TryCastSet(ref service.Ref))
         {
             return Result.Success;
         }

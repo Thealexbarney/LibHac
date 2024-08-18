@@ -7,5 +7,5 @@ namespace LibHac.Sm;
 // have at least some sort of service system for now
 public interface IServiceObject : IDisposable
 {
-    Result GetServiceObject(ref SharedRef<IDisposable> serviceObject);
+    Result GetServiceObject(ref SharedRef<IDisposable> outServiceObject);
 }

@@ -18,12 +18,12 @@ public class EmulatedBisFileSystemCreatorConfig
     private SharedRef<IFileSystem>[] PartitionFileSystems { get; } = new SharedRef<IFileSystem>[ValidPartitionCount];
     private string[] PartitionPaths { get; } = new string[ValidPartitionCount];
 
-    public Result SetRootFileSystem(ref SharedRef<IFileSystem> fileSystem)
+    public Result SetRootFileSystem(ref readonly SharedRef<IFileSystem> fileSystem)
     {
         if (!fileSystem.HasValue) return ResultFs.NullptrArgument.Log();
         if (_rootFileSystem.HasValue) return ResultFs.PreconditionViolation.Log();
 
-        _rootFileSystem.SetByMove(ref fileSystem);
+        _rootFileSystem.SetByCopy(in fileSystem);
 
         return Result.Success;
     }

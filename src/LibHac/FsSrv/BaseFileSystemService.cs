@@ -1,5 +1,4 @@
-﻿using System;
-using LibHac.Common;
+﻿using LibHac.Common;
 using LibHac.Fs;
 using LibHac.FsSrv.Impl;
 using LibHac.FsSrv.Sf;
@@ -69,8 +68,7 @@ public readonly struct BaseFileSystemService
         if (res.IsFailure()) return res.Miss();
 
         // Create an SF adapter for the file system
-        using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref fileSystem.Ref, false);
+        using SharedRef<IFileSystemSf> fileSystemAdapter = FileSystemInterfaceAdapter.CreateShared(in fileSystem, false);
 
         outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
@@ -131,28 +129,17 @@ public readonly struct BaseFileSystemService
         if (res.IsFailure()) return res.Miss();
 
         using var subDirFileSystem = new SharedRef<IFileSystem>();
-        res = Utility.CreateSubDirectoryFileSystem(ref subDirFileSystem.Ref, ref fileSystem.Ref,
-            in pathNormalized);
+        res = Utility.CreateSubDirectoryFileSystem(ref subDirFileSystem.Ref, in fileSystem, in pathNormalized);
         if (res.IsFailure()) return res.Miss();
 
         // Add all the file system wrappers
-        using var typeSetFileSystem =
-            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref subDirFileSystem.Ref, storageFlag));
-
-        using var asyncFileSystem =
-            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref));
-
-        using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref, false);
+        using var typeSetFileSystem = new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(in subDirFileSystem, storageFlag));
+        using var asyncFileSystem = new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(in typeSetFileSystem));
+        using SharedRef<IFileSystemSf> fileSystemAdapter = FileSystemInterfaceAdapter.CreateShared(in asyncFileSystem, allowAllOperations: false);
 
         outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
         return Result.Success;
-    }
-
-    public Result SetBisRootForHost(BisPartitionId partitionId, ref readonly FspPath path)
-    {
-        throw new NotImplementedException();
     }
 
     public Result CreatePaddingFile(long size)
@@ -198,10 +185,10 @@ public readonly struct BaseFileSystemService
         if (res.IsFailure()) return res.Miss();
 
         using var asyncFileSystem =
-            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref fileSystem.Ref));
+            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(in fileSystem));
 
         using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref, false);
+            FileSystemInterfaceAdapter.CreateShared(in asyncFileSystem, false);
 
         outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
@@ -226,14 +213,9 @@ public readonly struct BaseFileSystemService
         if (res.IsFailure()) return res.Miss();
 
         // Add all the file system wrappers
-        using var typeSetFileSystem =
-            new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(ref fileSystem.Ref, storageFlag));
-
-        using var asyncFileSystem =
-            new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(ref typeSetFileSystem.Ref));
-
-        using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref asyncFileSystem.Ref, false);
+        using var typeSetFileSystem = new SharedRef<IFileSystem>(new StorageLayoutTypeSetFileSystem(in fileSystem, storageFlag));
+        using var asyncFileSystem = new SharedRef<IFileSystem>(new AsynchronousAccessFileSystem(in typeSetFileSystem));
+        using SharedRef<IFileSystemSf> fileSystemAdapter = FileSystemInterfaceAdapter.CreateShared(in asyncFileSystem, allowAllOperations: false);
 
         outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 
@@ -267,8 +249,7 @@ public readonly struct BaseFileSystemService
         return Result.Success;
     }
 
-    public Result OpenImageDirectoryFileSystem(ref SharedRef<IFileSystemSf> outFileSystem,
-        ImageDirectoryId directoryId)
+    public Result OpenImageDirectoryFileSystem(ref SharedRef<IFileSystemSf> outFileSystem, ImageDirectoryId directoryId)
     {
         // Caller must have the MountImageAndVideoStorage permission
         Result res = GetProgramInfo(out ProgramInfo programInfo);
@@ -299,7 +280,7 @@ public readonly struct BaseFileSystemService
         if (res.IsFailure()) return res.Miss();
 
         using SharedRef<IFileSystemSf> fileSystemAdapter =
-            FileSystemInterfaceAdapter.CreateShared(ref baseFileSystem.Ref, false);
+            FileSystemInterfaceAdapter.CreateShared(in baseFileSystem, false);
 
         outFileSystem.SetByMove(ref fileSystemAdapter.Ref);
 

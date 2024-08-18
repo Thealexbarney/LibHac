@@ -17,9 +17,9 @@ public class AesXtsFileSystem : IFileSystem
     private byte[] _kekSource;
     private byte[] _validationKey;
 
-    public AesXtsFileSystem(ref SharedRef<IFileSystem> fs, byte[] keys, int blockSize)
+    public AesXtsFileSystem(ref readonly SharedRef<IFileSystem> fs, byte[] keys, int blockSize)
     {
-        _sharedBaseFileSystem = SharedRef<IFileSystem>.CreateMove(ref fs);
+        _sharedBaseFileSystem = SharedRef<IFileSystem>.CreateCopy(in fs);
         _baseFileSystem = _sharedBaseFileSystem.Get;
         _kekSource = keys.AsSpan(0, 0x10).ToArray();
         _validationKey = keys.AsSpan(0x10, 0x10).ToArray();

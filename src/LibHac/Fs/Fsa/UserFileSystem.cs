@@ -661,7 +661,7 @@ public static class UserFileSystem
             if (!fileSystem.HasValue)
                 return ResultFs.UnsupportedCommitTarget.Log();
 
-            res = commitManager.Get.Add(ref fileSystem.Ref);
+            res = commitManager.Get.Add(in fileSystem);
             if (res.IsFailure()) return res.Miss();
         }
 

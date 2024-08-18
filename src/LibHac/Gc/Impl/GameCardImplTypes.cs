@@ -1,26 +1,106 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using LibHac.Common.FixedArrays;
 
 namespace LibHac.Gc.Impl;
 
-public struct CardId1
+public enum MakerCodeForCardId1 : byte
 {
-    public byte MakerCode;
-    public MemoryCapacity MemoryCapacity;
-    public byte Reserved;
-    public byte MemoryType;
+    MegaChips = 0xC2,
+    Lapis = 0xAE
 }
 
+public enum MemoryCapacity : byte
+{
+    // ReSharper disable InconsistentNaming
+    Capacity1GB = 0xFA,
+    Capacity2GB = 0xF8,
+    Capacity4GB = 0xF0,
+    Capacity8GB = 0xE0,
+    Capacity16GB = 0xE1,
+    Capacity32GB = 0xE2
+    // ReSharper restore InconsistentNaming
+}
+
+public enum MemoryType : byte
+{
+    T1RomFast = 0x01,
+    T2RomFast = 0x02,
+    T1NandFast = 0x09,
+    T2NandFast = 0x0A,
+    T1RomLate = 0x21,
+    T2RomLate = 0x22,
+    T1NandLate = 0x29,
+    T2NandLate = 0x2A
+}
+
+public enum CardSecurityNumber : byte
+{
+    Number0 = 0,
+    Number1 = 1,
+    Number2 = 2,
+    Number3 = 3,
+    Number4 = 4
+}
+
+public enum CardType : byte
+{
+    Rom = 0,
+    WritableDevT1 = 1,
+    WritableProdT1 = 2,
+    WritableDevT2 = 3,
+    WritableProdT2 = 4
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct CardId1
+{
+    public MakerCodeForCardId1 MakerCode;
+    public MemoryCapacity MemoryCapacity;
+    public byte Reserved;
+    public MemoryType MemoryType;
+}
+
+[StructLayout(LayoutKind.Sequential)]
 public struct CardId2
 {
-    public byte CardSecurityNumber;
-    public byte CardType;
+    public CardSecurityNumber CardSecurityNumber;
+    public CardType CardType;
     public Array2<byte> Reserved;
 }
 
+[StructLayout(LayoutKind.Sequential)]
 public struct CardId3
 {
     public Array4<byte> Reserved;
+}
+
+public enum MakerCodeForCardUid : byte
+{
+    Maker0 = 0,
+    Maker1 = 1,
+    Maker2 = 2,
+}
+
+public enum CardTypeForUid : byte
+{
+    WritableDev = 0xFE,
+    WritableProd = 0xFF
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct CardUid
+{
+    public MakerCodeForCardUid MakerCode;
+    public byte Version;
+    public CardTypeForUid CardType;
+    public Array9<byte> UniqueData;
+    public uint Random;
+    public byte PlatformFlag;
+    public Array11<byte> Reserved;
+    public CardId1 CardId1;
+    public Array32<byte> Mac;
 }
 
 public enum DevCardRomSize : byte
@@ -79,6 +159,7 @@ public struct DevCardParameter
     public Array436<byte> Reserved;
 }
 
+[StructLayout(LayoutKind.Sequential)]
 public struct CardInitialDataPayload
 {
     public Array8<byte> PackageId;
@@ -88,10 +169,23 @@ public struct CardInitialDataPayload
     public Array12<byte> AuthNonce;
 }
 
+[StructLayout(LayoutKind.Sequential)]
 public struct CardInitialData
 {
     public CardInitialDataPayload Payload;
     public Array452<byte> Padding;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct CardSpecificData
+{
+    public uint AsicSecurityMode;
+    public uint AsicStatus;
+    public CardId1 CardId1;
+    public CardId2 CardId2;
+    public Array64<byte> CardUid;
+    public Array400<byte> Reserved;
+    public Array32<byte> Mac;
 }
 
 public enum FwVersion : byte
@@ -112,6 +206,7 @@ public enum KekIndex : byte
     ForDev = 1
 }
 
+[StructLayout(LayoutKind.Sequential)]
 public struct CardHeaderEncryptedData
 {
     public Array2<uint> FwVersion;
@@ -131,18 +226,6 @@ public struct CardHeaderEncryptedData
     public Array56<byte> Reserved38;
 }
 
-public enum MemoryCapacity : byte
-{
-    // ReSharper disable InconsistentNaming
-    Capacity1GB = 0xFA,
-    Capacity2GB = 0xF8,
-    Capacity4GB = 0xF0,
-    Capacity8GB = 0xE0,
-    Capacity16GB = 0xE1,
-    Capacity32GB = 0xE2
-    // ReSharper restore InconsistentNaming
-}
-
 public enum AccessControl1ClockRate
 {
     ClockRate25MHz = 0xA10011,
@@ -155,6 +238,15 @@ public enum SelSec
     T2 = 2
 }
 
+public enum BusPower
+{
+    // ReSharper disable InconsistentNaming
+    Power_3_1V = 0,
+    Power_1_8V = 1
+    // ReSharper restore InconsistentNaming
+}
+
+[StructLayout(LayoutKind.Sequential)]
 public struct CardHeader
 {
     public static uint HeaderMagic => 0x44414548; // HEAD
@@ -179,14 +271,19 @@ public struct CardHeader
     public uint SelKey;
     public uint LimAreaPage;
     public CardHeaderEncryptedData EncryptedData;
+
+    public KekIndex KekIndex => (KekIndex)(KeyIndex & 0xF);
+    public byte TitleKeyDecIndex => (byte)(KeyIndex >> 4);
 }
 
+[StructLayout(LayoutKind.Sequential)]
 public struct CardHeaderWithSignature
 {
     public Array256<byte> Signature;
     public CardHeader Data;
 }
 
+[StructLayout(LayoutKind.Sequential)]
 public struct T1CardCertificate
 {
     public static uint CertMagic => 0x54524543; // CERT
@@ -203,10 +300,79 @@ public struct T1CardCertificate
     public Array512<byte> Padding;
 }
 
+[StructLayout(LayoutKind.Sequential)]
 public struct Ca10Certificate
 {
     public Array256<byte> Signature;
     public Array48<byte> Unk100;
     public Array256<byte> Modulus;
     public Array464<byte> Unk230;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct CardInitReceiveData
+{
+    public uint CupVersion;
+    public CardId1 CardId1;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct CardSecurityInformation
+{
+    public uint MemoryInterfaceMode;
+    public uint AsicStatus;
+    public CardId1 Id1;
+    public CardId2 Id2;
+    public CardUid Uid;
+    public Array400<byte> Reserved;
+    public Array32<byte> Mac;
+    public Array1024<byte> CardCertificate;
+    public CardInitialData InitialData;
+
+    [UnscopedRef]
+    public ref T1CardCertificate T1Certificate =>
+        ref Unsafe.As<byte, T1CardCertificate>(ref MemoryMarshal.GetReference(CardCertificate[..]));
+}
+
+public enum AsicFirmwareType : byte
+{
+    Read = 0,
+    Write = 1
+}
+
+public enum AsicState : byte
+{
+    Initial = 0,
+    Secure = 1
+}
+
+public enum GameCardMode : byte
+{
+    Initial = 0,
+    Normal = 1,
+    Secure = 2,
+    Debug = 3
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct TotalAsicInfo
+{
+    public uint InitializeCount;
+    public uint AwakenCount;
+    public ushort AwakenFailureCount;
+    public Array2<byte> Reserved;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct CardAccessInternalInfo
+{
+    public ushort RetryLimitOutNum;
+    public ushort AsicReinitializeCount;
+    public ushort AsicReinitializeFailureNum;
+    public ushort RefreshSuccessCount;
+    public uint LastReadErrorPageAddress;
+    public uint LastReadErrorPageCount;
+    public uint ReadCountFromInsert;
+    public uint ReadCountFromAwaken;
+    public Result LastAsicReinitializeFailureResult;
 }

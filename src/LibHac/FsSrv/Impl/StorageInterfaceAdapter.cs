@@ -16,9 +16,9 @@ public class StorageInterfaceAdapter : IStorageSf
 {
     private SharedRef<IStorage> _baseStorage;
 
-    public StorageInterfaceAdapter(ref SharedRef<IStorage> baseStorage)
+    public StorageInterfaceAdapter(ref readonly SharedRef<IStorage> baseStorage)
     {
-        _baseStorage = SharedRef<IStorage>.CreateMove(ref baseStorage);
+        _baseStorage = SharedRef<IStorage>.CreateCopy(in baseStorage);
     }
 
     public void Dispose()
