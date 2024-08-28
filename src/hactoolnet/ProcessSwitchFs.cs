@@ -248,7 +248,7 @@ internal static class ProcessSwitchFs
                 Utilities.GetBytesReadable(title.GetSize()),
                 title.Control.Value.DisplayVersionString.ToString(),
                 title.Name,
-                string.Join(',', from x in title.Languages select ApplicationControlProperty.LanguageCode[(int)x]));
+                string.Join(',', title.Languages.Select(x => ApplicationControlProperty.LanguageCodes[(int)x])));
         }
 
         return table.Print();

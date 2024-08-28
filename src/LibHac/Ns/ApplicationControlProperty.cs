@@ -133,7 +133,7 @@ public struct ApplicationControlProperty
         BrazilianPortuguese = 15
     }
 
-    public static readonly string[] LanguageCode =
+    public static readonly string[] LanguageCodes =
     [
         "en-US",
         "en-GB",
@@ -148,9 +148,9 @@ public struct ApplicationControlProperty
         "pt",
         "ru",
         "ko",
-        "zh-TW",
-        "zh-CN",
-        "pt-Br"
+        "zh-Hans",
+        "zh-Hant",
+        "pt-BR"
     ];
 
     [SuppressMessage("ReSharper", "InconsistentNaming")]
