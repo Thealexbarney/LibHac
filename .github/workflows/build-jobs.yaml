@@ -1,0 +1,46 @@
+name: Build jobs
+
+on:
+  workflow_call:
+
+jobs:
+  main:
+    strategy:
+      fail-fast: false
+      matrix:
+        job_name: ['linux', 'windows', 'macos']
+        include:
+          - job_name: linux
+            os: ubuntu-latest
+            shell: bash {0}
+          - job_name: windows
+            os: windows-latest
+            shell: powershell {0}
+          - job_name: macos
+            os: macos-latest
+            shell: bash {0}
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+
+    name: hactoolnet-${{ matrix.job_name }}
+    runs-on: ${{ matrix.os }}
+    # container: docker pull mcr.microsoft.com/dotnet/sdk:8.0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build hactoolnet
+        if: matrix.os == 'windows-latest'
+        run: |
+          .\build.ps1 appveyorbuild --noreflection
+      - name: Build hactoolnet
+        if: matrix.os != 'windows-latest'
+        run: |
+          chmod +x ./build.sh
+          ./build.sh appveyorbuild --noreflection
+      - uses: actions/upload-artifact@v4
+        with:
+          retention-days: 1
+          compression-level: 0
+          name: hactoolnet-${{ matrix.job_name }}
+          path: ./artifacts/hactoolnet*
